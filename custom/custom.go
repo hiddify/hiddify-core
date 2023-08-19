@@ -5,8 +5,9 @@ package main
 */
 import "C"
 import (
+	"os"
+
 	"github.com/hiddify/libcore/shared"
-	B "github.com/sagernet/sing-box/experimental/libbox"
 )
 
 var box *BoxService
@@ -18,14 +19,9 @@ func setup(baseDir *C.char, workingDir *C.char, tempDir *C.char) {
 	Setup(C.GoString(baseDir), C.GoString(workingDir), C.GoString(tempDir))
 }
 
-//export checkConfig
-func checkConfig(configPath *C.char) *C.char {
-	configContent, err := shared.ConvertToSingbox(C.GoString(configPath), templateOptions)
-	if err != nil {
-		return C.CString(err.Error())
-	}
-
-	err = B.CheckConfig(string(configContent))
+//export parse
+func parse(path *C.char) *C.char {
+	err := shared.ParseConfig(C.GoString(path))
 	if err != nil {
 		return C.CString(err.Error())
 	}
@@ -35,13 +31,18 @@ func checkConfig(configPath *C.char) *C.char {
 //export create
 func create(configPath *C.char) *C.char {
 	path := C.GoString(configPath)
-
-	configContent, err := shared.ConvertToSingbox(path, templateOptions)
+	content, err := os.ReadFile(path)
 	if err != nil {
 		return C.CString(err.Error())
 	}
+	options, err := parseConfig(string(content))
+	if err != nil {
+		return C.CString(err.Error())
+	}
+	overrides := shared.ConfigOverrides{ExcludeTunInbound: true, IncludeMixedInbound: true, IncludeLogOutput: true, LogLevel: "info", IncludeLogTimestamp: false, ClashApiPort: 9090}
+	options = shared.ApplyOverrides(options, overrides)
 
-	instance, err := NewService(string(configContent))
+	instance, err := NewService(options)
 	if err != nil {
 		return C.CString(err.Error())
 	}

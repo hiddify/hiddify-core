@@ -34,11 +34,7 @@ func Setup(basePath string, workingPath string, tempPath string) {
 	sGroupID = os.Getgid()
 }
 
-func NewService(configContent string) (*BoxService, error) {
-	options, err := parseConfig(configContent)
-	if err != nil {
-		return nil, err
-	}
+func NewService(options option.Options) (*BoxService, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 	ctx = filemanager.WithDefault(ctx, sWorkingPath, sTempPath, sUserID, sGroupID)
 	ctx = service.ContextWithPtr(ctx, urltest.NewHistoryStorage())
