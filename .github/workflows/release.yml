@@ -1,0 +1,102 @@
+name: Release
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - '.github/ISSUE_TEMPLATE/**'
+jobs:
+  build:
+    permissions: write-all
+    strategy:
+      fail-fast: false
+      matrix:
+        job:
+          - { os: "ubuntu-latest", target: "android" }
+          - { os: "ubuntu-latest", target: "windows-amd64", aarch: "x64" }
+          - { os: "ubuntu-latest", target: "linux-amd64", aarch: "x64" }
+    runs-on: ${{ matrix.job.os }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version-file: 'go.mod'
+          check-latest: false
+
+      - name: Setup Java
+        if: startsWith(matrix.job.target,'android')
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+          
+      - name: Setup NDK
+        if: startsWith(matrix.job.target,'android')
+        uses: nttld/setup-ndk@v1
+        id: setup-ndk
+        with:
+          ndk-version: r25b
+          add-to-path: true
+          local-cache: true
+
+      # - name: Setup Android SDK
+      #   uses: amyu/setup-android@v2
+      #   with:
+      #     cache-disabled: true
+      #     sdk-version: '33'
+      #     ndk-version: '25.2.9519653'
+
+      - name: Setup GoMobile
+        if: startsWith(matrix.job.target,'android')
+        run: make lib_install
+      
+      - name: Setup MinGW
+        if: startsWith(matrix.job.target,'windows')
+        uses: egor-tensin/setup-mingw@v2
+        with:
+          platform: ${{ matrix.job.aarch }}
+      
+      - name: Build
+        run: make -j$(($(nproc) + 1)) ${{ matrix.job.target }}
+
+      - name: zip
+        run: |
+            tree
+            rm -f ./bin/*.h
+            gzip -r -S ".gz" ./bin/hiddify-libcore*
+
+      - uses: actions/upload-artifact@v3
+        if: ${{ success() }}
+        with:
+          name: artifact
+          path: bin/
+
+  upload-prerelease:
+    permissions: write-all
+    needs: [build]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v3
+        with:
+          name: artifact
+          path: bin/
+
+      - name: Create or Update Draft Release
+        uses: softprops/action-gh-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          files: ./bin/*
+          name: "draft"
+          tag_name: "draft"
+          prerelease: true
+          overwrite: true
+        
+
