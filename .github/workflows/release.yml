@@ -20,7 +20,7 @@ jobs:
           # - { os: "ubuntu-latest", target: "windows-386", aarch: 'x86'} #fultter does not support x86
           - { os: "ubuntu-latest", target: "windows-amd64", aarch: 'x64' }
           - { os: "macos-11", target: "macos-universal" }
-          - { os: "macos-11", target: "ios" }
+          #- { os: "macos-11", target: "ios" }
     runs-on: ${{ matrix.job.os }}
     steps:
       - name: Checkout
@@ -101,7 +101,9 @@ jobs:
         run: |
             tree 
             rm -f ./bin/*.h
+            rm ./bin/hiddify-libcore*sources*
             gzip -r -S ".gz" ./bin/hiddify-libcore*
+            
 
       - uses: actions/upload-artifact@v3
         if: ${{ success() }}
