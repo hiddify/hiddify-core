@@ -15,9 +15,9 @@ jobs:
       matrix:
         job:
           - { os: "ubuntu-latest", target: "android"}
-          - { os: "ubuntu-latest", target: "linux-386", aarch: 'x86'}
+          # - { os: "ubuntu-latest", target: "linux-386", aarch: 'x86'} #fultter does not support x86
           - { os: "ubuntu-latest", target: "linux-amd64", aarch: 'x64'}
-          - { os: "ubuntu-latest", target: "windows-386", aarch: 'x86'}
+          # - { os: "ubuntu-latest", target: "windows-386", aarch: 'x86'} #fultter does not support x86
           - { os: "ubuntu-latest", target: "windows-amd64", aarch: 'x64' }
           - { os: "macos-11", target: "macos-universal" }
     runs-on: ${{ matrix.job.os }}
@@ -28,14 +28,14 @@ jobs:
           fetch-depth: 0
 
       - name: Set up GCC
-        if: startsWith(matrix.job.target,'linux')
+        if: startsWith(matrix.job.target,'linux-386')
         uses: egor-tensin/setup-gcc@v1
         with:
           version: latest
           platform: ${{ matrix.job.aarch }}
       
       - name: gcc
-        if: startsWith(matrix.job.target,'linux')
+        if: startsWith(matrix.job.target,'linux-386')
         run: |
           sudo apt-get install --reinstall libc6-dev
 
