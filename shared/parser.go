@@ -1,6 +1,7 @@
 package shared
 
 import (
+	_ "embed"
 	"fmt"
 	"os"
 
@@ -9,6 +10,9 @@ import (
 	"github.com/xmdhs/clash2singbox/model/clash"
 	"gopkg.in/yaml.v3"
 )
+
+//go:embed config.json.template
+var configByte []byte
 
 func ParseConfig(path string) error {
 	content, err := os.ReadFile(path)
@@ -43,7 +47,7 @@ func parseClash(content []byte) ([]byte, error) {
 		return nil, err
 	}
 
-	output := defaultTemplate(ConfigTemplateOptions{})
+	output := configByte
 	output, err = convert.Patch(output, sbConfig, "", "", nil)
 	if err != nil {
 		fmt.Printf("patch error %s", err)

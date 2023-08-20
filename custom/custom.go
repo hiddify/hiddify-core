@@ -12,8 +12,6 @@ import (
 
 var box *BoxService
 
-var templateOptions = shared.ConfigTemplateOptions{IncludeTunInbound: false, IncludeMixedInbound: true, IncludeLogOutput: true}
-
 //export setup
 func setup(baseDir *C.char, workingDir *C.char, tempDir *C.char) {
 	Setup(C.GoString(baseDir), C.GoString(workingDir), C.GoString(tempDir))
