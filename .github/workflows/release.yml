@@ -40,11 +40,15 @@ jobs:
         run: |
           sudo apt-get install --reinstall libc6-dev
 
-      - name: Setup Go
-        uses: actions/setup-go@v4
+      - name: Setup Golang with cache
+        uses: magnetikonline/action-golang-cache@v4
         with:
-          go-version-file: 'go.mod'
-          check-latest: false
+          go-version: 1.20
+      # - name: Setup Go
+      #   uses: actions/setup-go@v4
+      #   with:
+      #     go-version-file: 'go.mod'
+      #     check-latest: false
 
       - name: Setup Java
         if: startsWith(matrix.job.target,'android')
