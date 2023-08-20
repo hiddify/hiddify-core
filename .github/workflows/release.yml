@@ -101,7 +101,8 @@ jobs:
         run: |
             tree 
             rm -f ./bin/*.h
-            rm ./bin/hiddify-libcore*sources*
+            rm ./bin/hiddify-libcore*sources* ||echo "no source"
+            rm hiddify-libcore-macos-a*.dylib || echo "no macos arm and amd"
             gzip -r -S ".gz" ./bin/hiddify-libcore*
             
 
