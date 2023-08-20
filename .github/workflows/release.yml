@@ -14,9 +14,12 @@ jobs:
       fail-fast: false
       matrix:
         job:
-          - { os: "ubuntu-latest", target: "android" }
-          - { os: "ubuntu-latest", target: "windows-amd64", aarch: "x64" }
-          - { os: "ubuntu-latest", target: "linux-amd64", aarch: "x64" }
+          - { os: "ubuntu-latest", target: "android"}
+          - { os: "ubuntu-latest", target: "linux-386", aarch: 'x86'}
+          - { os: "ubuntu-latest", target: "linux-amd64", aarch: 'x64'}
+          - { os: "ubuntu-latest", target: "windows-386", aarch: 'x86'}
+          - { os: "ubuntu-latest", target: "windows-amd64", aarch: 'x64' }
+          - { os: "macos-11", target: "macos-universal" }
     runs-on: ${{ matrix.job.os }}
     steps:
       - name: Checkout
@@ -62,6 +65,11 @@ jobs:
         uses: egor-tensin/setup-mingw@v2
         with:
           platform: ${{ matrix.job.aarch }}
+
+      - name: Set up macos
+        if: startsWith(matrix.job.target,'macos')
+        run: |
+          brew install create-dmg tree coreutils
       
       - name: Build
         run: make -j$(($(nproc) + 1)) ${{ matrix.job.target }}

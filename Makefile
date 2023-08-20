@@ -17,8 +17,24 @@ android:
 windows-amd64:
 	env GOOS=windows GOARCH=amd64 CC=x86_64-w64-mingw32-gcc $(GOBUILD) -o $(BINDIR)/$(NAME)-$@.dll ./custom
 
+windows-386:
+	env GOOS=windows GOARCH=386 CC=i686-w64-mingw32-gcc $(GOBUILD) -o $(BINDIR)/$(NAME)-$@.dll ./custom
+
 linux-amd64:
 	env GOOS=linux GOARCH=amd64 $(GOBUILD) -o $(BINDIR)/$(NAME)-$@.so ./custom
+
+linux-386:
+	env GOOS=linux GOARCH=386  $(GOBUILD) -o $(BINDIR)/$(NAME)-$@.so ./custom
+
+macos-amd64:
+	env GOOS=darwin GOARCH=amd64 CGO_CFLAGS="-mmacosx-version-min=10.11" CGO_LDFLAGS="-mmacosx-version-min=10.11" CGO_ENABLED=1 go build -trimpath -tags with_gvisor,with_lwip -buildmode=c-shared -o $(BINDIR)/$(NAME)-$@.dylib ./custom
+macos-arm64:
+	env GOOS=darwin GOARCH=arm64 CGO_CFLAGS="-mmacosx-version-min=10.11" CGO_LDFLAGS="-mmacosx-version-min=10.11" CGO_ENABLED=1 go build -trimpath -tags with_gvisor,with_lwip -buildmode=c-shared -o $(BINDIR)/$(NAME)-$@.dylib ./custom
+macos-combine:
+	lipo -create $(BINDIR)/$(NAME)-macos-amd64.dylib $(BINDIR)/$(NAME)-macos-arm64.dylib -output $(BINDIR)/$(NAME)-$@.dylib
+
+macos-universal: macos-amd64 macos-arm64 macos-combine
+	
 
 clean:
 	rm $(BINDIR)/*
