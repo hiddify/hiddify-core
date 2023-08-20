@@ -84,7 +84,7 @@ jobs:
           platform: ${{ matrix.job.aarch }}
 
       - name: Set up macos
-        if: startsWith(matrix.job.target,'macos')
+        if: startsWith(matrix.job.target,'macos') ||  startsWith(matrix.job.target,'ios')
         run: |
           brew install create-dmg tree coreutils
       
@@ -93,7 +93,7 @@ jobs:
 
       - name: zip
         run: |
-            tree
+            tree 
             rm -f ./bin/*.h
             gzip -r -S ".gz" ./bin/hiddify-libcore*
 
