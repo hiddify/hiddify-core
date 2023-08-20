@@ -128,10 +128,10 @@ const base = `
 					],
 					"outbound": "direct"
 				},
-				{
-					"geosite": "geolocation-!ir",
-					"outbound": "select"
-				},
+				// {
+				// 	"geosite": "geolocation-!ir",
+				// 	"outbound": "select"
+				// },
 				{
 					"geosite": "ir",
 					"outbound": "direct"
