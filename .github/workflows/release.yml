@@ -20,6 +20,7 @@ jobs:
           # - { os: "ubuntu-latest", target: "windows-386", aarch: 'x86'} #fultter does not support x86
           - { os: "ubuntu-latest", target: "windows-amd64", aarch: 'x64' }
           - { os: "macos-11", target: "macos-universal" }
+          - { os: "macos-11", target: "ios" }
     runs-on: ${{ matrix.job.os }}
     steps:
       - name: Checkout
@@ -69,7 +70,7 @@ jobs:
       #     ndk-version: '25.2.9519653'
 
       - name: Setup GoMobile
-        if: startsWith(matrix.job.target,'android')
+        if: startsWith(matrix.job.target,'android') || startsWith(matrix.job.target,'ios')
         run: make lib_install
       
       - name: Setup MinGW
