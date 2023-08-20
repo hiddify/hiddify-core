@@ -14,11 +14,11 @@ jobs:
       fail-fast: false
       matrix:
         job:
-          #- { os: "ubuntu-latest", target: "android"}
+          - { os: "ubuntu-latest", target: "android"}
           - { os: "ubuntu-latest", target: "linux-386", aarch: 'x86'}
-          #- { os: "ubuntu-latest", target: "linux-amd64", aarch: 'x64'}
-          #- { os: "ubuntu-latest", target: "windows-386", aarch: 'x86'}
-          #- { os: "ubuntu-latest", target: "windows-amd64", aarch: 'x64' }
+          - { os: "ubuntu-latest", target: "linux-amd64", aarch: 'x64'}
+          - { os: "ubuntu-latest", target: "windows-386", aarch: 'x86'}
+          - { os: "ubuntu-latest", target: "windows-amd64", aarch: 'x64' }
           - { os: "macos-11", target: "macos-universal" }
     runs-on: ${{ matrix.job.os }}
     steps:
