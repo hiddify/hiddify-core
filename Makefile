@@ -30,10 +30,9 @@ macos-amd64:
 	env GOOS=darwin GOARCH=amd64 CGO_CFLAGS="-mmacosx-version-min=10.11" CGO_LDFLAGS="-mmacosx-version-min=10.11" CGO_ENABLED=1 go build -trimpath -tags with_gvisor,with_lwip -buildmode=c-shared -o $(BINDIR)/$(NAME)-$@.dylib ./custom
 macos-arm64:
 	env GOOS=darwin GOARCH=arm64 CGO_CFLAGS="-mmacosx-version-min=10.11" CGO_LDFLAGS="-mmacosx-version-min=10.11" CGO_ENABLED=1 go build -trimpath -tags with_gvisor,with_lwip -buildmode=c-shared -o $(BINDIR)/$(NAME)-$@.dylib ./custom
-macos-combine:
-	lipo -create $(BINDIR)/$(NAME)-macos-amd64.dylib $(BINDIR)/$(NAME)-macos-arm64.dylib -output $(BINDIR)/$(NAME)-$@.dylib
 
-macos-universal: macos-amd64 macos-arm64 macos-combine
+macos-universal: macos-amd64 macos-arm64 
+	lipo -create $(BINDIR)/$(NAME)-macos-amd64.dylib $(BINDIR)/$(NAME)-macos-arm64.dylib -output $(BINDIR)/$(NAME)-$@.dylib
 	
 
 clean:
