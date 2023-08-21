@@ -6,6 +6,7 @@ require (
 	github.com/sagernet/gomobile v0.0.0-20230728014906-3de089147f59
 	github.com/sagernet/sing v0.2.10-0.20230807080248-4db0062caa0a
 	github.com/sagernet/sing-box v1.3.6
+	github.com/sagernet/sing-dns v0.1.9-0.20230731012726-ad50da89b659
 	github.com/xmdhs/clash2singbox v0.0.0-20230810082059-5054938e1bfd
 	gopkg.in/yaml.v3 v3.0.1
 )
@@ -54,7 +55,6 @@ require (
 	github.com/sagernet/netlink v0.0.0-20220905062125-8043b4a9aa97 // indirect
 	github.com/sagernet/quic-go v0.0.0-20230731012313-1327e4015111 // indirect
 	github.com/sagernet/reality v0.0.0-20230406110435-ee17307e7691 // indirect
-	github.com/sagernet/sing-dns v0.1.9-0.20230731012726-ad50da89b659 // indirect
 	github.com/sagernet/sing-mux v0.1.3-0.20230803070305-ea4a972acd21 // indirect
 	github.com/sagernet/sing-shadowsocks v0.2.4 // indirect
 	github.com/sagernet/sing-shadowsocks2 v0.1.3 // indirect

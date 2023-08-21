@@ -37,8 +37,15 @@ func create(configPath *C.char) *C.char {
 	if err != nil {
 		return C.CString(err.Error())
 	}
-	overrides := shared.ConfigOverrides{ExcludeTunInbound: true, IncludeMixedInbound: true, IncludeLogOutput: true, LogLevel: "info", IncludeLogTimestamp: false, ClashApiPort: 9090}
-	options = shared.ApplyOverrides(options, overrides)
+	overrides := shared.ConfigOverrides{
+		LogOutput:      shared.StringAddr("box.log"),
+		EnableTun:      shared.BoolAddr(false),
+		SetSystemProxy: shared.BoolAddr(true),
+	}
+	template := shared.DefaultTemplate(overrides)
+	options = shared.ApplyOverrides(template, options, overrides)
+
+	shared.SaveCurrentConfig(sWorkingPath, options)
 
 	instance, err := NewService(options)
 	if err != nil {
