@@ -79,9 +79,9 @@ jobs:
       #     sdk-version: '33'
       #     ndk-version: '25.2.9519653'
 
-      - name: Setup GoMobile
-        if: startsWith(matrix.job.target,'android') || startsWith(matrix.job.target,'ios')
-        run: make lib_install
+      #- name: Setup GoMobile
+      #  if: startsWith(matrix.job.target,'android') || startsWith(matrix.job.target,'ios')
+      #  run: make lib_install
       
       - name: Setup MinGW
         if: startsWith(matrix.job.target,'windows')
