@@ -1,6 +1,6 @@
 module github.com/hiddify/libcore
 
-go 1.20
+go 1.21
 
 require (
 	github.com/sagernet/gomobile v0.0.0-20230728014906-3de089147f59
