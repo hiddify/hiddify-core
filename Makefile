@@ -11,12 +11,12 @@ lib_install:
 headers:
 	go build -buildmode=c-archive -o $(BINDIR)/$(NAME)-$@.h ./custom
 
-android:
+android: lib_install
 	gomobile bind -v -androidapi=21 -javapkg=io.nekohasekai -libname=box -tags=$(TAGS) -trimpath -ldflags="-w -s" -target=android -o $(BINDIR)/$(NAME)-$@.aar github.com/sagernet/sing-box/experimental/libbox ./mobile
 
-ios-full:
+ios-full: lib_install
 	gomobile bind -v  -target ios,iossimulator,tvos,tvossimulator,macos -libname=box -tags=$(TAGS),with_dhcp,with_low_memory,with_conntrack -trimpath -ldflags="-w -s" -o $(BINDIR)/$(NAME)-$@.xcframework github.com/sagernet/sing-box/experimental/libbox ./mobile
-ios:
+ios: lib_install
 	gomobile bind -v  -target ios -libname=box -tags=$(TAGS),with_dhcp,with_low_memory,with_conntrack -trimpath -ldflags="-w -s" -o $(BINDIR)/$(NAME)-$@.xcframework github.com/sagernet/sing-box/experimental/libbox ./mobile
 
 windows-amd64:
