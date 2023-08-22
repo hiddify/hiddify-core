@@ -87,3 +87,5 @@ require (
 	google.golang.org/protobuf v1.31.0 // indirect
 	lukechampine.com/blake3 v1.2.1 // indirect
 )
+
+replace github.com/sagernet/sing-box => github.com/hiddify/hiddify-sing-box v1.4.0
