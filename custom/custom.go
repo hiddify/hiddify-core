@@ -8,9 +8,10 @@ import (
 	"os"
 
 	"github.com/hiddify/libcore/shared"
+	"github.com/sagernet/sing-box/experimental/libbox"
 )
 
-var box *BoxService
+var box *libbox.BoxService
 
 //export setup
 func setup(baseDir *C.char, workingDir *C.char, tempDir *C.char) {

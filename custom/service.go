@@ -6,10 +6,12 @@ import (
 
 	B "github.com/sagernet/sing-box"
 	"github.com/sagernet/sing-box/common/urltest"
+	"github.com/sagernet/sing-box/experimental/libbox"
 	"github.com/sagernet/sing-box/option"
 	E "github.com/sagernet/sing/common/exceptions"
 	"github.com/sagernet/sing/service"
 	"github.com/sagernet/sing/service/filemanager"
+	"github.com/sagernet/sing/service/pause"
 )
 
 var (
@@ -20,12 +22,6 @@ var (
 	sGroupID     int
 )
 
-type BoxService struct {
-	ctx      context.Context
-	cancel   context.CancelFunc
-	instance *B.Box
-}
-
 func Setup(basePath string, workingPath string, tempPath string) {
 	sBasePath = basePath
 	sWorkingPath = workingPath
@@ -34,10 +30,13 @@ func Setup(basePath string, workingPath string, tempPath string) {
 	sGroupID = os.Getgid()
 }
 
-func NewService(options option.Options) (*BoxService, error) {
+func NewService(options option.Options) (*libbox.BoxService, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 	ctx = filemanager.WithDefault(ctx, sWorkingPath, sTempPath, sUserID, sGroupID)
-	ctx = service.ContextWithPtr(ctx, urltest.NewHistoryStorage())
+	urlTestHistoryStorage := urltest.NewHistoryStorage()
+	ctx = service.ContextWithPtr(ctx, urlTestHistoryStorage)
+	pauseManager := pause.NewDefaultManager(ctx)
+	ctx = pause.ContextWithManager(ctx, pauseManager)
 	instance, err := B.New(B.Options{
 		Context: ctx,
 		Options: options,
@@ -46,20 +45,14 @@ func NewService(options option.Options) (*BoxService, error) {
 		cancel()
 		return nil, E.Cause(err, "create service")
 	}
-	return &BoxService{
-		ctx:      ctx,
-		cancel:   cancel,
-		instance: instance,
-	}, nil
-}
-
-func (s *BoxService) Start() error {
-	return s.instance.Start()
-}
-
-func (s *BoxService) Close() error {
-	s.cancel()
-	return s.instance.Close()
+	service := libbox.NewBoxService(
+		ctx,
+		cancel,
+		instance,
+		pauseManager,
+		urlTestHistoryStorage,
+	)
+	return &service, nil
 }
 
 func parseConfig(configContent string) (option.Options, error) {
