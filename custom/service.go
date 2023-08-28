@@ -15,7 +15,6 @@ import (
 )
 
 var (
-	sBasePath    string
 	sWorkingPath string
 	sTempPath    string
 	sUserID      int
@@ -23,7 +22,7 @@ var (
 )
 
 func Setup(basePath string, workingPath string, tempPath string) {
-	sBasePath = basePath
+	libbox.Setup(basePath, workingPath, tempPath, false)
 	sWorkingPath = workingPath
 	sTempPath = tempPath
 	sUserID = os.Getuid()

@@ -5,7 +5,7 @@ go 1.21
 require (
 	github.com/sagernet/gomobile v0.0.0-20230728014906-3de089147f59
 	github.com/sagernet/sing v0.2.10-0.20230824115837-8d731e68853a
-	github.com/sagernet/sing-box v1.3.6
+	github.com/sagernet/sing-box v1.4.0-rc.1.0.20230824140328-442370093191
 	github.com/sagernet/sing-dns v0.1.9-0.20230824120133-4d5cbceb40c1
 	github.com/xmdhs/clash2singbox v0.0.0-20230827075945-bb6d561314bb
 	gopkg.in/yaml.v3 v3.0.1
