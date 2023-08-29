@@ -131,4 +131,22 @@ func stopCommandClient(command C.int) *C.char {
 	return C.CString("")
 }
 
+//export selectOutbound
+func selectOutbound(groupTag *C.char, outboundTag *C.char) *C.char {
+	err := libbox.NewStandaloneCommandClient().SelectOutbound(C.GoString(groupTag), C.GoString(outboundTag))
+	if err != nil {
+		return C.CString(err.Error())
+	}
+	return C.CString("")
+}
+
+//export urlTest
+func urlTest(groupTag *C.char) *C.char {
+	err := libbox.NewStandaloneCommandClient().URLTest(C.GoString(groupTag))
+	if err != nil {
+		return C.CString(err.Error())
+	}
+	return C.CString("")
+}
+
 func main() {}
