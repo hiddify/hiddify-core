@@ -13,7 +13,7 @@ func Parse(path string) error {
 	return shared.ParseConfig(path)
 }
 
-func ApplyOverrides(path string) (string, error) {
+func BuildConfig(path string, configOptionsJson string) (string, error) {
 	fileContent, err := os.ReadFile(path)
 	if err != nil {
 		return "", err
@@ -23,13 +23,12 @@ func ApplyOverrides(path string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	overrides := shared.ConfigOverrides{
-		EnableTun:      shared.BoolAddr(true),
-		SetSystemProxy: shared.BoolAddr(false),
-		LogOutput:      shared.StringAddr(""),
+	configOptions := &shared.ConfigOptions{}
+	err = json.Unmarshal([]byte(configOptionsJson), configOptions)
+	if err != nil {
+		return "", nil
 	}
-	template := shared.DefaultTemplate(overrides)
-	options = shared.ApplyOverrides(template, options, overrides)
+	options = shared.BuildConfig(*configOptions, options)
 	config, err := json.Marshal(options)
 	return string(config), err
 }

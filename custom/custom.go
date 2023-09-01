@@ -5,6 +5,7 @@ package main
 */
 import "C"
 import (
+	"encoding/json"
 	"os"
 	"unsafe"
 
@@ -14,6 +15,7 @@ import (
 )
 
 var box *libbox.BoxService
+var configOptions *shared.ConfigOptions
 
 //export setupOnce
 func setupOnce(api unsafe.Pointer) {
@@ -34,6 +36,16 @@ func parse(path *C.char) *C.char {
 	return C.CString("")
 }
 
+//export changeConfigOptions
+func changeConfigOptions(configOptionsJson *C.char) *C.char {
+	configOptions = &shared.ConfigOptions{}
+	err := json.Unmarshal([]byte(C.GoString(configOptionsJson)), configOptions)
+	if err != nil {
+		return C.CString(err.Error())
+	}
+	return C.CString("")
+}
+
 //export create
 func create(configPath *C.char) *C.char {
 	path := C.GoString(configPath)
@@ -45,13 +57,7 @@ func create(configPath *C.char) *C.char {
 	if err != nil {
 		return C.CString(err.Error())
 	}
-	overrides := shared.ConfigOverrides{
-		LogOutput:      shared.StringAddr("box.log"),
-		EnableTun:      shared.BoolAddr(false),
-		SetSystemProxy: shared.BoolAddr(true),
-	}
-	template := shared.DefaultTemplate(overrides)
-	options = shared.ApplyOverrides(template, options, overrides)
+	options = shared.BuildConfig(*configOptions, options)
 
 	shared.SaveCurrentConfig(sWorkingPath, options)
 
