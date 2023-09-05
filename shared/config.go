@@ -21,6 +21,7 @@ type ConfigOptions struct {
 	MixedPort               uint16                `json:"mixed-port"`
 	LocalDnsPort            uint16                `json:"local-dns-port"`
 	MTU                     uint32                `json:"mtu"`
+	TUNStack                string                `json:"tun-stack"`
 	ConnectionTestUrl       string                `json:"connection-test-url"`
 	URLTestInterval         option.Duration       `json:"url-test-interval"`
 	EnableClashApi          bool                  `json:"enable-clash-api"`
@@ -129,6 +130,7 @@ func BuildConfig(configOpt ConfigOptions, input option.Options) option.Options {
 			Type: C.TypeTun,
 			Tag:  "tun-in",
 			TunOptions: option.TunInboundOptions{
+				Stack:                  configOpt.TUNStack,
 				MTU:                    configOpt.MTU,
 				AutoRoute:              true,
 				StrictRoute:            true,
