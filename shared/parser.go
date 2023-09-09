@@ -40,18 +40,13 @@ func ParseConfig(path string) error {
 	return nil
 }
 func parseV2rayFormat(content []byte) ([]byte, error) {
-	clash_conf, err := converter.ParseConfig(string(content), "full")
+	clash_conf, err := converter.GenerateProxies(string(content), "meta")
 	if err != nil {
 		fmt.Printf("error: %v\n", err)
 		return nil, err
 	}
-	clash_conf_yaml, err := yaml.Marshal(clash_conf)
-	if err != nil {
-		fmt.Printf("error: %v\n", err)
-		return nil, err
-	}
-	fmt.Printf("clash_conf: %s\n", clash_conf_yaml) // Print YAML as string
-	return clash_conf_yaml, nil
+	fmt.Printf("v2ray to clash: %v\n", clash_conf)
+	return []byte(clash_conf), nil
 }
 func parseClash(content []byte) ([]byte, error) {
 	clashConfig := clash.Clash{}
