@@ -23,11 +23,12 @@ func ParseConfig(path string) error {
 	config, err := parseV2rayFormat(content)
 	if err != nil {
 		config = content
+		config, err = parseClash(content)
+		if err != nil {
+			config = content
+		}
 	}
-	config, err = parseClash(content)
-	if err != nil {
-		config = content
-	}
+	
 
 	err = libbox.CheckConfig(string(config))
 	if err != nil {
