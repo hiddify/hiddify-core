@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/er888kh/go-subconverter/converter"
 	"github.com/sagernet/sing-box/experimental/libbox"
 	"github.com/xmdhs/clash2singbox/convert"
 	"github.com/xmdhs/clash2singbox/model/clash"
@@ -19,6 +20,11 @@ func ParseConfig(path string) error {
 	if err != nil {
 		return err
 	}
+	clash_conf, err := parseV2rayFormat(content)
+	if err == nil {
+		content = clash_conf
+	}
+
 	config, err := parseClash(content)
 	if err != nil {
 		config = content
@@ -33,7 +39,20 @@ func ParseConfig(path string) error {
 	}
 	return nil
 }
-
+func parseV2rayFormat(content []byte) ([]byte, error) {
+	clash_conf, err := converter.ParseConfig(string(content), "full")
+	if err != nil {
+		fmt.Printf("error: %v\n", err)
+		return nil, err
+	}
+	clash_conf_yaml, err := yaml.Marshal(clash_conf)
+	if err != nil {
+		fmt.Printf("error: %v\n", err)
+		return nil, err
+	}
+	fmt.Printf("clash_conf: %s\n", clash_conf_yaml) // Print YAML as string
+	return clash_conf_yaml, nil
+}
 func parseClash(content []byte) ([]byte, error) {
 	clashConfig := clash.Clash{}
 	err := yaml.Unmarshal(content, &clashConfig)

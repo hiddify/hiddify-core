@@ -1,13 +1,14 @@
 module github.com/hiddify/libcore
 
-go 1.21
+go 1.21.0
 
 require (
+	github.com/er888kh/go-subconverter v0.0.0-00010101000000-000000000000
 	github.com/sagernet/gomobile v0.0.0-20230728014906-3de089147f59
-	github.com/sagernet/sing v0.2.10-0.20230830132630-30bf19f2833c
+	github.com/sagernet/sing v0.2.10-0.20230908032232-b0849c43a600
 	github.com/sagernet/sing-box v1.4.1
 	github.com/sagernet/sing-dns v0.1.9-0.20230824120133-4d5cbceb40c1
-	github.com/xmdhs/clash2singbox v0.0.0-20230903135319-a14019e9ba11
+	github.com/xmdhs/clash2singbox v0.0.0-20230906141725-5eb3ac39d572
 	gopkg.in/yaml.v3 v3.0.1
 )
 
@@ -31,6 +32,7 @@ require (
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/google/btree v1.1.2 // indirect
 	github.com/google/pprof v0.0.0-20210407192527-94a9f03dee38 // indirect
+	github.com/google/uuid v1.3.1 // indirect
 	github.com/hashicorp/yamux v0.1.1 // indirect
 	github.com/insomniacslk/dhcp v0.0.0-20230816195147-b3ca2534940d // indirect
 	github.com/josharian/native v1.1.0 // indirect
@@ -53,12 +55,12 @@ require (
 	github.com/sagernet/netlink v0.0.0-20220905062125-8043b4a9aa97 // indirect
 	github.com/sagernet/quic-go v0.0.0-20230831052420-45809eee2e86 // indirect
 	github.com/sagernet/reality v0.0.0-20230406110435-ee17307e7691 // indirect
-	github.com/sagernet/sing-mux v0.1.3-0.20230830095209-2a10ebd53ba8 // indirect
-	github.com/sagernet/sing-shadowsocks v0.2.4 // indirect
-	github.com/sagernet/sing-shadowsocks2 v0.1.3 // indirect
+	github.com/sagernet/sing-mux v0.1.3-0.20230908032617-759a1886a400 // indirect
+	github.com/sagernet/sing-shadowsocks v0.2.5-0.20230907005610-126234728ca0 // indirect
+	github.com/sagernet/sing-shadowsocks2 v0.1.4-0.20230907005906-5d2917b29248 // indirect
 	github.com/sagernet/sing-shadowtls v0.1.4 // indirect
 	github.com/sagernet/sing-tun v0.1.12-0.20230821065522-7545dc2d5641 // indirect
-	github.com/sagernet/sing-vmess v0.1.7 // indirect
+	github.com/sagernet/sing-vmess v0.1.8-0.20230907010359-161fb0ac716b // indirect
 	github.com/sagernet/smux v0.0.0-20230312102458-337ec2a5af37 // indirect
 	github.com/sagernet/tfo-go v0.0.0-20230816093905-5a5c285d44a6 // indirect
 	github.com/sagernet/utls v0.0.0-20230309024959-6732c2ab36f2 // indirect
@@ -86,4 +88,6 @@ require (
 	lukechampine.com/blake3 v1.2.1 // indirect
 )
 
-replace github.com/sagernet/sing-box => github.com/hiddify/hiddify-sing-box v1.5.0.6
+replace github.com/sagernet/sing-box => github.com/hiddify/hiddify-sing-box v1.5.0-beta.6.0.20230909114124-dd5572ae3cd8
+
+replace github.com/er888kh/go-subconverter => github.com/hiddify/go-subconverter v0.0.0-20230909135016-c8b06954ff50
