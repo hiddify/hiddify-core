@@ -53,8 +53,8 @@ github.com/google/pprof v0.0.0-20210407192527-94a9f03dee38 h1:yAJXTCF9TqKcTiHJAE
 github.com/google/pprof v0.0.0-20210407192527-94a9f03dee38/go.mod h1:kpwsk12EmLew5upagYY7GY0pfYCcupk39gWOCRROcvE=
 github.com/hashicorp/yamux v0.1.1 h1:yrQxtgseBDrq9Y652vSRDvsKCJKOUD+GzTS4Y0Y8pvE=
 github.com/hashicorp/yamux v0.1.1/go.mod h1:CtWFDAQgb7dxtzFs4tWbplKIe2jSi3+5vKbgIO0SLnQ=
-github.com/hiddify/hiddify-sing-box v1.5.0-beta.6.0.20230909114124-dd5572ae3cd8 h1:7EBpMuQ70lPzlGfbkw1z923Gyjz797i9JBCtFxg1tt4=
-github.com/hiddify/hiddify-sing-box v1.5.0-beta.6.0.20230909114124-dd5572ae3cd8/go.mod h1:x8h2FofmD+PLXqM3eScy+/ActJCByOHuygW5G20P1jU=
+github.com/hiddify/hiddify-sing-box v1.5.0-beta.6.0.20230909202507-b80c155e16b4 h1:jjjJCX5YPsPSuUcdP0sYs2CAd7iTsQoCs/Lm/zU7fY8=
+github.com/hiddify/hiddify-sing-box v1.5.0-beta.6.0.20230909202507-b80c155e16b4/go.mod h1:x8h2FofmD+PLXqM3eScy+/ActJCByOHuygW5G20P1jU=
 github.com/hiddify/ray2sing v0.0.0-20230909195431-42b108c5b52d h1:tLzET1LNWkYR8JcZv78P6bW+G9HAbiUciREUEpya3zs=
 github.com/hiddify/ray2sing v0.0.0-20230909195431-42b108c5b52d/go.mod h1:5SO2o9/aKbMuqjrByt/ztCCZwbHMZLdgR4jNI4zg6Jg=
 github.com/ianlancetaylor/demangle v0.0.0-20200824232613-28f6c0f3b639/go.mod h1:aSSvb/t6k1mPoxDqO4vJh6VOCGPwU4O0C2/Eqndh1Sc=

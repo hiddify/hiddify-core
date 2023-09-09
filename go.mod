@@ -87,5 +87,4 @@ require (
 	lukechampine.com/blake3 v1.2.1 // indirect
 )
 
-replace github.com/sagernet/sing-box => github.com/hiddify/hiddify-sing-box v1.5.0-beta.6.0.20230909114124-dd5572ae3cd8
-
+replace github.com/sagernet/sing-box => github.com/hiddify/hiddify-sing-box v1.5.0-beta.6.0.20230909202507-b80c155e16b4
