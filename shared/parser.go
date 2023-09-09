@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/er888kh/go-subconverter/converter"
+	"github.com/hiddify/ray2sing/ray2sing"
 	"github.com/sagernet/sing-box/experimental/libbox"
 	"github.com/xmdhs/clash2singbox/convert"
 	"github.com/xmdhs/clash2singbox/model/clash"
@@ -20,15 +20,15 @@ func ParseConfig(path string) error {
 	if err != nil {
 		return err
 	}
-	clash_conf, err := parseV2rayFormat(content)
-	if err == nil {
-		content = clash_conf
-	}
-
-	config, err := parseClash(content)
+	config, err := parseV2rayFormat(content)
 	if err != nil {
 		config = content
 	}
+	config, err = parseClash(content)
+	if err != nil {
+		config = content
+	}
+
 	err = libbox.CheckConfig(string(config))
 	if err != nil {
 		return err
@@ -40,13 +40,12 @@ func ParseConfig(path string) error {
 	return nil
 }
 func parseV2rayFormat(content []byte) ([]byte, error) {
-	clash_conf, err := converter.GenerateProxies(string(content), "meta")
+	singconf, err := ray2sing.Ray2Singbox(string(content))
 	if err != nil {
 		fmt.Printf("error: %v\n", err)
 		return nil, err
 	}
-	fmt.Printf("v2ray to clash: %v\n", clash_conf)
-	return []byte(clash_conf), nil
+	return []byte(singconf), nil
 }
 func parseClash(content []byte) ([]byte, error) {
 	clashConfig := clash.Clash{}

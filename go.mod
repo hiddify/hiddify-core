@@ -1,9 +1,9 @@
 module github.com/hiddify/libcore
 
-go 1.21.0
+go 1.21.1
 
 require (
-	github.com/er888kh/go-subconverter v0.0.0-00010101000000-000000000000
+	github.com/hiddify/ray2sing v0.0.0-20230909195431-42b108c5b52d
 	github.com/sagernet/gomobile v0.0.0-20230728014906-3de089147f59
 	github.com/sagernet/sing v0.2.10-0.20230908032232-b0849c43a600
 	github.com/sagernet/sing-box v1.4.1
@@ -32,7 +32,6 @@ require (
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/google/btree v1.1.2 // indirect
 	github.com/google/pprof v0.0.0-20210407192527-94a9f03dee38 // indirect
-	github.com/google/uuid v1.3.1 // indirect
 	github.com/hashicorp/yamux v0.1.1 // indirect
 	github.com/insomniacslk/dhcp v0.0.0-20230816195147-b3ca2534940d // indirect
 	github.com/josharian/native v1.1.0 // indirect
@@ -90,4 +89,3 @@ require (
 
 replace github.com/sagernet/sing-box => github.com/hiddify/hiddify-sing-box v1.5.0-beta.6.0.20230909114124-dd5572ae3cd8
 
-replace github.com/er888kh/go-subconverter => github.com/hiddify/go-subconverter v0.0.0-20230909135016-c8b06954ff50
