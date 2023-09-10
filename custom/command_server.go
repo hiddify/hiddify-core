@@ -7,7 +7,16 @@ var commandServer *libbox.CommandServer
 type CommandServerHandler struct{}
 
 func (csh *CommandServerHandler) ServiceReload() error {
-	return nil
+	propagateStatus(Starting)
+	if commandServer != nil {
+		commandServer.SetService(nil)
+		commandServer = nil
+	}
+	if box != nil {
+		box.Close()
+		box = nil
+	}
+	return startService()
 }
 
 func (csh *CommandServerHandler) GetSystemProxyStatus() *libbox.SystemProxyStatus {

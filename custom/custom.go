@@ -16,6 +16,7 @@ import (
 
 var box *libbox.BoxService
 var configOptions *shared.ConfigOptions
+var activeConfigPath *string
 
 //export setupOnce
 func setupOnce(api unsafe.Pointer) {
@@ -23,8 +24,9 @@ func setupOnce(api unsafe.Pointer) {
 }
 
 //export setup
-func setup(baseDir *C.char, workingDir *C.char, tempDir *C.char) {
+func setup(baseDir *C.char, workingDir *C.char, tempDir *C.char, statusPort C.longlong) {
 	Setup(C.GoString(baseDir), C.GoString(workingDir), C.GoString(tempDir))
+	statusPropagationPort = int64(statusPort)
 }
 
 //export parse
@@ -46,16 +48,30 @@ func changeConfigOptions(configOptionsJson *C.char) *C.char {
 	return C.CString("")
 }
 
-//export create
-func create(configPath *C.char) *C.char {
+//export start
+func start(configPath *C.char) *C.char {
+	if status != Stopped {
+		return C.CString("")
+	}
+	propagateStatus(Starting)
+
 	path := C.GoString(configPath)
-	content, err := os.ReadFile(path)
+	activeConfigPath = &path
+	err := startService()
 	if err != nil {
 		return C.CString(err.Error())
 	}
+	return C.CString("")
+}
+
+func startService() error {
+	content, err := os.ReadFile(*activeConfigPath)
+	if err != nil {
+		return stopAndAlert(EmptyConfiguration, err)
+	}
 	options, err := parseConfig(string(content))
 	if err != nil {
-		return C.CString(err.Error())
+		return stopAndAlert(EmptyConfiguration, err)
 	}
 	options = shared.BuildConfig(*configOptions, options)
 
@@ -63,45 +79,33 @@ func create(configPath *C.char) *C.char {
 
 	err = startCommandServer()
 	if err != nil {
-		return C.CString(err.Error())
+		return stopAndAlert(StartCommandServer, err)
 	}
 
 	instance, err := NewService(options)
 	if err != nil {
-		return C.CString(err.Error())
+		return stopAndAlert(CreateService, err)
+	}
+	err = instance.Start()
+	if err != nil {
+		return stopAndAlert(StartService, err)
 	}
 	box = instance
-
 	commandServer.SetService(box)
 
-	if err != nil {
-		instance.Close()
-		box = nil
-		return C.CString(err.Error())
-	}
-
-	return C.CString("")
-}
-
-//export start
-func start() *C.char {
-	if box == nil {
-		return C.CString("instance not found")
-	}
-
-	err := box.Start()
-	if err != nil {
-		return C.CString(err.Error())
-	}
-
-	return C.CString("")
+	propagateStatus(Started)
+	return nil
 }
 
 //export stop
 func stop() *C.char {
+	if status != Started {
+		return C.CString("")
+	}
 	if box == nil {
 		return C.CString("instance not found")
 	}
+	propagateStatus(Stopping)
 
 	commandServer.SetService(nil)
 	err := box.Close()
@@ -115,6 +119,28 @@ func stop() *C.char {
 		return C.CString(err.Error())
 	}
 	commandServer = nil
+	propagateStatus(Stopped)
+
+	return C.CString("")
+}
+
+//export restart
+func restart(configPath *C.char) *C.char {
+	if status != Started {
+		return C.CString("")
+	}
+	if box == nil {
+		return C.CString("instance not found")
+	}
+
+	err := stop()
+	if C.GoString(err) != "" {
+		return err
+	}
+	err = start(configPath)
+	if C.GoString(err) != "" {
+		return err
+	}
 
 	return C.CString("")
 }
