@@ -94,6 +94,13 @@ jobs:
         run: ls -R
         working-directory: bin
 
+      - name: Delete Current Release Assets
+        uses: 8Mi-Tech/delete-release-assets-action@main
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          tag: "draft"
+          deleteOnlyFromDrafts: false
+
       - name: Create or Update Draft Release
         uses: softprops/action-gh-release@v1
         env:
