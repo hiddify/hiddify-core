@@ -6,7 +6,8 @@ on:
     paths-ignore:
       - '**.md'
       - 'docs/**'
-      - '.github/ISSUE_TEMPLATE/**'
+      - '.github/**'
+      - '!.github/workflows/release.yml'
 jobs:
   build:
     permissions: write-all
@@ -15,12 +16,9 @@ jobs:
       matrix:
         job:
           - { os: "ubuntu-latest", target: "android"}
-          # - { os: "ubuntu-latest", target: "linux-386", aarch: 'x86'} #fultter does not support x86
           - { os: "ubuntu-latest", target: "linux-amd64", aarch: 'x64'}
-          # - { os: "ubuntu-latest", target: "windows-386", aarch: 'x86'} #fultter does not support x86
           - { os: "ubuntu-latest", target: "windows-amd64", aarch: 'x64' }
           - { os: "macos-11", target: "macos-universal" }
-          #- { os: "macos-11", target: "ios" }
     runs-on: ${{ matrix.job.os }}
     steps:
       - name: Checkout
@@ -28,33 +26,11 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Set up GCC
-        if: startsWith(matrix.job.target,'linux-386')
-        uses: egor-tensin/setup-gcc@v1
-        with:
-          version: latest
-          platform: ${{ matrix.job.aarch }}
-      
-      - name: gcc
-        if: startsWith(matrix.job.target,'linux-386')
-        run: |
-          sudo apt-get install --reinstall libc6-dev
-
       - name: Setup Go
         uses: actions/setup-go@v4
         with:
           go-version-file: 'go.mod'
-          check-latest: false
-
-      # - name: Setup Golang caches
-      #   uses: actions/cache@v3
-      #   with:
-      #     path: |
-      #       ~/.cache/go-build
-      #       ~/go/pkg/mod
-      #     key: ${{ runner.os }}-golang-${{ hashFiles('**/go.sum') }}
-      #     restore-keys: |
-      #       ${{ runner.os }}-golang-          
+          check-latest: false      
 
       - name: Setup Java
         if: startsWith(matrix.job.target,'android')
@@ -62,7 +38,7 @@ jobs:
         with:
           distribution: 'zulu'
           java-version: '17'
-          
+
       - name: Setup NDK
         if: startsWith(matrix.job.target,'android')
         uses: nttld/setup-ndk@v1
@@ -72,52 +48,31 @@ jobs:
           add-to-path: true
           local-cache: true
 
-      # - name: Setup Android SDK
-      #   uses: amyu/setup-android@v2
-      #   with:
-      #     cache-disabled: true
-      #     sdk-version: '33'
-      #     ndk-version: '25.2.9519653'
-
-      #- name: Setup GoMobile
-      #  if: startsWith(matrix.job.target,'android') || startsWith(matrix.job.target,'ios')
-      #  run: make lib_install
-      
       - name: Setup MinGW
         if: startsWith(matrix.job.target,'windows')
         uses: egor-tensin/setup-mingw@v2
         with:
           platform: ${{ matrix.job.aarch }}
 
-      - name: Set up macos
+      - name: Setup macos
         if: startsWith(matrix.job.target,'macos') ||  startsWith(matrix.job.target,'ios')
         run: |
           brew install create-dmg tree coreutils
       
       - name: Build
-        run: make -j$(($(nproc) + 1)) ${{ matrix.job.target }}
+        run: |
+          make -j$(($(nproc) + 1)) ${{ matrix.job.target }}
 
       - name: zip
         run: |
-            tree 
-            rm -f ./bin/*.h
-            rm ./bin/hiddify-libcore*sources* ||echo "no source"
-            rm ./bin/hiddify-libcore-macos-a*.dylib || echo "no macos arm and amd"
-            gzip -r -S ".gz" ./bin/hiddify-libcore*
-            
+          tree 
+          rm -f ./bin/*.h
+          rm ./bin/hiddify-libcore*sources* ||echo "no source"
+          rm ./bin/hiddify-libcore-macos-a*.dylib || echo "no macos arm and amd"
+          gzip -r -S ".gz" ./bin/hiddify-libcore*
 
       - uses: actions/upload-artifact@v3
         if: ${{ success() }}
-        with:
-          name: artifact
-          path: bin/
-
-  upload-prerelease:
-    permissions: write-all
-    needs: [build]
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/download-artifact@v3
         with:
           name: artifact
           path: bin/
@@ -131,6 +86,3 @@ jobs:
           name: "draft"
           tag_name: "draft"
           prerelease: true
-          overwrite: true
-        
-
