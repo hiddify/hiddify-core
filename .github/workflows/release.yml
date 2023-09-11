@@ -1,8 +1,8 @@
 name: Release
 on:
   push:
-    branches:
-      - main
+    tags:
+      - "v*"
     paths-ignore:
       - '**.md'
       - 'docs/**'
@@ -77,12 +77,25 @@ jobs:
           name: artifact
           path: bin/
 
-      - name: Create or Update Draft Release
-        uses: softprops/action-gh-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  upload-release:
+    permissions: write-all
+    if: ${{ github.ref_type=='tag' }}
+    needs: [build]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v3
         with:
-          files: ./bin/*
-          name: "draft"
-          tag_name: "draft"
-          prerelease: true
+          name: artifact
+          path: bin/
+
+      - name: Display Files Structure
+        run: ls -R
+        working-directory: bin
+
+      - name: Upload Release
+        uses: softprops/action-gh-release@v1
+        if: ${{ success() }}
+        with:
+          tag_name: ${{ github.ref_name }}
+          files: bin/*
+
