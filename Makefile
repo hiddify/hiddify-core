@@ -3,9 +3,10 @@ BINDIR=bin
 
 BRANCH=$(shell git branch --show-current)
 VERSION=$(shell git describe --tags || echo "unknown version")
-NAME=$(BASENAME)-$@-$(VERSION)
+NAME=$(BASENAME)-$@
 
 TAGS=with_gvisor,with_quic,with_wireguard,with_utls,with_clash_api
+IOS_TAGS=with_dhcp,with_low_memory,with_conntrack
 GOBUILD=CGO_ENABLED=1 go build -trimpath -tags $(TAGS) -ldflags="-w -s" -buildmode=c-shared
 
 lib_install:
@@ -30,11 +31,11 @@ linux-amd64:
 	env GOOS=linux GOARCH=amd64 $(GOBUILD) -o $(BINDIR)/$(NAME).so ./custom
 
 macos-amd64:
-	env GOOS=darwin GOARCH=amd64 CGO_CFLAGS="-mmacosx-version-min=10.11" CGO_LDFLAGS="-mmacosx-version-min=10.11" CGO_ENABLED=1 go build -trimpath -tags $(TAGS),with_dhcp,with_low_memory,with_conntrack -buildmode=c-shared -o $(BINDIR)/$(NAME).dylib ./custom
+	env GOOS=darwin GOARCH=amd64 CGO_CFLAGS="-mmacosx-version-min=10.11" CGO_LDFLAGS="-mmacosx-version-min=10.11" CGO_ENABLED=1 go build -trimpath -tags $(TAGS),$(IOS_TAGS) -buildmode=c-shared -o $(BINDIR)/$(NAME).dylib ./custom
 macos-arm64:
-	env GOOS=darwin GOARCH=arm64 CGO_CFLAGS="-mmacosx-version-min=10.11" CGO_LDFLAGS="-mmacosx-version-min=10.11" CGO_ENABLED=1 go build -trimpath -tags $(TAGS),with_dhcp,with_low_memory,with_conntrack -buildmode=c-shared -o $(BINDIR)/$(NAME).dylib ./custom
+	env GOOS=darwin GOARCH=arm64 CGO_CFLAGS="-mmacosx-version-min=10.11" CGO_LDFLAGS="-mmacosx-version-min=10.11" CGO_ENABLED=1 go build -trimpath -tags $(TAGS),$(IOS_TAGS) -buildmode=c-shared -o $(BINDIR)/$(NAME).dylib ./custom
 macos-universal: macos-amd64 macos-arm64 
-	lipo -create $(BINDIR)/$(BASENAME)-macos-amd64-$(VERSION).dylib $(BINDIR)/$(BASENAME)-macos-arm64-$(VERSION).dylib -output $(BINDIR)/$(NAME).dylib
+	lipo -create $(BINDIR)/$(BASENAME)-macos-amd64.dylib $(BINDIR)/$(BASENAME)-macos-arm64.dylib -output $(BINDIR)/$(NAME).dylib
 
 clean:
 	rm $(BINDIR)/*

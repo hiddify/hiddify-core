@@ -4,7 +4,7 @@ on:
     branches:
       - main
     tags:
-      - "v*"
+      - 'v*'
     paths-ignore:
       - '**.md'
       - 'docs/**'
@@ -17,10 +17,10 @@ jobs:
       fail-fast: false
       matrix:
         job:
-          - { os: "ubuntu-latest", target: "android"}
-          - { os: "ubuntu-latest", target: "linux-amd64", aarch: 'x64'}
-          - { os: "ubuntu-latest", target: "windows-amd64", aarch: 'x64' }
-          - { os: "macos-11", target: "macos-universal" }
+          - { os: 'ubuntu-latest', target: 'android' }
+          - { os: 'ubuntu-latest', target: 'linux-amd64', aarch: 'x64' }
+          - { os: 'ubuntu-latest', target: 'windows-amd64', aarch: 'x64' }
+          - { os: 'macos-11', target: 'macos-universal' }
     runs-on: ${{ matrix.job.os }}
     steps:
       - name: Checkout
@@ -32,7 +32,7 @@ jobs:
         uses: actions/setup-go@v4
         with:
           go-version-file: 'go.mod'
-          check-latest: false      
+          check-latest: false
 
       - name: Setup Java
         if: startsWith(matrix.job.target,'android')
@@ -60,7 +60,7 @@ jobs:
         if: startsWith(matrix.job.target,'macos') ||  startsWith(matrix.job.target,'ios')
         run: |
           brew install create-dmg tree coreutils
-      
+
       - name: Build
         run: |
           make -j$(($(nproc) + 1)) ${{ matrix.job.target }}
@@ -98,7 +98,7 @@ jobs:
         uses: 8Mi-Tech/delete-release-assets-action@main
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          tag: "draft"
+          tag: 'draft'
           deleteOnlyFromDrafts: false
 
       - name: Create or Update Draft Release
@@ -108,8 +108,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           files: ./bin/*
-          name: "draft"
-          tag_name: "draft"
+          name: 'draft'
+          tag_name: 'draft'
           prerelease: true
 
   upload-release:
@@ -135,4 +135,3 @@ jobs:
         with:
           tag_name: ${{ github.ref_name }}
           files: bin/*
-
