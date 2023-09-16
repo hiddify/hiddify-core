@@ -3,11 +3,11 @@ module github.com/hiddify/libcore
 go 1.21.1
 
 require (
-	github.com/hiddify/ray2sing v0.0.0-20230911223915-2fffef136627
-	github.com/sagernet/gomobile v0.0.0-20230728014906-3de089147f59
-	github.com/sagernet/sing v0.2.10-0.20230908032232-b0849c43a600
+	github.com/hiddify/ray2sing v0.0.0-20230916063810-116ff523359d
+	github.com/sagernet/gomobile v0.0.0-20230915142329-c6740b6d2950
+	github.com/sagernet/sing v0.2.10-0.20230912050851-1453c7c8c20d
 	github.com/sagernet/sing-box v1.4.1
-	github.com/sagernet/sing-dns v0.1.9-0.20230824120133-4d5cbceb40c1
+	github.com/sagernet/sing-dns v0.1.9-0.20230911082806-425022bdc92b
 	github.com/xmdhs/clash2singbox v0.0.0-20230906141725-5eb3ac39d572
 	gopkg.in/yaml.v3 v3.0.1
 )
@@ -52,9 +52,10 @@ require (
 	github.com/sagernet/go-tun2socks v1.16.12-0.20220818015926-16cb67876a61 // indirect
 	github.com/sagernet/gvisor v0.0.0-20230627031050-1ab0276e0dd2 // indirect
 	github.com/sagernet/netlink v0.0.0-20220905062125-8043b4a9aa97 // indirect
-	github.com/sagernet/quic-go v0.0.0-20230831052420-45809eee2e86 // indirect
+	github.com/sagernet/quic-go v0.0.0-20230911082307-390b7c274032 // indirect
 	github.com/sagernet/reality v0.0.0-20230406110435-ee17307e7691 // indirect
 	github.com/sagernet/sing-mux v0.1.3-0.20230908032617-759a1886a400 // indirect
+	github.com/sagernet/sing-quic v0.0.0-20230915093242-b55f3531e703 // indirect
 	github.com/sagernet/sing-shadowsocks v0.2.5-0.20230907005610-126234728ca0 // indirect
 	github.com/sagernet/sing-shadowsocks2 v0.1.4-0.20230907005906-5d2917b29248 // indirect
 	github.com/sagernet/sing-shadowtls v0.1.4 // indirect
@@ -87,4 +88,4 @@ require (
 	lukechampine.com/blake3 v1.2.1 // indirect
 )
 
-replace github.com/sagernet/sing-box => github.com/hiddify/hiddify-sing-box v1.5.0-beta.6.0.20230909202507-b80c155e16b4
+replace github.com/sagernet/sing-box => github.com/hiddify/hiddify-sing-box v1.4.0-rc.3.0.20230916083411-80de35792de1
