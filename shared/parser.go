@@ -15,8 +15,8 @@ import (
 //go:embed config.json.template
 var configByte []byte
 
-func ParseConfig(path string) error {
-	content, err := os.ReadFile(path)
+func ParseConfig(path string, tempPath string, debug bool) error {
+	content, err := os.ReadFile(tempPath)
 	if err != nil {
 		return err
 	}
@@ -28,7 +28,6 @@ func ParseConfig(path string) error {
 			config = content
 		}
 	}
-	
 
 	err = libbox.CheckConfig(string(config))
 	if err != nil {
@@ -40,6 +39,7 @@ func ParseConfig(path string) error {
 	}
 	return nil
 }
+
 func parseV2rayFormat(content []byte) ([]byte, error) {
 	singconf, err := ray2sing.Ray2Singbox(string(content))
 	if err != nil {
@@ -48,6 +48,7 @@ func parseV2rayFormat(content []byte) ([]byte, error) {
 	}
 	return []byte(singconf), nil
 }
+
 func parseClash(content []byte) ([]byte, error) {
 	clashConfig := clash.Clash{}
 	err := yaml.Unmarshal(content, &clashConfig)

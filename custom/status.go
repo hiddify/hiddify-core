@@ -29,5 +29,5 @@ func stopAndAlert(alert string, err error) error {
 
 	msg, _ := json.Marshal(StatusMessage{Status: status, Alert: &alert, Message: &message})
 	bridge.SendStringToPort(statusPropagationPort, string(msg))
-	return err
+	return nil
 }

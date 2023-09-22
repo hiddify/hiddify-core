@@ -30,8 +30,8 @@ func setup(baseDir *C.char, workingDir *C.char, tempDir *C.char, statusPort C.lo
 }
 
 //export parse
-func parse(path *C.char) *C.char {
-	err := shared.ParseConfig(C.GoString(path))
+func parse(path *C.char, tempPath *C.char, debug bool) *C.char {
+	err := shared.ParseConfig(C.GoString(path), C.GoString(tempPath), debug)
 	if err != nil {
 		return C.CString(err.Error())
 	}

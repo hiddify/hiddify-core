@@ -9,8 +9,8 @@ import (
 	"github.com/sagernet/sing-box/option"
 )
 
-func Parse(path string) error {
-	return shared.ParseConfig(path)
+func Parse(path string, tempPath string, debug bool) error {
+	return shared.ParseConfig(path, tempPath, debug)
 }
 
 func BuildConfig(path string, configOptionsJson string) (string, error) {
