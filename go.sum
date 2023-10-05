@@ -149,8 +149,8 @@ github.com/u-root/uio v0.0.0-20230220225925-ffce2a382923 h1:tHNk7XK9GkmKUR6Gh8gV
 github.com/u-root/uio v0.0.0-20230220225925-ffce2a382923/go.mod h1:eLL9Nub3yfAho7qB0MzZizFhTU2QkLeoVsWdHtDW264=
 github.com/vishvananda/netns v0.0.0-20211101163701-50045581ed74 h1:gga7acRE695APm9hlsSMoOoE65U4/TcqNj90mc69Rlg=
 github.com/vishvananda/netns v0.0.0-20211101163701-50045581ed74/go.mod h1:DD4vA1DwXk04H54A1oHXtwZmA0grkVMdPxx/VGLCah0=
-github.com/xmdhs/clash2singbox v0.0.0-20230906141725-5eb3ac39d572 h1:YYGsvVa6m0fJVC0TX8sZSyv4vHuonUbEmscrQV0HzcM=
-github.com/xmdhs/clash2singbox v0.0.0-20230906141725-5eb3ac39d572/go.mod h1:LaCPpH9WkYgPzWSd8RIUHC5Mp0LYCV7LDmCx66VM1tE=
+github.com/xmdhs/clash2singbox v0.0.1 h1:HAGu5cTHeljC+ZCQrvfLNSqKwKYZRZkB7wphCSmyV7o=
+github.com/xmdhs/clash2singbox v0.0.1/go.mod h1:B5pbJCwIHhJg6YRPCT04EXw6XXNIIOllMfL3XyJ7ob8=
 github.com/zeebo/assert v1.1.0 h1:hU1L1vLTHsnO8x8c9KAR5GmM5QscxHg5RNU5z5qbUWY=
 github.com/zeebo/assert v1.1.0/go.mod h1:Pq9JiuJQpG8JLJdtkwrJESF0Foym2/D9XMU5ciN/wJ0=
 github.com/zeebo/blake3 v0.2.3 h1:TFoLXsjeXqRNFxSbk35Dk4YtszE/MQQGK10BH4ptoTg=

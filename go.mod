@@ -8,7 +8,7 @@ require (
 	github.com/sagernet/sing v0.2.13-0.20231001070509-81a98bf16263
 	github.com/sagernet/sing-box v1.5.1
 	github.com/sagernet/sing-dns v0.1.10
-	github.com/xmdhs/clash2singbox v0.0.0-20230906141725-5eb3ac39d572
+	github.com/xmdhs/clash2singbox v0.0.1
 	gopkg.in/yaml.v3 v3.0.1
 )
 
