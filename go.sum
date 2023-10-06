@@ -47,8 +47,8 @@ github.com/hashicorp/yamux v0.1.1 h1:yrQxtgseBDrq9Y652vSRDvsKCJKOUD+GzTS4Y0Y8pvE
 github.com/hashicorp/yamux v0.1.1/go.mod h1:CtWFDAQgb7dxtzFs4tWbplKIe2jSi3+5vKbgIO0SLnQ=
 github.com/hiddify/hiddify-sing-box v1.4.0-rc.3.0.20231001132720-19cc30de85b5 h1:wOjl6dg2twgim2s+kKCqH677Jqj1vPNjBDQ/IMOQSQg=
 github.com/hiddify/hiddify-sing-box v1.4.0-rc.3.0.20231001132720-19cc30de85b5/go.mod h1:4n2QVeBTSkRgCjQWl7qs4LKur8ZMVlk1ZD18ZoWDYmk=
-github.com/hiddify/ray2sing v0.0.0-20231005160607-5863ba554bcf h1:YzQ4yr38B6Q4zQEvryZqWDJd/2dKugtlqE1S6l2uYXA=
-github.com/hiddify/ray2sing v0.0.0-20231005160607-5863ba554bcf/go.mod h1:5euUPC2dwVscKqmaRq1IPOZQObhIvh/5qUWQS1MmjMc=
+github.com/hiddify/ray2sing v0.0.0-20231006162212-6f0a5fb7a109 h1:EYexcAA+ZfpaySY7DPHifX8nV9aZITkMpBZm9N/3Iw0=
+github.com/hiddify/ray2sing v0.0.0-20231006162212-6f0a5fb7a109/go.mod h1:5euUPC2dwVscKqmaRq1IPOZQObhIvh/5qUWQS1MmjMc=
 github.com/ianlancetaylor/demangle v0.0.0-20200824232613-28f6c0f3b639/go.mod h1:aSSvb/t6k1mPoxDqO4vJh6VOCGPwU4O0C2/Eqndh1Sc=
 github.com/insomniacslk/dhcp v0.0.0-20230908212754-65c27093e38a h1:S33o3djA1nPRd+d/bf7jbbXytXuK/EoXow7+aa76grQ=
 github.com/insomniacslk/dhcp v0.0.0-20230908212754-65c27093e38a/go.mod h1:zmdm3sTSDP3vOOX3CEWRkkRHtKr1DxBx+J1OQFoDQQs=
