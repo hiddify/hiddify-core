@@ -3,10 +3,10 @@ module github.com/hiddify/libcore
 go 1.21.1
 
 require (
-	github.com/hiddify/ray2sing v0.0.0-20231007081309-b6177d3b214d
+	github.com/hiddify/ray2sing v0.0.0-20231012222318-66185fbfefa4
 	github.com/sagernet/gomobile v0.0.0-20230915142329-c6740b6d2950
 	github.com/sagernet/sing v0.2.14-0.20231011040419-49f5dfd767e1
-	github.com/sagernet/sing-box v1.5.1
+	github.com/sagernet/sing-box v1.5.3
 	github.com/sagernet/sing-dns v0.1.10
 	github.com/xmdhs/clash2singbox v0.0.1
 	gopkg.in/yaml.v3 v3.0.1
