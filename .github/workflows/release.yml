@@ -12,7 +12,7 @@ on:
       - '!.github/workflows/release.yml'
 
 env:
-  NDK_REVISION: r26b
+  NDK_REVISION: r26-rc1
 
 jobs:
   build:
@@ -47,7 +47,7 @@ jobs:
 
       - name: Setup NDK
         if: startsWith(matrix.job.target,'android')
-        uses: nttld/setup-ndk@v1
+        uses: nttld/setup-ndk@v1.4.0
         id: setup-ndk
         with:
           ndk-version: '${{ env.NDK_REVISION }}'
