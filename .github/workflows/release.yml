@@ -11,9 +11,6 @@ on:
       - '.github/**'
       - '!.github/workflows/release.yml'
 
-env:
-  NDK_REVISION: r26-rc1
-
 jobs:
   build:
     permissions: write-all
@@ -50,10 +47,9 @@ jobs:
         uses: nttld/setup-ndk@v1.4.0
         id: setup-ndk
         with:
-          ndk-version: '${{ env.NDK_REVISION }}'
+          ndk-version: r26b
           add-to-path: true
           local-cache: true
-          link-to-sdk: true
 
       - name: Setup MinGW
         if: startsWith(matrix.job.target,'windows')
