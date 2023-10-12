@@ -49,7 +49,7 @@ jobs:
         with:
           ndk-version: r26b
           add-to-path: true
-          local-cache: true
+          local-cache: false
 
       - name: Setup MinGW
         if: startsWith(matrix.job.target,'windows')
