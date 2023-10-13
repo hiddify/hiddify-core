@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"os"
+	runtimeDebug "runtime/debug"
 
 	B "github.com/sagernet/sing-box"
 	"github.com/sagernet/sing-box/common/urltest"
@@ -30,6 +31,7 @@ func Setup(basePath string, workingPath string, tempPath string) {
 }
 
 func NewService(options option.Options) (*libbox.BoxService, error) {
+	runtimeDebug.FreeOSMemory()
 	ctx, cancel := context.WithCancel(context.Background())
 	ctx = filemanager.WithDefault(ctx, sWorkingPath, sTempPath, sUserID, sGroupID)
 	urlTestHistoryStorage := urltest.NewHistoryStorage()
@@ -44,6 +46,7 @@ func NewService(options option.Options) (*libbox.BoxService, error) {
 		cancel()
 		return nil, E.Cause(err, "create service")
 	}
+	runtimeDebug.FreeOSMemory()
 	service := libbox.NewBoxService(
 		ctx,
 		cancel,

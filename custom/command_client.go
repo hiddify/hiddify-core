@@ -20,6 +20,10 @@ func (cch *CommandClientHandler) Disconnected(message string) {
 	fmt.Printf("disconnected: %s\n", message)
 }
 
+func (cch *CommandClientHandler) ClearLog() {
+	fmt.Println("clear log")
+}
+
 func (cch *CommandClientHandler) WriteLog(message string) {
 	fmt.Printf("new log: %s\n", message)
 }
