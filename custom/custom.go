@@ -30,7 +30,11 @@ func setup(baseDir *C.char, workingDir *C.char, tempDir *C.char, statusPort C.lo
 }
 
 //export parse
-func parse(path *C.char, tempPath *C.char, debug bool) *C.char {
+func parse(path *C.char, tempPath *C.char, debug bool) (CErr *C.char) {
+	defer shared.DeferPanicToError("parse", func(err error) {
+		CErr = C.CString(err.Error())
+	})
+
 	err := shared.ParseConfig(C.GoString(path), C.GoString(tempPath), debug)
 	if err != nil {
 		return C.CString(err.Error())
@@ -39,7 +43,11 @@ func parse(path *C.char, tempPath *C.char, debug bool) *C.char {
 }
 
 //export changeConfigOptions
-func changeConfigOptions(configOptionsJson *C.char) *C.char {
+func changeConfigOptions(configOptionsJson *C.char) (CErr *C.char) {
+	defer shared.DeferPanicToError("changeConfigOptions", func(err error) {
+		CErr = C.CString(err.Error())
+	})
+
 	configOptions = &shared.ConfigOptions{}
 	err := json.Unmarshal([]byte(C.GoString(configOptionsJson)), configOptions)
 	if err != nil {
@@ -49,7 +57,11 @@ func changeConfigOptions(configOptionsJson *C.char) *C.char {
 }
 
 //export start
-func start(configPath *C.char) *C.char {
+func start(configPath *C.char) (CErr *C.char) {
+	defer shared.DeferPanicToError("start", func(err error) {
+		CErr = C.CString(err.Error())
+	})
+
 	if status != Stopped {
 		return C.CString("")
 	}
@@ -98,7 +110,11 @@ func startService() error {
 }
 
 //export stop
-func stop() *C.char {
+func stop() (CErr *C.char) {
+	defer shared.DeferPanicToError("stop", func(err error) {
+		CErr = C.CString(err.Error())
+	})
+
 	if status != Started {
 		return C.CString("")
 	}
@@ -125,7 +141,11 @@ func stop() *C.char {
 }
 
 //export restart
-func restart(configPath *C.char) *C.char {
+func restart(configPath *C.char) (CErr *C.char) {
+	defer shared.DeferPanicToError("restart", func(err error) {
+		CErr = C.CString(err.Error())
+	})
+
 	if status != Started {
 		return C.CString("")
 	}
@@ -164,7 +184,11 @@ func stopCommandClient(command C.int) *C.char {
 }
 
 //export selectOutbound
-func selectOutbound(groupTag *C.char, outboundTag *C.char) *C.char {
+func selectOutbound(groupTag *C.char, outboundTag *C.char) (CErr *C.char) {
+	defer shared.DeferPanicToError("selectOutbound", func(err error) {
+		CErr = C.CString(err.Error())
+	})
+
 	err := libbox.NewStandaloneCommandClient().SelectOutbound(C.GoString(groupTag), C.GoString(outboundTag))
 	if err != nil {
 		return C.CString(err.Error())
@@ -173,7 +197,11 @@ func selectOutbound(groupTag *C.char, outboundTag *C.char) *C.char {
 }
 
 //export urlTest
-func urlTest(groupTag *C.char) *C.char {
+func urlTest(groupTag *C.char) (CErr *C.char) {
+	defer shared.DeferPanicToError("urlTest", func(err error) {
+		CErr = C.CString(err.Error())
+	})
+
 	err := libbox.NewStandaloneCommandClient().URLTest(C.GoString(groupTag))
 	if err != nil {
 		return C.CString(err.Error())
