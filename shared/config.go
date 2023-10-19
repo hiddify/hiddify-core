@@ -1,8 +1,12 @@
 package shared
 
 import (
+	"encoding/json"
 	"fmt"
+	"net"
 	"net/netip"
+	"net/url"
+	"strings"
 
 	C "github.com/sagernet/sing-box/constant"
 	"github.com/sagernet/sing-box/option"
@@ -28,29 +32,36 @@ type ConfigOptions struct {
 	ClashApiPort            uint16                `json:"clash-api-port"`
 	EnableTun               bool                  `json:"enable-tun"`
 	SetSystemProxy          bool                  `json:"set-system-proxy"`
+	BypassLAN               bool                  `json:"bypass-lan"`
+	Rules                   []Rule                `json:"rules"`
 }
 
+// TODO add fake dns
+// TODO add bypass outbound
+// TODO include selectors
 func BuildConfig(configOpt ConfigOptions, input option.Options) option.Options {
 	if configOpt.ExecuteAsIs {
 		return applyOverrides(configOpt, input)
 	}
 
-	var options option.Options
+	fmt.Printf("config options: %+v\n", configOpt)
 
-	fmt.Printf("%+v\n", configOpt)
+	var options option.Options
+	directDNSDomains := []string{}
 
 	if configOpt.EnableClashApi {
 		options.Experimental = &option.ExperimentalOptions{
 			ClashAPI: &option.ClashAPIOptions{
 				ExternalController: fmt.Sprintf("%s:%d", "127.0.0.1", configOpt.ClashApiPort),
 				StoreSelected:      true,
+				CacheFile:          "clash.db",
 			},
 		}
 	}
 
 	options.Log = &option.LogOptions{
 		Level:        configOpt.LogLevel,
-		Output:       "box.log",
+		Output:       "./logs/box.log",
 		Disabled:     false,
 		Timestamp:    false,
 		DisableColor: true,
@@ -66,7 +77,6 @@ func BuildConfig(configOpt ConfigOptions, input option.Options) option.Options {
 				Address:         configOpt.RemoteDnsAddress,
 				AddressResolver: "dns-direct",
 				Strategy:        configOpt.RemoteDnsDomainStrategy,
-				Detour:          "select",
 			},
 			{
 				Tag:             "dns-direct",
@@ -83,37 +93,6 @@ func BuildConfig(configOpt ConfigOptions, input option.Options) option.Options {
 			{
 				Tag:     "dns-block",
 				Address: "rcode://success",
-			},
-		},
-		Rules: []option.DNSRule{
-			{
-				Type: C.RuleTypeDefault,
-				DefaultOptions: option.DefaultDNSRule{
-					Outbound: []string{"any"},
-					// Server:   "dns-direct",
-					Server: "dns-local",
-				},
-			},
-			{
-				Type: C.RuleTypeDefault,
-				DefaultOptions: option.DefaultDNSRule{
-					ClashMode: "Direct",
-					Server:    "dns-local",
-				},
-			},
-			{
-				Type: C.RuleTypeDefault,
-				DefaultOptions: option.DefaultDNSRule{
-					ClashMode: "Global",
-					Server:    "dns-remote",
-				},
-			},
-			{
-				Type: C.RuleTypeDefault,
-				DefaultOptions: option.DefaultDNSRule{
-					DomainSuffix: []string{"ir"},
-					Server:       "dns-local",
-				},
 			},
 		},
 	}
@@ -182,7 +161,8 @@ func BuildConfig(configOpt ConfigOptions, input option.Options) option.Options {
 		},
 	)
 
-	options.Inbounds = append(options.Inbounds,
+	options.Inbounds = append(
+		options.Inbounds,
 		option.Inbound{
 			Type: C.TypeDirect,
 			Tag:  "dns-in",
@@ -197,59 +177,104 @@ func BuildConfig(configOpt ConfigOptions, input option.Options) option.Options {
 		},
 	)
 
-	options.Route = &option.RouteOptions{
-		Rules: []option.Rule{
-			{
-				Type: C.RuleTypeDefault,
-				DefaultOptions: option.DefaultRule{
-					Inbound:  []string{"dns-in"},
-					Outbound: "dns-out",
-				},
-			},
-			{
-				Type: C.RuleTypeDefault,
-				DefaultOptions: option.DefaultRule{
-					Port:     []uint16{53},
-					Outbound: "dns-out",
-				},
-			},
-			{
-				Type: C.RuleTypeDefault,
-				DefaultOptions: option.DefaultRule{
-					Protocol: []string{"dns"},
-					Outbound: "dns-out",
-				},
-			},
-			{
-				Type: C.RuleTypeDefault,
-				DefaultOptions: option.DefaultRule{
-					ClashMode: "Direct",
-					Outbound:  "direct",
-				},
-			},
-			{
-				Type: C.RuleTypeDefault,
-				DefaultOptions: option.DefaultRule{
-					ClashMode: "Global",
-					Outbound:  "select",
-				},
-			},
-			{
-				Type: C.RuleTypeDefault,
-				DefaultOptions: option.DefaultRule{
-					Geosite:  []string{"category-ads-all"},
-					Outbound: "block",
-				},
-			},
-			{
-				Type: C.RuleTypeDefault,
-				DefaultOptions: option.DefaultRule{
-					GeoIP:        []string{"ir", "private"},
-					DomainSuffix: []string{"ir"},
-					Outbound:     "direct",
-				},
+	remoteDNSAddress := configOpt.RemoteDnsAddress
+	if strings.Contains(remoteDNSAddress, "://") {
+		remoteDNSAddress = strings.SplitAfter(remoteDNSAddress, "://")[1]
+	}
+	parsedUrl, err := url.Parse(fmt.Sprintf("https://%s", remoteDNSAddress))
+	if err == nil && net.ParseIP(parsedUrl.Host) == nil {
+		directDNSDomains = append(directDNSDomains, fmt.Sprintf("full:%s", parsedUrl.Host))
+	}
+
+	routeRules := []option.Rule{
+		{
+			Type: C.RuleTypeDefault,
+			DefaultOptions: option.DefaultRule{
+				Inbound:  []string{"dns-in"},
+				Outbound: "dns-out",
 			},
 		},
+		{
+			Type: C.RuleTypeDefault,
+			DefaultOptions: option.DefaultRule{
+				Port:     []uint16{53},
+				Outbound: "dns-out",
+			},
+		},
+		{
+			Type: C.RuleTypeDefault,
+			DefaultOptions: option.DefaultRule{
+				ClashMode: "Direct",
+				Outbound:  "direct",
+			},
+		},
+		{
+			Type: C.RuleTypeDefault,
+			DefaultOptions: option.DefaultRule{
+				ClashMode: "Global",
+				Outbound:  "select",
+			},
+		},
+	}
+
+	if configOpt.BypassLAN {
+		routeRules = append(
+			routeRules,
+			option.Rule{
+				Type: C.RuleTypeDefault,
+				DefaultOptions: option.DefaultRule{
+					GeoIP:    []string{"private"},
+					Outbound: "direct",
+				},
+			},
+		)
+	}
+
+	for _, rule := range configOpt.Rules {
+		routeRule := rule.MakeRule()
+		switch rule.Outbound {
+		case "bypass":
+			routeRule.Outbound = "direct"
+		case "block":
+			routeRule.Outbound = "block"
+		case "proxy":
+			routeRule.Outbound = "dns-out"
+		}
+
+		if routeRule.IsValid() {
+			routeRules = append(
+				routeRules,
+				option.Rule{
+					Type:           C.RuleTypeDefault,
+					DefaultOptions: routeRule,
+				},
+			)
+		}
+
+		dnsRule := rule.MakeDNSRule()
+		switch rule.Outbound {
+		case "bypass":
+			dnsRule.Server = "dns-direct"
+		case "block":
+			dnsRule.Server = "dns-block"
+			dnsRule.DisableCache = true
+		case "proxy":
+			dnsRule.Server = "dns-remote"
+		}
+
+		if dnsRule.IsValid() {
+			options.DNS.Rules = append(
+				options.DNS.Rules,
+				option.DNSRule{
+					Type:           C.RuleTypeDefault,
+					DefaultOptions: dnsRule,
+				},
+			)
+		}
+	}
+
+	options.Route = &option.RouteOptions{
+		Rules:               routeRules,
 		AutoDetectInterface: true,
 		OverrideAndroidVPN:  true,
 	}
@@ -257,6 +282,20 @@ func BuildConfig(configOpt ConfigOptions, input option.Options) option.Options {
 	var outbounds []option.Outbound
 	var tags []string
 	for _, out := range input.Outbounds {
+		jsonData, err := out.MarshalJSON()
+		if err == nil {
+			var obj map[string]interface{}
+			err = json.Unmarshal(jsonData, &obj)
+			if err == nil {
+				if value, ok := obj["server"]; ok {
+					server := value.(string)
+					if server != "" && net.ParseIP(server) == nil {
+						directDNSDomains = append(directDNSDomains, fmt.Sprintf("full:%s", server))
+					}
+				}
+			}
+		}
+
 		switch out.Type {
 		case C.TypeDirect, C.TypeBlock, C.TypeDNS:
 			continue
@@ -307,6 +346,14 @@ func BuildConfig(configOpt ConfigOptions, input option.Options) option.Options {
 		}...,
 	)
 
+	if len(directDNSDomains) > 0 {
+		domains := strings.Join(removeDuplicateStr(directDNSDomains), ",")
+		directRule := Rule{Domains: domains, Outbound: "bypass"}
+		dnsRule := directRule.MakeDNSRule()
+		dnsRule.Server = "dns-direct"
+		options.DNS.Rules = append([]option.DNSRule{{Type: C.RuleTypeDefault, DefaultOptions: dnsRule}}, options.DNS.Rules...)
+	}
+
 	return options
 }
 
@@ -334,4 +381,16 @@ func applyOverrides(overrides ConfigOptions, options option.Options) option.Opti
 	options.Inbounds = inbounds
 
 	return options
+}
+
+func removeDuplicateStr(strSlice []string) []string {
+	allKeys := make(map[string]bool)
+	list := []string{}
+	for _, item := range strSlice {
+		if _, value := allKeys[item]; !value {
+			allKeys[item] = true
+			list = append(list, item)
+		}
+	}
+	return list
 }
