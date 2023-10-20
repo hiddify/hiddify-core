@@ -33,11 +33,10 @@ type ConfigOptions struct {
 	EnableTun               bool                  `json:"enable-tun"`
 	SetSystemProxy          bool                  `json:"set-system-proxy"`
 	BypassLAN               bool                  `json:"bypass-lan"`
+	EnableFakeDNS           bool                  `json:"enable-fake-dns"`
 	Rules                   []Rule                `json:"rules"`
 }
 
-// TODO add fake dns
-// TODO add bypass outbound
 // TODO include selectors
 func BuildConfig(configOpt ConfigOptions, input option.Options) option.Options {
 	if configOpt.ExecuteAsIs {
@@ -48,6 +47,7 @@ func BuildConfig(configOpt ConfigOptions, input option.Options) option.Options {
 
 	var options option.Options
 	directDNSDomains := []string{}
+	dnsRules := []option.DefaultDNSRule{}
 
 	if configOpt.EnableClashApi {
 		options.Experimental = &option.ExperimentalOptions{
@@ -61,7 +61,7 @@ func BuildConfig(configOpt ConfigOptions, input option.Options) option.Options {
 
 	options.Log = &option.LogOptions{
 		Level:        configOpt.LogLevel,
-		Output:       "./logs/box.log",
+		Output:       "box.log",
 		Disabled:     false,
 		Timestamp:    false,
 		DisableColor: true,
@@ -224,7 +224,36 @@ func BuildConfig(configOpt ConfigOptions, input option.Options) option.Options {
 				Type: C.RuleTypeDefault,
 				DefaultOptions: option.DefaultRule{
 					GeoIP:    []string{"private"},
-					Outbound: "direct",
+					Outbound: "bypass",
+				},
+			},
+		)
+	}
+
+	if configOpt.EnableFakeDNS {
+		inet4Range := option.ListenPrefix(netip.MustParsePrefix("198.18.0.0/15"))
+		inet6Range := option.ListenPrefix(netip.MustParsePrefix("fc00::/18"))
+		options.DNS.FakeIP = &option.DNSFakeIPOptions{
+			Enabled:    true,
+			Inet4Range: &inet4Range,
+			Inet6Range: &inet6Range,
+		}
+		options.DNS.Servers = append(
+			options.DNS.Servers,
+			option.DNSServerOptions{
+				Tag:      "dns-fake",
+				Address:  "fakeip",
+				Strategy: option.DomainStrategy(dns.DomainStrategyUseIPv4),
+			},
+		)
+		options.DNS.Rules = append(
+			options.DNS.Rules,
+			option.DNSRule{
+				Type: C.RuleTypeDefault,
+				DefaultOptions: option.DefaultDNSRule{
+					Inbound:      []string{"tun-in"},
+					Server:       "dns-fake",
+					DisableCache: true,
 				},
 			},
 		)
@@ -234,7 +263,7 @@ func BuildConfig(configOpt ConfigOptions, input option.Options) option.Options {
 		routeRule := rule.MakeRule()
 		switch rule.Outbound {
 		case "bypass":
-			routeRule.Outbound = "direct"
+			routeRule.Outbound = "bypass"
 		case "block":
 			routeRule.Outbound = "block"
 		case "proxy":
@@ -259,9 +288,18 @@ func BuildConfig(configOpt ConfigOptions, input option.Options) option.Options {
 			dnsRule.Server = "dns-block"
 			dnsRule.DisableCache = true
 		case "proxy":
+			if configOpt.EnableFakeDNS {
+				fakeDnsRule := dnsRule
+				fakeDnsRule.Server = "dns-fake"
+				fakeDnsRule.Inbound = []string{"tun-in"}
+				dnsRules = append(dnsRules, fakeDnsRule)
+			}
 			dnsRule.Server = "dns-remote"
 		}
+		dnsRules = append(dnsRules, dnsRule)
+	}
 
+	for _, dnsRule := range dnsRules {
 		if dnsRule.IsValid() {
 			options.DNS.Rules = append(
 				options.DNS.Rules,
@@ -337,6 +375,10 @@ func BuildConfig(configOpt ConfigOptions, input option.Options) option.Options {
 			},
 			{
 				Tag:  "direct",
+				Type: C.TypeDirect,
+			},
+			{
+				Tag:  "bypass",
 				Type: C.TypeDirect,
 			},
 			{
