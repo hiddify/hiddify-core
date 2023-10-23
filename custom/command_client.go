@@ -9,23 +9,24 @@ import (
 )
 
 type CommandClientHandler struct {
+	name string
 	port int64
 }
 
 func (cch *CommandClientHandler) Connected() {
-	fmt.Println("connected")
+	fmt.Printf("[%s] CONNECTED\n", cch.name)
 }
 
 func (cch *CommandClientHandler) Disconnected(message string) {
-	fmt.Printf("disconnected: %s\n", message)
+	fmt.Printf("[%s] DISCONNECTED: %s\n", cch.name, message)
 }
 
 func (cch *CommandClientHandler) ClearLog() {
-	fmt.Println("clear log")
+	fmt.Printf("[%s] clear log\n", cch.name)
 }
 
 func (cch *CommandClientHandler) WriteLog(message string) {
-	fmt.Printf("new log: %s\n", message)
+	fmt.Printf("[%s] log: %s\n", cch.name, message)
 }
 
 func (cch *CommandClientHandler) WriteStatus(message *libbox.StatusMessage) {
@@ -77,9 +78,12 @@ func (cch *CommandClientHandler) WriteGroups(message libbox.OutboundGroupIterato
 }
 
 func (cch *CommandClientHandler) InitializeClashMode(modeList libbox.StringIterator, currentMode string) {
+	fmt.Printf("[%s] clash mode: %s\n", cch.name, currentMode)
 }
 
-func (cch *CommandClientHandler) UpdateClashMode(newMode string) {}
+func (cch *CommandClientHandler) UpdateClashMode(newMode string) {
+	fmt.Printf("[%s] update clash mode: %s\n", cch.name, newMode)
+}
 
 type OutboundGroup struct {
 	Tag      string               `json:"tag"`

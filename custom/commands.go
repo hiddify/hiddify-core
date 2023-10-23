@@ -3,30 +3,30 @@ package main
 import "github.com/sagernet/sing-box/experimental/libbox"
 
 var (
-	statusCommand *libbox.CommandClient
-	groupCommand  *libbox.CommandClient
+	statusClient *libbox.CommandClient
+	groupClient  *libbox.CommandClient
 )
 
 func StartCommand(command int32, port int64) error {
 	switch command {
 	case libbox.CommandStatus:
-		statusCommand = libbox.NewCommandClient(
-			&CommandClientHandler{port: port},
+		statusClient = libbox.NewCommandClient(
+			&CommandClientHandler{port: port, name: "status"},
 			&libbox.CommandClientOptions{
 				Command:        libbox.CommandStatus,
 				StatusInterval: 1000000000,
 			},
 		)
-		return statusCommand.Connect()
+		return statusClient.Connect()
 	case libbox.CommandGroup:
-		groupCommand = libbox.NewCommandClient(
-			&CommandClientHandler{port: port},
+		groupClient = libbox.NewCommandClient(
+			&CommandClientHandler{port: port, name: "group"},
 			&libbox.CommandClientOptions{
 				Command:        libbox.CommandGroup,
 				StatusInterval: 1000000000,
 			},
 		)
-		return groupCommand.Connect()
+		return groupClient.Connect()
 	}
 	return nil
 }
@@ -34,12 +34,12 @@ func StartCommand(command int32, port int64) error {
 func StopCommand(command int32) error {
 	switch command {
 	case libbox.CommandStatus:
-		err := statusCommand.Disconnect()
-		statusCommand = nil
+		err := statusClient.Disconnect()
+		statusClient = nil
 		return err
 	case libbox.CommandGroup:
-		err := groupCommand.Disconnect()
-		groupCommand = nil
+		err := groupClient.Disconnect()
+		groupClient = nil
 		return err
 	}
 	return nil
