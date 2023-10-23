@@ -63,7 +63,7 @@ func BuildConfig(configOpt ConfigOptions, input option.Options) option.Options {
 		Level:        configOpt.LogLevel,
 		Output:       "box.log",
 		Disabled:     false,
-		Timestamp:    false,
+		Timestamp:    true,
 		DisableColor: true,
 	}
 
