@@ -75,7 +75,13 @@ jobs:
           rm -f ./bin/*.h
           rm ./bin/hiddify-libcore*sources* ||echo "no source"
           rm ./bin/hiddify-libcore-macos-a*.dylib || echo "no macos arm and amd"
-          gzip -r -S ".gz" ./bin/hiddify-libcore*
+          if [[ "${{ matrix.job.target }}" == "ios" ]];then
+              cd bin
+              tar -czvf hiddify-libcore-ios.xcframework.tar.gz hiddify-libcore-ios.xcframework
+              rm -rf hiddify-libcore-ios.xcframework
+          else
+              gzip -r -S ".gz" ./bin/hiddify-libcore*
+          fi
 
       - uses: actions/upload-artifact@v3
         if: ${{ success() }}
