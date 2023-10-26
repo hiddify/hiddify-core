@@ -57,7 +57,7 @@ func changeConfigOptions(configOptionsJson *C.char) (CErr *C.char) {
 }
 
 //export start
-func start(configPath *C.char) (CErr *C.char) {
+func start(configPath *C.char, disableMemoryLimit bool) (CErr *C.char) {
 	defer shared.DeferPanicToError("start", func(err error) {
 		CErr = C.CString(err.Error())
 	})
@@ -69,6 +69,8 @@ func start(configPath *C.char) (CErr *C.char) {
 
 	path := C.GoString(configPath)
 	activeConfigPath = &path
+
+	libbox.SetMemoryLimit(!disableMemoryLimit)
 	err := startService()
 	if err != nil {
 		return C.CString(err.Error())
@@ -141,7 +143,7 @@ func stop() (CErr *C.char) {
 }
 
 //export restart
-func restart(configPath *C.char) (CErr *C.char) {
+func restart(configPath *C.char, disableMemoryLimit bool) (CErr *C.char) {
 	defer shared.DeferPanicToError("restart", func(err error) {
 		CErr = C.CString(err.Error())
 	})
@@ -157,7 +159,7 @@ func restart(configPath *C.char) (CErr *C.char) {
 	if C.GoString(err) != "" {
 		return err
 	}
-	err = start(configPath)
+	err = start(configPath, disableMemoryLimit)
 	if C.GoString(err) != "" {
 		return err
 	}
