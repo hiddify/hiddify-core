@@ -123,19 +123,19 @@ func BuildConfig(configOpt ConfigOptions, input option.Options) option.Options {
 		}
 		switch configOpt.IPv6Mode {
 		case option.DomainStrategy(dns.DomainStrategyUseIPv4):
-			tunInbound.TunOptions.Inet4Address = []option.ListenPrefix{
-				option.ListenPrefix(netip.MustParsePrefix("172.19.0.1/28")),
+			tunInbound.TunOptions.Inet4Address = []netip.Prefix{
+				netip.MustParsePrefix("172.19.0.1/28"),
 			}
 		case option.DomainStrategy(dns.DomainStrategyUseIPv6):
-			tunInbound.TunOptions.Inet6Address = []option.ListenPrefix{
-				option.ListenPrefix(netip.MustParsePrefix("fdfe:dcba:9876::1/126")),
+			tunInbound.TunOptions.Inet6Address = []netip.Prefix{
+				netip.MustParsePrefix("fdfe:dcba:9876::1/126"),
 			}
 		default:
-			tunInbound.TunOptions.Inet4Address = []option.ListenPrefix{
-				option.ListenPrefix(netip.MustParsePrefix("172.19.0.1/28")),
+			tunInbound.TunOptions.Inet4Address = []netip.Prefix{
+				netip.MustParsePrefix("172.19.0.1/28"),
 			}
-			tunInbound.TunOptions.Inet6Address = []option.ListenPrefix{
-				option.ListenPrefix(netip.MustParsePrefix("fdfe:dcba:9876::1/126")),
+			tunInbound.TunOptions.Inet6Address = []netip.Prefix{
+				netip.MustParsePrefix("fdfe:dcba:9876::1/126"),
 			}
 		}
 		options.Inbounds = append(options.Inbounds, tunInbound)
@@ -231,8 +231,8 @@ func BuildConfig(configOpt ConfigOptions, input option.Options) option.Options {
 	}
 
 	if configOpt.EnableFakeDNS {
-		inet4Range := option.ListenPrefix(netip.MustParsePrefix("198.18.0.0/15"))
-		inet6Range := option.ListenPrefix(netip.MustParsePrefix("fc00::/18"))
+		inet4Range := netip.MustParsePrefix("198.18.0.0/15")
+		inet6Range := netip.MustParsePrefix("fc00::/18")
 		options.DNS.FakeIP = &option.DNSFakeIPOptions{
 			Enabled:    true,
 			Inet4Range: &inet4Range,
