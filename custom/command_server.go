@@ -7,10 +7,12 @@ import (
 
 var commandServer *libbox.CommandServer
 
-type CommandServerHandler struct{}
+type CommandServerHandler struct {
+	logger log.Logger
+}
 
 func (csh *CommandServerHandler) ServiceReload() error {
-	log.Trace("[Command Server Handler] Reloading service")
+	csh.logger.Trace("Reloading service")
 	propagateStatus(Starting)
 	if commandServer != nil {
 		commandServer.SetService(nil)
@@ -24,17 +26,18 @@ func (csh *CommandServerHandler) ServiceReload() error {
 }
 
 func (csh *CommandServerHandler) GetSystemProxyStatus() *libbox.SystemProxyStatus {
-	log.Trace("[Command Server Handler] Getting system proxy status")
+	csh.logger.Trace("Getting system proxy status")
 	return &libbox.SystemProxyStatus{Available: true, Enabled: false}
 }
 
 func (csh *CommandServerHandler) SetSystemProxyEnabled(isEnabled bool) error {
-	log.Trace("[Command Server Handler] Setting system proxy status")
+	csh.logger.Trace("Setting system proxy status, enabled? ", isEnabled)
 	return csh.ServiceReload()
 }
 
-func startCommandServer() error {
-	log.Trace("[Command Server Handler] Starting command server")
-	commandServer = libbox.NewCommandServer(&CommandServerHandler{}, 300)
+func startCommandServer(logFactory log.Factory) error {
+	logger := logFactory.NewLogger("[Command Server Handler]")
+	logger.Trace("Starting command server")
+	commandServer = libbox.NewCommandServer(&CommandServerHandler{logger: logger}, 300)
 	return commandServer.Start()
 }

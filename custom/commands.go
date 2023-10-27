@@ -1,17 +1,23 @@
 package main
 
-import "github.com/sagernet/sing-box/experimental/libbox"
+import (
+	"github.com/sagernet/sing-box/experimental/libbox"
+	"github.com/sagernet/sing-box/log"
+)
 
 var (
 	statusClient *libbox.CommandClient
 	groupClient  *libbox.CommandClient
 )
 
-func StartCommand(command int32, port int64) error {
+func StartCommand(command int32, port int64, logFactory log.Factory) error {
 	switch command {
 	case libbox.CommandStatus:
 		statusClient = libbox.NewCommandClient(
-			&CommandClientHandler{port: port, name: "status"},
+			&CommandClientHandler{
+				port:   port,
+				logger: logFactory.NewLogger("[Status Command Client]"),
+			},
 			&libbox.CommandClientOptions{
 				Command:        libbox.CommandStatus,
 				StatusInterval: 1000000000,
@@ -20,7 +26,10 @@ func StartCommand(command int32, port int64) error {
 		return statusClient.Connect()
 	case libbox.CommandGroup:
 		groupClient = libbox.NewCommandClient(
-			&CommandClientHandler{port: port, name: "group"},
+			&CommandClientHandler{
+				port:   port,
+				logger: logFactory.NewLogger("[Group Command Client]"),
+			},
 			&libbox.CommandClientOptions{
 				Command:        libbox.CommandGroup,
 				StatusInterval: 1000000000,

@@ -6,27 +6,28 @@ import (
 
 	"github.com/hiddify/libcore/bridge"
 	"github.com/sagernet/sing-box/experimental/libbox"
+	"github.com/sagernet/sing-box/log"
 )
 
 type CommandClientHandler struct {
-	name string
-	port int64
+	port   int64
+	logger log.Logger
 }
 
 func (cch *CommandClientHandler) Connected() {
-	fmt.Printf("[%s] CONNECTED\n", cch.name)
+	cch.logger.Debug("CONNECTED")
 }
 
 func (cch *CommandClientHandler) Disconnected(message string) {
-	fmt.Printf("[%s] DISCONNECTED: %s\n", cch.name, message)
+	cch.logger.Debug("DISCONNECTED: ", message)
 }
 
 func (cch *CommandClientHandler) ClearLog() {
-	fmt.Printf("[%s] clear log\n", cch.name)
+	cch.logger.Debug("clear log")
 }
 
 func (cch *CommandClientHandler) WriteLog(message string) {
-	fmt.Printf("[%s] log: %s\n", cch.name, message)
+	cch.logger.Debug("log: ", message)
 }
 
 func (cch *CommandClientHandler) WriteStatus(message *libbox.StatusMessage) {
@@ -40,6 +41,7 @@ func (cch *CommandClientHandler) WriteStatus(message *libbox.StatusMessage) {
 			"downlink-total":  message.DownlinkTotal,
 		},
 	)
+	cch.logger.Debug("Memory: ", libbox.FormatBytes(message.Memory), ", MemoryInuse: ", libbox.FormatBytes(message.MemoryInuse))
 	if err != nil {
 		bridge.SendStringToPort(cch.port, fmt.Sprintf("error: %e", err))
 	} else {
@@ -78,11 +80,11 @@ func (cch *CommandClientHandler) WriteGroups(message libbox.OutboundGroupIterato
 }
 
 func (cch *CommandClientHandler) InitializeClashMode(modeList libbox.StringIterator, currentMode string) {
-	fmt.Printf("[%s] clash mode: %s\n", cch.name, currentMode)
+	cch.logger.Debug("initial clash mode: ", currentMode)
 }
 
 func (cch *CommandClientHandler) UpdateClashMode(newMode string) {
-	fmt.Printf("[%s] update clash mode: %s\n", cch.name, newMode)
+	cch.logger.Debug("update clash mode: ", newMode)
 }
 
 type OutboundGroup struct {

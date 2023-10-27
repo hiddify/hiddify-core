@@ -6,6 +6,7 @@ package main
 import "C"
 import (
 	"encoding/json"
+	"io"
 	"os"
 	"time"
 	"unsafe"
@@ -19,6 +20,7 @@ import (
 var box *libbox.BoxService
 var configOptions *shared.ConfigOptions
 var activeConfigPath *string
+var logFactory *log.Factory
 
 //export setupOnce
 func setupOnce(api unsafe.Pointer) {
@@ -26,9 +28,29 @@ func setupOnce(api unsafe.Pointer) {
 }
 
 //export setup
-func setup(baseDir *C.char, workingDir *C.char, tempDir *C.char, statusPort C.longlong) {
+func setup(baseDir *C.char, workingDir *C.char, tempDir *C.char, statusPort C.longlong, debug bool) (CErr *C.char) {
+	defer shared.DeferPanicToError("setup", func(err error) {
+		CErr = C.CString(err.Error())
+	})
+
 	Setup(C.GoString(baseDir), C.GoString(workingDir), C.GoString(tempDir))
 	statusPropagationPort = int64(statusPort)
+
+	var defaultWriter io.Writer
+	if !debug {
+		defaultWriter = io.Discard
+	}
+	factory, err := log.New(
+		log.Options{
+			DefaultWriter: defaultWriter,
+			BaseTime:      time.Now(),
+			Observable:    false,
+		})
+	if err != nil {
+		return C.CString(err.Error())
+	}
+	logFactory = &factory
+	return C.CString("")
 }
 
 //export parse
@@ -93,7 +115,7 @@ func startService(delayStart bool) error {
 
 	shared.SaveCurrentConfig(sWorkingPath, options)
 
-	err = startCommandServer()
+	err = startCommandServer(*logFactory)
 	if err != nil {
 		return stopAndAlert(StartCommandServer, err)
 	}
@@ -180,7 +202,7 @@ func restart(configPath *C.char, disableMemoryLimit bool) (CErr *C.char) {
 
 //export startCommandClient
 func startCommandClient(command C.int, port C.longlong) *C.char {
-	err := StartCommand(int32(command), int64(port))
+	err := StartCommand(int32(command), int64(port), *logFactory)
 	if err != nil {
 		return C.CString(err.Error())
 	}
