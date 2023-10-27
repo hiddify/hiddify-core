@@ -190,13 +190,17 @@ func restart(configPath *C.char, disableMemoryLimit bool) (CErr *C.char) {
 		return err
 	}
 
+	propagateStatus(Starting)
+
 	time.Sleep(250 * time.Millisecond)
 
-	err = start(configPath, disableMemoryLimit)
-	if C.GoString(err) != "" {
-		return err
+	path := C.GoString(configPath)
+	activeConfigPath = &path
+	libbox.SetMemoryLimit(!disableMemoryLimit)
+	gErr := startService(false)
+	if gErr != nil {
+		return C.CString(gErr.Error())
 	}
-
 	return C.CString("")
 }
 
