@@ -7,11 +7,13 @@ import "C"
 import (
 	"encoding/json"
 	"os"
+	"time"
 	"unsafe"
 
 	"github.com/hiddify/libcore/bridge"
 	"github.com/hiddify/libcore/shared"
 	"github.com/sagernet/sing-box/experimental/libbox"
+	"github.com/sagernet/sing-box/log"
 )
 
 var box *libbox.BoxService
@@ -71,14 +73,14 @@ func start(configPath *C.char, disableMemoryLimit bool) (CErr *C.char) {
 	activeConfigPath = &path
 
 	libbox.SetMemoryLimit(!disableMemoryLimit)
-	err := startService()
+	err := startService(false)
 	if err != nil {
 		return C.CString(err.Error())
 	}
 	return C.CString("")
 }
 
-func startService() error {
+func startService(delayStart bool) error {
 	content, err := os.ReadFile(*activeConfigPath)
 	if err != nil {
 		return stopAndAlert(EmptyConfiguration, err)
@@ -100,6 +102,11 @@ func startService() error {
 	if err != nil {
 		return stopAndAlert(CreateService, err)
 	}
+
+	if delayStart {
+		time.Sleep(250 * time.Millisecond)
+	}
+
 	err = instance.Start()
 	if err != nil {
 		return stopAndAlert(StartService, err)
@@ -147,6 +154,7 @@ func restart(configPath *C.char, disableMemoryLimit bool) (CErr *C.char) {
 	defer shared.DeferPanicToError("restart", func(err error) {
 		CErr = C.CString(err.Error())
 	})
+	log.Debug("[Service] Restarting")
 
 	if status != Started {
 		return C.CString("")
@@ -159,6 +167,9 @@ func restart(configPath *C.char, disableMemoryLimit bool) (CErr *C.char) {
 	if C.GoString(err) != "" {
 		return err
 	}
+
+	time.Sleep(250 * time.Millisecond)
+
 	err = start(configPath, disableMemoryLimit)
 	if C.GoString(err) != "" {
 		return err
