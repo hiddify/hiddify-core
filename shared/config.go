@@ -25,6 +25,7 @@ type ConfigOptions struct {
 	MixedPort               uint16                `json:"mixed-port"`
 	LocalDnsPort            uint16                `json:"local-dns-port"`
 	MTU                     uint32                `json:"mtu"`
+	StrictRoute             bool                  `json:"strict-route"`
 	TUNStack                string                `json:"tun-stack"`
 	ConnectionTestUrl       string                `json:"connection-test-url"`
 	URLTestInterval         option.Duration       `json:"url-test-interval"`
@@ -112,7 +113,7 @@ func BuildConfig(configOpt ConfigOptions, input option.Options) option.Options {
 				Stack:                  configOpt.TUNStack,
 				MTU:                    configOpt.MTU,
 				AutoRoute:              true,
-				StrictRoute:            true,
+				StrictRoute:            configOpt.StrictRoute,
 				EndpointIndependentNat: true,
 				InboundOptions: option.InboundOptions{
 					SniffEnabled:             true,
