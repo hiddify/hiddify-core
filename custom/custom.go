@@ -80,6 +80,35 @@ func changeConfigOptions(configOptionsJson *C.char) (CErr *C.char) {
 	return C.CString("")
 }
 
+//export generateConfig
+func generateConfig(path *C.char) (res *C.char) {
+	defer shared.DeferPanicToError("generateConfig", func(err error) {
+		res = C.CString("error" + err.Error())
+	})
+
+	config, err := generateConfigFromFile(C.GoString(path), *configOptions)
+	if err != nil {
+		return C.CString("error" + err.Error())
+	}
+	return C.CString(config)
+}
+
+func generateConfigFromFile(path string, configOpt shared.ConfigOptions) (string, error) {
+	content, err := os.ReadFile(path)
+	if err != nil {
+		return "", err
+	}
+	options, err := parseConfig(string(content))
+	if err != nil {
+		return "", err
+	}
+	config, err := shared.BuildConfigJson(configOpt, options)
+	if err != nil {
+		return "", err
+	}
+	return config, nil
+}
+
 //export start
 func start(configPath *C.char, disableMemoryLimit bool) (CErr *C.char) {
 	defer shared.DeferPanicToError("start", func(err error) {

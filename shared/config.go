@@ -1,6 +1,7 @@
 package shared
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"net"
@@ -36,6 +37,19 @@ type ConfigOptions struct {
 	BypassLAN               bool                  `json:"bypass-lan"`
 	EnableFakeDNS           bool                  `json:"enable-fake-dns"`
 	Rules                   []Rule                `json:"rules"`
+}
+
+func BuildConfigJson(configOpt ConfigOptions, input option.Options) (string, error) {
+	options := BuildConfig(configOpt, input)
+	var buffer bytes.Buffer
+	json.NewEncoder(&buffer)
+	encoder := json.NewEncoder(&buffer)
+	encoder.SetIndent("", "  ")
+	err := encoder.Encode(options)
+	if err != nil {
+		return "", err
+	}
+	return buffer.String(), nil
 }
 
 // TODO include selectors

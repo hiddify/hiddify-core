@@ -28,7 +28,5 @@ func BuildConfig(path string, configOptionsJson string) (string, error) {
 	if err != nil {
 		return "", nil
 	}
-	options = shared.BuildConfig(*configOptions, options)
-	config, err := json.Marshal(options)
-	return string(config), err
+	return shared.BuildConfigJson(*configOptions, options)
 }
