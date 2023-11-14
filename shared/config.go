@@ -36,6 +36,7 @@ type ConfigOptions struct {
 	SetSystemProxy          bool                  `json:"set-system-proxy"`
 	BypassLAN               bool                  `json:"bypass-lan"`
 	EnableFakeDNS           bool                  `json:"enable-fake-dns"`
+	IndependentDNSCache     bool                  `json:"independent-dns-cache"`
 	Rules                   []Rule                `json:"rules"`
 }
 
@@ -84,7 +85,7 @@ func BuildConfig(configOpt ConfigOptions, input option.Options) option.Options {
 
 	options.DNS = &option.DNSOptions{
 		DNSClientOptions: option.DNSClientOptions{
-			IndependentCache: true,
+			IndependentCache: configOpt.IndependentDNSCache,
 		},
 		Servers: []option.DNSServerOptions{
 			{
