@@ -37,6 +37,8 @@ type ConfigOptions struct {
 	BypassLAN               bool                  `json:"bypass-lan"`
 	EnableFakeDNS           bool                  `json:"enable-fake-dns"`
 	IndependentDNSCache     bool                  `json:"independent-dns-cache"`
+	GeoIPPath               string                `json:"geoip-path"`
+	GeoSitePath             string                `json:"geosite-path"`
 	Rules                   []Rule                `json:"rules"`
 }
 
@@ -331,6 +333,12 @@ func BuildConfig(configOpt ConfigOptions, input option.Options) option.Options {
 		Rules:               routeRules,
 		AutoDetectInterface: true,
 		OverrideAndroidVPN:  true,
+		GeoIP: &option.GeoIPOptions{
+			Path: configOpt.GeoIPPath,
+		},
+		Geosite: &option.GeositeOptions{
+			Path: configOpt.GeoSitePath,
+		},
 	}
 
 	var outbounds []option.Outbound
