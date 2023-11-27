@@ -41,7 +41,7 @@ func (cch *CommandClientHandler) WriteStatus(message *libbox.StatusMessage) {
 			"downlink-total":  message.DownlinkTotal,
 		},
 	)
-	cch.logger.Debug("Memory: ", libbox.FormatBytes(message.Memory), ", MemoryInuse: ", libbox.FormatBytes(message.MemoryInuse))
+	cch.logger.Debug("Memory: ", libbox.FormatBytes(message.Memory), ", Goroutines: ", message.Goroutines)
 	if err != nil {
 		bridge.SendStringToPort(cch.port, fmt.Sprintf("error: %e", err))
 	} else {
