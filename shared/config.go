@@ -15,6 +15,7 @@ import (
 )
 
 type ConfigOptions struct {
+	TLSTricks               TLSTricks
 	ExecuteAsIs             bool                  `json:"execute-config-as-is"`
 	LogLevel                string                `json:"log-level"`
 	ResolveDestination      bool                  `json:"resolve-destination"`
@@ -40,6 +41,13 @@ type ConfigOptions struct {
 	GeoIPPath               string                `json:"geoip-path"`
 	GeoSitePath             string                `json:"geosite-path"`
 	Rules                   []Rule                `json:"rules"`
+}
+
+type TLSTricks struct {
+	EnableTLSFragment  bool   `json:"enable-tls-fragment"`
+	TLSFragmentSize    string `json:"tls-fragment-size"`
+	TLSFragmentSleep   string `json:"tls-fragment-sleep"`
+	EnableMixedSNICase bool   `json:"enable-mixed-sni-case"`
 }
 
 func BuildConfigJson(configOpt ConfigOptions, input option.Options) (string, error) {
@@ -353,6 +361,17 @@ func BuildConfig(configOpt ConfigOptions, input option.Options) option.Options {
 					server := value.(string)
 					if server != "" && net.ParseIP(server) == nil {
 						directDNSDomains = append(directDNSDomains, fmt.Sprintf("full:%s", server))
+					}
+				}
+				if value, ok := obj["tls"]; ok {
+					tls := value.(map[string]interface{})
+					tls["mixedcase_sni"] = configOpt.TLSTricks.EnableMixedSNICase
+				}
+				modifiedJson, err := json.Marshal(obj)
+				if err == nil {
+					err = out.UnmarshalJSON(modifiedJson)
+					if err != nil {
+						fmt.Println("error: ", err)
 					}
 				}
 			}
