@@ -44,10 +44,12 @@ type ConfigOptions struct {
 }
 
 type TLSTricks struct {
-	EnableTLSFragment  bool   `json:"enable-tls-fragment"`
-	TLSFragmentSize    string `json:"tls-fragment-size"`
-	TLSFragmentSleep   string `json:"tls-fragment-sleep"`
+	EnableFragment     bool   `json:"enable-tls-fragment"`
+	FragmentSize       string `json:"tls-fragment-size"`
+	FragmentSleep      string `json:"tls-fragment-sleep"`
 	EnableMixedSNICase bool   `json:"enable-tls-mixed-sni-case"`
+	EnablePadding      bool   `json:"enable-tls-padding"`
+	PaddingSize        string `json:"tls-padding-size"`
 }
 
 func BuildConfigJson(configOpt ConfigOptions, input option.Options) (string, error) {
@@ -366,6 +368,17 @@ func BuildConfig(configOpt ConfigOptions, input option.Options) option.Options {
 				if value, ok := obj["tls"]; ok {
 					tls := value.(map[string]interface{})
 					tls["mixedcase_sni"] = configOpt.TLSTricks.EnableMixedSNICase
+					if configOpt.TLSTricks.EnablePadding {
+						tls["padding_size"] = configOpt.TLSTricks.PaddingSize
+					} else {
+						tls["padding_size"] = ""
+					}
+				}
+				if value, ok := obj["tls_fragment"]; ok {
+					tls := value.(map[string]interface{})
+					tls["enabled"] = configOpt.TLSTricks.EnableFragment
+					tls["size"] = configOpt.TLSTricks.FragmentSize
+					tls["sleep"] = configOpt.TLSTricks.FragmentSleep
 				}
 				modifiedJson, err := json.Marshal(obj)
 				if err == nil {
