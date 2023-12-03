@@ -15,7 +15,6 @@ import (
 )
 
 type ConfigOptions struct {
-	TLSTricks               TLSTricks
 	ExecuteAsIs             bool                  `json:"execute-config-as-is"`
 	LogLevel                string                `json:"log-level"`
 	ResolveDestination      bool                  `json:"resolve-destination"`
@@ -41,13 +40,14 @@ type ConfigOptions struct {
 	GeoIPPath               string                `json:"geoip-path"`
 	GeoSitePath             string                `json:"geosite-path"`
 	Rules                   []Rule                `json:"rules"`
+	TLSTricks
 }
 
 type TLSTricks struct {
 	EnableTLSFragment  bool   `json:"enable-tls-fragment"`
 	TLSFragmentSize    string `json:"tls-fragment-size"`
 	TLSFragmentSleep   string `json:"tls-fragment-sleep"`
-	EnableMixedSNICase bool   `json:"enable-mixed-sni-case"`
+	EnableMixedSNICase bool   `json:"enable-tls-mixed-sni-case"`
 }
 
 func BuildConfigJson(configOpt ConfigOptions, input option.Options) (string, error) {
