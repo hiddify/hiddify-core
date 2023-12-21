@@ -11,8 +11,8 @@ IOS_TAGS=with_dhcp,with_low_memory,with_conntrack
 GOBUILD=CGO_ENABLED=1 go build -trimpath -tags $(TAGS) -ldflags="-w -s" -buildmode=c-shared
 
 lib_install:
-	go install -v github.com/sagernet/gomobile/cmd/gomobile@v0.0.0-20230915142329-c6740b6d2950
-	go install -v github.com/sagernet/gomobile/cmd/gobind@v0.0.0-20230915142329-c6740b6d2950
+	go install -v github.com/sagernet/gomobile/cmd/gomobile@v0.1.1
+	go install -v github.com/sagernet/gomobile/cmd/gobind@v0.1.1
 
 headers:
 	go build -buildmode=c-archive -o $(BINDIR)/$(NAME).h ./custom

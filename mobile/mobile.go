@@ -5,7 +5,7 @@ import (
 	"os"
 
 	"github.com/hiddify/libcore/shared"
-	_ "github.com/sagernet/gomobile/event/key"
+	_ "github.com/sagernet/gomobile"
 	"github.com/sagernet/sing-box/option"
 )
 

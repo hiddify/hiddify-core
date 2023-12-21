@@ -119,6 +119,8 @@ github.com/sagernet/go-tun2socks v1.16.12-0.20220818015926-16cb67876a61 h1:5+m7c
 github.com/sagernet/go-tun2socks v1.16.12-0.20220818015926-16cb67876a61/go.mod h1:QUQ4RRHD6hGGHdFMEtR8T2P6GS6R3D/CXKdaYHKKXms=
 github.com/sagernet/gomobile v0.0.0-20230915142329-c6740b6d2950 h1:hUz/2mJLgi7l2H36JGpDY+jou9FmI6kAm0ZkU+xPpgE=
 github.com/sagernet/gomobile v0.0.0-20230915142329-c6740b6d2950/go.mod h1:5YE39YkJkCcMsfq1jMKkjsrM2GfBoF9JVWnvU89hmvU=
+github.com/sagernet/gomobile v0.1.1 h1:3vihRGyUfFTToHMeeak0UK6/ldt2MV2bcWKFi2VyECU=
+github.com/sagernet/gomobile v0.1.1/go.mod h1:Pqq2+ZVvs10U7xK+UwJgwYWUykewi8H6vlslAO73n9E=
 github.com/sagernet/gvisor v0.0.0-20231119034329-07cfb6aaf930 h1:dSPgjIw0CT6ISLeEh8Q20dZMBMFCcEceo23+LncRcNQ=
 github.com/sagernet/gvisor v0.0.0-20231119034329-07cfb6aaf930/go.mod h1:JpKHkOYgh4wLwrX2BhH3ZIvCvazCkTnPeEcmigZJfHY=
 github.com/sagernet/netlink v0.0.0-20220905062125-8043b4a9aa97 h1:iL5gZI3uFp0X6EslacyapiRz7LLSJyr4RajF/BhMVyE=
@@ -267,6 +269,7 @@ golang.org/x/tools v0.1.12/go.mod h1:hNGJHUnrk76NpqgfD5Aqm5Crs+Hm0VOH/i9J2+nxYbc
 golang.org/x/tools v0.6.0/go.mod h1:Xwgl3UAJ/d3gWutnCtw505GrjyAbvKui8lOU390QaIU=
 golang.org/x/tools v0.15.0 h1:zdAyfUGbYmuVokhzVmghFl2ZJh5QhcfebBgmVPFYA+8=
 golang.org/x/tools v0.15.0/go.mod h1:hpksKq4dtpQWS1uQ61JkdqWM3LscIS6Slf+VVkm+wQk=
+golang.org/x/tools v0.16.0/go.mod h1:kYVVN6I1mBNoB1OX+noeBjbRk4IUEPa7JJ+TJMEooJ0=
 golang.org/x/xerrors v0.0.0-20190717185122-a985d3407aa7/go.mod h1:I/5z698sn9Ka8TeJc9MKroUUfqBBauWjQqLJ2OPfmY0=
 golang.org/x/xerrors v0.0.0-20191204190536-9bdfabe68543/go.mod h1:I/5z698sn9Ka8TeJc9MKroUUfqBBauWjQqLJ2OPfmY0=
 google.golang.org/genproto/googleapis/rpc v0.0.0-20230822172742-b8732ec3820d h1:uvYuEyMHKNt+lT4K3bN6fGswmK8qSvcreM3BwjDh+y4=

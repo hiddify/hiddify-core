@@ -4,7 +4,7 @@ go 1.21.1
 
 require (
 	github.com/hiddify/ray2sing v0.0.0-20231126095652-91be355a9a97
-	github.com/sagernet/gomobile v0.0.0-20230915142329-c6740b6d2950
+	github.com/sagernet/gomobile v0.1.1
 	github.com/sagernet/sing v0.2.18-0.20231124125253-2dcabf4bfcbc
 	github.com/sagernet/sing-box v1.7.0
 	github.com/sagernet/sing-dns v0.1.11
@@ -91,7 +91,7 @@ require (
 	golang.org/x/sys v0.15.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
 	golang.org/x/time v0.4.0 // indirect
-	golang.org/x/tools v0.15.0 // indirect
+	golang.org/x/tools v0.16.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20230822172742-b8732ec3820d // indirect
 	google.golang.org/grpc v1.59.0 // indirect
 	google.golang.org/protobuf v1.31.0 // indirect
