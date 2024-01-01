@@ -36,6 +36,7 @@ type ConfigOptions struct {
 	SetSystemProxy          bool                  `json:"set-system-proxy"`
 	BypassLAN               bool                  `json:"bypass-lan"`
 	EnableFakeDNS           bool                  `json:"enable-fake-dns"`
+	EnableDNSRouting        bool                  `json:"enable-dns-routing"`
 	IndependentDNSCache     bool                  `json:"independent-dns-cache"`
 	GeoIPPath               string                `json:"geoip-path"`
 	GeoSitePath             string                `json:"geosite-path"`
@@ -327,15 +328,17 @@ func BuildConfig(configOpt ConfigOptions, input option.Options) option.Options {
 		dnsRules = append(dnsRules, dnsRule)
 	}
 
-	for _, dnsRule := range dnsRules {
-		if dnsRule.IsValid() {
-			options.DNS.Rules = append(
-				options.DNS.Rules,
-				option.DNSRule{
-					Type:           C.RuleTypeDefault,
-					DefaultOptions: dnsRule,
-				},
-			)
+	if configOpt.EnableDNSRouting {
+		for _, dnsRule := range dnsRules {
+			if dnsRule.IsValid() {
+				options.DNS.Rules = append(
+					options.DNS.Rules,
+					option.DNSRule{
+						Type:           C.RuleTypeDefault,
+						DefaultOptions: dnsRule,
+					},
+				)
+			}
 		}
 	}
 
