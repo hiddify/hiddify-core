@@ -35,6 +35,7 @@ type ConfigOptions struct {
 	EnableTun               bool                  `json:"enable-tun"`
 	SetSystemProxy          bool                  `json:"set-system-proxy"`
 	BypassLAN               bool                  `json:"bypass-lan"`
+	AllowConnectionFromLAN  bool                  `json:"allow-connection-from-lan"`
 	EnableFakeDNS           bool                  `json:"enable-fake-dns"`
 	EnableDNSRouting        bool                  `json:"enable-dns-routing"`
 	IndependentDNSCache     bool                  `json:"independent-dns-cache"`
@@ -77,6 +78,13 @@ func BuildConfig(configOpt ConfigOptions, input option.Options) option.Options {
 	var options option.Options
 	directDNSDomains := []string{}
 	dnsRules := []option.DefaultDNSRule{}
+
+	var bind string
+	if configOpt.AllowConnectionFromLAN {
+		bind = "0.0.0.0"
+	} else {
+		bind = "127.0.0.1"
+	}
 
 	if configOpt.EnableClashApi {
 		options.Experimental = &option.ExperimentalOptions{
@@ -177,7 +185,7 @@ func BuildConfig(configOpt ConfigOptions, input option.Options) option.Options {
 			Tag:  "mixed-in",
 			MixedOptions: option.HTTPMixedInboundOptions{
 				ListenOptions: option.ListenOptions{
-					Listen:     option.NewListenAddress(netip.MustParseAddr("127.0.0.1")),
+					Listen:     option.NewListenAddress(netip.MustParseAddr(bind)),
 					ListenPort: configOpt.MixedPort,
 					InboundOptions: option.InboundOptions{
 						SniffEnabled:             true,
@@ -197,7 +205,7 @@ func BuildConfig(configOpt ConfigOptions, input option.Options) option.Options {
 			Tag:  "dns-in",
 			DirectOptions: option.DirectInboundOptions{
 				ListenOptions: option.ListenOptions{
-					Listen:     option.NewListenAddress(netip.MustParseAddr("127.0.0.1")),
+					Listen:     option.NewListenAddress(netip.MustParseAddr(bind)),
 					ListenPort: configOpt.LocalDnsPort,
 				},
 				OverrideAddress: "8.8.8.8",
