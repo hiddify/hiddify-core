@@ -21,10 +21,14 @@ android: lib_install
 	gomobile bind -v -androidapi=21 -javapkg=io.nekohasekai -libname=box -tags=$(TAGS) -trimpath -target=android -o $(BINDIR)/$(NAME).aar github.com/sagernet/sing-box/experimental/libbox ./mobile
 
 ios-full: lib_install
-	gomobile bind -v  -target ios,iossimulator,tvos,tvossimulator,macos -libname=box -tags=$(TAGS),with_dhcp,with_low_memory,with_conntrack -trimpath -ldflags="-w -s" -o $(BINDIR)/$(PRODUCT_NAME).xcframework github.com/sagernet/sing-box/experimental/libbox ./mobile
+	gomobile bind -v  -target ios,iossimulator,tvos,tvossimulator,macos -libname=box -tags=$(TAGS),with_dhcp,with_low_memory,with_conntrack -trimpath -ldflags="-w -s" -o $(BINDIR)/$(PRODUCT_NAME).xcframework github.com/sagernet/sing-box/experimental/libbox ./mobile &&\
+	mv $(BINDIR)/$(PRODUCT_NAME).xcframework $(BINDIR)/$(NAME).xcframework &&\
+	cp Libcore.podspec $(BINDIR)/$(NAME).xcframework/
+
 ios: lib_install
 	gomobile bind -v  -target ios -libname=box -tags=$(TAGS),with_dhcp,with_low_memory,with_conntrack -trimpath -ldflags="-w -s" -o $(BINDIR)/$(PRODUCT_NAME).xcframework github.com/sagernet/sing-box/experimental/libbox ./mobile &&\
-	mv $(BINDIR)/$(PRODUCT_NAME).xcframework $(BINDIR)/$(NAME).xcframework
+	mv $(BINDIR)/$(PRODUCT_NAME).xcframework $(BINDIR)/$(NAME).xcframework &&\
+	cp Libcore.podspec $(BINDIR)/$(NAME).xcframework/
 
 
 windows-amd64:
@@ -42,3 +46,25 @@ macos-universal: macos-amd64 macos-arm64
 
 clean:
 	rm $(BINDIR)/*
+
+
+release: # Create a new tag for release.
+	@echo "previous version was $$(git describe --tags $$(git rev-list --tags --max-count=1))"
+	@echo "WARNING: This operation will creates version tag and push to github"
+	@bash -c '\
+	read -p "Version? (provide the next x.y.z semver) : " TAG && \
+	echo $$TAG &&\
+	[[ "$$TAG" =~ ^[0-9]{1,2}\.[0-9]{1,2}\.[0-9]{1,2}(\.dev)?$$ ]] || { echo "Incorrect tag. e.g., 1.2.3 or 1.2.3.dev"; exit 1; } && \
+	IFS="." read -r -a VERSION_ARRAY <<< "$$TAG" && \
+	VERSION_STR="$${VERSION_ARRAY[0]}.$${VERSION_ARRAY[1]}.$${VERSION_ARRAY[2]}" && \
+	BUILD_NUMBER=$$(( $${VERSION_ARRAY[0]} * 10000 + $${VERSION_ARRAY[1]} * 100 + $${VERSION_ARRAY[2]} )) && \
+	echo "version: $${VERSION_STR}+$${BUILD_NUMBER}" && \
+	sed -i "s/^s.version: .*/s.version          = '$${VERSION_STR}'/g" Libcore.podspec && \
+	git tag $${TAG} > /dev/null && \
+	git tag -d $${TAG} > /dev/null && \
+	git add Libcore.podspec && \
+	git commit -m "release: version $${TAG}" && \
+	echo "creating git tag : v$${TAG}" && \
+	git tag v$${TAG} && \
+	git push -u origin HEAD --tags && \
+	echo "Github Actions will detect the new tag and release the new version."'
