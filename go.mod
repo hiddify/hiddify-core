@@ -3,10 +3,10 @@ module github.com/hiddify/libcore
 go 1.21.1
 
 require (
-	github.com/hiddify/ray2sing v0.0.0-20231126095652-91be355a9a97
+	github.com/hiddify/ray2sing v0.0.0-20240105113135-98cd4205af24
 	github.com/sagernet/gomobile v0.1.1
 	github.com/sagernet/sing v0.2.20
-	github.com/sagernet/sing-box v1.7.6
+	github.com/sagernet/sing-box v1.7.8
 	github.com/sagernet/sing-dns v0.1.12
 	github.com/spf13/cobra v1.8.0
 	github.com/xmdhs/clash2singbox v0.0.2
@@ -21,7 +21,7 @@ require (
 	github.com/cloudflare/circl v1.3.6 // indirect
 	github.com/cretz/bine v0.2.0 // indirect
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
-	github.com/go-chi/chi/v5 v5.0.10 // indirect
+	github.com/go-chi/chi/v5 v5.0.11 // indirect
 	github.com/go-chi/cors v1.2.1 // indirect
 	github.com/go-chi/render v1.0.3 // indirect
 	github.com/go-ole/go-ole v1.3.0 // indirect
@@ -64,7 +64,7 @@ require (
 	github.com/sagernet/netlink v0.0.0-20220905062125-8043b4a9aa97 // indirect
 	github.com/sagernet/quic-go v0.40.0 // indirect
 	github.com/sagernet/reality v0.0.0-20230406110435-ee17307e7691 // indirect
-	github.com/sagernet/sing-mux v0.1.6 // indirect
+	github.com/sagernet/sing-mux v0.1.7 // indirect
 	github.com/sagernet/sing-quic v0.1.6 // indirect
 	github.com/sagernet/sing-shadowsocks v0.2.6 // indirect
 	github.com/sagernet/sing-shadowsocks2 v0.1.5 // indirect
@@ -92,10 +92,10 @@ require (
 	golang.org/x/text v0.14.0 // indirect
 	golang.org/x/time v0.4.0 // indirect
 	golang.org/x/tools v0.16.0 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20230822172742-b8732ec3820d // indirect
-	google.golang.org/grpc v1.59.0 // indirect
-	google.golang.org/protobuf v1.31.0 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20231002182017-d307bd883b97 // indirect
+	google.golang.org/grpc v1.60.1 // indirect
+	google.golang.org/protobuf v1.32.0 // indirect
 	lukechampine.com/blake3 v1.2.1 // indirect
 )
 
-replace github.com/sagernet/sing-box => github.com/hiddify/hiddify-sing-box v1.4.0-rc.3.0.20231223062555-6654baf4ccde
+replace github.com/sagernet/sing-box => github.com/hiddify/hiddify-sing-box v1.4.0-rc.3.0.20240105191903-8f9423d9f47c
