@@ -1,6 +1,6 @@
 Pod::Spec.new do |s|    
     s.name             = 'Libcore'
-    s.version          = '1.0.0.local'
+    s.version          = '0.10.0'
     s.summary          = 'hiddify mobile SDK for iOS'  
     s.homepage         = 'https://hiddify.com/'
     s.license          = { :type => 'Copyright', :text => 'Hiddify Open Software' }
