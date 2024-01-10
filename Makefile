@@ -29,6 +29,8 @@ ios: lib_install
 	gomobile bind -v  -target ios -libname=box -tags=$(TAGS),with_dhcp,with_low_memory,with_conntrack -trimpath -ldflags="-w -s" -o $(BINDIR)/$(PRODUCT_NAME).xcframework github.com/sagernet/sing-box/experimental/libbox ./mobile &&\
 	mv $(BINDIR)/$(PRODUCT_NAME).xcframework $(BINDIR)/$(NAME).xcframework &&\
 	cp Libcore.podspec $(BINDIR)/$(NAME).xcframework/
+	cp Info.plist $(BINDIR)/$(NAME).xcframework/
+
 
 
 windows-amd64:
@@ -60,6 +62,8 @@ release: # Create a new tag for release.
 	BUILD_NUMBER=$$(( $${VERSION_ARRAY[0]} * 10000 + $${VERSION_ARRAY[1]} * 100 + $${VERSION_ARRAY[2]} )) && \
 	echo "version: $${VERSION_STR}+$${BUILD_NUMBER}" && \
 	sed -i "s/^s.version: .*/s.version          = '$${VERSION_STR}'/g" Libcore.podspec && \
+	sed -i -e "s|<key>CFBundleVersion</key>\s*<string>[^<]*</string>|<key>CFBundleVersion</key><string>$${VERSION_STR}</string>|" Info.plist &&\
+    sed -i -e "s|<key>CFBundleShortVersionString</key>\s*<string>[^<]*</string>|<key>CFBundleShortVersionString</key><string>$${VERSION_STR}</string>|" Info.plist &&\
 	git tag $${TAG} > /dev/null && \
 	git tag -d $${TAG} > /dev/null && \
 	git add Libcore.podspec && \
