@@ -66,7 +66,7 @@ release: # Create a new tag for release.
     sed -i -e "s|<key>CFBundleShortVersionString</key>\s*<string>[^<]*</string>|<key>CFBundleShortVersionString</key><string>$${VERSION_STR}</string>|" Info.plist &&\
 	git tag $${TAG} > /dev/null && \
 	git tag -d $${TAG} > /dev/null && \
-	git add Libcore.podspec && \
+	git add Libcore.podspec Info.plist && \
 	git commit -m "release: version $${TAG}" && \
 	echo "creating git tag : v$${TAG}" && \
 	git tag v$${TAG} && \
