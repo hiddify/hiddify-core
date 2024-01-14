@@ -47,8 +47,8 @@ github.com/google/pprof v0.0.0-20231101202521-4ca4178f5c7a h1:fEBsGL/sjAuJrgah5X
 github.com/google/pprof v0.0.0-20231101202521-4ca4178f5c7a/go.mod h1:czg5+yv1E0ZGTi6S6vVK1mke0fV+FaUhNGcd6VRS9Ik=
 github.com/hashicorp/yamux v0.1.1 h1:yrQxtgseBDrq9Y652vSRDvsKCJKOUD+GzTS4Y0Y8pvE=
 github.com/hashicorp/yamux v0.1.1/go.mod h1:CtWFDAQgb7dxtzFs4tWbplKIe2jSi3+5vKbgIO0SLnQ=
-github.com/hiddify/hiddify-sing-box v1.7.9-0.20240114234025-458ca8290ae4 h1:yiHrt6sK/QBgdcI6e/4yQQVPrUSYZFLHnyp9Bwhx0Mc=
-github.com/hiddify/hiddify-sing-box v1.7.9-0.20240114234025-458ca8290ae4/go.mod h1:cxAxPGP5EAIL5gkgCpx46fkJ/5SUPB3NMCM0wcZAQig=
+github.com/hiddify/hiddify-sing-box v1.7.9-0.20240114235644-740afb0cb8b4 h1:xI+wJb7jFWw7AtAUYWUuIQ7krg0X/xIIG0D5sKMX+IE=
+github.com/hiddify/hiddify-sing-box v1.7.9-0.20240114235644-740afb0cb8b4/go.mod h1:cxAxPGP5EAIL5gkgCpx46fkJ/5SUPB3NMCM0wcZAQig=
 github.com/hiddify/ray2sing v0.0.0-20240105113135-98cd4205af24 h1:eQR8WaMPsoF4dPUNVqd1xCo1hODUyrDzpIQr6UMGdzI=
 github.com/hiddify/ray2sing v0.0.0-20240105113135-98cd4205af24/go.mod h1:kAX09KiJcw0cyPOlmu9qiJLzIDgNiob0vR2BVHl1jYA=
 github.com/inconshreveable/mousetrap v1.1.0 h1:wN+x4NVGpMsO7ErUn/mUI3vEoE6Jt13X2s0bqwp9tc8=
