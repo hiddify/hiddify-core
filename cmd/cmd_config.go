@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 
 	"github.com/hiddify/libcore/shared"
+	"github.com/sagernet/sing-box/experimental/libbox"
 	"github.com/sagernet/sing-box/log"
 	"github.com/sagernet/sing-box/option"
 
@@ -29,8 +30,21 @@ var commandBuild = &cobra.Command{
 	},
 }
 
+var commandCheck = &cobra.Command{
+	Use:   "check",
+	Short: "Check configuration",
+	Args:  cobra.ExactArgs(1),
+	Run: func(cmd *cobra.Command, args []string) {
+		err := check(args[0])
+		if err != nil {
+			log.Fatal(err)
+		}
+	},
+}
+
 func init() {
 	mainCommand.AddCommand(commandBuild)
+	mainCommand.AddCommand(commandCheck)
 }
 
 func build(path string, optionsPath string) error {
@@ -58,6 +72,14 @@ func build(path string, optionsPath string) error {
 
 	fmt.Printf("%s\n", config)
 	return err
+}
+
+func check(path string) error {
+	content, err := os.ReadFile(path)
+	if err != nil {
+		return err
+	}
+	return libbox.CheckConfig(string(content))
 }
 
 func readConfigAt(path string) (*option.Options, error) {
