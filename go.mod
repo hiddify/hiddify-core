@@ -1,6 +1,6 @@
 module github.com/hiddify/libcore
 
-go 1.21.1
+go 1.21.6
 
 require (
 	github.com/hiddify/ray2sing v0.0.0-20240105113135-98cd4205af24
