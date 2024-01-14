@@ -10,10 +10,10 @@ Pod::Spec.new do |s|
     s.vendored_frameworks = 'Libcore.xcframework'
     # s.source = { :git => 'https://github.com/hiddify/hiddify-next-core.git', :tag => s.version }
     s.source           = { :http => "https://github.com/hiddify/hiddify-next-core/releases/download/v#{s.version}/hiddify-libcore-ios.xcframework.tar.gz" }
-    s.prepare_command = <<-CMD
-      ls -R -l
-      tar -xf "${PODS_TARGET_SRCROOT}/hiddify-libcore-ios.xcframework.tar.gz"
-    CMD
+    # s.prepare_command = <<-CMD
+    #   ls -R -l
+    #   tar -xf "${PODS_TARGET_SRCROOT}/hiddify-libcore-ios.xcframework.tar.gz"
+    # CMD
 
 
 
