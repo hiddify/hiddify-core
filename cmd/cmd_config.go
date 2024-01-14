@@ -16,9 +16,13 @@ import (
 var commandBuild = &cobra.Command{
 	Use:   "build",
 	Short: "Build configuration",
-	Args:  cobra.ExactArgs(2),
+	Args:  cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		err := build(args[0], args[1])
+		var optionsPath string
+		if len(args) > 1 {
+			optionsPath = args[1]
+		}
+		err := build(args[0], optionsPath)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -32,15 +36,20 @@ func init() {
 func build(path string, optionsPath string) error {
 	if workingDir != "" {
 		path = filepath.Join(workingDir, path)
-		optionsPath = filepath.Join(workingDir, optionsPath)
+		if optionsPath != "" {
+			optionsPath = filepath.Join(workingDir, optionsPath)
+		}
 	}
 	options, err := readConfigAt(path)
 	if err != nil {
 		return err
 	}
-	configOptions, err := readConfigOptionsAt(optionsPath)
-	if err != nil {
-		return err
+	configOptions := shared.DefaultConfigOptions()
+	if optionsPath != "" {
+		configOptions, err = readConfigOptionsAt(optionsPath)
+		if err != nil {
+			return err
+		}
 	}
 	config, err := shared.BuildConfigJson(*configOptions, *options)
 	if err != nil {

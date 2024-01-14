@@ -8,6 +8,7 @@ import (
 	"net/netip"
 	"net/url"
 	"strings"
+	"time"
 
 	C "github.com/sagernet/sing-box/constant"
 	"github.com/sagernet/sing-box/option"
@@ -52,6 +53,46 @@ type TLSTricks struct {
 	EnableMixedSNICase bool   `json:"enable-tls-mixed-sni-case"`
 	EnablePadding      bool   `json:"enable-tls-padding"`
 	PaddingSize        string `json:"tls-padding-size"`
+}
+
+func DefaultConfigOptions() *ConfigOptions {
+	return &ConfigOptions{
+		ExecuteAsIs:             false,
+		LogLevel:                "info",
+		ResolveDestination:      false,
+		IPv6Mode:                option.DomainStrategy(dns.DomainStrategyAsIS),
+		RemoteDnsAddress:        "1.1.1.1",
+		RemoteDnsDomainStrategy: option.DomainStrategy(dns.DomainStrategyAsIS),
+		DirectDnsAddress:        "1.1.1.1",
+		DirectDnsDomainStrategy: option.DomainStrategy(dns.DomainStrategyAsIS),
+		MixedPort:               2334,
+		LocalDnsPort:            6450,
+		MTU:                     9000,
+		StrictRoute:             true,
+		TUNStack:                "mixed",
+		ConnectionTestUrl:       "https://cp.cloudflare.com/",
+		URLTestInterval:         option.Duration(10 * time.Minute),
+		EnableClashApi:          true,
+		ClashApiPort:            6756,
+		EnableTun:               true,
+		SetSystemProxy:          true,
+		BypassLAN:               false,
+		AllowConnectionFromLAN:  false,
+		EnableFakeDNS:           false,
+		EnableDNSRouting:        false,
+		IndependentDNSCache:     false,
+		GeoIPPath:               "geoip.db",
+		GeoSitePath:             "geosite.db",
+		Rules:                   []Rule{},
+		TLSTricks: TLSTricks{
+			EnableFragment:     false,
+			FragmentSize:       "10-100",
+			FragmentSleep:      "50-200",
+			EnableMixedSNICase: false,
+			EnablePadding:      false,
+			PaddingSize:        "100-200",
+		},
+	}
 }
 
 func BuildConfigJson(configOpt ConfigOptions, input option.Options) (string, error) {
