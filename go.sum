@@ -47,8 +47,8 @@ github.com/google/pprof v0.0.0-20231101202521-4ca4178f5c7a h1:fEBsGL/sjAuJrgah5X
 github.com/google/pprof v0.0.0-20231101202521-4ca4178f5c7a/go.mod h1:czg5+yv1E0ZGTi6S6vVK1mke0fV+FaUhNGcd6VRS9Ik=
 github.com/hashicorp/yamux v0.1.1 h1:yrQxtgseBDrq9Y652vSRDvsKCJKOUD+GzTS4Y0Y8pvE=
 github.com/hashicorp/yamux v0.1.1/go.mod h1:CtWFDAQgb7dxtzFs4tWbplKIe2jSi3+5vKbgIO0SLnQ=
-github.com/hiddify/hiddify-sing-box v1.4.0-rc.3.0.20240105191903-8f9423d9f47c h1:9H5mfeIa1QNU9XbwEME5q+xyQFEup74+iIFdmOxlH18=
-github.com/hiddify/hiddify-sing-box v1.4.0-rc.3.0.20240105191903-8f9423d9f47c/go.mod h1:heEI8sd1zpqWLfbf3ZhFOXrmCl5GGjAGZu1MuA1gEZM=
+github.com/hiddify/hiddify-sing-box v1.7.9-0.20240114234025-458ca8290ae4 h1:yiHrt6sK/QBgdcI6e/4yQQVPrUSYZFLHnyp9Bwhx0Mc=
+github.com/hiddify/hiddify-sing-box v1.7.9-0.20240114234025-458ca8290ae4/go.mod h1:cxAxPGP5EAIL5gkgCpx46fkJ/5SUPB3NMCM0wcZAQig=
 github.com/hiddify/ray2sing v0.0.0-20240105113135-98cd4205af24 h1:eQR8WaMPsoF4dPUNVqd1xCo1hODUyrDzpIQr6UMGdzI=
 github.com/hiddify/ray2sing v0.0.0-20240105113135-98cd4205af24/go.mod h1:kAX09KiJcw0cyPOlmu9qiJLzIDgNiob0vR2BVHl1jYA=
 github.com/inconshreveable/mousetrap v1.1.0 h1:wN+x4NVGpMsO7ErUn/mUI3vEoE6Jt13X2s0bqwp9tc8=
@@ -104,6 +104,8 @@ github.com/pion/transport/v3 v3.0.1 h1:gDTlPJwROfSfz6QfSi0ZmeCSkFcnWWiiR9ES0ouAN
 github.com/pion/transport/v3 v3.0.1/go.mod h1:UY7kiITrlMv7/IKgd5eTUcaahZx5oUN3l9SzK5f5xE0=
 github.com/pion/turn/v3 v3.0.1 h1:wLi7BTQr6/Q20R0vt/lHbjv6y4GChFtC33nkYbasoT8=
 github.com/pion/turn/v3 v3.0.1/go.mod h1:MrJDKgqryDyWy1/4NT9TWfXWGMC7UHT6pJIv1+gMeNE=
+github.com/pires/go-proxyproto v0.7.0 h1:IukmRewDQFWC7kfnb66CSomk2q/seBuilHBYFwyq0Hs=
+github.com/pires/go-proxyproto v0.7.0/go.mod h1:Vz/1JPY/OACxWGQNIRY2BeyDmpoaWmEP40O9LbuiFR4=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/quic-go/qpack v0.4.0 h1:Cr9BXA1sQS2SmDUWjSofMPNKmvF6IiIfDRmgU0w1ZCo=
