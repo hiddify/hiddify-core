@@ -7,5 +7,6 @@ Pod::Spec.new do |s|
     s.author           = { 'Hiddify' => 'ios@hiddify.com' }
     s.source = { :git => 'https://github.com/hiddify/hiddify-next-core.git', :tag => s.version }
     s.ios.deployment_target = '9.0'
+    s.vendored_frameworks = 'Libcore.xcframework'
 end
   
