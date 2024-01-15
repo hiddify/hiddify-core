@@ -349,6 +349,7 @@ func BuildConfig(configOpt ConfigOptions, input option.Options) option.Options {
 					if value, ok := obj["tls"]; ok {
 						tlsTricks := make(map[string]interface{})
 						tlsTricks["mixedcase_sni"] = configOpt.TLSTricks.EnableMixedSNICase
+						tlsTricks["padding_mode"] = "random"
 						if configOpt.TLSTricks.EnablePadding {
 							tlsTricks["padding_size"] = configOpt.TLSTricks.PaddingSize
 						} else {
