@@ -10,7 +10,11 @@ import (
 )
 
 func Parse(path string, tempPath string, debug bool) error {
-	return config.ParseConfig(path, tempPath, debug)
+	config, err := config.ParseConfig(tempPath, debug)
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(path, config, 0777)
 }
 
 func BuildConfig(path string, configOptionsJson string) (string, error) {

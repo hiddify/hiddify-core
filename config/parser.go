@@ -22,10 +22,10 @@ var configParsers = []func([]byte, bool) ([]byte, error){
 	parseClashConfig,
 }
 
-func ParseConfig(path string, tempPath string, debug bool) error {
-	content, err := os.ReadFile(tempPath)
+func ParseConfig(path string, debug bool) ([]byte, error) {
+	content, err := os.ReadFile(path)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	var parseError error
@@ -34,15 +34,11 @@ func ParseConfig(path string, tempPath string, debug bool) error {
 		if err == nil {
 			fmt.Printf("[ConfigParser] success with parser #%d, checking...\n", index)
 			err = libbox.CheckConfig(string(config))
-			if err != nil {
-				return err
-			}
-			err = os.WriteFile(path, config, 0777)
-			return err
+			return config, err
 		}
 		parseError = err
 	}
-	return parseError
+	return nil, parseError
 }
 
 func parseV2rayConfig(content []byte, debug bool) ([]byte, error) {
