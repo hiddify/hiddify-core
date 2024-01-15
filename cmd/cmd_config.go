@@ -14,6 +14,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var commandBuildOutputPath string
+
 var commandBuild = &cobra.Command{
 	Use:   "build",
 	Short: "Build configuration",
@@ -43,6 +45,7 @@ var commandCheck = &cobra.Command{
 }
 
 func init() {
+	commandBuild.Flags().StringVarP(&commandBuildOutputPath, "output", "o", "", "write result to file path instead of stdout")
 	mainCommand.AddCommand(commandBuild)
 	mainCommand.AddCommand(commandCheck)
 }
@@ -69,9 +72,17 @@ func build(path string, optionsPath string) error {
 	if err != nil {
 		return err
 	}
-
-	fmt.Printf("%s\n", config)
-	return err
+	if commandBuildOutputPath != "" {
+		outputPath, _ := filepath.Abs(filepath.Join(workingDir, commandBuildOutputPath))
+		err = os.WriteFile(outputPath, []byte(config), 0777)
+		if err != nil {
+			return err
+		}
+		fmt.Println("result successfully written to ", outputPath)
+	} else {
+		os.Stdout.WriteString(config)
+	}
+	return nil
 }
 
 func check(path string) error {
