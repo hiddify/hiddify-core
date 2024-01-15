@@ -5,6 +5,7 @@ Pod::Spec.new do |s|
     s.homepage         = 'https://hiddify.com/'
     s.license          = { :type => 'Copyright', :text => 'Hiddify Open Software' }
     s.author           = { 'Hiddify' => 'ios@hiddify.com' }
+    s.static_framework = true
     
     s.ios.deployment_target = '9.0'
     s.vendored_frameworks = 'Libcore.xcframework'
