@@ -6,7 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/hiddify/libcore/shared"
+	"github.com/hiddify/libcore/config"
 	"github.com/sagernet/sing-box/experimental/libbox"
 	"github.com/sagernet/sing-box/log"
 	"github.com/sagernet/sing-box/option"
@@ -58,14 +58,14 @@ func build(path string, optionsPath string) error {
 	if err != nil {
 		return err
 	}
-	configOptions := shared.DefaultConfigOptions()
+	configOptions := config.DefaultConfigOptions()
 	if optionsPath != "" {
 		configOptions, err = readConfigOptionsAt(optionsPath)
 		if err != nil {
 			return err
 		}
 	}
-	config, err := shared.BuildConfigJson(*configOptions, *options)
+	config, err := config.BuildConfigJson(*configOptions, *options)
 	if err != nil {
 		return err
 	}
@@ -95,12 +95,12 @@ func readConfigAt(path string) (*option.Options, error) {
 	return &options, nil
 }
 
-func readConfigOptionsAt(path string) (*shared.ConfigOptions, error) {
+func readConfigOptionsAt(path string) (*config.ConfigOptions, error) {
 	content, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}
-	var options shared.ConfigOptions
+	var options config.ConfigOptions
 	err = json.Unmarshal(content, &options)
 	if err != nil {
 		return nil, err

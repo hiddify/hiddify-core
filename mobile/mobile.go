@@ -4,13 +4,13 @@ import (
 	"encoding/json"
 	"os"
 
-	"github.com/hiddify/libcore/shared"
+	"github.com/hiddify/libcore/config"
 	_ "github.com/sagernet/gomobile"
 	"github.com/sagernet/sing-box/option"
 )
 
 func Parse(path string, tempPath string, debug bool) error {
-	return shared.ParseConfig(path, tempPath, debug)
+	return config.ParseConfig(path, tempPath, debug)
 }
 
 func BuildConfig(path string, configOptionsJson string) (string, error) {
@@ -23,10 +23,10 @@ func BuildConfig(path string, configOptionsJson string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	configOptions := &shared.ConfigOptions{}
+	configOptions := &config.ConfigOptions{}
 	err = json.Unmarshal([]byte(configOptionsJson), configOptions)
 	if err != nil {
 		return "", nil
 	}
-	return shared.BuildConfigJson(*configOptions, options)
+	return config.BuildConfigJson(*configOptions, options)
 }

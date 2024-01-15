@@ -12,13 +12,13 @@ import (
 	"unsafe"
 
 	"github.com/hiddify/libcore/bridge"
-	"github.com/hiddify/libcore/shared"
+	"github.com/hiddify/libcore/config"
 	"github.com/sagernet/sing-box/experimental/libbox"
 	"github.com/sagernet/sing-box/log"
 )
 
 var box *libbox.BoxService
-var configOptions *shared.ConfigOptions
+var configOptions *config.ConfigOptions
 var activeConfigPath *string
 var logFactory *log.Factory
 
@@ -29,7 +29,7 @@ func setupOnce(api unsafe.Pointer) {
 
 //export setup
 func setup(baseDir *C.char, workingDir *C.char, tempDir *C.char, statusPort C.longlong, debug bool) (CErr *C.char) {
-	defer shared.DeferPanicToError("setup", func(err error) {
+	defer config.DeferPanicToError("setup", func(err error) {
 		CErr = C.CString(err.Error())
 	})
 
@@ -55,11 +55,11 @@ func setup(baseDir *C.char, workingDir *C.char, tempDir *C.char, statusPort C.lo
 
 //export parse
 func parse(path *C.char, tempPath *C.char, debug bool) (CErr *C.char) {
-	defer shared.DeferPanicToError("parse", func(err error) {
+	defer config.DeferPanicToError("parse", func(err error) {
 		CErr = C.CString(err.Error())
 	})
 
-	err := shared.ParseConfig(C.GoString(path), C.GoString(tempPath), debug)
+	err := config.ParseConfig(C.GoString(path), C.GoString(tempPath), debug)
 	if err != nil {
 		return C.CString(err.Error())
 	}
@@ -68,11 +68,11 @@ func parse(path *C.char, tempPath *C.char, debug bool) (CErr *C.char) {
 
 //export changeConfigOptions
 func changeConfigOptions(configOptionsJson *C.char) (CErr *C.char) {
-	defer shared.DeferPanicToError("changeConfigOptions", func(err error) {
+	defer config.DeferPanicToError("changeConfigOptions", func(err error) {
 		CErr = C.CString(err.Error())
 	})
 
-	configOptions = &shared.ConfigOptions{}
+	configOptions = &config.ConfigOptions{}
 	err := json.Unmarshal([]byte(C.GoString(configOptionsJson)), configOptions)
 	if err != nil {
 		return C.CString(err.Error())
@@ -82,7 +82,7 @@ func changeConfigOptions(configOptionsJson *C.char) (CErr *C.char) {
 
 //export generateConfig
 func generateConfig(path *C.char) (res *C.char) {
-	defer shared.DeferPanicToError("generateConfig", func(err error) {
+	defer config.DeferPanicToError("generateConfig", func(err error) {
 		res = C.CString("error" + err.Error())
 	})
 
@@ -93,7 +93,7 @@ func generateConfig(path *C.char) (res *C.char) {
 	return C.CString(config)
 }
 
-func generateConfigFromFile(path string, configOpt shared.ConfigOptions) (string, error) {
+func generateConfigFromFile(path string, configOpt config.ConfigOptions) (string, error) {
 	content, err := os.ReadFile(path)
 	if err != nil {
 		return "", err
@@ -102,7 +102,7 @@ func generateConfigFromFile(path string, configOpt shared.ConfigOptions) (string
 	if err != nil {
 		return "", err
 	}
-	config, err := shared.BuildConfigJson(configOpt, options)
+	config, err := config.BuildConfigJson(configOpt, options)
 	if err != nil {
 		return "", err
 	}
@@ -111,7 +111,7 @@ func generateConfigFromFile(path string, configOpt shared.ConfigOptions) (string
 
 //export start
 func start(configPath *C.char, disableMemoryLimit bool) (CErr *C.char) {
-	defer shared.DeferPanicToError("start", func(err error) {
+	defer config.DeferPanicToError("start", func(err error) {
 		CErr = C.CString(err.Error())
 	})
 
@@ -140,9 +140,9 @@ func startService(delayStart bool) error {
 	if err != nil {
 		return stopAndAlert(EmptyConfiguration, err)
 	}
-	options = shared.BuildConfig(*configOptions, options)
+	options = config.BuildConfig(*configOptions, options)
 
-	shared.SaveCurrentConfig(sWorkingPath, options)
+	config.SaveCurrentConfig(sWorkingPath, options)
 
 	err = startCommandServer(*logFactory)
 	if err != nil {
@@ -171,7 +171,7 @@ func startService(delayStart bool) error {
 
 //export stop
 func stop() (CErr *C.char) {
-	defer shared.DeferPanicToError("stop", func(err error) {
+	defer config.DeferPanicToError("stop", func(err error) {
 		CErr = C.CString(err.Error())
 	})
 
@@ -202,7 +202,7 @@ func stop() (CErr *C.char) {
 
 //export restart
 func restart(configPath *C.char, disableMemoryLimit bool) (CErr *C.char) {
-	defer shared.DeferPanicToError("restart", func(err error) {
+	defer config.DeferPanicToError("restart", func(err error) {
 		CErr = C.CString(err.Error())
 	})
 	log.Debug("[Service] Restarting")
@@ -253,7 +253,7 @@ func stopCommandClient(command C.int) *C.char {
 
 //export selectOutbound
 func selectOutbound(groupTag *C.char, outboundTag *C.char) (CErr *C.char) {
-	defer shared.DeferPanicToError("selectOutbound", func(err error) {
+	defer config.DeferPanicToError("selectOutbound", func(err error) {
 		CErr = C.CString(err.Error())
 	})
 
@@ -266,7 +266,7 @@ func selectOutbound(groupTag *C.char, outboundTag *C.char) (CErr *C.char) {
 
 //export urlTest
 func urlTest(groupTag *C.char) (CErr *C.char) {
-	defer shared.DeferPanicToError("urlTest", func(err error) {
+	defer config.DeferPanicToError("urlTest", func(err error) {
 		CErr = C.CString(err.Error())
 	})
 
