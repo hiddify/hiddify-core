@@ -86,7 +86,7 @@ jobs:
       - name: Calculate SHA256 Checksum
         if: startsWith(matrix.job.target,'ios')
         run: |
-          sha256sum hiddify-libcore-ios.xcframework.zip > hiddify-libcore-ios.xcframework.zip.sha256
+          sha256sum hiddify-libcore-ios.xcframework.zip | awk '{print $1}'> hiddify-libcore-ios.xcframework.zip.sha256
         working-directory: bin
       - uses: actions/upload-artifact@v3
         if: ${{ success() }}
