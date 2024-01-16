@@ -2,46 +2,30 @@
 // The swift-tools-version declares the minimum version of Swift required to build this package.
 
 import PackageDescription
-
-func fetchChecksum(from url: String) throws -> String {
-    guard let checksumURL = URL(string: url) else {
-        throw NSError(domain: "Invalid URL", code: 0, userInfo: nil)
-    }
-
-    let checksumString = try String(contentsOf: checksumURL)
-    return checksumString.trimmingCharacters(in: .whitespacesAndNewlines)
-}
+import Foundation
 
 let version = "draft"
 let baseURL = "https://github.com/hiddify/hiddify-next-core/releases/download/"
-let packageURL = "\(baseURL)\(version)/hiddify-libcore-ios.xcframework.zip"
-let checksumURL = "\(packageURL).sha256"
+let packageURL = baseURL + version + "/hiddify-libcore-ios.xcframework.zip"
 
-do {
-    let package = Package(
-        name: "Libcore",
-        platforms: [
-            .iOS(.v13) // Minimum platform version
-        ],
-        products: [
-            .library(
-                name: "Libcore",
-                targets: ["Libcore"]),
-        ],
-        dependencies: [
-            // No dependencies
-        ],
-        targets: [
-            .binaryTarget(
-                name: "Libcore",
-                url: packageURL,
-                checksum: try fetchChecksum(from: checksumURL)
-            )
-        ]
-    )
-} catch {
-    // Handle URL or checksum fetch errors
-    print("Error: \(error)")
-    // You might want to exit or handle the error in a way suitable for your application
-    // exit(1)
-}
+let package = Package(
+     name: "Libcore",
+     platforms: [
+         .iOS(.v13) // Minimum platform version
+     ],
+     products: [
+         .library(
+             name: "Libcore",
+             targets: ["Libcore"]),
+     ],
+     dependencies: [
+         // No dependencies
+     ],
+     targets: [
+         .binaryTarget(
+             name: "Libcore",
+             url: packageURL,
+             checksum: "e42d176d32198bc33ae4f8aafa24814934bbc93cbc8747aa8a0353e8341dc3ff"
+             )
+     ]
+ )
