@@ -83,7 +83,11 @@ jobs:
           else
               gzip -r -S ".gz" ./bin/hiddify-libcore*
           fi
-
+      - name: Calculate SHA256 Checksum
+        if: startsWith(matrix.job.target,'ios')
+        run: |
+          sha256sum hiddify-libcore-ios.xcframework.zip > hiddify-libcore-ios.xcframework.zip.sha256
+        working-directory: bin
       - uses: actions/upload-artifact@v3
         if: ${{ success() }}
         with:
