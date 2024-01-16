@@ -7,7 +7,7 @@
 		<key>Libcore.xcscheme_^#shared#^_</key>
 		<dict>
 			<key>orderHint</key>
-			<integer>0</integer>
+			<integer>1</integer>
 		</dict>
 		<key>hiddify-next-core-Package.xcscheme_^#shared#^_</key>
 		<dict>
@@ -17,6 +17,11 @@
 	</dict>
 	<key>SuppressBuildableAutocreation</key>
 	<dict>
+		<key>Libcore</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
 		<key>hiddify-next-core</key>
 		<dict>
 			<key>primary</key>
