@@ -9,6 +9,7 @@ require (
 	github.com/sagernet/sing-box v1.7.8
 	github.com/sagernet/sing-dns v0.1.12
 	github.com/spf13/cobra v1.8.0
+	github.com/titanous/json5 v1.0.0
 	github.com/xmdhs/clash2singbox v0.0.2
 	gopkg.in/yaml.v3 v3.0.1
 )
@@ -99,4 +100,4 @@ require (
 	lukechampine.com/blake3 v1.2.1 // indirect
 )
 
-replace github.com/sagernet/sing-box => github.com/hiddify/hiddify-sing-box v1.7.9-0.20240114235644-740afb0cb8b4
+replace github.com/sagernet/sing-box => github.com/hiddify/hiddify-sing-box v1.7.9-0.20240116233815-7864e2b96b56

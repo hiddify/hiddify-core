@@ -1,10 +1,11 @@
 package config
 
+
 import (
 	_ "embed"
 	"fmt"
 	"os"
-	"encoding/json"
+	"github.com/titanous/json5"
 
 	"github.com/hiddify/ray2sing/ray2sing"
 	"github.com/sagernet/sing-box/experimental/libbox"
@@ -33,6 +34,10 @@ func ParseConfig(path string, debug bool) ([]byte, error) {
 		config, err := parser(content, debug)
 		if err == nil {
 			fmt.Printf("[ConfigParser] success with parser #%d, checking...\n", index)
+			err_internal_check:=isCorrectSingboxConfig(config,debug)
+			if  err_internal_check!=nil{
+				return config, err_internal_check
+			}
 			err = libbox.CheckConfig(string(config))
 			return config, err
 		}
@@ -57,6 +62,10 @@ func parseClashConfig(content []byte, debug bool) ([]byte, error) {
 		fmt.Printf("[ClashParser] unmarshal error: %s\n", err)
 		return nil, err
 	}
+	if len(clashConfig.Proxies)==0{
+		return nil,fmt.Errorf("No Outbound Available! %s", string(content))
+	}
+
 
 	sbConfig, err := convert.Clash2sing(clashConfig)
 	if err != nil {
@@ -74,11 +83,23 @@ func parseClashConfig(content []byte, debug bool) ([]byte, error) {
 }
 
 func parseSingboxConfig(content []byte, debug bool) ([]byte, error) {
-	
-	var dummy interface{}
-	err := json.Unmarshal(content, &dummy)
-	if err != nil{
+	var dummy map[string]interface{}
+	err := json5.Unmarshal(content, &dummy)
+	if err != nil {
 		return nil, err
 	}
 	return content, nil
+}
+func isCorrectSingboxConfig(content []byte, debug bool) error {
+	var dummy map[string]interface{}
+	err := json5.Unmarshal(content, &dummy)
+	if err != nil {
+		return err
+	}
+	
+	if dummy["outbounds"]==nil {
+		return  fmt.Errorf("No Outbound Available! %s", string(content))
+	}
+	
+	return nil
 }
