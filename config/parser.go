@@ -4,10 +4,10 @@ import (
 	_ "embed"
 	"fmt"
 	"os"
+	"encoding/json"
 
 	"github.com/hiddify/ray2sing/ray2sing"
 	"github.com/sagernet/sing-box/experimental/libbox"
-	"github.com/sagernet/sing-box/option"
 	"github.com/xmdhs/clash2singbox/convert"
 	"github.com/xmdhs/clash2singbox/model/clash"
 	"gopkg.in/yaml.v3"
@@ -74,10 +74,10 @@ func parseClashConfig(content []byte, debug bool) ([]byte, error) {
 }
 
 func parseSingboxConfig(content []byte, debug bool) ([]byte, error) {
-	var options option.Options
-	err := options.UnmarshalJSON(content)
-	if err != nil {
-		fmt.Printf("[SingboxParser] unmarshal error: %s\n", err)
+	
+	var dummy interface{}
+	err := json.Unmarshal(content, &dummy)
+	if err != nil{
 		return nil, err
 	}
 	return content, nil
