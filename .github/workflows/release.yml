@@ -77,8 +77,9 @@ jobs:
           rm ./bin/hiddify-libcore-macos-a*.dylib || echo "no macos arm and amd"
           if [[ "${{ matrix.job.target }}" == "ios" ]];then
               cd bin
-              tar -czvf hiddify-libcore-ios.xcframework.tar.gz hiddify-libcore-ios.xcframework
+              zip -r hiddify-libcore-ios.xcframework.zip hiddify-libcore-ios.xcframework
               rm -rf hiddify-libcore-ios.xcframework
+
           else
               gzip -r -S ".gz" ./bin/hiddify-libcore*
           fi
