@@ -9,7 +9,6 @@ require (
 	github.com/sagernet/sing-box v1.7.8
 	github.com/sagernet/sing-dns v0.1.12
 	github.com/spf13/cobra v1.8.0
-	github.com/titanous/json5 v1.0.0
 	github.com/xmdhs/clash2singbox v0.0.2
 	gopkg.in/yaml.v3 v3.0.1
 )

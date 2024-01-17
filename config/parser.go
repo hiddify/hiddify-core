@@ -1,11 +1,10 @@
 package config
 
-
 import (
 	_ "embed"
+	"encoding/json"
 	"fmt"
 	"os"
-	"github.com/titanous/json5"
 
 	"github.com/hiddify/ray2sing/ray2sing"
 	"github.com/sagernet/sing-box/experimental/libbox"
@@ -17,89 +16,49 @@ import (
 //go:embed config.json.template
 var configByte []byte
 
-var configParsers = []func([]byte, bool) ([]byte, error){
-	parseSingboxConfig,
-	parseV2rayConfig,
-	parseClashConfig,
-}
-
 func ParseConfig(path string, debug bool) ([]byte, error) {
 	content, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}
 
-	var parseError error
-	for index, parser := range configParsers {
-		config, err := parser(content, debug)
-		if err == nil {
-			fmt.Printf("[ConfigParser] success with parser #%d, checking...\n", index)
-			err_internal_check:=isCorrectSingboxConfig(config,debug)
-			if  err_internal_check!=nil{
-				return config, err_internal_check
-			}
-			err = libbox.CheckConfig(string(config))
-			return config, err
+	var jsonObj map[string]interface{}
+	if err := json.Unmarshal(content, &jsonObj); err == nil {
+		if jsonObj["outbounds"] == nil {
+			return nil, fmt.Errorf("[SingboxParser] no outbounds found")
 		}
-		parseError = err
+		return validateResult(content, "SingboxParser")
 	}
-	return nil, parseError
+
+	v2rayStr, err := ray2sing.Ray2Singbox(string(content))
+	if err == nil {
+		return validateResult([]byte(v2rayStr), "V2rayParser")
+	}
+
+	clashObj := clash.Clash{}
+	if err := yaml.Unmarshal(content, &clashObj); err == nil && clashObj.Proxies != nil {
+		if len(clashObj.Proxies) == 0 {
+			return nil, fmt.Errorf("[ClashParser] no outbounds found")
+		}
+		converted, err := convert.Clash2sing(clashObj)
+		if err != nil {
+			return nil, fmt.Errorf("[ClashParser] converting clash to sing-box error: %w", err)
+		}
+		output := configByte
+		output, err = convert.Patch(output, converted, "", "", nil)
+		if err != nil {
+			return nil, fmt.Errorf("[ClashParser] patching clash config error: %w", err)
+		}
+		return validateResult(output, "ClashParser")
+	}
+
+	return nil, fmt.Errorf("unable to determine config format")
 }
 
-func parseV2rayConfig(content []byte, debug bool) ([]byte, error) {
-	config, err := ray2sing.Ray2Singbox(string(content))
+func validateResult(content []byte, name string) ([]byte, error) {
+	err := libbox.CheckConfig(string(content))
 	if err != nil {
-		fmt.Printf("[V2rayParser] error: %s\n", err)
-		return nil, err
-	}
-	return []byte(config), nil
-}
-
-func parseClashConfig(content []byte, debug bool) ([]byte, error) {
-	clashConfig := clash.Clash{}
-	err := yaml.Unmarshal(content, &clashConfig)
-	if err != nil {
-		fmt.Printf("[ClashParser] unmarshal error: %s\n", err)
-		return nil, err
-	}
-	if len(clashConfig.Proxies)==0{
-		return nil,fmt.Errorf("No Outbound Available! %s", string(content))
-	}
-
-
-	sbConfig, err := convert.Clash2sing(clashConfig)
-	if err != nil {
-		fmt.Printf("[ClashParser] convert error: %s\n", err)
-		return nil, err
-	}
-
-	output := configByte
-	output, err = convert.Patch(output, sbConfig, "", "", nil)
-	if err != nil {
-		fmt.Printf("[ClashParser] patch error: %s\n", err)
-		return nil, err
-	}
-	return output, nil
-}
-
-func parseSingboxConfig(content []byte, debug bool) ([]byte, error) {
-	var dummy map[string]interface{}
-	err := json5.Unmarshal(content, &dummy)
-	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("[%s] invalid sing-box config: %w", name, err)
 	}
 	return content, nil
-}
-func isCorrectSingboxConfig(content []byte, debug bool) error {
-	var dummy map[string]interface{}
-	err := json5.Unmarshal(content, &dummy)
-	if err != nil {
-		return err
-	}
-	
-	if dummy["outbounds"]==nil {
-		return  fmt.Errorf("No Outbound Available! %s", string(content))
-	}
-	
-	return nil
 }
