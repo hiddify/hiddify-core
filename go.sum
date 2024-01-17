@@ -49,8 +49,8 @@ github.com/hashicorp/yamux v0.1.1 h1:yrQxtgseBDrq9Y652vSRDvsKCJKOUD+GzTS4Y0Y8pvE
 github.com/hashicorp/yamux v0.1.1/go.mod h1:CtWFDAQgb7dxtzFs4tWbplKIe2jSi3+5vKbgIO0SLnQ=
 github.com/hiddify/hiddify-sing-box v1.7.9-0.20240116233815-7864e2b96b56 h1:M3Ywz+rT30KJSkRUqKB9+pkKmdNOnAQ8TLkPEv6kXC0=
 github.com/hiddify/hiddify-sing-box v1.7.9-0.20240116233815-7864e2b96b56/go.mod h1:cxAxPGP5EAIL5gkgCpx46fkJ/5SUPB3NMCM0wcZAQig=
-github.com/hiddify/ray2sing v0.0.0-20240105113135-98cd4205af24 h1:eQR8WaMPsoF4dPUNVqd1xCo1hODUyrDzpIQr6UMGdzI=
-github.com/hiddify/ray2sing v0.0.0-20240105113135-98cd4205af24/go.mod h1:kAX09KiJcw0cyPOlmu9qiJLzIDgNiob0vR2BVHl1jYA=
+github.com/hiddify/ray2sing v0.0.0-20240117093641-2fe80dfa7aad h1:EuUKURLGoUMfYWYizPWceoA226IDc/hH2TYjDEmCWrc=
+github.com/hiddify/ray2sing v0.0.0-20240117093641-2fe80dfa7aad/go.mod h1:KWpVHt11ce+0NN2lPeIQPVwAwWLmo0cr3nF3E0lUZ88=
 github.com/inconshreveable/mousetrap v1.1.0 h1:wN+x4NVGpMsO7ErUn/mUI3vEoE6Jt13X2s0bqwp9tc8=
 github.com/inconshreveable/mousetrap v1.1.0/go.mod h1:vpF70FUmC8bwa3OWnCshd2FqLfsEA9PFc4w1p2J65bw=
 github.com/insomniacslk/dhcp v0.0.0-20231206064809-8c70d406f6d2 h1:9K06NfxkBh25x56yVhWWlKFE8YpicaSfHwoV8SFbueA=
