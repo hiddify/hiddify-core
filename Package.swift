@@ -4,7 +4,7 @@
 import PackageDescription
 import Foundation
 
-let version = "draft"
+let version = "v0.11.0"
 let baseURL = "https://github.com/hiddify/hiddify-next-core/releases/download/"
 let packageURL = baseURL + version + "/hiddify-libcore-ios.xcframework.zip"
 
@@ -25,7 +25,7 @@ let package = Package(
          .binaryTarget(
              name: "Libcore",
              url: packageURL,
-             checksum: "d1ace700090a20b2e2567f2a29feedd136f9873149ea5b32586add5486a96b49"
+             checksum: "4c24525948c624167398c6205004d398c59278ce2551193005d2de95168555bd"
              )
      ]
  )
