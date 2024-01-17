@@ -25,8 +25,7 @@ let package = Package(
          .binaryTarget(
              name: "Libcore",
              url: packageURL,
-             checksum: "0ad1d771f095f600d92d26fb425d654d6fb3175ef0b70fb1e68dfc4054ee4d39
-"
+             checksum: "0ad1d771f095f600d92d26fb425d654d6fb3175ef0b70fb1e68dfc4054ee4d39"
              )
      ]
  )
