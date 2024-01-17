@@ -9,7 +9,6 @@ on:
       - '**.md'
       - 'docs/**'
       - '.github/**'
-      - 'Package.swift'
       - '!.github/workflows/release.yml'
 
 jobs:
@@ -73,21 +72,15 @@ jobs:
       - name: zip
         run: |
           tree 
-          rm -f ./bin/*.h
-          rm ./bin/hiddify-libcore*sources* ||echo "no source"
-          rm ./bin/hiddify-libcore-macos-a*.dylib || echo "no macos arm and amd"
+          rm -f /*.h
+          rm ./hiddify-libcore*sources* ||echo "no source"
+          rm ./hiddify-libcore-macos-a*.dylib || echo "no macos arm and amd"
           if [[ "${{ matrix.job.target }}" == "ios" ]];then
-              cd bin
-              zip -r hiddify-libcore-ios.xcframework.zip hiddify-libcore-ios.xcframework
+              tar -czvf hiddify-libcore-ios.xcframework.tar.gz hiddify-libcore-ios.xcframework
               rm -rf hiddify-libcore-ios.xcframework
-
           else
-              gzip -r -S ".gz" ./bin/hiddify-libcore*
+              gzip -r -S ".gz" ./hiddify-libcore*
           fi
-      - name: Calculate SHA256 Checksum
-        if: startsWith(matrix.job.target,'ios')
-        run: |
-          sha256sum hiddify-libcore-ios.xcframework.zip | awk '{print $1}'> hiddify-libcore-ios.xcframework.zip.sha256
         working-directory: bin
       - uses: actions/upload-artifact@v3
         if: ${{ success() }}
