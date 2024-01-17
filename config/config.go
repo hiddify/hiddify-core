@@ -339,23 +339,26 @@ func BuildConfig(configOpt ConfigOptions, input option.Options) option.Options {
 
 				if !(out.Type == C.TypeSelector || out.Type == C.TypeURLTest || out.Type == C.TypeBlock || out.Type == C.TypeDNS) {
 					if configOpt.EnableFragment {
-						tlsFragment := make(map[string]interface{})
-						tlsFragment["enabled"] = configOpt.TLSTricks.EnableFragment
-						tlsFragment["size"] = configOpt.TLSTricks.FragmentSize
-						tlsFragment["sleep"] = configOpt.TLSTricks.FragmentSleep
+						tlsFragment := option.TLSFragmentOptions{
+							Enabled: configOpt.TLSTricks.EnableFragment,
+							Size:    configOpt.TLSTricks.FragmentSize,
+							Sleep:   configOpt.TLSTricks.FragmentSleep,
+						}
 						obj["tls_fragment"] = tlsFragment
 					}
 
 					if value, ok := obj["tls"]; ok {
-						tlsTricks := make(map[string]interface{})
-						tlsTricks["mixedcase_sni"] = configOpt.TLSTricks.EnableMixedSNICase
-						tlsTricks["padding_mode"] = "random"
-						if configOpt.TLSTricks.EnablePadding {
-							tlsTricks["padding_size"] = configOpt.TLSTricks.PaddingSize
-						} else {
-							tlsTricks["padding_size"] = ""
+						tlsTricks := option.TLSTricksOptions{
+							MixedCaseSNI: configOpt.TLSTricks.EnableMixedSNICase,
 						}
-						value.(map[string]interface{})["tls_tricks"] = tlsTricks
+
+						if configOpt.TLSTricks.EnablePadding {
+							tlsTricks.PaddingMode = "random"
+							tlsTricks.PaddingSize = configOpt.TLSTricks.PaddingSize
+						}
+						if tlsTricks.MixedCaseSNI || tlsTricks.PaddingMode != "" {
+							value.(map[string]interface{})["tls_tricks"] = tlsTricks
+						}
 					}
 				}
 
