@@ -60,9 +60,7 @@ release: # Create a new tag for release.
 	VERSION_STR="$${VERSION_ARRAY[0]}.$${VERSION_ARRAY[1]}.$${VERSION_ARRAY[2]}" && \
 	BUILD_NUMBER=$$(( $${VERSION_ARRAY[0]} * 10000 + $${VERSION_ARRAY[1]} * 100 + $${VERSION_ARRAY[2]} )) && \
 	echo "version: $${VERSION_STR}+$${BUILD_NUMBER}" && \
-	# sed -i "s/^s.version: .*/s.version          = '$${VERSION_STR}'/g" Libcore.podspec && \
 	sed -i "s/^let version: .*/let version = \"v$${VERSION_STR}\"/g" Package.swift && \
-	
 	sed -i -e "s|<key>CFBundleVersion</key>\s*<string>[^<]*</string>|<key>CFBundleVersion</key><string>$${VERSION_STR}</string>|" Info.plist &&\
     sed -i -e "s|<key>CFBundleShortVersionString</key>\s*<string>[^<]*</string>|<key>CFBundleShortVersionString</key><string>$${VERSION_STR}</string>|" Info.plist &&\
 	git tag $${TAG} > /dev/null && \
