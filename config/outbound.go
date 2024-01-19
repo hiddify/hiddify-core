@@ -9,6 +9,8 @@ import (
 	"github.com/sagernet/sing-box/option"
 )
 
+type outboundMap map[string]interface{}
+
 func patchOutbound(base option.Outbound, configOpt ConfigOptions) (*option.Outbound, string, error) {
 	var serverDomain string
 	var outbound option.Outbound
@@ -22,7 +24,7 @@ func patchOutbound(base option.Outbound, configOpt ConfigOptions) (*option.Outbo
 		return nil, "", formatErr(err)
 	}
 
-	var obj map[string]interface{}
+	var obj outboundMap
 	err = json.Unmarshal(jsonData, &obj)
 	if err != nil {
 		return nil, "", formatErr(err)
@@ -64,6 +66,21 @@ func patchOutbound(base option.Outbound, configOpt ConfigOptions) (*option.Outbo
 		}
 	}
 
+	switch base.Type {
+	case C.TypeVMess, C.TypeVLESS, C.TypeTrojan, C.TypeShadowsocks:
+		if configOpt.EnableMux {
+			multiplex := option.OutboundMultiplexOptions{
+				Enabled:    true,
+				Padding:    configOpt.MuxPadding,
+				MaxStreams: configOpt.MaxStreams,
+				Protocol:   configOpt.MuxProtocol,
+			}
+			obj["multiplex"] = multiplex
+		} else {
+			delete(obj, "multiplex")
+		}
+	}
+
 	modifiedJson, err := json.Marshal(obj)
 	if err != nil {
 		return nil, "", formatErr(err)
@@ -76,3 +93,12 @@ func patchOutbound(base option.Outbound, configOpt ConfigOptions) (*option.Outbo
 
 	return &outbound, serverDomain, nil
 }
+
+// func (o outboundMap) transportType() string {
+// 	if transport, ok := o["transport"].(map[string]interface{}); ok {
+// 		if transportType, ok := transport["type"].(string); ok {
+// 			return transportType
+// 		}
+// 	}
+// 	return ""
+// }

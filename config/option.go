@@ -35,6 +35,7 @@ type ConfigOptions struct {
 	GeoIPPath               string                `json:"geoip-path"`
 	GeoSitePath             string                `json:"geosite-path"`
 	Rules                   []Rule                `json:"rules"`
+	MuxOptions
 	TLSTricks
 }
 
@@ -45,6 +46,13 @@ type TLSTricks struct {
 	EnableMixedSNICase bool   `json:"enable-tls-mixed-sni-case"`
 	EnablePadding      bool   `json:"enable-tls-padding"`
 	PaddingSize        string `json:"tls-padding-size"`
+}
+
+type MuxOptions struct {
+	EnableMux   bool   `json:"enable-mux"`
+	MuxPadding  bool   `json:"mux-padding"`
+	MaxStreams  int    `json:"mux-max-streams"`
+	MuxProtocol string `json:"mux-protocol"`
 }
 
 func DefaultConfigOptions() *ConfigOptions {
@@ -76,6 +84,12 @@ func DefaultConfigOptions() *ConfigOptions {
 		GeoIPPath:               "geoip.db",
 		GeoSitePath:             "geosite.db",
 		Rules:                   []Rule{},
+		MuxOptions: MuxOptions{
+			EnableMux:   true,
+			MuxPadding:  true,
+			MaxStreams:  8,
+			MuxProtocol: "h2mux",
+		},
 		TLSTricks: TLSTricks{
 			EnableFragment:     false,
 			FragmentSize:       "10-100",
