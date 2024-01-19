@@ -325,51 +325,12 @@ func BuildConfig(configOpt ConfigOptions, input option.Options) option.Options {
 	var outbounds []option.Outbound
 	var tags []string
 	for _, out := range input.Outbounds {
-		jsonData, err := out.MarshalJSON()
+		outbound, serverDomain, err := patchOutbound(out, configOpt)
 		if err == nil {
-			var obj map[string]interface{}
-			err = json.Unmarshal(jsonData, &obj)
-			if err == nil {
-				if value, ok := obj["server"]; ok {
-					server := value.(string)
-					if server != "" && net.ParseIP(server) == nil {
-						directDNSDomains = append(directDNSDomains, fmt.Sprintf("full:%s", server))
-					}
-				}
-
-				if !(out.Type == C.TypeSelector || out.Type == C.TypeURLTest || out.Type == C.TypeBlock || out.Type == C.TypeDNS) {
-					if configOpt.EnableFragment {
-						tlsFragment := option.TLSFragmentOptions{
-							Enabled: configOpt.TLSTricks.EnableFragment,
-							Size:    configOpt.TLSTricks.FragmentSize,
-							Sleep:   configOpt.TLSTricks.FragmentSleep,
-						}
-						obj["tls_fragment"] = tlsFragment
-					}
-
-					if value, ok := obj["tls"]; ok {
-						tlsTricks := option.TLSTricksOptions{
-							MixedCaseSNI: configOpt.TLSTricks.EnableMixedSNICase,
-						}
-
-						if configOpt.TLSTricks.EnablePadding {
-							tlsTricks.PaddingMode = "random"
-							tlsTricks.PaddingSize = configOpt.TLSTricks.PaddingSize
-						}
-						if tlsTricks.MixedCaseSNI || tlsTricks.PaddingMode != "" {
-							value.(map[string]interface{})["tls_tricks"] = tlsTricks
-						}
-					}
-				}
-
-				modifiedJson, err := json.Marshal(obj)
-				if err == nil {
-					err = out.UnmarshalJSON(modifiedJson)
-					if err != nil {
-						fmt.Println("error: ", out.Tag, out.Type, err)
-					}
-				}
+			if serverDomain != "" {
+				directDNSDomains = append(directDNSDomains, serverDomain)
 			}
+			out = *outbound
 		}
 
 		switch out.Type {
