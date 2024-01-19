@@ -1,12 +1,14 @@
 package config
 
 import (
+	"bytes"
 	_ "embed"
 	"encoding/json"
 	"fmt"
 	"os"
 
 	"github.com/hiddify/ray2sing/ray2sing"
+	SJ "github.com/sagernet/sing-box/common/json"
 	"github.com/sagernet/sing-box/experimental/libbox"
 	"github.com/xmdhs/clash2singbox/convert"
 	"github.com/xmdhs/clash2singbox/model/clash"
@@ -23,7 +25,8 @@ func ParseConfig(path string, debug bool) ([]byte, error) {
 	}
 
 	var jsonObj map[string]interface{}
-	if err := json.Unmarshal(content, &jsonObj); err == nil {
+	jsonDecoder := json.NewDecoder(SJ.NewCommentFilter(bytes.NewReader(content)))
+	if err := jsonDecoder.Decode(&jsonObj); err == nil {
 		if jsonObj["outbounds"] == nil {
 			return nil, fmt.Errorf("[SingboxParser] no outbounds found")
 		}
