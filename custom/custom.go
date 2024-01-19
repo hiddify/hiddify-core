@@ -6,6 +6,7 @@ package main
 import "C"
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"os"
 	"time"
@@ -15,6 +16,7 @@ import (
 	"github.com/hiddify/libcore/config"
 	"github.com/sagernet/sing-box/experimental/libbox"
 	"github.com/sagernet/sing-box/log"
+	"github.com/sagernet/sing-box/option"
 )
 
 var box *libbox.BoxService
@@ -144,16 +146,20 @@ func startService(delayStart bool) error {
 	if err != nil {
 		return stopAndAlert(EmptyConfiguration, err)
 	}
-	options = config.BuildConfig(*configOptions, options)
+	var patchedOptions *option.Options
+	patchedOptions, err = config.BuildConfig(*configOptions, options)
+	if err != nil {
+		return fmt.Errorf("error building config: %w", err)
+	}
 
-	config.SaveCurrentConfig(sWorkingPath, options)
+	config.SaveCurrentConfig(sWorkingPath, *patchedOptions)
 
 	err = startCommandServer(*logFactory)
 	if err != nil {
 		return stopAndAlert(StartCommandServer, err)
 	}
 
-	instance, err := NewService(options)
+	instance, err := NewService(*patchedOptions)
 	if err != nil {
 		return stopAndAlert(CreateService, err)
 	}

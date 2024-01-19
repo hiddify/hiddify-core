@@ -15,12 +15,15 @@ import (
 )
 
 func BuildConfigJson(configOpt ConfigOptions, input option.Options) (string, error) {
-	options := BuildConfig(configOpt, input)
+	options, err := BuildConfig(configOpt, input)
+	if err != nil {
+		return "", err
+	}
 	var buffer bytes.Buffer
 	json.NewEncoder(&buffer)
 	encoder := json.NewEncoder(&buffer)
 	encoder.SetIndent("", "  ")
-	err := encoder.Encode(options)
+	err = encoder.Encode(options)
 	if err != nil {
 		return "", err
 	}
@@ -28,9 +31,9 @@ func BuildConfigJson(configOpt ConfigOptions, input option.Options) (string, err
 }
 
 // TODO include selectors
-func BuildConfig(configOpt ConfigOptions, input option.Options) option.Options {
+func BuildConfig(configOpt ConfigOptions, input option.Options) (*option.Options, error) {
 	if configOpt.ExecuteAsIs {
-		return applyOverrides(configOpt, input)
+		return applyOverrides(configOpt, input), nil
 	}
 
 	fmt.Printf("config options: %+v\n", configOpt)
@@ -326,6 +329,9 @@ func BuildConfig(configOpt ConfigOptions, input option.Options) option.Options {
 	var tags []string
 	for _, out := range input.Outbounds {
 		outbound, serverDomain, err := patchOutbound(out, configOpt)
+		if err != nil {
+			return nil, err
+		}
 		if err == nil {
 			if serverDomain != "" {
 				directDNSDomains = append(directDNSDomains, serverDomain)
@@ -395,10 +401,10 @@ func BuildConfig(configOpt ConfigOptions, input option.Options) option.Options {
 		options.DNS.Rules = append([]option.DNSRule{{Type: C.RuleTypeDefault, DefaultOptions: dnsRule}}, options.DNS.Rules...)
 	}
 
-	return options
+	return &options, nil
 }
 
-func applyOverrides(overrides ConfigOptions, options option.Options) option.Options {
+func applyOverrides(overrides ConfigOptions, options option.Options) *option.Options {
 	if overrides.EnableClashApi {
 		options.Experimental.ClashAPI = &option.ClashAPIOptions{
 			ExternalController: fmt.Sprintf("%s:%d", "127.0.0.1", overrides.ClashApiPort),
@@ -421,7 +427,7 @@ func applyOverrides(overrides ConfigOptions, options option.Options) option.Opti
 	}
 	options.Inbounds = inbounds
 
-	return options
+	return &options
 }
 
 func removeDuplicateStr(strSlice []string) []string {
