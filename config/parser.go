@@ -8,8 +8,8 @@ import (
 	"os"
 
 	"github.com/hiddify/ray2sing/ray2sing"
-	SJ "github.com/sagernet/sing-box/common/json"
 	"github.com/sagernet/sing-box/experimental/libbox"
+	SJ "github.com/sagernet/sing/common/json"
 	"github.com/xmdhs/clash2singbox/convert"
 	"github.com/xmdhs/clash2singbox/model/clash"
 	"gopkg.in/yaml.v3"
