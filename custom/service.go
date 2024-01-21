@@ -36,8 +36,8 @@ func NewService(options option.Options) (*libbox.BoxService, error) {
 	ctx = filemanager.WithDefault(ctx, sWorkingPath, sTempPath, sUserID, sGroupID)
 	urlTestHistoryStorage := urltest.NewHistoryStorage()
 	ctx = service.ContextWithPtr(ctx, urlTestHistoryStorage)
-	pauseManager := pause.NewDefaultManager(ctx)
-	ctx = pause.ContextWithManager(ctx, pauseManager)
+	pauseManager := pause.WithDefaultManager(ctx)
+	// ctx = pause.ContextWithManager(ctx, pauseManager)
 	instance, err := B.New(B.Options{
 		Context: ctx,
 		Options: options,

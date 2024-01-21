@@ -4,6 +4,8 @@ import (
 	"os"
 	"time"
 
+	"context"
+
 	"github.com/sagernet/sing-box/log"
 
 	"github.com/spf13/cobra"
@@ -32,7 +34,7 @@ func main() {
 
 func preRun(cmd *cobra.Command, args []string) {
 	if disableColor {
-		log.SetStdLogger(log.NewFactory(log.Formatter{BaseTime: time.Now(), DisableColors: true}, os.Stderr, nil).Logger())
+		log.SetStdLogger(log.NewDefaultFactory(context.Background(), log.Formatter{BaseTime: time.Now(), DisableColors: true}, os.Stderr, "", nil, false).Logger())
 	}
 	if workingDir != "" {
 		_, err := os.Stat(workingDir)
