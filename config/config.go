@@ -53,8 +53,10 @@ func BuildConfig(configOpt ConfigOptions, input option.Options) (*option.Options
 		options.Experimental = &option.ExperimentalOptions{
 			ClashAPI: &option.ClashAPIOptions{
 				ExternalController: fmt.Sprintf("%s:%d", "127.0.0.1", configOpt.ClashApiPort),
-				StoreSelected:      true,
-				CacheFile:          "clash.db",
+			},
+			CacheFile: &option.CacheFileOptions{
+				Enabled: true,
+				Path:    "clash.db",
 			},
 		}
 	}
@@ -354,9 +356,10 @@ func BuildConfig(configOpt ConfigOptions, input option.Options) (*option.Options
 		Type: C.TypeURLTest,
 		Tag:  "auto",
 		URLTestOptions: option.URLTestOutboundOptions{
-			Outbounds: tags,
-			URL:       configOpt.ConnectionTestUrl,
-			Interval:  configOpt.URLTestInterval,
+			Outbounds:   tags,
+			URL:         configOpt.ConnectionTestUrl,
+			Interval:    configOpt.URLTestInterval,
+			IdleTimeout: configOpt.URLTestIdleTimeout,
 		},
 	}
 
@@ -408,7 +411,6 @@ func applyOverrides(overrides ConfigOptions, options option.Options) *option.Opt
 	if overrides.EnableClashApi {
 		options.Experimental.ClashAPI = &option.ClashAPIOptions{
 			ExternalController: fmt.Sprintf("%s:%d", "127.0.0.1", overrides.ClashApiPort),
-			StoreSelected:      true,
 		}
 	}
 

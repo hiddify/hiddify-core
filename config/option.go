@@ -23,6 +23,7 @@ type ConfigOptions struct {
 	TUNStack                string                `json:"tun-stack"`
 	ConnectionTestUrl       string                `json:"connection-test-url"`
 	URLTestInterval         option.Duration       `json:"url-test-interval"`
+	URLTestIdleTimeout      option.Duration       `json:"url-test-idle-timeout"`
 	EnableClashApi          bool                  `json:"enable-clash-api"`
 	ClashApiPort            uint16                `json:"clash-api-port"`
 	EnableTun               bool                  `json:"enable-tun"`
@@ -72,6 +73,7 @@ func DefaultConfigOptions() *ConfigOptions {
 		TUNStack:                "mixed",
 		ConnectionTestUrl:       "https://cp.cloudflare.com/",
 		URLTestInterval:         option.Duration(10 * time.Minute),
+		URLTestIdleTimeout:      option.Duration(100 * time.Minute),
 		EnableClashApi:          true,
 		ClashApiPort:            6756,
 		EnableTun:               true,
