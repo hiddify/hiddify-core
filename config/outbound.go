@@ -11,6 +11,70 @@ import (
 
 type outboundMap map[string]interface{}
 
+func patchOutboundMux(base option.Outbound, configOpt ConfigOptions, obj outboundMap) outboundMap {
+	if configOpt.EnableMux {
+		multiplex := option.OutboundMultiplexOptions{
+			Enabled:    true,
+			Padding:    configOpt.MuxPadding,
+			MaxStreams: configOpt.MaxStreams,
+			Protocol:   configOpt.MuxProtocol,
+		}
+		obj["multiplex"] = multiplex
+	} else {
+		delete(obj, "multiplex")
+	}
+	return obj
+}
+
+func patchOutboundTLSTricks(base option.Outbound, configOpt ConfigOptions, obj outboundMap) outboundMap {
+
+	obj = patchOutboundFragment(base, configOpt, obj)
+	if tls, ok := obj["tls"].(map[string]interface{}); ok {
+		tlsTricks := option.TLSTricksOptions{
+			MixedCaseSNI: configOpt.TLSTricks.EnableMixedSNICase,
+		}
+
+		if configOpt.TLSTricks.EnablePadding {
+			tlsTricks.PaddingMode = "random"
+			tlsTricks.PaddingSize = configOpt.TLSTricks.PaddingSize
+		}
+
+		if tlsTricks.MixedCaseSNI || tlsTricks.PaddingMode != "" {
+			tls["tls_tricks"] = tlsTricks
+		} else {
+			tls["tls_tricks"] = nil
+		}
+	}
+	return obj
+}
+
+func patchOutboundFragment(base option.Outbound, configOpt ConfigOptions, obj outboundMap) outboundMap {
+	if configOpt.EnableFragment {
+		tlsFragment := option.TLSFragmentOptions{
+			Enabled: configOpt.TLSTricks.EnableFragment,
+			Size:    configOpt.TLSTricks.FragmentSize,
+			Sleep:   configOpt.TLSTricks.FragmentSleep,
+		}
+		obj["tls_fragment"] = tlsFragment
+	} else {
+		obj["tls_fragment"] = nil
+	}
+	return obj
+}
+
+func isOutboundReality(base option.Outbound) bool {
+	// this function checks reality status ONLY FOR VLESS.
+	// Some other protocols can also use reality, but it's discouraged as stated in the reality document
+	isReality := false
+	switch base.Type {
+	case C.TypeVLESS:
+		if base.VLESSOptions.TLS.Reality != nil {
+			isReality = base.VLESSOptions.TLS.Reality.Enabled
+		}
+	}
+	return isReality
+}
+
 func patchOutbound(base option.Outbound, configOpt ConfigOptions) (*option.Outbound, string, error) {
 	var serverDomain string
 	var outbound option.Outbound
@@ -35,50 +99,12 @@ func patchOutbound(base option.Outbound, configOpt ConfigOptions) (*option.Outbo
 			serverDomain = fmt.Sprintf("full:%s", server)
 		}
 	}
-
-	if !(base.Type == C.TypeSelector || base.Type == C.TypeURLTest || base.Type == C.TypeBlock || base.Type == C.TypeDNS) {
-		if configOpt.EnableFragment {
-			tlsFragment := option.TLSFragmentOptions{
-				Enabled: configOpt.TLSTricks.EnableFragment,
-				Size:    configOpt.TLSTricks.FragmentSize,
-				Sleep:   configOpt.TLSTricks.FragmentSleep,
-			}
-			obj["tls_fragment"] = tlsFragment
-		} else {
-			obj["tls_fragment"] = nil
-		}
-
-		if tls, ok := obj["tls"].(map[string]interface{}); ok {
-			tlsTricks := option.TLSTricksOptions{
-				MixedCaseSNI: configOpt.TLSTricks.EnableMixedSNICase,
-			}
-
-			if configOpt.TLSTricks.EnablePadding {
-				tlsTricks.PaddingMode = "random"
-				tlsTricks.PaddingSize = configOpt.TLSTricks.PaddingSize
-			}
-
-			if tlsTricks.MixedCaseSNI || tlsTricks.PaddingMode != "" {
-				tls["tls_tricks"] = tlsTricks
-			} else {
-				tls["tls_tricks"] = nil
-			}
-		}
+	if !(base.Type == C.TypeSelector || base.Type == C.TypeURLTest || base.Type == C.TypeBlock || base.Type == C.TypeDNS || isOutboundReality(base)) {
+		obj = patchOutboundTLSTricks(base, configOpt, obj)
 	}
-
 	switch base.Type {
 	case C.TypeVMess, C.TypeVLESS, C.TypeTrojan, C.TypeShadowsocks:
-		if configOpt.EnableMux {
-			multiplex := option.OutboundMultiplexOptions{
-				Enabled:    true,
-				Padding:    configOpt.MuxPadding,
-				MaxStreams: configOpt.MaxStreams,
-				Protocol:   configOpt.MuxProtocol,
-			}
-			obj["multiplex"] = multiplex
-		} else {
-			delete(obj, "multiplex")
-		}
+		obj = patchOutboundMux(base, configOpt, obj)
 	}
 
 	modifiedJson, err := json.Marshal(obj)
