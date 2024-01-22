@@ -20,8 +20,8 @@ func patchOutboundMux(base option.Outbound, configOpt ConfigOptions, obj outboun
 			Protocol:   configOpt.MuxProtocol,
 		}
 		obj["multiplex"] = multiplex
-	} else {
-		delete(obj, "multiplex")
+	// } else {
+	// 	delete(obj, "multiplex")
 	}
 	return obj
 }
@@ -41,8 +41,8 @@ func patchOutboundTLSTricks(base option.Outbound, configOpt ConfigOptions, obj o
 
 		if tlsTricks.MixedCaseSNI || tlsTricks.PaddingMode != "" {
 			tls["tls_tricks"] = tlsTricks
-		} else {
-			tls["tls_tricks"] = nil
+		// } else {
+		// 	tls["tls_tricks"] = nil
 		}
 	}
 	return obj
@@ -56,8 +56,8 @@ func patchOutboundFragment(base option.Outbound, configOpt ConfigOptions, obj ou
 			Sleep:   configOpt.TLSTricks.FragmentSleep,
 		}
 		obj["tls_fragment"] = tlsFragment
-	} else {
-		obj["tls_fragment"] = nil
+	// } else {
+	// 	obj["tls_fragment"] = nil
 	}
 	return obj
 }
