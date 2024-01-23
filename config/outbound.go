@@ -20,13 +20,31 @@ func patchOutboundMux(base option.Outbound, configOpt ConfigOptions, obj outboun
 			Protocol:   configOpt.MuxProtocol,
 		}
 		obj["multiplex"] = multiplex
-	// } else {
-	// 	delete(obj, "multiplex")
+		// } else {
+		// 	delete(obj, "multiplex")
 	}
 	return obj
 }
 
 func patchOutboundTLSTricks(base option.Outbound, configOpt ConfigOptions, obj outboundMap) outboundMap {
+	if base.Type == C.TypeSelector || base.Type == C.TypeURLTest || base.Type == C.TypeBlock || base.Type == C.TypeDNS {
+		return obj
+	}
+	if isOutboundReality(base) {
+		return obj
+	}
+
+	var tls *option.OutboundTLSOptions
+	if base.VLESSOptions.OutboundTLSOptionsContainer.TLS == nil {
+		tls = base.VLESSOptions.OutboundTLSOptionsContainer.TLS
+	} else if base.TrojanOptions.OutboundTLSOptionsContainer.TLS == nil {
+		tls = base.TrojanOptions.OutboundTLSOptionsContainer.TLS
+	} else if base.VMessOptions.OutboundTLSOptionsContainer.TLS == nil {
+		tls = base.VMessOptions.OutboundTLSOptionsContainer.TLS
+	}
+	if tls == nil || !tls.Enabled {
+		return obj
+	}
 
 	obj = patchOutboundFragment(base, configOpt, obj)
 	if tls, ok := obj["tls"].(map[string]interface{}); ok {
@@ -41,8 +59,8 @@ func patchOutboundTLSTricks(base option.Outbound, configOpt ConfigOptions, obj o
 
 		if tlsTricks.MixedCaseSNI || tlsTricks.PaddingMode != "" {
 			tls["tls_tricks"] = tlsTricks
-		// } else {
-		// 	tls["tls_tricks"] = nil
+			// } else {
+			// 	tls["tls_tricks"] = nil
 		}
 	}
 	return obj
@@ -50,15 +68,15 @@ func patchOutboundTLSTricks(base option.Outbound, configOpt ConfigOptions, obj o
 
 func patchOutboundFragment(base option.Outbound, configOpt ConfigOptions, obj outboundMap) outboundMap {
 	if configOpt.EnableFragment {
-		tlsFragment := option.TLSFragmentOptions{
+
+		obj["tls_fragment"] = option.TLSFragmentOptions{
 			Enabled: configOpt.TLSTricks.EnableFragment,
 			Size:    configOpt.TLSTricks.FragmentSize,
 			Sleep:   configOpt.TLSTricks.FragmentSleep,
 		}
-		obj["tls_fragment"] = tlsFragment
-	// } else {
-	// 	obj["tls_fragment"] = nil
+
 	}
+
 	return obj
 }
 
@@ -99,9 +117,9 @@ func patchOutbound(base option.Outbound, configOpt ConfigOptions) (*option.Outbo
 			serverDomain = fmt.Sprintf("full:%s", server)
 		}
 	}
-	if !(base.Type == C.TypeSelector || base.Type == C.TypeURLTest || base.Type == C.TypeBlock || base.Type == C.TypeDNS || isOutboundReality(base)) {
-		obj = patchOutboundTLSTricks(base, configOpt, obj)
-	}
+
+	obj = patchOutboundTLSTricks(base, configOpt, obj)
+
 	switch base.Type {
 	case C.TypeVMess, C.TypeVLESS, C.TypeTrojan, C.TypeShadowsocks:
 		obj = patchOutboundMux(base, configOpt, obj)
