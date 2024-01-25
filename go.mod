@@ -9,7 +9,7 @@ require (
 	github.com/sagernet/sing-box v1.8.2
 	github.com/sagernet/sing-dns v0.1.12
 	github.com/spf13/cobra v1.8.0
-	github.com/uoosef/wireguard-go v0.0.2-alpha
+	github.com/uoosef/wireguard-go v0.0.2-alpha.0.20240125181720-5dea742f6614
 	github.com/xmdhs/clash2singbox v0.0.2
 	gopkg.in/yaml.v3 v3.0.1
 )
@@ -104,4 +104,4 @@ require (
 
 replace github.com/sagernet/sing-box => github.com/hiddify/hiddify-sing-box v1.7.9-0.20240125155948-df6318730338
 
-replace github.com/uoosef/wireguard-go => github.com/hiddify-com/wireguard-go v0.0.2-alpha.0.20240125181314-631084b0cc77
+replace github.com/sagernet/wireguard-go => github.com/hiddify/wireguard-go v0.0.0-20240125143346-481d18d77fe1
