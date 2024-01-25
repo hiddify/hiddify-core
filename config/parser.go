@@ -5,6 +5,7 @@ import (
 	_ "embed"
 	"encoding/json"
 	"fmt"
+
 	"os"
 
 	"github.com/hiddify/ray2sing/ray2sing"
@@ -23,21 +24,23 @@ func ParseConfig(path string, debug bool) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	var jsonObj map[string]interface{}
+
+	fmt.Printf("Convert using json\n")
 	jsonDecoder := json.NewDecoder(SJ.NewCommentFilter(bytes.NewReader(content)))
 	if err := jsonDecoder.Decode(&jsonObj); err == nil {
 		if jsonObj["outbounds"] == nil {
 			return nil, fmt.Errorf("[SingboxParser] no outbounds found")
 		}
-		return validateResult(content, "SingboxParser")
+		newContent, _ := json.MarshalIndent(jsonObj, "", "  ")
+		return validateResult(newContent, "SingboxParser")
 	}
-
+	fmt.Printf("Convert using v2ray\n")
 	v2rayStr, err := ray2sing.Ray2Singbox(string(content))
 	if err == nil {
 		return validateResult([]byte(v2rayStr), "V2rayParser")
 	}
-
+	fmt.Printf("Convert using clash\n")
 	clashObj := clash.Clash{}
 	if err := yaml.Unmarshal(content, &clashObj); err == nil && clashObj.Proxies != nil {
 		if len(clashObj.Proxies) == 0 {

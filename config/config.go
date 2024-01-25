@@ -73,12 +73,14 @@ func BuildConfig(configOpt ConfigOptions, input option.Options) (*option.Options
 		DNSClientOptions: option.DNSClientOptions{
 			IndependentCache: configOpt.IndependentDNSCache,
 		},
+		Final: "dns-remote",
 		Servers: []option.DNSServerOptions{
 			{
 				Tag:             "dns-remote",
 				Address:         configOpt.RemoteDnsAddress,
 				AddressResolver: "dns-direct",
 				Strategy:        configOpt.RemoteDnsDomainStrategy,
+				Detour:          "proxy",
 			},
 			{
 				Tag:             "dns-direct",

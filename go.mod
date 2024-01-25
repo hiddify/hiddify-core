@@ -3,7 +3,7 @@ module github.com/hiddify/libcore
 go 1.21.5
 
 require (
-	github.com/hiddify/ray2sing v0.0.0-20240125183524-4c65b1065c27
+	github.com/hiddify/ray2sing v0.0.0-20240125201255-2626ecb3c77a
 	github.com/sagernet/gomobile v0.1.1
 	github.com/sagernet/sing v0.3.0
 	github.com/sagernet/sing-box v1.8.2
@@ -102,6 +102,6 @@ require (
 	lukechampine.com/blake3 v1.2.1 // indirect
 )
 
-replace github.com/sagernet/sing-box => github.com/hiddify/hiddify-sing-box v1.7.9-0.20240125155948-df6318730338
+replace github.com/sagernet/sing-box => github.com/hiddify/hiddify-sing-box v1.7.9-0.20240125210314-493067cd2d66
 
 replace github.com/sagernet/wireguard-go => github.com/hiddify/wireguard-go v0.0.0-20240125143346-481d18d77fe1

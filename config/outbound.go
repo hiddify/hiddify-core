@@ -94,12 +94,15 @@ func isOutboundReality(base option.Outbound) bool {
 }
 
 func patchOutbound(base option.Outbound, configOpt ConfigOptions) (*option.Outbound, string, error) {
-	var serverDomain string
-	var outbound option.Outbound
 
 	formatErr := func(err error) error {
 		return fmt.Errorf("error patching outbound[%s][%s]: %w", base.Tag, base.Type, err)
 	}
+	err := patchWarp(&base)
+	if err != nil {
+		return nil, "", formatErr(err)
+	}
+	var outbound option.Outbound
 
 	jsonData, err := base.MarshalJSON()
 	if err != nil {
@@ -111,7 +114,7 @@ func patchOutbound(base option.Outbound, configOpt ConfigOptions) (*option.Outbo
 	if err != nil {
 		return nil, "", formatErr(err)
 	}
-
+	var serverDomain string
 	if server, ok := obj["server"].(string); ok {
 		if server != "" && net.ParseIP(server) == nil {
 			serverDomain = fmt.Sprintf("full:%s", server)
@@ -134,15 +137,11 @@ func patchOutbound(base option.Outbound, configOpt ConfigOptions) (*option.Outbo
 	if err != nil {
 		return nil, "", formatErr(err)
 	}
-	err = patchWarp(outbound)
-	if err != nil {
-		return nil, "", formatErr(err)
-	}
 
 	return &outbound, serverDomain, nil
 }
 
-func patchWarp(base option.Outbound) error {
+func patchWarp(base *option.Outbound) error {
 	if base.Type == C.TypeCustom {
 		if warp, ok := base.CustomOptions["warp"].(map[string]interface{}); ok {
 			key, _ := warp["key"].(string)
@@ -151,6 +150,7 @@ func patchWarp(base option.Outbound) error {
 			fakePackets, _ := warp["fake_packets"].(string)
 			warpConfig, err := generateWarp(key, host, uint16(port))
 			if err != nil {
+				fmt.Printf("Error generating warp config: %v", err)
 				return err
 			}
 

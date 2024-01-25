@@ -49,10 +49,10 @@ github.com/google/pprof v0.0.0-20231101202521-4ca4178f5c7a h1:fEBsGL/sjAuJrgah5X
 github.com/google/pprof v0.0.0-20231101202521-4ca4178f5c7a/go.mod h1:czg5+yv1E0ZGTi6S6vVK1mke0fV+FaUhNGcd6VRS9Ik=
 github.com/hashicorp/yamux v0.1.1 h1:yrQxtgseBDrq9Y652vSRDvsKCJKOUD+GzTS4Y0Y8pvE=
 github.com/hashicorp/yamux v0.1.1/go.mod h1:CtWFDAQgb7dxtzFs4tWbplKIe2jSi3+5vKbgIO0SLnQ=
-github.com/hiddify/hiddify-sing-box v1.7.9-0.20240125155948-df6318730338 h1:8Sqfq36q1f9La853T/6VnY7IgCvfPL0uhkguyrTl3t8=
-github.com/hiddify/hiddify-sing-box v1.7.9-0.20240125155948-df6318730338/go.mod h1:DnlHl/vlinL9Mn95+qJ3RzgE3E/9pWlAvTsauo7F5HM=
-github.com/hiddify/ray2sing v0.0.0-20240125183524-4c65b1065c27 h1:toSrcgHiLimlQqWaMqN334H8cm7udEsrkwLktko9T58=
-github.com/hiddify/ray2sing v0.0.0-20240125183524-4c65b1065c27/go.mod h1:zYKnf7EoPqrk7JOMO9BApTXxfH0sva8AKfoFywN7uuA=
+github.com/hiddify/hiddify-sing-box v1.7.9-0.20240125210314-493067cd2d66 h1:1soOFv4mdCq9OiRN4eo4B0ylDY1EeSnl0M7szOTYNz4=
+github.com/hiddify/hiddify-sing-box v1.7.9-0.20240125210314-493067cd2d66/go.mod h1:DnlHl/vlinL9Mn95+qJ3RzgE3E/9pWlAvTsauo7F5HM=
+github.com/hiddify/ray2sing v0.0.0-20240125201255-2626ecb3c77a h1:afDHoio+CpOc80Q83ykKsX+aHUQB3BGYj0f3bNybWHs=
+github.com/hiddify/ray2sing v0.0.0-20240125201255-2626ecb3c77a/go.mod h1:zYKnf7EoPqrk7JOMO9BApTXxfH0sva8AKfoFywN7uuA=
 github.com/hiddify/wireguard-go v0.0.0-20240125143346-481d18d77fe1 h1:neOb+wzHbWLNZ2sHFEV4+GTuqORO7/MndQLFW8FjUY8=
 github.com/hiddify/wireguard-go v0.0.0-20240125143346-481d18d77fe1/go.mod h1:K4J7/npM+VAMUeUmTa2JaA02JmyheP0GpRBOUvn3ecc=
 github.com/inconshreveable/mousetrap v1.1.0 h1:wN+x4NVGpMsO7ErUn/mUI3vEoE6Jt13X2s0bqwp9tc8=
