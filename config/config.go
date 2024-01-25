@@ -261,20 +261,7 @@ func BuildConfig(configOpt ConfigOptions, input option.Options) (*option.Options
 				},
 			},
 		)
-		var dnsCPttl uint32 = 300000
 
-		options.DNS.Rules = append(
-			options.DNS.Rules,
-			option.DNSRule{
-				Type: C.RuleTypeDefault,
-				DefaultOptions: option.DefaultDNSRule{
-					Domain:       []string{"cp.cloudflare.com"},
-					Server:       "dns-remote",
-					RewriteTTL:   &dnsCPttl,
-					DisableCache: false,
-				},
-			},
-		)
 	}
 
 	for _, rule := range configOpt.Rules {
@@ -330,7 +317,22 @@ func BuildConfig(configOpt ConfigOptions, input option.Options) (*option.Options
 			}
 		}
 	}
-
+	if options.DNS.Rules == nil {
+		options.DNS.Rules = []option.DNSRule{}
+	}
+	var dnsCPttl uint32 = 3000
+	options.DNS.Rules = append(
+		options.DNS.Rules,
+		option.DNSRule{
+			Type: C.RuleTypeDefault,
+			DefaultOptions: option.DefaultDNSRule{
+				Domain:       []string{"cp.cloudflare.com"},
+				Server:       "dns-remote",
+				RewriteTTL:   &dnsCPttl,
+				DisableCache: false,
+			},
+		},
+	)
 	options.Route = &option.RouteOptions{
 		Rules:               routeRules,
 		AutoDetectInterface: true,
