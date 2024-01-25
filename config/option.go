@@ -71,7 +71,7 @@ func DefaultConfigOptions() *ConfigOptions {
 		MTU:                     9000,
 		StrictRoute:             true,
 		TUNStack:                "mixed",
-		ConnectionTestUrl:       "https://cp.cloudflare.com/",
+		ConnectionTestUrl:       "http://cp.cloudflare.com/",
 		URLTestInterval:         option.Duration(10 * time.Minute),
 		URLTestIdleTimeout:      option.Duration(100 * time.Minute),
 		EnableClashApi:          true,

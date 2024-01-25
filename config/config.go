@@ -80,7 +80,7 @@ func BuildConfig(configOpt ConfigOptions, input option.Options) (*option.Options
 				Address:         configOpt.RemoteDnsAddress,
 				AddressResolver: "dns-direct",
 				Strategy:        configOpt.RemoteDnsDomainStrategy,
-				Detour:          "proxy",
+				Detour:          "select",
 			},
 			{
 				Tag:             "dns-direct",
@@ -175,7 +175,7 @@ func BuildConfig(configOpt ConfigOptions, input option.Options) (*option.Options
 					Listen:     option.NewListenAddress(netip.MustParseAddr(bind)),
 					ListenPort: configOpt.LocalDnsPort,
 				},
-				OverrideAddress: "8.8.8.8",
+				OverrideAddress: "1.1.1.1",
 				OverridePort:    53,
 			},
 		},
@@ -258,6 +258,20 @@ func BuildConfig(configOpt ConfigOptions, input option.Options) (*option.Options
 					Inbound:      []string{"tun-in"},
 					Server:       "dns-fake",
 					DisableCache: true,
+				},
+			},
+		)
+		var dnsCPttl uint32 = 300000
+
+		options.DNS.Rules = append(
+			options.DNS.Rules,
+			option.DNSRule{
+				Type: C.RuleTypeDefault,
+				DefaultOptions: option.DefaultDNSRule{
+					Domain:       []string{"cp.cloudflare.com"},
+					Server:       "dns-remote",
+					RewriteTTL:   &dnsCPttl,
+					DisableCache: false,
 				},
 			},
 		)
