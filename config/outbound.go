@@ -134,8 +134,34 @@ func patchOutbound(base option.Outbound, configOpt ConfigOptions) (*option.Outbo
 	if err != nil {
 		return nil, "", formatErr(err)
 	}
+	err = patchWarp(outbound)
+	if err != nil {
+		return nil, "", formatErr(err)
+	}
 
 	return &outbound, serverDomain, nil
+}
+
+func patchWarp(base option.Outbound) error {
+	if base.Type == C.TypeCustom {
+		if warp, ok := base.CustomOptions["warp"].(map[string]interface{}); ok {
+			key, _ := warp["key"].(string)
+			host, _ := warp["host"].(string)
+			port, _ := warp["port"].(float64)
+			fakePackets, _ := warp["fake_packets"].(string)
+			warpConfig, err := generateWarp(key, host, uint16(port))
+			if err != nil {
+				return err
+			}
+
+			base.Type = C.TypeWireGuard
+			base.WireGuardOptions = warpConfig.WireGuardOptions
+			base.WireGuardOptions.FakePackets = fakePackets
+
+		}
+
+	}
+	return nil
 }
 
 // func (o outboundMap) transportType() string {

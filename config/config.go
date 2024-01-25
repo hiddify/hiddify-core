@@ -346,6 +346,8 @@ func BuildConfig(configOpt ConfigOptions, input option.Options) (*option.Options
 			continue
 		case C.TypeSelector, C.TypeURLTest:
 			continue
+		case C.TypeCustom:
+			continue
 		default:
 			tags = append(tags, out.Tag)
 			outbounds = append(outbounds, out)
