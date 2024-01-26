@@ -86,8 +86,11 @@ func isOutboundReality(base option.Outbound) bool {
 	isReality := false
 	switch base.Type {
 	case C.TypeVLESS:
-		if base.VLESSOptions.TLS.Reality != nil {
-			isReality = base.VLESSOptions.TLS.Reality.Enabled
+		if base.VLESSOptions.OutboundTLSOptionsContainer.TLS == nil {
+			return false
+		}
+		if base.VLESSOptions.OutboundTLSOptionsContainer.TLS.Reality != nil {
+			isReality = base.VLESSOptions.OutboundTLSOptionsContainer.TLS.Reality.Enabled
 		}
 	}
 	return isReality

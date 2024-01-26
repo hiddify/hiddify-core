@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"os"
+	"runtime"
 	runtimeDebug "runtime/debug"
 
 	B "github.com/sagernet/sing-box"
@@ -23,7 +24,8 @@ var (
 )
 
 func Setup(basePath string, workingPath string, tempPath string) {
-	libbox.Setup(basePath, workingPath, tempPath, false)
+	tcpConn := runtime.GOOS == "windows" //TODO add TVOS
+	libbox.Setup(basePath, workingPath, tempPath, tcpConn)
 	sWorkingPath = workingPath
 	os.Chdir(sWorkingPath)
 	sTempPath = tempPath

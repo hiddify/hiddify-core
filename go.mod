@@ -6,7 +6,7 @@ require (
 	github.com/hiddify/ray2sing v0.0.0-20240126124612-8e00e77ec754
 	github.com/sagernet/gomobile v0.1.1
 	github.com/sagernet/sing v0.3.0
-	github.com/sagernet/sing-box v1.8.2
+	github.com/sagernet/sing-box v1.8.4
 	github.com/sagernet/sing-dns v0.1.12
 	github.com/spf13/cobra v1.8.0
 	github.com/uoosef/wireguard-go v0.0.3-alpha.0.20240126073448-28658ac4c921
@@ -45,7 +45,7 @@ require (
 	github.com/libdns/libdns v0.2.1 // indirect
 	github.com/logrusorgru/aurora v2.0.3+incompatible // indirect
 	github.com/mholt/acmez v1.2.0 // indirect
-	github.com/miekg/dns v1.1.57 // indirect
+	github.com/miekg/dns v1.1.58 // indirect
 	github.com/onsi/ginkgo/v2 v2.9.7 // indirect
 	github.com/ooni/go-libtor v1.1.8 // indirect
 	github.com/oschwald/maxminddb-golang v1.12.0 // indirect
@@ -66,7 +66,7 @@ require (
 	github.com/sagernet/cloudflare-tls v0.0.0-20231208171750-a4483c1b7cd1 // indirect
 	github.com/sagernet/gvisor v0.0.0-20231209105102-8d27a30e436e // indirect
 	github.com/sagernet/netlink v0.0.0-20220905062125-8043b4a9aa97 // indirect
-	github.com/sagernet/quic-go v0.40.1-beta.2 // indirect
+	github.com/sagernet/quic-go v0.40.1 // indirect
 	github.com/sagernet/reality v0.0.0-20230406110435-ee17307e7691 // indirect
 	github.com/sagernet/sing-mux v0.2.0 // indirect
 	github.com/sagernet/sing-quic v0.1.7 // indirect
@@ -95,13 +95,13 @@ require (
 	golang.org/x/sys v0.16.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
 	golang.org/x/time v0.5.0 // indirect
-	golang.org/x/tools v0.16.0 // indirect
+	golang.org/x/tools v0.17.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20231002182017-d307bd883b97 // indirect
 	google.golang.org/grpc v1.60.1 // indirect
 	google.golang.org/protobuf v1.32.0 // indirect
 	lukechampine.com/blake3 v1.2.1 // indirect
 )
 
-replace github.com/sagernet/sing-box => github.com/hiddify/hiddify-sing-box v1.7.9-0.20240125210314-493067cd2d66
+replace github.com/sagernet/sing-box => github.com/hiddify/hiddify-sing-box v1.7.9-0.20240126132136-307f29d4ab05
 
 replace github.com/sagernet/wireguard-go => github.com/hiddify/wireguard-go v0.0.0-20240125143346-481d18d77fe1
