@@ -68,5 +68,6 @@ release: # Create a new tag for release.
 	git commit -m "release: version $${TAG}" && \
 	echo "creating git tag : v$${TAG}" && \
 	git tag v$${TAG} && \
+	git push && \
 	git push -u origin HEAD --tags && \
 	echo "Github Actions will detect the new tag and release the new version."'
