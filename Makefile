@@ -62,8 +62,6 @@ release: # Create a new tag for release.
 	echo "version: $${VERSION_STR}+$${BUILD_NUMBER}" && \
 	sed -i -e "s|<key>CFBundleVersion</key>\s*<string>[^<]*</string>|<key>CFBundleVersion</key><string>$${VERSION_STR}</string>|" Info.plist &&\
     sed -i -e "s|<key>CFBundleShortVersionString</key>\s*<string>[^<]*</string>|<key>CFBundleShortVersionString</key><string>$${VERSION_STR}</string>|" Info.plist &&\
-	git tag $${TAG} > /dev/null && \
-	git tag -d $${TAG} > /dev/null && \
 	git add Info.plist && \
 	git commit -m "release: version $${TAG}" && \
 	echo "creating git tag : v$${TAG}" && \
