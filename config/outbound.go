@@ -35,11 +35,11 @@ func patchOutboundTLSTricks(base option.Outbound, configOpt ConfigOptions, obj o
 	}
 
 	var tls *option.OutboundTLSOptions
-	if base.VLESSOptions.OutboundTLSOptionsContainer.TLS == nil {
+	if base.VLESSOptions.OutboundTLSOptionsContainer.TLS != nil {
 		tls = base.VLESSOptions.OutboundTLSOptionsContainer.TLS
-	} else if base.TrojanOptions.OutboundTLSOptionsContainer.TLS == nil {
+	} else if base.TrojanOptions.OutboundTLSOptionsContainer.TLS != nil {
 		tls = base.TrojanOptions.OutboundTLSOptionsContainer.TLS
-	} else if base.VMessOptions.OutboundTLSOptionsContainer.TLS == nil {
+	} else if base.VMessOptions.OutboundTLSOptionsContainer.TLS != nil {
 		tls = base.VMessOptions.OutboundTLSOptionsContainer.TLS
 	}
 	if tls == nil || !tls.Enabled {
@@ -150,6 +150,7 @@ func patchWarp(base *option.Outbound) error {
 			key, _ := warp["key"].(string)
 			host, _ := warp["host"].(string)
 			port, _ := warp["port"].(float64)
+			detour, _ := warp["detour"].(string)
 			fakePackets, _ := warp["fake_packets"].(string)
 			warpConfig, err := generateWarp(key, host, uint16(port), fakePackets)
 			if err != nil {
@@ -158,6 +159,7 @@ func patchWarp(base *option.Outbound) error {
 			}
 
 			base.Type = C.TypeWireGuard
+			warpConfig.WireGuardOptions.Detour = detour
 			base.WireGuardOptions = warpConfig.WireGuardOptions
 
 		}
