@@ -148,7 +148,7 @@ func patchWarp(base *option.Outbound) error {
 			host, _ := warp["host"].(string)
 			port, _ := warp["port"].(float64)
 			fakePackets, _ := warp["fake_packets"].(string)
-			warpConfig, err := generateWarp(key, host, uint16(port))
+			warpConfig, err := generateWarp(key, host, uint16(port), fakePackets)
 			if err != nil {
 				fmt.Printf("Error generating warp config: %v", err)
 				return err
@@ -156,7 +156,6 @@ func patchWarp(base *option.Outbound) error {
 
 			base.Type = C.TypeWireGuard
 			base.WireGuardOptions = warpConfig.WireGuardOptions
-			base.WireGuardOptions.FakePackets = fakePackets
 
 		}
 

@@ -147,10 +147,9 @@ func parsePeerConfig(peerConfig *PeerConfig, line string) {
 }
 func generateWarp() *T.Outbound {
 	license := ""
-	endpoint := "engage.cloudflareclient.com:2408"
 
 	if !warp.CheckProfileExists(license) {
-		warp.LoadOrCreateIdentity(license, endpoint)
+		warp.LoadOrCreateIdentity(license)
 	}
 
 	wgConfig, err := readWireGuardConfig("wgcf-profile.ini")

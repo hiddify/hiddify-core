@@ -146,7 +146,7 @@ func getRandomIP() string {
 
 	ip, err := warp.RandomIPFromRange(randomRange)
 	if err == nil {
-		ip.String()
+		return ip.String()
 	}
 	return "engage.cloudflareclient.com"
 }
@@ -155,9 +155,12 @@ func generateRandomPort() uint16 {
 	return warpPorts[rand.Intn(len(warpPorts))]
 }
 
-func generateWarp(license string, host string, port uint16) (*T.Outbound, error) {
+func generateWarp(license string, host string, port uint16, fakePackets string) (*T.Outbound, error) {
 	if host == "" {
 		host = "auto"
+	}
+	if host == "auto" && fakePackets == "" {
+		fakePackets = "5-10"
 	}
 	if host == "default" || host == "random" || host == "auto" {
 		host = getRandomIP()
@@ -181,9 +184,8 @@ func generateWarp(license string, host string, port uint16) (*T.Outbound, error)
 	}
 	// fmt.Printf("%v", wgConfig)
 	singboxConfig, err := wireGuardToSingbox(wgConfig, host, port)
-	if host == "auto" && singboxConfig.WireGuardOptions.FakePackets == "" {
-		singboxConfig.WireGuardOptions.FakePackets = "5-10"
-	}
+
+	singboxConfig.WireGuardOptions.FakePackets = fakePackets
 	singboxJSON, err := json.MarshalIndent(singboxConfig, "", "    ")
 	if err != nil {
 		fmt.Println("Error marshaling Singbox configuration:", err)
