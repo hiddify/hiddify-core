@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
+	"math/rand"
 	"net/netip"
 	"os"
 	"strings"
@@ -124,18 +125,50 @@ func parsePeerConfig(peerConfig *PeerConfig, line string) {
 		peerConfig.Endpoint = strings.TrimSpace(strings.SplitN(line, "=", 2)[1])
 	}
 }
+
+var warpIPList = []string{
+	"162.159.192.0/24",
+	"162.159.193.0/24",
+	"162.159.195.0/24",
+	"162.159.204.0/24",
+	"188.114.96.0/24",
+	"188.114.97.0/24",
+	"188.114.98.0/24",
+	"188.114.99.0/24",
+}
+var warpPorts = []uint16{500, 854, 859, 864, 878, 880, 890, 891, 894, 903, 908, 928, 934, 939, 942,
+	943, 945, 946, 955, 968, 987, 988, 1002, 1010, 1014, 1018, 1070, 1074, 1180, 1387, 1701,
+	1843, 2371, 2408, 2506, 3138, 3476, 3581, 3854, 4177, 4198, 4233, 4500, 5279,
+	5956, 7103, 7152, 7156, 7281, 7559, 8319, 8742, 8854, 8886}
+
+func getRandomIP() string {
+	randomRange := warpIPList[rand.Intn(len(warpIPList))]
+
+	ip, err := warp.RandomIPFromRange(randomRange)
+	if err == nil {
+		ip.String()
+	}
+	return "engage.cloudflareclient.com"
+}
+
+func generateRandomPort() uint16 {
+	return warpPorts[rand.Intn(len(warpPorts))]
+}
+
 func generateWarp(license string, host string, port uint16) (*T.Outbound, error) {
 	if host == "" {
-		host = "engage.cloudflareclient.com"
+		host = "auto"
+	}
+	if host == "default" || host == "random" || host == "auto" {
+		host = getRandomIP()
 	}
 	if port == 0 {
-		port = 2408
+		port = generateRandomPort()
 	}
-	endpoint := fmt.Sprint("%s:%p", host, port)
 
 	if !warp.CheckProfileExists(license) {
 		fmt.Printf("profile s not exit! ---%s---", license)
-		err := warp.LoadOrCreateIdentity(license, endpoint)
+		err := warp.LoadOrCreateIdentity(license)
 		if err != nil {
 			return nil, err
 		}
@@ -148,6 +181,9 @@ func generateWarp(license string, host string, port uint16) (*T.Outbound, error)
 	}
 	// fmt.Printf("%v", wgConfig)
 	singboxConfig, err := wireGuardToSingbox(wgConfig, host, port)
+	if host == "auto" && singboxConfig.WireGuardOptions.FakePackets == "" {
+		singboxConfig.WireGuardOptions.FakePackets = "5-10"
+	}
 	singboxJSON, err := json.MarshalIndent(singboxConfig, "", "    ")
 	if err != nil {
 		fmt.Println("Error marshaling Singbox configuration:", err)

@@ -51,8 +51,8 @@ github.com/hashicorp/yamux v0.1.1 h1:yrQxtgseBDrq9Y652vSRDvsKCJKOUD+GzTS4Y0Y8pvE
 github.com/hashicorp/yamux v0.1.1/go.mod h1:CtWFDAQgb7dxtzFs4tWbplKIe2jSi3+5vKbgIO0SLnQ=
 github.com/hiddify/hiddify-sing-box v1.7.9-0.20240125210314-493067cd2d66 h1:1soOFv4mdCq9OiRN4eo4B0ylDY1EeSnl0M7szOTYNz4=
 github.com/hiddify/hiddify-sing-box v1.7.9-0.20240125210314-493067cd2d66/go.mod h1:DnlHl/vlinL9Mn95+qJ3RzgE3E/9pWlAvTsauo7F5HM=
-github.com/hiddify/ray2sing v0.0.0-20240125201255-2626ecb3c77a h1:afDHoio+CpOc80Q83ykKsX+aHUQB3BGYj0f3bNybWHs=
-github.com/hiddify/ray2sing v0.0.0-20240125201255-2626ecb3c77a/go.mod h1:zYKnf7EoPqrk7JOMO9BApTXxfH0sva8AKfoFywN7uuA=
+github.com/hiddify/ray2sing v0.0.0-20240126122154-854054f22383 h1:yFWzs/DLEXpcdXaVFFEQBHz2Q6XQ+j/IqXC/Qzm7dGw=
+github.com/hiddify/ray2sing v0.0.0-20240126122154-854054f22383/go.mod h1:zYKnf7EoPqrk7JOMO9BApTXxfH0sva8AKfoFywN7uuA=
 github.com/hiddify/wireguard-go v0.0.0-20240125143346-481d18d77fe1 h1:neOb+wzHbWLNZ2sHFEV4+GTuqORO7/MndQLFW8FjUY8=
 github.com/hiddify/wireguard-go v0.0.0-20240125143346-481d18d77fe1/go.mod h1:K4J7/npM+VAMUeUmTa2JaA02JmyheP0GpRBOUvn3ecc=
 github.com/inconshreveable/mousetrap v1.1.0 h1:wN+x4NVGpMsO7ErUn/mUI3vEoE6Jt13X2s0bqwp9tc8=
@@ -181,8 +181,8 @@ github.com/stretchr/testify v1.8.4 h1:CcVxjf3Q8PM0mHUKJCdn+eZZtm5yQwehR5yeSVQQcU
 github.com/stretchr/testify v1.8.4/go.mod h1:sz/lmYIOXD/1dqDmKjjqLyZ2RngseejIcXlSw2iwfAo=
 github.com/u-root/uio v0.0.0-20230220225925-ffce2a382923 h1:tHNk7XK9GkmKUR6Gh8gVBKXc2MVSZ4G/NnWLtzw4gNA=
 github.com/u-root/uio v0.0.0-20230220225925-ffce2a382923/go.mod h1:eLL9Nub3yfAho7qB0MzZizFhTU2QkLeoVsWdHtDW264=
-github.com/uoosef/wireguard-go v0.0.2-alpha.0.20240125181720-5dea742f6614 h1:HE/PjVFuqVgC4MLAadoUSGAmxAj+jns4CSVBUO6RND0=
-github.com/uoosef/wireguard-go v0.0.2-alpha.0.20240125181720-5dea742f6614/go.mod h1:uEnuKQ/PHpFdYwftT4bzwI8F3d2l9zsWZ9iDbLBIm0c=
+github.com/uoosef/wireguard-go v0.0.3-alpha.0.20240126073448-28658ac4c921 h1:v7TBzuJQJYJh5Ynf/R3dY2yr10Ti/uHpW6l8yRI8fhc=
+github.com/uoosef/wireguard-go v0.0.3-alpha.0.20240126073448-28658ac4c921/go.mod h1:uEnuKQ/PHpFdYwftT4bzwI8F3d2l9zsWZ9iDbLBIm0c=
 github.com/vishvananda/netns v0.0.0-20211101163701-50045581ed74 h1:gga7acRE695APm9hlsSMoOoE65U4/TcqNj90mc69Rlg=
 github.com/vishvananda/netns v0.0.0-20211101163701-50045581ed74/go.mod h1:DD4vA1DwXk04H54A1oHXtwZmA0grkVMdPxx/VGLCah0=
 github.com/xmdhs/clash2singbox v0.0.2 h1:/gxaFm8fmv+UcUZzK508Z0yR01wg1LHrrq872Qibk1I=
