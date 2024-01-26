@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"time"
 	"unsafe"
 
@@ -100,6 +101,7 @@ func generateConfig(path *C.char) (res *C.char) {
 }
 
 func generateConfigFromFile(path string, configOpt config.ConfigOptions) (string, error) {
+	os.Chdir(filepath.Dir(path))
 	content, err := os.ReadFile(path)
 	if err != nil {
 		return "", err
@@ -146,6 +148,7 @@ func startService(delayStart bool) error {
 	if err != nil {
 		return stopAndAlert(EmptyConfiguration, err)
 	}
+	os.Chdir(filepath.Dir(*activeConfigPath))
 	var patchedOptions *option.Options
 	patchedOptions, err = config.BuildConfig(*configOptions, options)
 	if err != nil {

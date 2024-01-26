@@ -3,6 +3,7 @@ package mobile
 import (
 	"encoding/json"
 	"os"
+	"path/filepath"
 
 	"github.com/hiddify/libcore/config"
 	_ "github.com/sagernet/gomobile"
@@ -18,6 +19,7 @@ func Parse(path string, tempPath string, debug bool) error {
 }
 
 func BuildConfig(path string, configOptionsJson string) (string, error) {
+	os.Chdir(filepath.Dir(path))
 	fileContent, err := os.ReadFile(path)
 	if err != nil {
 		return "", err

@@ -25,6 +25,7 @@ var (
 func Setup(basePath string, workingPath string, tempPath string) {
 	libbox.Setup(basePath, workingPath, tempPath, false)
 	sWorkingPath = workingPath
+	os.Chdir(sWorkingPath)
 	sTempPath = tempPath
 	sUserID = os.Getuid()
 	sGroupID = os.Getgid()

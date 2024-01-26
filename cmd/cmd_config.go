@@ -56,6 +56,7 @@ func build(path string, optionsPath string) error {
 		if optionsPath != "" {
 			optionsPath = filepath.Join(workingDir, optionsPath)
 		}
+		os.Chdir(workingDir)
 	}
 	options, err := readConfigAt(path)
 	if err != nil {
