@@ -35,18 +35,29 @@ func patchOutboundTLSTricks(base option.Outbound, configOpt ConfigOptions, obj o
 	}
 
 	var tls *option.OutboundTLSOptions
+	var transport *option.V2RayTransportOptions
 	if base.VLESSOptions.OutboundTLSOptionsContainer.TLS != nil {
 		tls = base.VLESSOptions.OutboundTLSOptionsContainer.TLS
+		transport = base.VLESSOptions.Transport
 	} else if base.TrojanOptions.OutboundTLSOptionsContainer.TLS != nil {
 		tls = base.TrojanOptions.OutboundTLSOptionsContainer.TLS
+		transport = base.TrojanOptions.Transport
 	} else if base.VMessOptions.OutboundTLSOptionsContainer.TLS != nil {
 		tls = base.VMessOptions.OutboundTLSOptionsContainer.TLS
+		transport = base.VMessOptions.Transport
 	}
-	if tls == nil || !tls.Enabled {
+
+	if base.Type == C.TypeDirect {
+		return patchOutboundFragment(base, configOpt, obj)
+	}
+
+	if tls == nil || !tls.Enabled || transport == nil {
+		return obj
+	}
+	if transport.Type != C.V2RayTransportTypeWebsocket && transport.Type != C.V2RayTransportTypeGRPC {
 		return obj
 	}
 
-	obj = patchOutboundFragment(base, configOpt, obj)
 	if tls, ok := obj["tls"].(map[string]interface{}); ok {
 		tlsTricks := option.TLSTricksOptions{
 			MixedCaseSNI: configOpt.TLSTricks.EnableMixedSNICase,
