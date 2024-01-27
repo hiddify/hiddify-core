@@ -32,6 +32,11 @@ func ParseConfig(path string, debug bool) ([]byte, error) {
 		if jsonObj["outbounds"] == nil {
 			return nil, fmt.Errorf("[SingboxParser] no outbounds found")
 		}
+
+		jsonObj = map[string]interface{}{
+			"outbounds": jsonObj["outbounds"],
+		}
+
 		newContent, _ := json.MarshalIndent(jsonObj, "", "  ")
 		return validateResult(newContent, "SingboxParser")
 	}
