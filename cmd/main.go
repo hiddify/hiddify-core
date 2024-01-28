@@ -23,6 +23,7 @@ var mainCommand = &cobra.Command{
 
 func init() {
 	mainCommand.AddCommand(commandService)
+	mainCommand.AddCommand(commandGenerateCertification)
 
 	commandService.AddCommand(commandServiceStart)
 	commandService.AddCommand(commandServiceStop)
