@@ -4,16 +4,17 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/hiddify/libcore/config"
-	"github.com/sagernet/sing-box/experimental/libbox"
-	"github.com/sagernet/sing-box/log"
-	"github.com/sagernet/sing-box/option"
 	"io"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/hiddify/libcore/config"
+	"github.com/sagernet/sing-box/experimental/libbox"
+	"github.com/sagernet/sing-box/log"
+	"github.com/sagernet/sing-box/option"
 )
 
 var box *libbox.BoxService
@@ -47,7 +48,7 @@ func parse(path string, tempPath string, debug bool) error {
 	if err != nil {
 		return err
 	}
-	err = os.WriteFile(path, config, 0777)
+	err = os.WriteFile(path, config, 0644)
 	if err != nil {
 		return err
 	}
@@ -235,45 +236,48 @@ func urlTest(groupTag string) error {
 }
 
 func StartServiceC(delayStart bool, content string) error {
-	options, err := parseConfig(content)
-	if err != nil {
-		return stopAndAlert(EmptyConfiguration, err)
-	}
-	configOptions = &config.ConfigOptions{}
-	patchedOptions, err := config.BuildConfig(*configOptions, options)
 
-	options = *patchedOptions
+	options, err := parseConfig(content)
+	// if err != nil {
+	// 	return stopAndAlert(EmptyConfiguration, err)
+	// }
+	// configOptions = &config.ConfigOptions{}
+	// patchedOptions, err := config.BuildConfig(*configOptions, options)
+
+	// options = *patchedOptions
 
 	err = config.SaveCurrentConfig(sWorkingPath, options)
 	if err != nil {
+		fmt.Printf("Error in saving config: %v\n", err)
 		return err
 	}
 
-	err = startCommandServer(*logFactory)
-	if err != nil {
-		return stopAndAlert(StartCommandServer, err)
-	}
+	// err = startCommandServer(*logFactory)
+	// if err != nil {
+	// 	return stopAndAlert(StartCommandServer, err)
+	// }
 
 	instance, err := NewService(options)
-	if err != nil {
-		return stopAndAlert(CreateService, err)
-	}
+	// if err != nil {
+	// 	return stopAndAlert(CreateService, err)
+	// }
 
-	if delayStart {
-		time.Sleep(250 * time.Millisecond)
-	}
+	// if delayStart {
+	// 	time.Sleep(250 * time.Millisecond)
+	// }
 
 	err = instance.Start()
 	if err != nil {
-		return stopAndAlert(StartService, err)
+		// return stopAndAlert(StartService, err)
+		fmt.Printf("String Service Error: %v\n", err)
+		return err
 	}
-	box = instance
-	commandServer.SetService(box)
+	// box = instance
+	// commandServer.SetService(box)
 
-	propagateStatus(Started)
+	// propagateStatus(Started)
 	return nil
 }
-
 func StopService() error {
 	if status != Started {
 		return nil
@@ -301,15 +305,15 @@ func StopService() error {
 }
 
 func SetupC(baseDir string, workDir string, tempDir string, debug bool) error {
-	err := os.MkdirAll("./bin", 600)
+	err := os.MkdirAll(baseDir, 0644)
 	if err != nil {
 		return err
 	}
-	err = os.MkdirAll("./work", 600)
+	err = os.MkdirAll(workDir, 0644)
 	if err != nil {
 		return err
 	}
-	err = os.MkdirAll("./temp", 600)
+	err = os.MkdirAll(tempDir, 0644)
 	if err != nil {
 		return err
 	}
@@ -334,24 +338,49 @@ func SetupC(baseDir string, workDir string, tempDir string, debug bool) error {
 func MakeConfig(Ipv6 bool, ServerPort int, StrictRoute bool, EndpointIndependentNat bool, Stack string) string {
 	var ipv6 string
 	if Ipv6 {
-		ipv6 = "      \"inet6_address\": \"fdfe:dcba:9876::1/126\",\n"
+		ipv6 = `      "inet6_address": "fdfe:dcba:9876::1/126",`
 	} else {
 		ipv6 = ""
 	}
-	base := "{\n  \"inbounds\": [\n    {\n      \"type\": \"tun\",\n      \"tag\": \"tun-in\",\n      \"interface_name\": \"tun0\",\n      \"inet4_address\": \"172.19.0.1/30\",\n" + ipv6 + "      \"mtu\": 9000,\n      \"auto_route\": true,\n      \"strict_route\": " + fmt.Sprintf("%t", StrictRoute) + ",\n      \"endpoint_independent_nat\": " + fmt.Sprintf("%t", EndpointIndependentNat) + ",\n      \"stack\": \"" + Stack + "\"\n    }],\n  \"outbounds\": [\n    {\n      \"type\": \"socks\",\n      \"tag\": \"socks-out\",\n      \"server\": \"127.0.0.1\",\n      \"server_port\": " + fmt.Sprintf("%d", ServerPort) + ",\n      \"version\": \"5\"\n    }\n  ]\n}\n"
+	base := `{
+		"inbounds": [
+		  {
+			"type": "tun",
+			"tag": "tun-in",
+			"interface_name": "tun0",
+			"inet4_address": "172.19.0.1/30",
+			` + ipv6 + `
+			"mtu": 9000,
+			"auto_route": true,
+			"strict_route": ` + fmt.Sprintf("%t", StrictRoute) + `,
+			"endpoint_independent_nat": ` + fmt.Sprintf("%t", EndpointIndependentNat) + `,
+			"stack": "` + Stack + `"
+		  }
+		],
+		"outbounds": [
+		  {
+			"type": "socks",
+			"tag": "socks-out",
+			"server": "127.0.0.1",
+			"server_port": ` + fmt.Sprintf("%d", ServerPort) + `,
+			"version": "5"
+		  }
+		]
+	  }`
+
 	return base
 }
 
 func WriteParameters(Ipv6 bool, ServerPort int, StrictRoute bool, EndpointIndependentNat bool, Stack string) error {
 	parameters := fmt.Sprintf("%t,%d,%t,%t,%s", Ipv6, ServerPort, StrictRoute, EndpointIndependentNat, Stack)
-	err := os.WriteFile("bin/parameters.config", []byte(parameters), 600)
+	err := os.WriteFile("parameters.config", []byte(parameters), 0644)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 func ReadParameters() (bool, int, bool, bool, string, error) {
-	Data, err := os.ReadFile("bin/parameters.config")
+	Data, err := os.ReadFile("parameters.config")
 	if err != nil {
 		return false, 0, false, false, "", err
 	}

@@ -12,15 +12,29 @@ import (
 )
 
 func SaveCurrentConfig(path string, options option.Options) error {
-	var buffer bytes.Buffer
-	json.NewEncoder(&buffer)
-	encoder := json.NewEncoder(&buffer)
-	encoder.SetIndent("", "  ")
-	err := encoder.Encode(options)
+	json, err := ToJson(options)
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(filepath.Join(path, "current-config.json"), buffer.Bytes(), 0777)
+	p, err := filepath.Abs(filepath.Join(path, "current-config.json"))
+	fmt.Printf("Saving config to %v %+v\n", p, err)
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(p, []byte(json), 0644)
+}
+
+func ToJson(options option.Options) (string, error) {
+	var buffer bytes.Buffer
+	encoder := json.NewEncoder(&buffer)
+	encoder.SetIndent("", "  ")
+	// fmt.Printf("%+v\n", options)
+	err := encoder.Encode(options)
+	if err != nil {
+		fmt.Printf("ERROR in coding:%+v\n", err)
+		return "", err
+	}
+	return buffer.String(), nil
 }
 
 func DeferPanicToError(name string, err func(error)) {

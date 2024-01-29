@@ -66,7 +66,7 @@ func parse(path *C.char, tempPath *C.char, debug bool) (CErr *C.char) {
 	if err != nil {
 		return C.CString(err.Error())
 	}
-	err = os.WriteFile(C.GoString(path), config, 0777)
+	err = os.WriteFile(C.GoString(path), config, 0644)
 	if err != nil {
 		return C.CString(err.Error())
 	}

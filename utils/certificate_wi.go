@@ -10,7 +10,6 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/pem"
-	"github.com/hectane/go-acl"
 	"io/ioutil"
 	"math/big"
 	"os"
@@ -57,7 +56,7 @@ func GenerateCertificate(certPath, keyPath string, isServer bool) {
 		panic(err)
 	}
 	defer certFile.Close()
-	acl.Chmod(certFile.Name(), 600)
+	// acl.Chmod(certFile.Name(), 0644)
 	pem.Encode(certFile, &pem.Block{Type: "CERTIFICATE", Bytes: certDER})
 
 	keyFile, err := os.Create(keyPath)
@@ -69,7 +68,7 @@ func GenerateCertificate(certPath, keyPath string, isServer bool) {
 	if err != nil {
 		panic(err)
 	}
-	acl.Chmod(keyFile.Name(), 600)
+	// acl.Chmod(keyFile.Name(), 0644)
 	pem.Encode(keyFile, &pem.Block{Type: "EC PRIVATE KEY", Bytes: privBytes})
 }
 

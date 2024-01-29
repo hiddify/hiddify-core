@@ -75,7 +75,7 @@ func build(path string, optionsPath string) error {
 	}
 	if commandBuildOutputPath != "" {
 		outputPath, _ := filepath.Abs(filepath.Join(workingDir, commandBuildOutputPath))
-		err = os.WriteFile(outputPath, []byte(config), 0777)
+		err = os.WriteFile(outputPath, []byte(config), 0644)
 		if err != nil {
 			return err
 		}

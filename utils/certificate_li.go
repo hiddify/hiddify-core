@@ -56,7 +56,7 @@ func GenerateCertificate(certPath, keyPath string, isServer bool) {
 		panic(err)
 	}
 	defer certFile.Close()
-	certFile.Chmod(600)
+	certFile.Chmod(0644)
 	pem.Encode(certFile, &pem.Block{Type: "CERTIFICATE", Bytes: certDER})
 
 	keyFile, err := os.Create(keyPath)
@@ -68,7 +68,7 @@ func GenerateCertificate(certPath, keyPath string, isServer bool) {
 	if err != nil {
 		panic(err)
 	}
-	keyFile.Chmod(600)
+	keyFile.Chmod(0644)
 	pem.Encode(keyFile, &pem.Block{Type: "EC PRIVATE KEY", Bytes: privBytes})
 }
 

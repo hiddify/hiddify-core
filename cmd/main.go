@@ -25,12 +25,6 @@ func init() {
 	mainCommand.AddCommand(commandService)
 	mainCommand.AddCommand(commandGenerateCertification)
 
-	commandService.AddCommand(commandServiceStart)
-	commandService.AddCommand(commandServiceStop)
-	commandService.AddCommand(commandServiceInstall)
-
-	commandServiceStart.Flags().Int("port", 8080, "Webserver port number")
-
 	mainCommand.PersistentFlags().StringVarP(&workingDir, "directory", "D", "", "set working directory")
 	mainCommand.PersistentFlags().BoolVarP(&disableColor, "disable-color", "", false, "disable color output")
 
@@ -49,7 +43,7 @@ func preRun(cmd *cobra.Command, args []string) {
 	if workingDir != "" {
 		_, err := os.Stat(workingDir)
 		if err != nil {
-			os.MkdirAll(workingDir, 0o777)
+			os.MkdirAll(workingDir, 0o0644)
 		}
 		if err := os.Chdir(workingDir); err != nil {
 			log.Fatal(err)

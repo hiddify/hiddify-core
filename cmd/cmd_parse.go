@@ -39,7 +39,7 @@ func parse(path string) error {
 	}
 	if commandParseOutputPath != "" {
 		outputPath, _ := filepath.Abs(filepath.Join(workingDir, commandParseOutputPath))
-		err = os.WriteFile(outputPath, config, 0777)
+		err = os.WriteFile(outputPath, config, 0644)
 		if err != nil {
 			return err
 		}

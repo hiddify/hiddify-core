@@ -4,9 +4,9 @@ type Stack string
 
 const (
 	System Stack = "system"
-	GVisor Stack = "gVisor"
+	GVisor Stack = "gvisor"
 	Mixed  Stack = "mixed"
-	LWIP   Stack = "LWIP"
+	// LWIP   Stack = "LWIP"
 )
 
 type Parameters struct {

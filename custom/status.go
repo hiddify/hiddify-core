@@ -3,6 +3,7 @@ package main
 import "C"
 import (
 	"encoding/json"
+	"fmt"
 
 	"github.com/hiddify/libcore/bridge"
 )
@@ -26,7 +27,7 @@ func propagateStatus(newStatus string) {
 func stopAndAlert(alert string, err error) error {
 	status = Stopped
 	message := err.Error()
-
+	fmt.Printf("Error: %s: %v\n", alert, err)
 	msg, _ := json.Marshal(StatusMessage{Status: status, Alert: &alert, Message: &message})
 	bridge.SendStringToPort(statusPropagationPort, string(msg))
 	return nil

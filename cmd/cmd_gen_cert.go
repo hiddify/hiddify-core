@@ -1,16 +1,17 @@
 package main
 
 import (
+	"os"
+
 	"github.com/hiddify/libcore/utils"
 	"github.com/spf13/cobra"
-	"os"
 )
 
 var commandGenerateCertification = &cobra.Command{
 	Use:   "gen-cert",
 	Short: "Generate certification for web server",
 	Run: func(cmd *cobra.Command, args []string) {
-		err := os.MkdirAll("cert", 600)
+		err := os.MkdirAll("cert", 0644)
 		if err != nil {
 			panic("Error: " + err.Error())
 		}

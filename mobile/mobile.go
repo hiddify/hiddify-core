@@ -15,7 +15,7 @@ func Parse(path string, tempPath string, debug bool) error {
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(path, config, 0777)
+	return os.WriteFile(path, config, 0644)
 }
 
 func BuildConfig(path string, configOptionsJson string) (string, error) {
