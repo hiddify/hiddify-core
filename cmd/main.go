@@ -22,8 +22,18 @@ var mainCommand = &cobra.Command{
 }
 
 func init() {
+	mainCommand.AddCommand(commandService)
+	mainCommand.AddCommand(commandGenerateCertification)
+
+	commandService.AddCommand(commandServiceStart)
+	commandService.AddCommand(commandServiceStop)
+	commandService.AddCommand(commandServiceInstall)
+
+	commandServiceStart.Flags().Int("port", 8080, "Webserver port number")
+
 	mainCommand.PersistentFlags().StringVarP(&workingDir, "directory", "D", "", "set working directory")
 	mainCommand.PersistentFlags().BoolVarP(&disableColor, "disable-color", "", false, "disable color output")
+
 }
 
 func main() {
