@@ -27,6 +27,7 @@ func patchOutboundMux(base option.Outbound, configOpt ConfigOptions, obj outboun
 }
 
 func patchOutboundTLSTricks(base option.Outbound, configOpt ConfigOptions, obj outboundMap) outboundMap {
+
 	if base.Type == C.TypeSelector || base.Type == C.TypeURLTest || base.Type == C.TypeBlock || base.Type == C.TypeDNS {
 		return obj
 	}
@@ -54,25 +55,31 @@ func patchOutboundTLSTricks(base option.Outbound, configOpt ConfigOptions, obj o
 	if tls == nil || !tls.Enabled || transport == nil {
 		return obj
 	}
+
 	if transport.Type != C.V2RayTransportTypeWebsocket && transport.Type != C.V2RayTransportTypeGRPC {
 		return obj
 	}
 
-	if tls, ok := obj["tls"].(map[string]interface{}); ok {
-		tlsTricks := option.TLSTricksOptions{
-			MixedCaseSNI: configOpt.TLSTricks.EnableMixedSNICase,
-		}
+	if outtls, ok := obj["tls"].(map[string]interface{}); ok {
+		tlsTricks := tls.TLSTricks
+		tlsTricks.MixedCaseSNI = tlsTricks.MixedCaseSNI || configOpt.TLSTricks.EnableMixedSNICase
 
 		if configOpt.TLSTricks.EnablePadding {
 			tlsTricks.PaddingMode = "random"
 			tlsTricks.PaddingSize = configOpt.TLSTricks.PaddingSize
+			fmt.Printf("--------------------%+v----%+v", tlsTricks.PaddingSize, configOpt)
+			outtls["utls"] = map[string]interface{}{
+				"enabled":     true,
+				"fingerprint": "custom",
+			}
 		}
 
-		if tlsTricks.MixedCaseSNI || tlsTricks.PaddingMode != "" {
-			tls["tls_tricks"] = tlsTricks
-			// } else {
-			// 	tls["tls_tricks"] = nil
-		}
+		outtls["tls_tricks"] = tlsTricks
+		// if tlsTricks.MixedCaseSNI || tlsTricks.PaddingMode != "" {
+		// 	// } else {
+		// 	// 	tls["tls_tricks"] = nil
+		// }
+		fmt.Printf("-------%+v------------- ", tlsTricks)
 	}
 	return obj
 }

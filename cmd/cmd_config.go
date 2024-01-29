@@ -80,6 +80,8 @@ func build(path string, optionsPath string) error {
 			return err
 		}
 		fmt.Println("result successfully written to ", outputPath)
+		libbox.Setup(outputPath, workingDir, workingDir, true)
+		instance, err := NewService(*patchedOptions)
 	} else {
 		os.Stdout.WriteString(config)
 	}

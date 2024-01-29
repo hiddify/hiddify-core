@@ -54,16 +54,16 @@ func BuildConfig(configOpt ConfigOptions, input option.Options) (*option.Options
 			ClashAPI: &option.ClashAPIOptions{
 				ExternalController: fmt.Sprintf("%s:%d", "127.0.0.1", configOpt.ClashApiPort),
 			},
-			CacheFile: &option.CacheFileOptions{
-				Enabled: true,
-				Path:    "clash.db",
-			},
+			// CacheFile: &option.CacheFileOptions{
+			// 	Enabled: true,
+			// 	Path:    "clash.db",
+			// },
 		}
 	}
 
 	options.Log = &option.LogOptions{
-		Level:        configOpt.LogLevel,
-		Output:       "box.log",
+		Level: configOpt.LogLevel,
+		// Output:       "box.log",
 		Disabled:     false,
 		Timestamp:    true,
 		DisableColor: true,

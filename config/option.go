@@ -98,7 +98,7 @@ func DefaultConfigOptions() *ConfigOptions {
 			FragmentSleep:      "50-200",
 			EnableMixedSNICase: false,
 			EnablePadding:      false,
-			PaddingSize:        "100-200",
+			PaddingSize:        "1200-1500",
 		},
 	}
 }
