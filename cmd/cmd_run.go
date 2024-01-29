@@ -7,6 +7,7 @@ import (
 	"github.com/hiddify/libcore/config"
 	"github.com/hiddify/libcore/global"
 	"github.com/sagernet/sing-box/log"
+	"github.com/sagernet/sing-box/option"
 
 	"github.com/spf13/cobra"
 )
@@ -33,6 +34,10 @@ func init() {
 
 func runSingbox(configPath string) error {
 	options, err := readConfigAt(configPath)
+	if err != nil {
+		return err
+	}
+	options.Log = &option.LogOptions{}
 	options.Log.Disabled = false
 	options.Log.Level = "trace"
 	options.Log.Output = ""

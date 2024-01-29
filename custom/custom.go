@@ -34,6 +34,7 @@ func setupOnce(api unsafe.Pointer) {
 func setup(baseDir *C.char, workingDir *C.char, tempDir *C.char, statusPort C.longlong, debug bool) (CErr *C.char) {
 	defer config.DeferPanicToError("setup", func(err error) {
 		CErr = C.CString(err.Error())
+		fmt.Printf("Error: %+v\n", err)
 	})
 
 	Setup(C.GoString(baseDir), C.GoString(workingDir), C.GoString(tempDir))

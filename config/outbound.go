@@ -62,6 +62,9 @@ func patchOutboundTLSTricks(base option.Outbound, configOpt ConfigOptions, obj o
 
 	if outtls, ok := obj["tls"].(map[string]interface{}); ok {
 		tlsTricks := tls.TLSTricks
+		if tlsTricks == nil {
+			tlsTricks = &option.TLSTricksOptions{}
+		}
 		tlsTricks.MixedCaseSNI = tlsTricks.MixedCaseSNI || configOpt.TLSTricks.EnableMixedSNICase
 
 		if configOpt.TLSTricks.EnablePadding {
