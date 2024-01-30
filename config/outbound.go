@@ -166,6 +166,15 @@ func patchOutbound(base option.Outbound, configOpt ConfigOptions) (*option.Outbo
 }
 
 func patchWarp(base *option.Outbound) error {
+	if base.Type == C.TypeWireGuard {
+		host := base.WireGuardOptions.Server
+		if host == "default" || host == "random" || host == "auto" {
+			base.WireGuardOptions.Server = getRandomIP()
+		}
+		if base.WireGuardOptions.ServerPort == 0 {
+			base.WireGuardOptions.ServerPort = generateRandomPort()
+		}
+	}
 	if base.Type == C.TypeCustom {
 		if warp, ok := base.CustomOptions["warp"].(map[string]interface{}); ok {
 			key, _ := warp["key"].(string)
@@ -186,6 +195,7 @@ func patchWarp(base *option.Outbound) error {
 		}
 
 	}
+
 	return nil
 }
 

@@ -3,7 +3,7 @@ module github.com/hiddify/libcore
 go 1.21.5
 
 require (
-	github.com/hiddify/ray2sing v0.0.0-20240127015415-b0b85dcbf102
+	github.com/hiddify/ray2sing v0.0.0-20240130180912-f90754dd8f44
 	github.com/kardianos/service v1.2.2
 	github.com/sagernet/gomobile v0.1.1
 	github.com/sagernet/sing v0.3.0
