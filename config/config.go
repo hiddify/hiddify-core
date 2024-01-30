@@ -80,7 +80,13 @@ func BuildConfig(configOpt ConfigOptions, input option.Options) (*option.Options
 				Address:         configOpt.RemoteDnsAddress,
 				AddressResolver: "dns-direct",
 				Strategy:        configOpt.RemoteDnsDomainStrategy,
-				Detour:          "select",
+			},
+			{
+				Tag:     "dns-trick-direct",
+				Address: "https://sky.rethinkdns.com/",
+				// AddressResolver: "dns-local",
+				Strategy: configOpt.DirectDnsDomainStrategy,
+				Detour:   "direct-fragment",
 			},
 			{
 				Tag:             "dns-direct",
@@ -188,6 +194,7 @@ func BuildConfig(configOpt ConfigOptions, input option.Options) (*option.Options
 	parsedUrl, err := url.Parse(fmt.Sprintf("https://%s", remoteDNSAddress))
 	if err == nil && net.ParseIP(parsedUrl.Host) == nil {
 		directDNSDomains = append(directDNSDomains, fmt.Sprintf("full:%s", parsedUrl.Host))
+		//TODO: IS it really needed
 	}
 
 	routeRules := []option.Rule{
@@ -333,6 +340,7 @@ func BuildConfig(configOpt ConfigOptions, input option.Options) (*option.Options
 			},
 		},
 	)
+
 	options.Route = &option.RouteOptions{
 		Rules:               routeRules,
 		AutoDetectInterface: true,
@@ -352,12 +360,11 @@ func BuildConfig(configOpt ConfigOptions, input option.Options) (*option.Options
 		if err != nil {
 			return nil, err
 		}
-		if err == nil {
-			if serverDomain != "" {
-				directDNSDomains = append(directDNSDomains, serverDomain)
-			}
-			out = *outbound
+
+		if serverDomain != "" {
+			directDNSDomains = append(directDNSDomains, serverDomain)
 		}
+		out = *outbound
 
 		switch out.Type {
 		case C.TypeDirect, C.TypeBlock, C.TypeDNS:
@@ -406,6 +413,19 @@ func BuildConfig(configOpt ConfigOptions, input option.Options) (*option.Options
 				Type: C.TypeDirect,
 			},
 			{
+				Tag:  "direct-fragment",
+				Type: C.TypeDirect,
+				DirectOptions: option.DirectOutboundOptions{
+					DialerOptions: option.DialerOptions{
+						TLSFragment: &option.TLSFragmentOptions{
+							Enabled: true,
+							Size:    configOpt.TLSTricks.FragmentSize,
+							Sleep:   configOpt.TLSTricks.FragmentSleep,
+						},
+					},
+				},
+			},
+			{
 				Tag:  "bypass",
 				Type: C.TypeDirect,
 			},
@@ -415,9 +435,21 @@ func BuildConfig(configOpt ConfigOptions, input option.Options) (*option.Options
 			},
 		}...,
 	)
-
 	if len(directDNSDomains) > 0 {
-		domains := strings.Join(removeDuplicateStr(directDNSDomains), ",")
+		trickDnsDomains := []string{}
+		directDNSDomains = removeDuplicateStr(directDNSDomains)
+		for i, d := range directDNSDomains {
+			if isBlockedDomain(d) {
+				trickDnsDomains = append(trickDnsDomains, d)
+			}
+		}
+		trickDomains := strings.Join(trickDnsDomains, ",")
+		trickRule := Rule{Domains: trickDomains, Outbound: "bypass"}
+		trickdnsRule := trickRule.MakeDNSRule()
+		trickdnsRule.Server = "dns-trick-direct"
+		options.DNS.Rules = append([]option.DNSRule{{Type: C.RuleTypeDefault, DefaultOptions: trickdnsRule}}, options.DNS.Rules...)
+
+		domains := strings.Join(directDNSDomains, ",")
 		directRule := Rule{Domains: domains, Outbound: "bypass"}
 		dnsRule := directRule.MakeDNSRule()
 		dnsRule.Server = "dns-direct"
@@ -425,6 +457,25 @@ func BuildConfig(configOpt ConfigOptions, input option.Options) (*option.Options
 	}
 
 	return &options, nil
+}
+func isBlockedDomain(domain string) bool {
+	if strings.HasPrefix("full:", domain) {
+		return false
+	}
+	ips, err := net.LookupHost(domain)
+	if err != nil {
+		// fmt.Println(err)
+		return true
+	}
+
+	// Print the IP addresses associated with the domain
+	fmt.Printf("IP addresses for %s:\n", domain)
+	for _, ip := range ips {
+		if strings.HasPrefix(ip, "10.") {
+			return true
+		}
+	}
+	return false
 }
 
 func applyOverrides(overrides ConfigOptions, options option.Options) *option.Options {
