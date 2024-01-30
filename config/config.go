@@ -70,6 +70,9 @@ func BuildConfig(configOpt ConfigOptions, input option.Options) (*option.Options
 	}
 
 	options.DNS = &option.DNSOptions{
+		StaticIPs: map[string][]string{
+			"sky.rethinkdns.com": getIPs([]string{"zula.ir", "www.speedtest.net", "sky.rethinkdns.com"}),
+		},
 		DNSClientOptions: option.DNSClientOptions{
 			IndependentCache: configOpt.IndependentDNSCache,
 		},
@@ -438,7 +441,7 @@ func BuildConfig(configOpt ConfigOptions, input option.Options) (*option.Options
 	if len(directDNSDomains) > 0 {
 		trickDnsDomains := []string{}
 		directDNSDomains = removeDuplicateStr(directDNSDomains)
-		for i, d := range directDNSDomains {
+		for _, d := range directDNSDomains {
 			if isBlockedDomain(d) {
 				trickDnsDomains = append(trickDnsDomains, d)
 			}
@@ -458,6 +461,23 @@ func BuildConfig(configOpt ConfigOptions, input option.Options) (*option.Options
 
 	return &options, nil
 }
+
+func getIPs(domains []string) []string {
+	res := []string{}
+	for _, d := range domains {
+		ips, err := net.LookupHost(d)
+		if err != nil {
+			continue
+		}
+		for _, ip := range ips {
+			if !strings.HasPrefix(ip, "10.") {
+				res = append(res, ip)
+			}
+		}
+	}
+	return res
+}
+
 func isBlockedDomain(domain string) bool {
 	if strings.HasPrefix("full:", domain) {
 		return false
