@@ -19,7 +19,7 @@ jobs:
       matrix:
         job:
           - { os: 'ubuntu-latest', target: 'android' }
-          - { os: 'ubuntu-latest', target: 'linux-amd64', aarch: 'x64' }
+          - { os: 'ubuntu-20.04', target: 'linux-amd64', aarch: 'x64' }
           - { os: 'ubuntu-latest', target: 'windows-amd64', aarch: 'x64' }
           - { os: 'macos-11', target: 'macos-universal' }
           - { os: "macos-11", target: "ios" }
