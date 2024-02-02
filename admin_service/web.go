@@ -65,11 +65,11 @@ func startHandler(w http.ResponseWriter, r *http.Request) {
 
 	parameters := global.Parameters{Ipv6: ipv6, ServerPort: serverPort, StrictRoute: strictRoute, EndpointIndependentNat: endpointIndependentNat, Stack: theStack}
 
-	err = global.WriteParameters(parameters.Ipv6, parameters.ServerPort, parameters.StrictRoute, parameters.EndpointIndependentNat, GetStringFromStack(parameters.Stack))
-	if err != nil {
-		http.Error(w, fmt.Sprintf("Error: %v", err), http.StatusBadRequest)
-		return
-	}
+	// err = global.WriteParameters(parameters.Ipv6, parameters.ServerPort, parameters.StrictRoute, parameters.EndpointIndependentNat, GetStringFromStack(parameters.Stack))
+	// if err != nil {
+	// http.Error(w, fmt.Sprintf("Error: %v", err), http.StatusBadRequest)
+	// return
+	// }
 	err = global.SetupC("./", "./", "./tmp", false)
 
 	if err != nil {
@@ -84,11 +84,12 @@ func startHandler(w http.ResponseWriter, r *http.Request) {
 	http.Error(w, fmt.Sprintf("Ok"), http.StatusOK)
 }
 func StopHandler(w http.ResponseWriter, r *http.Request) {
-	err := global.StopService()
+	err := global.StopServiceC()
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Error: %v", err), http.StatusBadRequest)
 		return
 	}
+	http.Error(w, fmt.Sprintf("Ok"), http.StatusOK)
 }
 func GetStack(stack string) global.Stack {
 

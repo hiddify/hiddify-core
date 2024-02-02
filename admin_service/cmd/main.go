@@ -6,12 +6,16 @@ package main
 #include <stdint.h>
 
 // Import the function from the DLL
-extern void AdminServiceStart(char *arg);
+char* AdminServiceStart(const char* arg);
+
 
 */
 import "C"
 import (
+	"fmt"
 	"os"
+	"strings"
+	"unsafe"
 )
 
 func main() {
@@ -29,5 +33,24 @@ func main() {
 	// defer C.free(unsafe.Pointer(arg))
 
 	// Call AdminServiceStart with the C string
-	C.AdminServiceStart(arg)
+
+	result := C.AdminServiceStart(arg)
+	goRes := C.GoString(result)
+	defer C.free(unsafe.Pointer(result))
+
+	parts := strings.SplitN(goRes, " ", 2)
+
+	var parsedExitCode int
+	_, err := fmt.Sscanf(parts[0], "%d", &parsedExitCode)
+	parsedOutMessage := parts[1]
+	if err != nil {
+		fmt.Println("Error parsing the string:", err)
+		return
+	}
+	fmt.Printf("%d %s", parsedExitCode, parsedOutMessage)
+
+	if parsedExitCode != 0 {
+		os.Exit(int(parsedExitCode))
+	}
+
 }

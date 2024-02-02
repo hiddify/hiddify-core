@@ -236,7 +236,9 @@ func urlTest(groupTag string) error {
 }
 
 func StartServiceC(delayStart bool, content string) error {
-
+	if box != nil {
+		return errors.New("instance already started")
+	}
 	options, err := parseConfig(content)
 	// if err != nil {
 	// 	return stopAndAlert(EmptyConfiguration, err)
@@ -254,13 +256,14 @@ func StartServiceC(delayStart bool, content string) error {
 
 	// err = startCommandServer(*logFactory)
 	// if err != nil {
-	// 	return stopAndAlert(StartCommandServer, err)
+	// 	return err
 	// }
 
 	instance, err := NewService(options)
-	// if err != nil {
-	// 	return stopAndAlert(CreateService, err)
-	// }
+	if err != nil {
+		// 	return stopAndAlert(CreateService, err)
+		return err
+	}
 
 	// if delayStart {
 	// 	time.Sleep(250 * time.Millisecond)
@@ -272,34 +275,34 @@ func StartServiceC(delayStart bool, content string) error {
 		fmt.Printf("String Service Error: %v\n", err)
 		return err
 	}
-	// box = instance
+	box = instance
 	// commandServer.SetService(box)
 
-	// propagateStatus(Started)
+	status = Started
 	return nil
 }
-func StopService() error {
-	if status != Started {
-		return nil
-	}
+func StopServiceC() error {
+	// if status != Started {
+	// 	return errors.New("instance not started")
+	// }
 	if box == nil {
 		return errors.New("instance not found")
 	}
 
-	propagateStatus(Stopping)
-	commandServer.SetService(nil)
+	// propagateStatus(Stopping)
 	err := box.Close()
+	// commandServer.SetService(nil)
 	if err != nil {
 		return err
 	}
 	box = nil
 
-	err = commandServer.Close()
-	if err != nil {
-		return err
-	}
+	// err = commandServer.Close()
+	// if err != nil {
+	// 	return err
+	// }
 	commandServer = nil
-	propagateStatus(Stopped)
+	status = Stopped
 
 	return nil
 }
@@ -347,7 +350,7 @@ func MakeConfig(Ipv6 bool, ServerPort int, StrictRoute bool, EndpointIndependent
 		  {
 			"type": "tun",
 			"tag": "tun-in",
-			"interface_name": "tun0",
+			"interface_name": "HiddifyTunnel",
 			"inet4_address": "172.19.0.1/30",
 			` + ipv6 + `
 			"mtu": 9000,

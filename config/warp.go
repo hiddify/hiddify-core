@@ -188,6 +188,7 @@ func generateWarp(license string, host string, port uint16, fakePackets string) 
 		fmt.Println("Error marshaling Singbox configuration:", err)
 		return nil, err
 	}
+
 	fmt.Println(string(singboxJSON))
 	return singboxConfig, nil
 }

@@ -2,7 +2,9 @@ package main
 
 import (
 	"fmt"
-	"time"
+	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/hiddify/libcore/config"
 	"github.com/hiddify/libcore/global"
@@ -53,6 +55,11 @@ func runSingbox(configPath string) error {
 	}
 	go global.StartServiceC(false, configStr)
 	fmt.Printf("Waiting for 30 seconds\n")
-	<-time.After(time.Second * 30)
+	// <-time.After(time.Second * 30)
+
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
+	<-sigChan
+
 	return err
 }

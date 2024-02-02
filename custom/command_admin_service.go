@@ -6,10 +6,19 @@
 package main
 
 import "C"
-import "github.com/hiddify/libcore/admin_service"
+import (
+	"fmt"
+
+	"github.com/hiddify/libcore/admin_service"
+)
 
 //export AdminServiceStart
-func AdminServiceStart(arg *C.char) {
+func AdminServiceStart(arg *C.char) *C.char {
 	goArg := C.GoString(arg)
-	admin_service.StartService(goArg)
+	exitCode, outMessage := admin_service.StartService(goArg)
+
+	// Allocate memory for the message and copy the string content
+
+	return C.CString(fmt.Sprintf("%d %s", exitCode, outMessage))
+
 }

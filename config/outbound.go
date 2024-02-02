@@ -70,7 +70,7 @@ func patchOutboundTLSTricks(base option.Outbound, configOpt ConfigOptions, obj o
 		if configOpt.TLSTricks.EnablePadding {
 			tlsTricks.PaddingMode = "random"
 			tlsTricks.PaddingSize = configOpt.TLSTricks.PaddingSize
-			fmt.Printf("--------------------%+v----%+v", tlsTricks.PaddingSize, configOpt)
+			// fmt.Printf("--------------------%+v----%+v", tlsTricks.PaddingSize, configOpt)
 			outtls["utls"] = map[string]interface{}{
 				"enabled":     true,
 				"fingerprint": "custom",
@@ -82,7 +82,7 @@ func patchOutboundTLSTricks(base option.Outbound, configOpt ConfigOptions, obj o
 		// 	// } else {
 		// 	// 	tls["tls_tricks"] = nil
 		// }
-		fmt.Printf("-------%+v------------- ", tlsTricks)
+		// fmt.Printf("-------%+v------------- ", tlsTricks)
 	}
 	return obj
 }
@@ -190,6 +190,12 @@ func patchWarp(base *option.Outbound) error {
 
 			base.Type = C.TypeWireGuard
 			warpConfig.WireGuardOptions.Detour = detour
+			if detour != "" {
+				if warpConfig.WireGuardOptions.MTU > 1000 {
+					warpConfig.WireGuardOptions.MTU -= 100
+				}
+				warpConfig.WireGuardOptions.FakePackets = ""
+			}
 			base.WireGuardOptions = warpConfig.WireGuardOptions
 
 		}

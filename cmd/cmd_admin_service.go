@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+
 	"github.com/hiddify/libcore/admin_service"
 
 	"github.com/spf13/cobra"
@@ -11,9 +13,12 @@ var commandService = &cobra.Command{
 	Short: "Sign box service start/stop/install/uninstall",
 	Args:  cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		if len(args) < 2 {
-			admin_service.StartService("")
+		arg := ""
+		if len(args) > 1 {
+			arg = args[1]
 		}
-		admin_service.StartService(args[1])
+		code, out := admin_service.StartService(arg)
+		fmt.Printf("exitCode:%d msg=%s", code, out)
+
 	},
 }

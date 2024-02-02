@@ -34,14 +34,20 @@ ios: lib_install
 
 windows-amd64:
 	env GOOS=windows GOARCH=amd64 CC=x86_64-w64-mingw32-gcc $(GOBUILD) -o $(BINDIR)/$(NAME).dll ./custom
+	rsrc -manifest admin_service\cmd\admin_service.manifest -ico ..\assets\images\tray_icon_connected.ico -o admin_service\cmd\admin_service.syso
+	env GOOS=windows GOARCH=amd64 CC=x86_64-w64-mingw32-gcc $(GOBUILD) -o $(BINDIR)/hiddify-service.exe ./admin_service/cmd
 
 linux-amd64:
 	env GOOS=linux GOARCH=amd64 $(GOBUILD) -o $(BINDIR)/$(NAME).so ./custom
+	env GOOS=linux GOARCH=amd64 $(GOBUILD) -o $(BINDIR)/hiddify-service ./admin_service/cmd
+	chmod +x $(BINDIR)/hiddify-service
 
 macos-amd64:
 	env GOOS=darwin GOARCH=amd64 CGO_CFLAGS="-mmacosx-version-min=10.11" CGO_LDFLAGS="-mmacosx-version-min=10.11" CGO_ENABLED=1 go build -trimpath -tags $(TAGS),$(IOS_TAGS) -buildmode=c-shared -o $(BINDIR)/$(NAME).dylib ./custom
+	env GOOS=darwin GOARCH=amd64 CGO_CFLAGS="-mmacosx-version-min=10.11" CGO_LDFLAGS="-mmacosx-version-min=10.11" CGO_ENABLED=1 go build -trimpath -tags $(TAGS),$(IOS_TAGS) -o $(BINDIR)/hiddify-service ./admin_service/cmd
 macos-arm64:
 	env GOOS=darwin GOARCH=arm64 CGO_CFLAGS="-mmacosx-version-min=10.11" CGO_LDFLAGS="-mmacosx-version-min=10.11" CGO_ENABLED=1 go build -trimpath -tags $(TAGS),$(IOS_TAGS) -buildmode=c-shared -o $(BINDIR)/$(NAME).dylib ./custom
+	
 macos-universal: macos-amd64 macos-arm64 
 	lipo -create $(BINDIR)/$(BASENAME)-macos-amd64.dylib $(BINDIR)/$(BASENAME)-macos-arm64.dylib -output $(BINDIR)/$(NAME).dylib
 
@@ -69,3 +75,5 @@ release: # Create a new tag for release.
 	git tag v$${TAG} && \
 	git push -u origin HEAD --tags && \
 	echo "Github Actions will detect the new tag and release the new version."'
+
+
