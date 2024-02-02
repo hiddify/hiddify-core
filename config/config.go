@@ -119,7 +119,8 @@ func BuildConfig(configOpt ConfigOptions, input option.Options) (*option.Options
 	}
 
 	if configOpt.EnableTun {
-		if runtime.GOOS != "windows" && runtime.GOOS != "darwin" && runtime.GOOS != "linux" {
+		if runtime.GOOS != "windows" && runtime.GOOS != "linux" {
+			// && runtime.GOOS != "darwin"
 			tunInbound := option.Inbound{
 				Type: C.TypeTun,
 				Tag:  "tun-in",
