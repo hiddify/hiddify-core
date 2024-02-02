@@ -74,14 +74,7 @@ jobs:
           rm -f /*.h
           rm ./hiddify-libcore*sources* ||echo "no source"
           rm ./hiddify-libcore-macos-a*.dylib || echo "no macos arm and amd"
-          files=$(find . \( -name 'libcore.*' \
-                  -a \( -name '*.dll' -o -name '*.so' -o -name '*.dylib' -name '*.aar' \) \) \
-            -o \
-            -name 'Libcore.xcframework' \
-            -o \
-            -name 'hiddify-service*' | sed 's/\.\///g')
-
-
+          files=$(ls | grep -E '^(libcore\.(dll|so|dylib|aar)|Libcore.xcframework|hiddify-service(\.exe)?)$')
           echo tar -czvf hiddify-core-${{ matrix.job.target }}.tar.gz  $files
           tar -czvf hiddify-core-${{ matrix.job.target }}.tar.gz  $files
           
