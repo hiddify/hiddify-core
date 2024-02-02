@@ -59,7 +59,6 @@ jobs:
         uses: egor-tensin/setup-mingw@v2
         with:
           platform: ${{ matrix.job.aarch }}
-
       - name: Setup macos
         if: startsWith(matrix.job.target,'macos') ||  startsWith(matrix.job.target,'ios')
         run: |
@@ -113,7 +112,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          files: ./bin/*
+          files: ./bin/*.tar.gz
           name: 'draft'
           tag_name: 'draft'
           prerelease: true
@@ -140,4 +139,4 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: ${{ github.ref_name }}
-          files: bin/*
+          files: bin/*.tar.gz

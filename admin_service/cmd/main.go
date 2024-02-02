@@ -1,7 +1,6 @@
 package main
 
 /*
-#cgo LDFLAGS: bin/libcore.dll
 #include <stdlib.h>
 #include <stdint.h>
 
@@ -20,23 +19,20 @@ import (
 
 func main() {
 	args := os.Args
-	// Check if there is at least one command-line argument
 	if len(args) < 2 {
-		println("Usage: hiddify-service.exe empty/start/stop/uninstall/install")
-		// os.Exit(1)
+		fmt.Println("Usage: hiddify-service.exe empty/start/stop/uninstall/install")
 		args = append(args, "")
 	}
-	// fmt.Printf("os.Args: %+v", args)
-	os.Chdir(os.Args[0])
-	// Convert the Go string to a C string
-	arg := C.CString(args[1])
-	// defer C.free(unsafe.Pointer(arg))
 
-	// Call AdminServiceStart with the C string
+	os.Chdir(os.Args[0])
+
+	arg := C.CString(args[1])
+	defer C.free(unsafe.Pointer(arg))
 
 	result := C.AdminServiceStart(arg)
-	goRes := C.GoString(result)
 	defer C.free(unsafe.Pointer(result))
+
+	goRes := C.GoString(result)
 
 	parts := strings.SplitN(goRes, " ", 2)
 
@@ -47,10 +43,10 @@ func main() {
 		fmt.Println("Error parsing the string:", err)
 		return
 	}
+
 	fmt.Printf("%d %s", parsedExitCode, parsedOutMessage)
 
 	if parsedExitCode != 0 {
-		os.Exit(int(parsedExitCode))
+		os.Exit(parsedExitCode)
 	}
-
 }
