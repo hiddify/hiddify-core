@@ -79,9 +79,11 @@ jobs:
             -o \
             -name 'Libcore.xcframework' \
             -o \
-            -name 'hiddify-service*' )
+            -name 'hiddify-service*' | sed 's/\.\///g')
 
-          tar -czvf hiddify-core-${{ matrix.job.target }}.tar.gz --transform='s,^./,,g' $files
+
+          echo tar -czvf hiddify-core-${{ matrix.job.target }}.tar.gz  $files
+          tar -czvf hiddify-core-${{ matrix.job.target }}.tar.gz  $files
           
         working-directory: bin
       - uses: actions/upload-artifact@v3
