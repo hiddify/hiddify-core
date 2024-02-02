@@ -75,12 +75,9 @@ jobs:
           rm -f /*.h
           rm ./hiddify-libcore*sources* ||echo "no source"
           rm ./hiddify-libcore-macos-a*.dylib || echo "no macos arm and amd"
-          if [[ "${{ matrix.job.target }}" == "ios" ]];then
-              tar -czvf hiddify-libcore-ios.xcframework.tar.gz hiddify-libcore-ios.xcframework
-              rm -rf hiddify-libcore-ios.xcframework
-          else
-              gzip -r -S ".gz" ./hiddify-libcore*
-          fi
+          
+          tar -czvf hiddify-core-${{ matrix.job.target }}.tar.gz --transform='s,^./,,g' $(find . -regex '\./libcore\.\(dll\|so\|dylib\|xcframework\)$\|./hiddify-service\(\.exe\)*$')
+          
         working-directory: bin
       - uses: actions/upload-artifact@v3
         if: ${{ success() }}
