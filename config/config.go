@@ -7,12 +7,32 @@ import (
 	"net"
 	"net/netip"
 	"net/url"
-	"runtime"
 	"strings"
 
 	C "github.com/sagernet/sing-box/constant"
 	"github.com/sagernet/sing-box/option"
 	dns "github.com/sagernet/sing-dns"
+)
+
+const (
+	DNSRemoteTag       = "dns-remote"
+	DNSLocalTag        = "dns-local"
+	DNSDirectTag       = "dns-direct"
+	DNSBlockTag        = "dns-block"
+	DNSFakeTag         = "dns-fake"
+	DNSTricksDirectTag = "dns-trick-direct"
+
+	OutboundDirectTag         = "direct"
+	OutboundBypassTag         = "bypass"
+	OutboundBlockTag          = "block"
+	OutboundSelectTag         = "select"
+	OutboundURLTestTag        = "auto"
+	OutboundDNSTag            = "dns-out"
+	OutboundDirectFragmentTag = "direct-fragment"
+
+	InboundTUNTag   = "tun-in"
+	InboundMixedTag = "mixed-in"
+	InboundDNSTag   = "dns-in"
 )
 
 func BuildConfigJson(configOpt ConfigOptions, input option.Options) (string, error) {
@@ -77,35 +97,35 @@ func BuildConfig(configOpt ConfigOptions, input option.Options) (*option.Options
 		DNSClientOptions: option.DNSClientOptions{
 			IndependentCache: configOpt.IndependentDNSCache,
 		},
-		Final: "dns-remote",
+		Final: DNSRemoteTag,
 		Servers: []option.DNSServerOptions{
 			{
-				Tag:             "dns-remote",
+				Tag:             DNSRemoteTag,
 				Address:         configOpt.RemoteDnsAddress,
-				AddressResolver: "dns-direct",
+				AddressResolver: DNSDirectTag,
 				Strategy:        configOpt.RemoteDnsDomainStrategy,
 			},
 			{
-				Tag:     "dns-trick-direct",
+				Tag:     DNSTricksDirectTag,
 				Address: "https://sky.rethinkdns.com/",
 				// AddressResolver: "dns-local",
 				Strategy: configOpt.DirectDnsDomainStrategy,
-				Detour:   "direct-fragment",
+				Detour:   OutboundDirectFragmentTag,
 			},
 			{
-				Tag:             "dns-direct",
+				Tag:             DNSDirectTag,
 				Address:         configOpt.DirectDnsAddress,
-				AddressResolver: "dns-local",
+				AddressResolver: DNSLocalTag,
 				Strategy:        configOpt.DirectDnsDomainStrategy,
-				Detour:          "direct",
+				Detour:          OutboundDirectTag,
 			},
 			{
-				Tag:     "dns-local",
+				Tag:     DNSLocalTag,
 				Address: "local",
-				Detour:  "direct",
+				Detour:  OutboundDirectTag,
 			},
 			{
-				Tag:     "dns-block",
+				Tag:     DNSBlockTag,
 				Address: "rcode://success",
 			},
 		},
@@ -119,50 +139,47 @@ func BuildConfig(configOpt ConfigOptions, input option.Options) (*option.Options
 	}
 
 	if configOpt.EnableTun {
-		if runtime.GOOS != "windows" && runtime.GOOS != "linux" {
-			// && runtime.GOOS != "darwin"
-			tunInbound := option.Inbound{
-				Type: C.TypeTun,
-				Tag:  "tun-in",
-				TunOptions: option.TunInboundOptions{
-					Stack:                  configOpt.TUNStack,
-					MTU:                    configOpt.MTU,
-					AutoRoute:              true,
-					StrictRoute:            configOpt.StrictRoute,
-					EndpointIndependentNat: true,
-					InboundOptions: option.InboundOptions{
-						SniffEnabled:             true,
-						SniffOverrideDestination: true,
-						DomainStrategy:           inboundDomainStrategy,
-					},
+		tunInbound := option.Inbound{
+			Type: C.TypeTun,
+			Tag:  InboundTUNTag,
+			TunOptions: option.TunInboundOptions{
+				Stack:                  configOpt.TUNStack,
+				MTU:                    configOpt.MTU,
+				AutoRoute:              true,
+				StrictRoute:            configOpt.StrictRoute,
+				EndpointIndependentNat: true,
+				InboundOptions: option.InboundOptions{
+					SniffEnabled:             true,
+					SniffOverrideDestination: true,
+					DomainStrategy:           inboundDomainStrategy,
 				},
-			}
-			switch configOpt.IPv6Mode {
-			case option.DomainStrategy(dns.DomainStrategyUseIPv4):
-				tunInbound.TunOptions.Inet4Address = []netip.Prefix{
-					netip.MustParsePrefix("172.19.0.1/28"),
-				}
-			case option.DomainStrategy(dns.DomainStrategyUseIPv6):
-				tunInbound.TunOptions.Inet6Address = []netip.Prefix{
-					netip.MustParsePrefix("fdfe:dcba:9876::1/126"),
-				}
-			default:
-				tunInbound.TunOptions.Inet4Address = []netip.Prefix{
-					netip.MustParsePrefix("172.19.0.1/28"),
-				}
-				tunInbound.TunOptions.Inet6Address = []netip.Prefix{
-					netip.MustParsePrefix("fdfe:dcba:9876::1/126"),
-				}
-			}
-			options.Inbounds = append(options.Inbounds, tunInbound)
+			},
 		}
+		switch configOpt.IPv6Mode {
+		case option.DomainStrategy(dns.DomainStrategyUseIPv4):
+			tunInbound.TunOptions.Inet4Address = []netip.Prefix{
+				netip.MustParsePrefix("172.19.0.1/28"),
+			}
+		case option.DomainStrategy(dns.DomainStrategyUseIPv6):
+			tunInbound.TunOptions.Inet6Address = []netip.Prefix{
+				netip.MustParsePrefix("fdfe:dcba:9876::1/126"),
+			}
+		default:
+			tunInbound.TunOptions.Inet4Address = []netip.Prefix{
+				netip.MustParsePrefix("172.19.0.1/28"),
+			}
+			tunInbound.TunOptions.Inet6Address = []netip.Prefix{
+				netip.MustParsePrefix("fdfe:dcba:9876::1/126"),
+			}
+		}
+		options.Inbounds = append(options.Inbounds, tunInbound)
 	}
 
 	options.Inbounds = append(
 		options.Inbounds,
 		option.Inbound{
 			Type: C.TypeMixed,
-			Tag:  "mixed-in",
+			Tag:  InboundMixedTag,
 			MixedOptions: option.HTTPMixedInboundOptions{
 				ListenOptions: option.ListenOptions{
 					Listen:     option.NewListenAddress(netip.MustParseAddr(bind)),
@@ -182,7 +199,7 @@ func BuildConfig(configOpt ConfigOptions, input option.Options) (*option.Options
 		options.Inbounds,
 		option.Inbound{
 			Type: C.TypeDirect,
-			Tag:  "dns-in",
+			Tag:  InboundDNSTag,
 			DirectOptions: option.DirectInboundOptions{
 				ListenOptions: option.ListenOptions{
 					Listen:     option.NewListenAddress(netip.MustParseAddr(bind)),
@@ -208,29 +225,29 @@ func BuildConfig(configOpt ConfigOptions, input option.Options) (*option.Options
 		{
 			Type: C.RuleTypeDefault,
 			DefaultOptions: option.DefaultRule{
-				Inbound:  []string{"dns-in"},
-				Outbound: "dns-out",
+				Inbound:  []string{InboundDNSTag},
+				Outbound: OutboundDNSTag,
 			},
 		},
 		{
 			Type: C.RuleTypeDefault,
 			DefaultOptions: option.DefaultRule{
 				Port:     []uint16{53},
-				Outbound: "dns-out",
+				Outbound: OutboundDNSTag,
 			},
 		},
 		{
 			Type: C.RuleTypeDefault,
 			DefaultOptions: option.DefaultRule{
 				ClashMode: "Direct",
-				Outbound:  "direct",
+				Outbound:  OutboundDirectTag,
 			},
 		},
 		{
 			Type: C.RuleTypeDefault,
 			DefaultOptions: option.DefaultRule{
 				ClashMode: "Global",
-				Outbound:  "select",
+				Outbound:  OutboundSelectTag,
 			},
 		},
 	}
@@ -242,7 +259,7 @@ func BuildConfig(configOpt ConfigOptions, input option.Options) (*option.Options
 				Type: C.RuleTypeDefault,
 				DefaultOptions: option.DefaultRule{
 					GeoIP:    []string{"private"},
-					Outbound: "bypass",
+					Outbound: OutboundBypassTag,
 				},
 			},
 		)
@@ -259,7 +276,7 @@ func BuildConfig(configOpt ConfigOptions, input option.Options) (*option.Options
 		options.DNS.Servers = append(
 			options.DNS.Servers,
 			option.DNSServerOptions{
-				Tag:      "dns-fake",
+				Tag:      DNSFakeTag,
 				Address:  "fakeip",
 				Strategy: option.DomainStrategy(dns.DomainStrategyUseIPv4),
 			},
@@ -269,8 +286,8 @@ func BuildConfig(configOpt ConfigOptions, input option.Options) (*option.Options
 			option.DNSRule{
 				Type: C.RuleTypeDefault,
 				DefaultOptions: option.DefaultDNSRule{
-					Inbound:      []string{"tun-in"},
-					Server:       "dns-fake",
+					Inbound:      []string{InboundTUNTag},
+					Server:       DNSFakeTag,
 					DisableCache: true,
 				},
 			},
@@ -282,11 +299,11 @@ func BuildConfig(configOpt ConfigOptions, input option.Options) (*option.Options
 		routeRule := rule.MakeRule()
 		switch rule.Outbound {
 		case "bypass":
-			routeRule.Outbound = "bypass"
+			routeRule.Outbound = OutboundBypassTag
 		case "block":
-			routeRule.Outbound = "block"
+			routeRule.Outbound = OutboundBlockTag
 		case "proxy":
-			routeRule.Outbound = "dns-out"
+			routeRule.Outbound = OutboundDNSTag
 		}
 
 		if routeRule.IsValid() {
@@ -302,18 +319,18 @@ func BuildConfig(configOpt ConfigOptions, input option.Options) (*option.Options
 		dnsRule := rule.MakeDNSRule()
 		switch rule.Outbound {
 		case "bypass":
-			dnsRule.Server = "dns-direct"
+			dnsRule.Server = DNSDirectTag
 		case "block":
-			dnsRule.Server = "dns-block"
+			dnsRule.Server = DNSBlockTag
 			dnsRule.DisableCache = true
 		case "proxy":
 			if configOpt.EnableFakeDNS {
 				fakeDnsRule := dnsRule
-				fakeDnsRule.Server = "dns-fake"
-				fakeDnsRule.Inbound = []string{"tun-in"}
+				fakeDnsRule.Server = DNSFakeTag
+				fakeDnsRule.Inbound = []string{InboundTUNTag}
 				dnsRules = append(dnsRules, fakeDnsRule)
 			}
-			dnsRule.Server = "dns-remote"
+			dnsRule.Server = DNSRemoteTag
 		}
 		dnsRules = append(dnsRules, dnsRule)
 	}
@@ -341,7 +358,7 @@ func BuildConfig(configOpt ConfigOptions, input option.Options) (*option.Options
 			Type: C.RuleTypeDefault,
 			DefaultOptions: option.DefaultDNSRule{
 				Domain:       []string{"cp.cloudflare.com"},
-				Server:       "dns-remote",
+				Server:       DNSRemoteTag,
 				RewriteTTL:   &dnsCPttl,
 				DisableCache: false,
 			},
@@ -388,7 +405,7 @@ func BuildConfig(configOpt ConfigOptions, input option.Options) (*option.Options
 
 	urlTest := option.Outbound{
 		Type: C.TypeURLTest,
-		Tag:  "auto",
+		Tag:  OutboundURLTestTag,
 		URLTestOptions: option.URLTestOutboundOptions{
 			Outbounds:   tags,
 			URL:         configOpt.ConnectionTestUrl,
@@ -412,15 +429,15 @@ func BuildConfig(configOpt ConfigOptions, input option.Options) (*option.Options
 		outbounds,
 		[]option.Outbound{
 			{
-				Tag:  "dns-out",
+				Tag:  OutboundDNSTag,
 				Type: C.TypeDNS,
 			},
 			{
-				Tag:  "direct",
+				Tag:  OutboundDirectTag,
 				Type: C.TypeDirect,
 			},
 			{
-				Tag:  "direct-fragment",
+				Tag:  OutboundDirectFragmentTag,
 				Type: C.TypeDirect,
 				DirectOptions: option.DirectOutboundOptions{
 					DialerOptions: option.DialerOptions{
@@ -433,11 +450,11 @@ func BuildConfig(configOpt ConfigOptions, input option.Options) (*option.Options
 				},
 			},
 			{
-				Tag:  "bypass",
+				Tag:  OutboundBypassTag,
 				Type: C.TypeDirect,
 			},
 			{
-				Tag:  "block",
+				Tag:  OutboundBlockTag,
 				Type: C.TypeBlock,
 			},
 		}...,
@@ -451,15 +468,15 @@ func BuildConfig(configOpt ConfigOptions, input option.Options) (*option.Options
 			}
 		}
 		trickDomains := strings.Join(trickDnsDomains, ",")
-		trickRule := Rule{Domains: trickDomains, Outbound: "bypass"}
-		trickdnsRule := trickRule.MakeDNSRule()
-		trickdnsRule.Server = "dns-trick-direct"
-		options.DNS.Rules = append([]option.DNSRule{{Type: C.RuleTypeDefault, DefaultOptions: trickdnsRule}}, options.DNS.Rules...)
+		trickRule := Rule{Domains: trickDomains, Outbound: OutboundBypassTag}
+		trickDnsRule := trickRule.MakeDNSRule()
+		trickDnsRule.Server = DNSTricksDirectTag
+		options.DNS.Rules = append([]option.DNSRule{{Type: C.RuleTypeDefault, DefaultOptions: trickDnsRule}}, options.DNS.Rules...)
 
 		domains := strings.Join(directDNSDomains, ",")
-		directRule := Rule{Domains: domains, Outbound: "bypass"}
+		directRule := Rule{Domains: domains, Outbound: OutboundBypassTag}
 		dnsRule := directRule.MakeDNSRule()
-		dnsRule.Server = "dns-direct"
+		dnsRule.Server = DNSDirectTag
 		options.DNS.Rules = append([]option.DNSRule{{Type: C.RuleTypeDefault, DefaultOptions: dnsRule}}, options.DNS.Rules...)
 	}
 
