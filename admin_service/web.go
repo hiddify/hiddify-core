@@ -4,6 +4,7 @@ import (
 	"crypto/tls"
 	"fmt"
 	"net/http"
+	"os"
 	"strconv"
 
 	"github.com/hiddify/libcore/global"
@@ -20,6 +21,7 @@ const (
 func StartWebServer(Port int, TLS bool) {
 	http.HandleFunc("/start", startHandler)
 	http.HandleFunc("/stop", StopHandler)
+	http.HandleFunc("/exit", ExitHandler)
 	server := &http.Server{
 		Addr: "127.0.0.1:" + fmt.Sprintf("%d", Port),
 	}
@@ -89,6 +91,11 @@ func StopHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, fmt.Sprintf("Error: %v", err), http.StatusBadRequest)
 		return
 	}
+	http.Error(w, fmt.Sprintf("Ok"), http.StatusOK)
+}
+func ExitHandler(w http.ResponseWriter, r *http.Request) {
+	global.StopServiceC()
+	os.Exit(0)
 	http.Error(w, fmt.Sprintf("Ok"), http.StatusOK)
 }
 func GetStack(stack string) global.Stack {

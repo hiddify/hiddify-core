@@ -2,7 +2,7 @@ PRODUCT_NAME=libcore
 BASENAME=$(PRODUCT_NAME)
 BINDIR=bin
 LIBNAME=$(PRODUCT_NAME)
-SRVNAME=hiddify-service
+SRVNAME=HiddifyService
 
 BRANCH=$(shell git branch --show-current)
 VERSION=$(shell git describe --tags || echo "unknown version")
@@ -35,6 +35,7 @@ ios: lib_install
 
 
 windows-amd64:
+	curl http://localhost:18020/exit || echo "exited"
 	env GOOS=windows GOARCH=amd64 CC=x86_64-w64-mingw32-gcc $(GOBUILDLIB) -o $(BINDIR)/$(LIBNAME).dll ./custom
 	go get github.com/akavel/rsrc
 	go install github.com/akavel/rsrc

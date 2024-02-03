@@ -20,7 +20,7 @@ import (
 func main() {
 	args := os.Args
 	if len(args) < 2 {
-		fmt.Println("Usage: hiddify-service.exe empty/start/stop/uninstall/install")
+		fmt.Println("Usage: HiddifyService.exe empty/start/stop/uninstall/install")
 		args = append(args, "")
 	}
 
