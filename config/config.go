@@ -52,28 +52,24 @@ func BuildConfigJson(configOpt ConfigOptions, input option.Options) (string, err
 }
 
 // TODO include selectors
-func BuildConfig(configOpt ConfigOptions, input option.Options) (*option.Options, error) {
-	if configOpt.ExecuteAsIs {
-		return applyOverrides(configOpt, input), nil
-	}
-
-	fmt.Printf("config options: %+v\n", configOpt)
+func BuildConfig(opt ConfigOptions, input option.Options) (*option.Options, error) {
+	fmt.Printf("config options: %+v\n", opt)
 
 	var options option.Options
 	directDNSDomains := []string{}
 	dnsRules := []option.DefaultDNSRule{}
 
 	var bind string
-	if configOpt.AllowConnectionFromLAN {
+	if opt.AllowConnectionFromLAN {
 		bind = "0.0.0.0"
 	} else {
 		bind = "127.0.0.1"
 	}
 
-	if configOpt.EnableClashApi {
+	if opt.EnableClashApi {
 		options.Experimental = &option.ExperimentalOptions{
 			ClashAPI: &option.ClashAPIOptions{
-				ExternalController: fmt.Sprintf("%s:%d", "127.0.0.1", configOpt.ClashApiPort),
+				ExternalController: fmt.Sprintf("%s:%d", "127.0.0.1", opt.ClashApiPort),
 			},
 			// CacheFile: &option.CacheFileOptions{
 			// 	Enabled: true,
@@ -83,7 +79,7 @@ func BuildConfig(configOpt ConfigOptions, input option.Options) (*option.Options
 	}
 
 	options.Log = &option.LogOptions{
-		Level: configOpt.LogLevel,
+		Level: opt.LogLevel,
 		// Output:       "box.log",
 		Disabled:     false,
 		Timestamp:    true,
@@ -95,28 +91,28 @@ func BuildConfig(configOpt ConfigOptions, input option.Options) (*option.Options
 			"sky.rethinkdns.com": getIPs([]string{"zula.ir", "www.speedtest.net", "sky.rethinkdns.com"}),
 		},
 		DNSClientOptions: option.DNSClientOptions{
-			IndependentCache: configOpt.IndependentDNSCache,
+			IndependentCache: opt.IndependentDNSCache,
 		},
 		Final: DNSRemoteTag,
 		Servers: []option.DNSServerOptions{
 			{
 				Tag:             DNSRemoteTag,
-				Address:         configOpt.RemoteDnsAddress,
+				Address:         opt.RemoteDnsAddress,
 				AddressResolver: DNSDirectTag,
-				Strategy:        configOpt.RemoteDnsDomainStrategy,
+				Strategy:        opt.RemoteDnsDomainStrategy,
 			},
 			{
 				Tag:     DNSTricksDirectTag,
 				Address: "https://sky.rethinkdns.com/",
 				// AddressResolver: "dns-local",
-				Strategy: configOpt.DirectDnsDomainStrategy,
+				Strategy: opt.DirectDnsDomainStrategy,
 				Detour:   OutboundDirectFragmentTag,
 			},
 			{
 				Tag:             DNSDirectTag,
-				Address:         configOpt.DirectDnsAddress,
+				Address:         opt.DirectDnsAddress,
 				AddressResolver: DNSLocalTag,
-				Strategy:        configOpt.DirectDnsDomainStrategy,
+				Strategy:        opt.DirectDnsDomainStrategy,
 				Detour:          OutboundDirectTag,
 			},
 			{
@@ -132,21 +128,21 @@ func BuildConfig(configOpt ConfigOptions, input option.Options) (*option.Options
 	}
 
 	var inboundDomainStrategy option.DomainStrategy
-	if !configOpt.ResolveDestination {
+	if !opt.ResolveDestination {
 		inboundDomainStrategy = option.DomainStrategy(dns.DomainStrategyAsIS)
 	} else {
-		inboundDomainStrategy = configOpt.IPv6Mode
+		inboundDomainStrategy = opt.IPv6Mode
 	}
 
-	if configOpt.EnableTun {
+	if opt.EnableTun {
 		tunInbound := option.Inbound{
 			Type: C.TypeTun,
 			Tag:  InboundTUNTag,
 			TunOptions: option.TunInboundOptions{
-				Stack:                  configOpt.TUNStack,
-				MTU:                    configOpt.MTU,
+				Stack:                  opt.TUNStack,
+				MTU:                    opt.MTU,
 				AutoRoute:              true,
-				StrictRoute:            configOpt.StrictRoute,
+				StrictRoute:            opt.StrictRoute,
 				EndpointIndependentNat: true,
 				InboundOptions: option.InboundOptions{
 					SniffEnabled:             true,
@@ -155,7 +151,7 @@ func BuildConfig(configOpt ConfigOptions, input option.Options) (*option.Options
 				},
 			},
 		}
-		switch configOpt.IPv6Mode {
+		switch opt.IPv6Mode {
 		case option.DomainStrategy(dns.DomainStrategyUseIPv4):
 			tunInbound.TunOptions.Inet4Address = []netip.Prefix{
 				netip.MustParsePrefix("172.19.0.1/28"),
@@ -183,14 +179,14 @@ func BuildConfig(configOpt ConfigOptions, input option.Options) (*option.Options
 			MixedOptions: option.HTTPMixedInboundOptions{
 				ListenOptions: option.ListenOptions{
 					Listen:     option.NewListenAddress(netip.MustParseAddr(bind)),
-					ListenPort: configOpt.MixedPort,
+					ListenPort: opt.MixedPort,
 					InboundOptions: option.InboundOptions{
 						SniffEnabled:             true,
 						SniffOverrideDestination: true,
 						DomainStrategy:           inboundDomainStrategy,
 					},
 				},
-				SetSystemProxy: configOpt.SetSystemProxy,
+				SetSystemProxy: opt.SetSystemProxy,
 			},
 		},
 	)
@@ -203,7 +199,7 @@ func BuildConfig(configOpt ConfigOptions, input option.Options) (*option.Options
 			DirectOptions: option.DirectInboundOptions{
 				ListenOptions: option.ListenOptions{
 					Listen:     option.NewListenAddress(netip.MustParseAddr(bind)),
-					ListenPort: configOpt.LocalDnsPort,
+					ListenPort: opt.LocalDnsPort,
 				},
 				OverrideAddress: "1.1.1.1",
 				OverridePort:    53,
@@ -211,7 +207,7 @@ func BuildConfig(configOpt ConfigOptions, input option.Options) (*option.Options
 		},
 	)
 
-	remoteDNSAddress := configOpt.RemoteDnsAddress
+	remoteDNSAddress := opt.RemoteDnsAddress
 	if strings.Contains(remoteDNSAddress, "://") {
 		remoteDNSAddress = strings.SplitAfter(remoteDNSAddress, "://")[1]
 	}
@@ -252,7 +248,7 @@ func BuildConfig(configOpt ConfigOptions, input option.Options) (*option.Options
 		},
 	}
 
-	if configOpt.BypassLAN {
+	if opt.BypassLAN {
 		routeRules = append(
 			routeRules,
 			option.Rule{
@@ -265,7 +261,7 @@ func BuildConfig(configOpt ConfigOptions, input option.Options) (*option.Options
 		)
 	}
 
-	if configOpt.EnableFakeDNS {
+	if opt.EnableFakeDNS {
 		inet4Range := netip.MustParsePrefix("198.18.0.0/15")
 		inet6Range := netip.MustParsePrefix("fc00::/18")
 		options.DNS.FakeIP = &option.DNSFakeIPOptions{
@@ -295,7 +291,7 @@ func BuildConfig(configOpt ConfigOptions, input option.Options) (*option.Options
 
 	}
 
-	for _, rule := range configOpt.Rules {
+	for _, rule := range opt.Rules {
 		routeRule := rule.MakeRule()
 		switch rule.Outbound {
 		case "bypass":
@@ -324,7 +320,7 @@ func BuildConfig(configOpt ConfigOptions, input option.Options) (*option.Options
 			dnsRule.Server = DNSBlockTag
 			dnsRule.DisableCache = true
 		case "proxy":
-			if configOpt.EnableFakeDNS {
+			if opt.EnableFakeDNS {
 				fakeDnsRule := dnsRule
 				fakeDnsRule.Server = DNSFakeTag
 				fakeDnsRule.Inbound = []string{InboundTUNTag}
@@ -335,7 +331,7 @@ func BuildConfig(configOpt ConfigOptions, input option.Options) (*option.Options
 		dnsRules = append(dnsRules, dnsRule)
 	}
 
-	if configOpt.EnableDNSRouting {
+	if opt.EnableDNSRouting {
 		for _, dnsRule := range dnsRules {
 			if dnsRule.IsValid() {
 				options.DNS.Rules = append(
@@ -370,17 +366,17 @@ func BuildConfig(configOpt ConfigOptions, input option.Options) (*option.Options
 		AutoDetectInterface: true,
 		OverrideAndroidVPN:  true,
 		GeoIP: &option.GeoIPOptions{
-			Path: configOpt.GeoIPPath,
+			Path: opt.GeoIPPath,
 		},
 		Geosite: &option.GeositeOptions{
-			Path: configOpt.GeoSitePath,
+			Path: opt.GeoSitePath,
 		},
 	}
 
 	var outbounds []option.Outbound
 	var tags []string
 	for _, out := range input.Outbounds {
-		outbound, serverDomain, err := patchOutbound(out, configOpt)
+		outbound, serverDomain, err := patchOutbound(out, opt)
 		if err != nil {
 			return nil, err
 		}
@@ -408,9 +404,9 @@ func BuildConfig(configOpt ConfigOptions, input option.Options) (*option.Options
 		Tag:  OutboundURLTestTag,
 		URLTestOptions: option.URLTestOutboundOptions{
 			Outbounds:   tags,
-			URL:         configOpt.ConnectionTestUrl,
-			Interval:    configOpt.URLTestInterval,
-			IdleTimeout: configOpt.URLTestIdleTimeout,
+			URL:         opt.ConnectionTestUrl,
+			Interval:    opt.URLTestInterval,
+			IdleTimeout: opt.URLTestIdleTimeout,
 		},
 	}
 
@@ -443,8 +439,8 @@ func BuildConfig(configOpt ConfigOptions, input option.Options) (*option.Options
 					DialerOptions: option.DialerOptions{
 						TLSFragment: &option.TLSFragmentOptions{
 							Enabled: true,
-							Size:    configOpt.TLSTricks.FragmentSize,
-							Sleep:   configOpt.TLSTricks.FragmentSleep,
+							Size:    opt.TLSTricks.FragmentSize,
+							Sleep:   opt.TLSTricks.FragmentSleep,
 						},
 					},
 				},
@@ -517,31 +513,6 @@ func isBlockedDomain(domain string) bool {
 		}
 	}
 	return false
-}
-
-func applyOverrides(overrides ConfigOptions, options option.Options) *option.Options {
-	if overrides.EnableClashApi {
-		options.Experimental.ClashAPI = &option.ClashAPIOptions{
-			ExternalController: fmt.Sprintf("%s:%d", "127.0.0.1", overrides.ClashApiPort),
-		}
-	}
-
-	options.Log = &option.LogOptions{
-		Level:    overrides.LogLevel,
-		Output:   "box.log",
-		Disabled: false,
-	}
-
-	var inbounds []option.Inbound
-	for _, inb := range options.Inbounds {
-		if inb.Type == C.TypeTun && !overrides.EnableTun {
-			continue
-		}
-		inbounds = append(inbounds, inb)
-	}
-	options.Inbounds = inbounds
-
-	return &options
 }
 
 func removeDuplicateStr(strSlice []string) []string {
