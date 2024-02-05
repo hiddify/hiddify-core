@@ -9,27 +9,24 @@ import (
 )
 
 func ExecuteCmd(executablePath, args string) (string, error) {
-	err := execCmdImp([]string{"gksu", executablePath, args})
-	if err == nil {
+	if err := execCmdImp([]string{"gksu", executablePath, args}); err == nil {
 		return "Ok", nil
 	}
-	err := execCmdImp([]string{"pkexec", executablePath, args})
-	if err == nil {
+	if err := execCmdImp([]string{"pkexec", executablePath, args}); err == nil {
 		return "Ok", nil
 	}
-	err := execCmdImp([]string{"/bin/sh", "-c", "sudo " + executablePath + " " + args})
-	if err == nil {
+	if err := execCmdImp([]string{"/bin/sh", "-c", "sudo " + executablePath + " " + args}); err == nil {
 		return "Ok", nil
 	}
-	return "", err
+	return "", fmt.Errorf("Error executing run as root shell command")
 
 }
 
-func execCmdImp(cmd []string) error {
-	cmd := exec.Command(cmd[0], cmd[1:])
+func execCmdImp(commands []string) error {
+	cmd := exec.Command(commands[0], commands[1:]...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
-	fmt.Printf("Running command: %v", cmd.String())
+	fmt.Printf("Running command: %v", commands)
 	if err := cmd.Run(); err != nil {
 		fmt.Printf("Error: %v\n", err)
 		return err
