@@ -8,7 +8,6 @@ import (
 	"os"
 	"strings"
 
-	"github.com/sagernet/sing-box/log"
 	T "github.com/sagernet/sing-box/option"
 	"github.com/spf13/cobra"
 	"github.com/uoosef/wireguard-go/warp"
@@ -21,9 +20,10 @@ var commandWarp = &cobra.Command{
 	Short: "warp configuration",
 	Args:  cobra.ExactArgs(0),
 	Run: func(cmd *cobra.Command, args []string) {
-		err := generateWarp()
+		out, err := generateWarp()
+		fmt.Printf("out=%v Error! %v", out, err)
 		if err != nil {
-			log.Fatal(err)
+			fmt.Printf("Error! %v", err)
 		}
 	},
 }
@@ -145,25 +145,28 @@ func parsePeerConfig(peerConfig *PeerConfig, line string) {
 		peerConfig.Endpoint = strings.TrimSpace(strings.SplitN(line, "=", 2)[1])
 	}
 }
-func generateWarp() *T.Outbound {
+func generateWarp() (*T.Outbound, error) {
 	license := ""
 
 	if !warp.CheckProfileExists(license) {
-		warp.LoadOrCreateIdentity(license)
+		err := warp.LoadOrCreateIdentity(license)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	wgConfig, err := readWireGuardConfig("wgcf-profile.ini")
 	if err != nil {
 		fmt.Println("Error reading WireGuard configuration:", err)
-		return nil
+		return nil, err
 	}
 	// fmt.Printf("%v", wgConfig)
 	singboxConfig, err := wireGuardToSingbox(wgConfig, "162.159.192.91", 939)
 	singboxJSON, err := json.MarshalIndent(singboxConfig, "", "    ")
 	if err != nil {
 		fmt.Println("Error marshaling Singbox configuration:", err)
-		return nil
+		return nil, err
 	}
 	fmt.Println(string(singboxJSON))
-	return nil
+	return nil, nil
 }
