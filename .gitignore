@@ -5,3 +5,5 @@
 
 **/*.log
 .DS_Store
+
+**/*.syso

@@ -156,7 +156,7 @@ func startService(delayStart bool) error {
 		return fmt.Errorf("error building config: %w", err)
 	}
 
-	config.SaveCurrentConfig(sWorkingPath, *patchedOptions)
+	config.SaveCurrentConfig(filepath.Join(sWorkingPath, "current-config.json"), *patchedOptions)
 
 	err = startCommandServer(*logFactory)
 	if err != nil {
@@ -188,6 +188,7 @@ func stop() (CErr *C.char) {
 	defer config.DeferPanicToError("stop", func(err error) {
 		CErr = C.CString(err.Error())
 	})
+	config.DeactivateTunnelService()
 
 	if status != Started {
 		return C.CString("")

@@ -16,7 +16,7 @@ func SaveCurrentConfig(path string, options option.Options) error {
 	if err != nil {
 		return err
 	}
-	p, err := filepath.Abs(filepath.Join(path, "current-config.json"))
+	p, err := filepath.Abs(path)
 	fmt.Printf("Saving config to %v %+v\n", p, err)
 	if err != nil {
 		return err

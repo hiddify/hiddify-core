@@ -122,7 +122,7 @@ func startService(delayStart bool) error {
 		return fmt.Errorf("error building config: %w", err)
 	}
 
-	config.SaveCurrentConfig(sWorkingPath, *patchedOptions)
+	config.SaveCurrentConfig(filepath.Join(sWorkingPath, "tunnel-current-config.json"), *patchedOptions)
 
 	err = startCommandServer(*logFactory)
 	if err != nil {
@@ -248,11 +248,11 @@ func StartServiceC(delayStart bool, content string) error {
 
 	// options = *patchedOptions
 
-	err = config.SaveCurrentConfig(sWorkingPath, options)
-	if err != nil {
-		fmt.Printf("Error in saving config: %v\n", err)
-		return err
-	}
+	// config.SaveCurrentConfig(filepath.Join(sWorkingPath, "custom-current-config.json"), options)
+	// if err != nil {
+	// 	fmt.Printf("Error in saving config: %v\n", err)
+	// 	return err
+	// }
 
 	// err = startCommandServer(*logFactory)
 	// if err != nil {
