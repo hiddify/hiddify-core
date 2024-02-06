@@ -6,8 +6,9 @@ import (
 )
 
 var (
-	statusClient *libbox.CommandClient
-	groupClient  *libbox.CommandClient
+	statusClient        *libbox.CommandClient
+	groupClient         *libbox.CommandClient
+	groupInfoOnlyClient *libbox.CommandClient
 )
 
 func StartCommand(command int32, port int64, logFactory log.Factory) error {
@@ -32,10 +33,22 @@ func StartCommand(command int32, port int64, logFactory log.Factory) error {
 			},
 			&libbox.CommandClientOptions{
 				Command:        libbox.CommandGroup,
-				StatusInterval: 1000000000,
+				StatusInterval: 30,
 			},
 		)
 		return groupClient.Connect()
+	case libbox.CommandGroupInfoOnly:
+		groupInfoOnlyClient = libbox.NewCommandClient(
+			&CommandClientHandler{
+				port:   port,
+				logger: logFactory.NewLogger("[GroupInfoOnly Command Client]"),
+			},
+			&libbox.CommandClientOptions{
+				Command:        libbox.CommandGroupInfoOnly,
+				StatusInterval: 10,
+			},
+		)
+		return groupInfoOnlyClient.Connect()
 	}
 	return nil
 }
@@ -49,6 +62,10 @@ func StopCommand(command int32) error {
 	case libbox.CommandGroup:
 		err := groupClient.Disconnect()
 		groupClient = nil
+		return err
+	case libbox.CommandGroupInfoOnly:
+		err := groupInfoOnlyClient.Disconnect()
+		groupInfoOnlyClient = nil
 		return err
 	}
 	return nil
