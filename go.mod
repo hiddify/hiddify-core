@@ -106,3 +106,5 @@ require (
 replace github.com/sagernet/sing-box => github.com/hiddify/hiddify-sing-box v1.7.9-0.20240206093618-6b04f360fe5a
 
 replace github.com/sagernet/wireguard-go => github.com/hiddify/wireguard-go v0.0.0-20240125143346-481d18d77fe1
+
+replace github.com/bepass-org/wireguard-go => github.com/hiddify-com/wireguard-go v0.0.2-alpha.0.20240206112722-83bfc813cc29
