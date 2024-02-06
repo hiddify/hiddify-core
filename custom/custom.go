@@ -122,6 +122,7 @@ func generateConfigFromFile(path string, configOpt config.ConfigOptions) (string
 func start(configPath *C.char, disableMemoryLimit bool) (CErr *C.char) {
 	defer config.DeferPanicToError("start", func(err error) {
 		CErr = C.CString(err.Error())
+		stopAndAlert("Unexpected Error!", err)
 	})
 
 	if status != Stopped {
@@ -153,7 +154,7 @@ func startService(delayStart bool) error {
 	var patchedOptions *option.Options
 	patchedOptions, err = config.BuildConfig(*configOptions, options)
 	if err != nil {
-		return fmt.Errorf("error building config: %w", err)
+		return stopAndAlert("Error Building Config", err)
 	}
 
 	config.SaveCurrentConfig(filepath.Join(sWorkingPath, "current-config.json"), *patchedOptions)
@@ -219,6 +220,7 @@ func stop() (CErr *C.char) {
 func restart(configPath *C.char, disableMemoryLimit bool) (CErr *C.char) {
 	defer config.DeferPanicToError("restart", func(err error) {
 		CErr = C.CString(err.Error())
+		stopAndAlert("Unexpected Error!", err)
 	})
 	log.Debug("[Service] Restarting")
 

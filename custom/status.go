@@ -24,7 +24,13 @@ func propagateStatus(newStatus string) {
 	bridge.SendStringToPort(statusPropagationPort, string(msg))
 }
 
-func stopAndAlert(alert string, err error) error {
+func stopAndAlert(alert string, err error) (resultErr error) {
+	defer func() {
+		if r := recover(); r != nil {
+			resultErr = fmt.Errorf("panic recovered: %v", r)
+		}
+	}()
+
 	status = Stopped
 	message := err.Error()
 	fmt.Printf("Error: %s: %v\n", alert, err)
