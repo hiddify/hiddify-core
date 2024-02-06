@@ -8,9 +8,9 @@ import (
 	"os"
 	"strings"
 
+	"github.com/bepass-org/wireguard-go/warp"
 	T "github.com/sagernet/sing-box/option"
 	"github.com/spf13/cobra"
-	"github.com/uoosef/wireguard-go/warp"
 )
 
 var warpKey string

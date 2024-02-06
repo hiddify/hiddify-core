@@ -3,6 +3,7 @@ module github.com/hiddify/libcore
 go 1.21.5
 
 require (
+	github.com/bepass-org/wireguard-go v0.0.16-alpha
 	github.com/hiddify/ray2sing v0.0.0-20240130210008-8975ff77e3cd
 	github.com/kardianos/service v1.2.2
 	github.com/sagernet/gomobile v0.1.1
@@ -10,7 +11,6 @@ require (
 	github.com/sagernet/sing-box v1.8.4
 	github.com/sagernet/sing-dns v0.1.12
 	github.com/spf13/cobra v1.8.0
-	github.com/uoosef/wireguard-go v0.0.15-alpha
 	github.com/xmdhs/clash2singbox v0.0.2
 	golang.org/x/sys v0.16.0
 	gopkg.in/yaml.v3 v3.0.1
@@ -19,7 +19,6 @@ require (
 require (
 	berty.tech/go-libtor v1.0.385 // indirect
 	github.com/ajg/form v1.5.1 // indirect
-	github.com/akavel/rsrc v0.10.2 // indirect
 	github.com/andybalholm/brotli v1.0.6 // indirect
 	github.com/caddyserver/certmagic v0.20.0 // indirect
 	github.com/cloudflare/circl v1.3.7 // indirect
@@ -107,5 +106,3 @@ require (
 replace github.com/sagernet/sing-box => github.com/hiddify/hiddify-sing-box v1.7.9-0.20240206093618-6b04f360fe5a
 
 replace github.com/sagernet/wireguard-go => github.com/hiddify/wireguard-go v0.0.0-20240125143346-481d18d77fe1
-
-replace github.com/uoosef/wireguard-go => github.com/hiddify-com/wireguard-go v0.0.2-alpha.0.20240205205805-4eae577551e2

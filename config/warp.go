@@ -9,8 +9,8 @@ import (
 	"os"
 	"strings"
 
+	"github.com/bepass-org/wireguard-go/warp"
 	T "github.com/sagernet/sing-box/option"
-	"github.com/uoosef/wireguard-go/warp"
 )
 
 type WireGuardConfig struct {
