@@ -256,8 +256,8 @@ func BuildConfig(opt ConfigOptions, input option.Options) (*option.Options, erro
 			option.Rule{
 				Type: C.RuleTypeDefault,
 				DefaultOptions: option.DefaultRule{
-					GeoIP:    []string{"private"},
-					Outbound: OutboundBypassTag,
+					SourceIPIsPrivate: true,
+					Outbound:          OutboundBypassTag,
 				},
 			},
 		)
@@ -367,6 +367,16 @@ func BuildConfig(opt ConfigOptions, input option.Options) (*option.Options, erro
 		Rules:               routeRules,
 		AutoDetectInterface: true,
 		OverrideAndroidVPN:  true,
+		// RuleSet: []option.RuleSet{
+		// 	{
+		// 		Type: C.RuleSetTypeRemote,
+		// 		Tag:  "geoip-" + opt,
+		// 		RemoteOptions: option.RemoteRuleSet{
+		// 			URL:            "https://raw.githubusercontent.com/Chocolate4U/Iran-sing-box-rules/rule-set/geoip-ir.srs",
+		// 			UpdateInterval: option.Duration(5 * time.day),
+		// 		},
+		// 	},
+		// },
 		GeoIP: &option.GeoIPOptions{
 			Path: opt.GeoIPPath,
 		},

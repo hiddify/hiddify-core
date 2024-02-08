@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/hiddify/libcore/bridge"
+	"github.com/hiddify/libcore/config"
 )
 
 var statusPropagationPort int64
@@ -31,10 +32,10 @@ func stopAndAlert(alert string, err error) (resultErr error) {
 		}
 	}()
 
-	status = Stopped
-	message := err.Error()
 	fmt.Printf("Error: %s: %v\n", alert, err)
-	msg, _ := json.Marshal(StatusMessage{Status: status, Alert: &alert, Message: &message})
-	bridge.SendStringToPort(statusPropagationPort, string(msg))
+	propagateStatus(Stopped)
+	config.DeactivateTunnelService()
+	commandServer.SetService(nil)
+	err = box.Close()
 	return nil
 }

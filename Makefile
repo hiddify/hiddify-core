@@ -6,7 +6,9 @@ SRVNAME=HiddifyService
 
 BRANCH=$(shell git branch --show-current)
 VERSION=$(shell git describe --tags || echo "unknown version")
-
+ifeq ($(OS),Windows_NT)
+Not available for Windows! use bash in WSL
+endif
 
 TAGS=with_gvisor,with_quic,with_wireguard,with_ech,with_utls,with_clash_api,with_grpc
 IOS_TAGS=with_dhcp,with_low_memory,with_conntrack
@@ -40,7 +42,6 @@ windows-amd64:
 	go get github.com/akavel/rsrc
 	go install github.com/akavel/rsrc
 	cp $(BINDIR)/$(LIBNAME).dll ./$(LIBNAME).dll 
-	ls ./
 	$$(go env GOPATH)/bin/rsrc -manifest admin_service/cmd/admin_service.manifest -ico ./assets/hiddify-service.ico -o admin_service/cmd/admin_service.syso
 	env GOOS=windows GOARCH=amd64 CC=x86_64-w64-mingw32-gcc CGO_LDFLAGS="$(LIBNAME).dll" $(GOBUILDSRV) -o $(BINDIR)/$(SRVNAME).exe ./admin_service/cmd
 	rm ./$(LIBNAME).dll
