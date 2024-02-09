@@ -48,9 +48,10 @@ windows-amd64:
 
 linux-amd64:
 	env GOOS=linux GOARCH=amd64 $(GOBUILDLIB) -o $(BINDIR)/$(LIBNAME).so ./custom
-	cp $(BINDIR)/$(LIBNAME).so ./$(LIBNAME).so
-	env GOOS=linux GOARCH=amd64  CGO_LDFLAGS="$(LIBNAME).so" LD_LIBRARY_PATH="./bin/" $(GOBUILDSRV) -o $(BINDIR)/$(SRVNAME) ./admin_service/cmd
-	rm ./$(LIBNAME).so
+	mkdir lib
+	cp $(BINDIR)/$(LIBNAME).so ./lib/$(LIBNAME).so
+	env GOOS=linux GOARCH=amd64  CGO_LDFLAGS="./lib/$(LIBNAME).so" $(GOBUILDSRV) -o $(BINDIR)/$(SRVNAME) ./admin_service/cmd
+	rm -rf ./lib
 	chmod +x $(BINDIR)/$(SRVNAME)
 
 macos-amd64:
