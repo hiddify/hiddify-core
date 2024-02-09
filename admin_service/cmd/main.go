@@ -24,8 +24,6 @@ func main() {
 		args = append(args, "")
 	}
 
-	os.Chdir(os.Args[0])
-
 	arg := C.CString(args[1])
 	defer C.free(unsafe.Pointer(arg))
 

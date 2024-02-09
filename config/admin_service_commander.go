@@ -28,7 +28,7 @@ func ActivateTunnelService(opt ConfigOptions) (bool, error) {
 	if !isSupportedOS() {
 		return false, E.New("Unsupported OS: " + runtime.GOOS)
 	}
-
+	
 	go startTunnelRequest(opt, true)
 	return true, nil
 }
@@ -93,7 +93,7 @@ func stopTunnelRequest() (bool, error) {
 
 func runTunnelService(opt ConfigOptions) (bool, error) {
 	executablePath := getTunnelServicePath()
-
+	fmt.Printf("Executable path is %s",executablePath)
 	out, err := ExecuteCmd(executablePath, "install")
 	fmt.Println("Shell command executed:", out, err)
 	return startTunnelRequest(opt, false)
@@ -101,8 +101,8 @@ func runTunnelService(opt ConfigOptions) (bool, error) {
 
 func getTunnelServicePath() string {
 	var fullPath string
-	binFolder := filepath.Dir(os.Args[0])
-
+	exePath, _ := os.Executable()
+	binFolder := filepath.Dir(exePath)
 	switch runtime.GOOS {
 	case "windows":
 		fullPath = "HiddifyService.exe"
@@ -112,5 +112,6 @@ func getTunnelServicePath() string {
 		fullPath = "HiddifyService"
 	}
 
-	return filepath.Join(binFolder, fullPath)
+	abspath,_:=filepath.Abs(filepath.Join(binFolder, fullPath))
+	return abspath
 }
