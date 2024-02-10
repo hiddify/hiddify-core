@@ -27,7 +27,7 @@ func ParseConfig(path string, debug bool) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	var jsonObj map[string]interface{}
+	var jsonObj map[string]interface{} = make(map[string]interface{})
 
 	fmt.Printf("Convert using json\n")
 	var tmpJsonResult any
@@ -35,30 +35,20 @@ func ParseConfig(path string, debug bool) ([]byte, error) {
 	if err := jsonDecoder.Decode(&tmpJsonResult); err == nil {
 		if tmpJsonObj, ok := tmpJsonResult.(map[string]interface{}); ok {
 			if tmpJsonObj["outbounds"] == nil {
-				jsonObj = map[string]interface{}{"outbounds": []interface{}{jsonObj}}
+				jsonObj["outbounds"] = []interface{}{jsonObj}
 			} else {
 				jsonObj["outbounds"] = tmpJsonObj["outbounds"]
 			}
 		} else if jsonArray, ok := tmpJsonResult.([]map[string]interface{}); ok {
-			jsonObj = map[string]interface{}{"outbounds": jsonArray}
+			jsonObj["outbounds"] = jsonArray
 		} else {
 			return nil, fmt.Errorf("[SingboxParser] Incorrect Json Format")
 		}
-		if outbounds, ok := jsonObj["outbounds"].([]map[string]interface{}); ok {
-			for _, base := range outbounds {
-				if base["type"] == nil {
-					return nil, fmt.Errorf("[SingboxParser] No Type found!")
-				}
-			}
-		} else {
-			return nil, fmt.Errorf("[SingboxParser] Incorrect Outbounds Format")
-		}
 
 		newContent, _ := json.MarshalIndent(jsonObj, "", "  ")
-
-		return patchConfig([]byte(newContent), "SingboxParser")
+		return patchConfig(newContent, "SingboxParser")
 	}
-	fmt.Printf("Convert using v2ray\n")
+
 	v2rayStr, err := ray2sing.Ray2Singbox(string(content))
 	if err == nil {
 		return patchConfig([]byte(v2rayStr), "V2rayParser")
