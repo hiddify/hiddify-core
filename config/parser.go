@@ -5,6 +5,7 @@ import (
 	_ "embed"
 	"encoding/json"
 	"fmt"
+	"path/filepath"
 
 	"os"
 
@@ -29,23 +30,28 @@ func ParseConfig(path string, debug bool) ([]byte, error) {
 	var jsonObj map[string]interface{}
 
 	fmt.Printf("Convert using json\n")
+	var tmpJsonResult any
 	jsonDecoder := json.NewDecoder(SJ.NewCommentFilter(bytes.NewReader(content)))
-	if err := jsonDecoder.Decode(&jsonObj); err == nil {
-		if jsonObj["outbounds"] == nil {
-			if jsonArray, ok := jsonObj.([]map[string]interface{}); ok {
-				jsonObj = map[string]interface{}{"outbounds": jsonArray}
-				if jsonArray[0]["type"] == nil {
-					return nil, fmt.Errorf("[SingboxParser] no outbounds found")
-				}
-			} else if jsonObj["type"] == nil {
-				return nil, fmt.Errorf("[SingboxParser] no outbounds found")
-			} else {
+	if err := jsonDecoder.Decode(&tmpJsonResult); err == nil {
+		if tmpJsonObj, ok := tmpJsonResult.(map[string]interface{}); ok {
+			if tmpJsonObj["outbounds"] == nil {
 				jsonObj = map[string]interface{}{"outbounds": []interface{}{jsonObj}}
+			} else {
+				jsonObj["outbounds"] = tmpJsonObj["outbounds"]
 			}
+		} else if jsonArray, ok := tmpJsonResult.([]map[string]interface{}); ok {
+			jsonObj = map[string]interface{}{"outbounds": jsonArray}
+		} else {
+			return nil, fmt.Errorf("[SingboxParser] Incorrect Json Format")
 		}
-
-		jsonObj = map[string]interface{}{
-			"outbounds": jsonObj["outbounds"],
+		if outbounds, ok := jsonObj["outbounds"].([]map[string]interface{}); ok {
+			for _, base := range outbounds {
+				if base["type"] == nil {
+					return nil, fmt.Errorf("[SingboxParser] No Type found!")
+				}
+			}
+		} else {
+			return nil, fmt.Errorf("[SingboxParser] Incorrect Outbounds Format")
 		}
 
 		newContent, _ := json.MarshalIndent(jsonObj, "", "  ")
