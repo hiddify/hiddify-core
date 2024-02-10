@@ -22,6 +22,7 @@ var configByte []byte
 
 func ParseConfig(path string, debug bool) ([]byte, error) {
 	content, err := os.ReadFile(path)
+	os.Chdir(filepath.Dir(path))
 	if err != nil {
 		return nil, err
 	}
@@ -31,7 +32,16 @@ func ParseConfig(path string, debug bool) ([]byte, error) {
 	jsonDecoder := json.NewDecoder(SJ.NewCommentFilter(bytes.NewReader(content)))
 	if err := jsonDecoder.Decode(&jsonObj); err == nil {
 		if jsonObj["outbounds"] == nil {
-			return nil, fmt.Errorf("[SingboxParser] no outbounds found")
+			if jsonArray, ok := jsonObj.([]map[string]interface{}); ok {
+				jsonObj = map[string]interface{}{"outbounds": jsonArray}
+				if jsonArray[0]["type"] == nil {
+					return nil, fmt.Errorf("[SingboxParser] no outbounds found")
+				}
+			} else if jsonObj["type"] == nil {
+				return nil, fmt.Errorf("[SingboxParser] no outbounds found")
+			} else {
+				jsonObj = map[string]interface{}{"outbounds": []interface{}{jsonObj}}
+			}
 		}
 
 		jsonObj = map[string]interface{}{
