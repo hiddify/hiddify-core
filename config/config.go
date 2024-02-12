@@ -2,6 +2,7 @@ package config
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"net"
@@ -12,6 +13,7 @@ import (
 	C "github.com/sagernet/sing-box/constant"
 	"github.com/sagernet/sing-box/option"
 	dns "github.com/sagernet/sing-dns"
+	"github.com/sagernet/sing/common/batch"
 )
 
 const (
@@ -470,11 +472,19 @@ func BuildConfig(opt ConfigOptions, input option.Options) (*option.Options, erro
 	if len(directDNSDomains) > 0 {
 		trickDnsDomains := []string{}
 		directDNSDomains = removeDuplicateStr(directDNSDomains)
+		b, _ := batch.New(context.Background(), batch.WithConcurrencyNum[bool](10))
 		for _, d := range directDNSDomains {
-			if isBlockedDomain(d) {
-				trickDnsDomains = append(trickDnsDomains, d)
+			b.Go(d, func() (bool, error) {
+				return isBlockedDomain(d), nil
+			})
+		}
+		b.Wait()
+		for domain, isBlock := range b.Result() {
+			if isBlock.Value {
+				trickDnsDomains = append(trickDnsDomains, domain)
 			}
 		}
+
 		trickDomains := strings.Join(trickDnsDomains, ",")
 		trickRule := Rule{Domains: trickDomains, Outbound: OutboundBypassTag}
 		trickDnsRule := trickRule.MakeDNSRule()

@@ -19,6 +19,7 @@ require (
 require (
 	berty.tech/go-libtor v1.0.385 // indirect
 	github.com/ajg/form v1.5.1 // indirect
+	github.com/akavel/rsrc v0.10.2 // indirect
 	github.com/andybalholm/brotli v1.0.6 // indirect
 	github.com/caddyserver/certmagic v0.20.0 // indirect
 	github.com/cloudflare/circl v1.3.7 // indirect
@@ -103,8 +104,8 @@ require (
 	lukechampine.com/blake3 v1.2.1 // indirect
 )
 
-replace github.com/sagernet/sing-box => github.com/hiddify/hiddify-sing-box v1.7.9-0.20240210202736-e5b942dbf7d9
+replace github.com/sagernet/sing-box => github.com/hiddify/hiddify-sing-box v1.7.9-0.20240212055434-7c6e0e8e8af9
 
 replace github.com/sagernet/wireguard-go => github.com/hiddify/wireguard-go v0.0.0-20240125143346-481d18d77fe1
 
-replace github.com/bepass-org/wireguard-go => github.com/hiddify-com/wireguard-go v0.0.2-alpha.0.20240206112722-83bfc813cc29
+replace github.com/bepass-org/wireguard-go => github.com/hiddify-com/wireguard-go v0.0.2-alpha.0.20240212065415-62301f758cb7
