@@ -156,12 +156,14 @@ func generateRandomPort() uint16 {
 }
 
 func generateWarp(license string, host string, port uint16, fakePackets string) (*T.Outbound, error) {
-	if host == "" {
+	if host == "" || isBlockedDomain(host) {
 		host = "auto"
 	}
+
 	if host == "auto" && fakePackets == "" {
 		fakePackets = "5-10"
 	}
+	// warp.UpdatePath("./secondary")
 	if _, err := os.Stat("./wgcf-identity.json"); err == nil {
 		os.Remove("./wgcf-identity.json")
 	}
