@@ -38,6 +38,7 @@ require (
 	github.com/google/btree v1.1.2 // indirect
 	github.com/google/pprof v0.0.0-20231101202521-4ca4178f5c7a // indirect
 	github.com/hashicorp/yamux v0.1.1 // indirect
+	github.com/imkira/go-observer v1.0.3 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/insomniacslk/dhcp v0.0.0-20231206064809-8c70d406f6d2 // indirect
 	github.com/josharian/native v1.1.0 // indirect
@@ -104,7 +105,7 @@ require (
 	lukechampine.com/blake3 v1.2.1 // indirect
 )
 
-replace github.com/sagernet/sing-box => github.com/hiddify/hiddify-sing-box v1.7.9-0.20240212055434-7c6e0e8e8af9
+replace github.com/sagernet/sing-box => github.com/hiddify/hiddify-sing-box v1.7.9-0.20240212124505-4c4820c60f1e
 
 replace github.com/sagernet/wireguard-go => github.com/hiddify/wireguard-go v0.0.0-20240125143346-481d18d77fe1
 
