@@ -21,7 +21,7 @@ func StartCommand(command int32, port int64, logFactory log.Factory) error {
 			},
 			&libbox.CommandClientOptions{
 				Command:        libbox.CommandStatus,
-				StatusInterval: 1000000000,
+				StatusInterval: 1000000000, //1000ms debounce
 			},
 		)
 		return statusClient.Connect()
@@ -33,7 +33,7 @@ func StartCommand(command int32, port int64, logFactory log.Factory) error {
 			},
 			&libbox.CommandClientOptions{
 				Command:        libbox.CommandGroup,
-				StatusInterval: 30,
+				StatusInterval: 300000000, //300ms debounce
 			},
 		)
 		return groupClient.Connect()
@@ -45,7 +45,7 @@ func StartCommand(command int32, port int64, logFactory log.Factory) error {
 			},
 			&libbox.CommandClientOptions{
 				Command:        libbox.CommandGroupInfoOnly,
-				StatusInterval: 10,
+				StatusInterval: 300000000, //300ms debounce
 			},
 		)
 		return groupInfoOnlyClient.Connect()

@@ -161,7 +161,7 @@ func generateWarp(license string, host string, port uint16, fakePackets string) 
 	}
 
 	if host == "auto" && fakePackets == "" {
-		fakePackets = "5-10"
+		fakePackets = "8-15"
 	}
 	// warp.UpdatePath("./secondary")
 	if _, err := os.Stat("./wgcf-identity.json"); err == nil {
