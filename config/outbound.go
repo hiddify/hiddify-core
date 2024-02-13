@@ -182,7 +182,9 @@ func patchWarp(base *option.Outbound) error {
 			port, _ := warp["port"].(float64)
 			detour, _ := warp["detour"].(string)
 			fakePackets, _ := warp["fake_packets"].(string)
-			warpConfig, err := generateWarp(key, host, uint16(port), fakePackets)
+			fakePacketsSize, _ := warp["fake_packets_size"].(string)
+			fakePacketsDelay, _ := warp["fake_packets_delay"].(string)
+			warpConfig, err := generateWarp(key, host, uint16(port), fakePackets, fakePacketsSize, fakePacketsDelay)
 			if err != nil {
 				fmt.Printf("Error generating warp config: %v", err)
 				return err

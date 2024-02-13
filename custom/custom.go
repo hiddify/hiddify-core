@@ -121,8 +121,8 @@ func generateConfigFromFile(path string, configOpt config.ConfigOptions) (string
 //export start
 func start(configPath *C.char, disableMemoryLimit bool) (CErr *C.char) {
 	defer config.DeferPanicToError("start", func(err error) {
-		CErr = C.CString(err.Error())
 		stopAndAlert("Unexpected Error!", err)
+		CErr = C.CString(err.Error())
 	})
 
 	if status != Stopped {
@@ -187,40 +187,41 @@ func startService(delayStart bool) error {
 //export stop
 func stop() (CErr *C.char) {
 	defer config.DeferPanicToError("stop", func(err error) {
+		stopAndAlert("Unexpected Error in Stop!", err)
 		CErr = C.CString(err.Error())
 	})
 	config.DeactivateTunnelService()
-
 	if status != Started {
+		stopAndAlert("Already Stopped", nil)
 		return C.CString("")
 	}
 	if box == nil {
 		return C.CString("instance not found")
 	}
 	propagateStatus(Stopping)
-
 	commandServer.SetService(nil)
+
 	err := box.Close()
 	if err != nil {
+		stopAndAlert("Unexpected Error in Close!", err)
 		return C.CString(err.Error())
 	}
 	box = nil
-
 	err = commandServer.Close()
 	if err != nil {
+		stopAndAlert("Unexpected Error in Stop CommandServer/!", err)
 		return C.CString(err.Error())
 	}
 	commandServer = nil
 	propagateStatus(Stopped)
-
 	return C.CString("")
 }
 
 //export restart
 func restart(configPath *C.char, disableMemoryLimit bool) (CErr *C.char) {
 	defer config.DeferPanicToError("restart", func(err error) {
-		CErr = C.CString(err.Error())
 		stopAndAlert("Unexpected Error!", err)
+		CErr = C.CString(err.Error())
 	})
 	log.Debug("[Service] Restarting")
 

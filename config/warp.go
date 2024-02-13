@@ -155,7 +155,7 @@ func generateRandomPort() uint16 {
 	return warpPorts[rand.Intn(len(warpPorts))]
 }
 
-func generateWarp(license string, host string, port uint16, fakePackets string) (*T.Outbound, error) {
+func generateWarp(license string, host string, port uint16, fakePackets string, fakePacketsSize string, fakePacketsDelay string) (*T.Outbound, error) {
 	if host == "" || isBlockedDomain(host) {
 		host = "auto"
 	}
@@ -163,6 +163,13 @@ func generateWarp(license string, host string, port uint16, fakePackets string) 
 	if host == "auto" && fakePackets == "" {
 		fakePackets = "8-15"
 	}
+	if fakePackets != "" && fakePacketsSize == "" {
+		fakePacketsSize = "40-100"
+	}
+	if fakePackets != "" && fakePacketsDelay == "" {
+		fakePacketsDelay = "200-500"
+	}
+
 	// warp.UpdatePath("./secondary")
 	if _, err := os.Stat("./wgcf-identity.json"); err == nil {
 		os.Remove("./wgcf-identity.json")
@@ -185,6 +192,8 @@ func generateWarp(license string, host string, port uint16, fakePackets string) 
 	singboxConfig, err := wireGuardToSingbox(wgConfig, host, port)
 
 	singboxConfig.WireGuardOptions.FakePackets = fakePackets
+	singboxConfig.WireGuardOptions.FakePacketsSize = fakePacketsSize
+	singboxConfig.WireGuardOptions.FakePacketsDelay = fakePacketsDelay
 	singboxJSON, err := json.MarshalIndent(singboxConfig, "", "    ")
 	if err != nil {
 		fmt.Println("Error marshaling Singbox configuration:", err)

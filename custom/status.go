@@ -35,7 +35,15 @@ func stopAndAlert(alert string, err error) (resultErr error) {
 	fmt.Printf("Error: %s: %v\n", alert, err)
 	propagateStatus(Stopped)
 	config.DeactivateTunnelService()
-	commandServer.SetService(nil)
-	err = box.Close()
+	if commandServer != nil {
+		commandServer.SetService(nil)
+	}
+	if box != nil {
+		box.Close()
+		box = nil
+	}
+	if commandServer != nil {
+		commandServer.Close()
+	}
 	return nil
 }
