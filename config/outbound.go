@@ -195,7 +195,7 @@ func patchWarp(base *option.Outbound) error {
 			warpConfig.WireGuardOptions.Detour = detour
 			if detour != "" {
 				if warpConfig.WireGuardOptions.MTU > 1000 {
-					warpConfig.WireGuardOptions.MTU -= 100
+					warpConfig.WireGuardOptions.MTU -= 160
 				}
 				warpConfig.WireGuardOptions.FakePackets = ""
 			}

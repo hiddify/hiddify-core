@@ -167,7 +167,7 @@ func generateWarp(license string, host string, port uint16, fakePackets string, 
 		fakePacketsSize = "40-100"
 	}
 	if fakePackets != "" && fakePacketsDelay == "" {
-		fakePacketsDelay = "200-500"
+		fakePacketsDelay = "20-250"
 	}
 
 	// warp.UpdatePath("./secondary")
