@@ -56,11 +56,12 @@ func patchOutboundTLSTricks(base option.Outbound, configOpt ConfigOptions, obj o
 		return obj
 	}
 
-	if transport.Type != C.V2RayTransportTypeWebsocket && transport.Type != C.V2RayTransportTypeGRPC {
+	if transport.Type != C.V2RayTransportTypeWebsocket && transport.Type != C.V2RayTransportTypeGRPC && transport.Type != C.V2RayTransportTypeHTTPUpgrade {
 		return obj
 	}
 
 	if outtls, ok := obj["tls"].(map[string]interface{}); ok {
+		obj = patchOutboundFragment(base, configOpt, obj)
 		tlsTricks := tls.TLSTricks
 		if tlsTricks == nil {
 			tlsTricks = &option.TLSTricksOptions{}
