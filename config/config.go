@@ -408,6 +408,9 @@ func BuildConfig(opt ConfigOptions, input option.Options) (*option.Options, erro
 		case C.TypeCustom:
 			continue
 		default:
+			if strings.Contains(out.Tag, "§hide§") {
+				continue
+			}
 			tags = append(tags, out.Tag)
 			outbounds = append(outbounds, out)
 		}
