@@ -14,7 +14,7 @@ func ExecuteCmd(executablePath, args string, background bool) (string, error) {
 	if appimage := os.Getenv("APPIMAGE"); appimage != "" {
 		executablePath = appimage + " HiddifyService"
 		if !background {
-			return nil, fmt.Errorf("Appimage can not have service")
+			return "Fail", fmt.Errorf("Appimage can not have service")
 		}
 	}
 
