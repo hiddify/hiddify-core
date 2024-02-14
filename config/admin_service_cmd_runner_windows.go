@@ -9,7 +9,7 @@ import (
 	"golang.org/x/sys/windows"
 )
 
-func ExecuteCmd(exe string, args string) (string, error) {
+func ExecuteCmd(exe string, args string, background bool) (string, error) {
 	verb := "runas"
 	cwd, _ := os.Getwd()
 

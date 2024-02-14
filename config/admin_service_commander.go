@@ -12,7 +12,6 @@ import (
 
 	"github.com/sagernet/sing-box/option"
 	dns "github.com/sagernet/sing-dns"
-	E "github.com/sagernet/sing/common/exceptions"
 )
 
 const (
@@ -25,10 +24,10 @@ func isSupportedOS() bool {
 	return runtime.GOOS == "windows" || runtime.GOOS == "linux"
 }
 func ActivateTunnelService(opt ConfigOptions) (bool, error) {
-	if !isSupportedOS() {
-		return false, E.New("Unsupported OS: " + runtime.GOOS)
-	}
-	
+	// if !isSupportedOS() {
+	// 	return false, E.New("Unsupported OS: " + runtime.GOOS)
+	// }
+
 	go startTunnelRequest(opt, true)
 	return true, nil
 }
@@ -93,9 +92,13 @@ func stopTunnelRequest() (bool, error) {
 
 func runTunnelService(opt ConfigOptions) (bool, error) {
 	executablePath := getTunnelServicePath()
-	fmt.Printf("Executable path is %s",executablePath)
-	out, err := ExecuteCmd(executablePath, "install")
+	fmt.Printf("Executable path is %s", executablePath)
+	out, err := ExecuteCmd(executablePath, "install", false)
 	fmt.Println("Shell command executed:", out, err)
+	if err != nil {
+		out, err := ExecuteCmd(executablePath, "", true)
+		fmt.Println("Shell command executed without flag:", out, err)
+	}
 	return startTunnelRequest(opt, false)
 }
 
@@ -112,6 +115,6 @@ func getTunnelServicePath() string {
 		fullPath = "HiddifyService"
 	}
 
-	abspath,_:=filepath.Abs(filepath.Join(binFolder, fullPath))
+	abspath, _ := filepath.Abs(filepath.Join(binFolder, fullPath))
 	return abspath
 }

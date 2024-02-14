@@ -9,13 +9,17 @@ import (
 	"path/filepath"
 )
 
-func ExecuteCmd(executablePath, args string) (string, error) {
+func ExecuteCmd(executablePath, args string, background bool) (string, error) {
 	cwd := filepath.Dir(executablePath)
-	background := false
 	if appimage := os.Getenv("APPIMAGE"); appimage != "" {
 		executablePath = appimage + " HiddifyService"
-		args = ""
-		background = true
+		if !background {
+			return nil, fmt.Errorf("Appimage can not have service")
+		}
+	}
+
+	if err := execCmdImp([]string{"cocoasudo", "--prompt=Hiddify needs root for tunneling.", executablePath, args}, cwd, background); err == nil {
+		return "Ok", nil
 	}
 	if err := execCmdImp([]string{"gksu", executablePath, args}, cwd, background); err == nil {
 		return "Ok", nil
