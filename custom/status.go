@@ -26,14 +26,15 @@ func propagateStatus(newStatus string) {
 }
 
 func stopAndAlert(alert string, err error) (resultErr error) {
-	defer func() {
-		if r := recover(); r != nil {
-			resultErr = fmt.Errorf("panic recovered: %v", r)
-		}
-	}()
+	defer config.DeferPanicToError("stopAndAlert", func(err error) {
+		resultErr = err
+	})
+	status = Stopped
+	message := err.Error()
+	fmt.Printf("Error: %s: %s\n", alert, message)
+	msg, _ := json.Marshal(StatusMessage{Status: status, Alert: &alert, Message: &message})
+	bridge.SendStringToPort(statusPropagationPort, string(msg))
 
-	fmt.Printf("Error: %s: %v\n", alert, err)
-	propagateStatus(Stopped)
 	config.DeactivateTunnelService()
 	if commandServer != nil {
 		commandServer.SetService(nil)

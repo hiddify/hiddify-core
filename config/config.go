@@ -135,44 +135,44 @@ func BuildConfig(opt ConfigOptions, input option.Options) (*option.Options, erro
 	} else {
 		inboundDomainStrategy = opt.IPv6Mode
 	}
-
-	if opt.EnableTun {
-		if ok, _ := ActivateTunnelService(opt); !ok {
-			tunInbound := option.Inbound{
-				Type: C.TypeTun,
-				Tag:  InboundTUNTag,
-				TunOptions: option.TunInboundOptions{
-					Stack:                  opt.TUNStack,
-					MTU:                    opt.MTU,
-					AutoRoute:              true,
-					StrictRoute:            opt.StrictRoute,
-					EndpointIndependentNat: true,
-					InboundOptions: option.InboundOptions{
-						SniffEnabled:             true,
-						SniffOverrideDestination: true,
-						DomainStrategy:           inboundDomainStrategy,
-					},
+	if opt.EnableTunService {
+		ActivateTunnelService(opt)
+	} else if opt.EnableTun {
+		tunInbound := option.Inbound{
+			Type: C.TypeTun,
+			Tag:  InboundTUNTag,
+			TunOptions: option.TunInboundOptions{
+				Stack:                  opt.TUNStack,
+				MTU:                    opt.MTU,
+				AutoRoute:              true,
+				StrictRoute:            opt.StrictRoute,
+				EndpointIndependentNat: true,
+				InboundOptions: option.InboundOptions{
+					SniffEnabled:             true,
+					SniffOverrideDestination: true,
+					DomainStrategy:           inboundDomainStrategy,
 				},
-			}
-			switch opt.IPv6Mode {
-			case option.DomainStrategy(dns.DomainStrategyUseIPv4):
-				tunInbound.TunOptions.Inet4Address = []netip.Prefix{
-					netip.MustParsePrefix("172.19.0.1/28"),
-				}
-			case option.DomainStrategy(dns.DomainStrategyUseIPv6):
-				tunInbound.TunOptions.Inet6Address = []netip.Prefix{
-					netip.MustParsePrefix("fdfe:dcba:9876::1/126"),
-				}
-			default:
-				tunInbound.TunOptions.Inet4Address = []netip.Prefix{
-					netip.MustParsePrefix("172.19.0.1/28"),
-				}
-				tunInbound.TunOptions.Inet6Address = []netip.Prefix{
-					netip.MustParsePrefix("fdfe:dcba:9876::1/126"),
-				}
-			}
-			options.Inbounds = append(options.Inbounds, tunInbound)
+			},
 		}
+		switch opt.IPv6Mode {
+		case option.DomainStrategy(dns.DomainStrategyUseIPv4):
+			tunInbound.TunOptions.Inet4Address = []netip.Prefix{
+				netip.MustParsePrefix("172.19.0.1/28"),
+			}
+		case option.DomainStrategy(dns.DomainStrategyUseIPv6):
+			tunInbound.TunOptions.Inet6Address = []netip.Prefix{
+				netip.MustParsePrefix("fdfe:dcba:9876::1/126"),
+			}
+		default:
+			tunInbound.TunOptions.Inet4Address = []netip.Prefix{
+				netip.MustParsePrefix("172.19.0.1/28"),
+			}
+			tunInbound.TunOptions.Inet6Address = []netip.Prefix{
+				netip.MustParsePrefix("fdfe:dcba:9876::1/126"),
+			}
+		}
+		options.Inbounds = append(options.Inbounds, tunInbound)
+
 	}
 
 	options.Inbounds = append(

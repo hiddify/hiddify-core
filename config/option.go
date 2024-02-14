@@ -33,13 +33,14 @@ type DNSOptions struct {
 }
 
 type InboundOptions struct {
-	EnableTun      bool   `json:"enable-tun"`
-	SetSystemProxy bool   `json:"set-system-proxy"`
-	MixedPort      uint16 `json:"mixed-port"`
-	LocalDnsPort   uint16 `json:"local-dns-port"`
-	MTU            uint32 `json:"mtu"`
-	StrictRoute    bool   `json:"strict-route"`
-	TUNStack       string `json:"tun-stack"`
+	EnableTun        bool   `json:"enable-tun"`
+	EnableTunService bool   `json:"enable-tun-service"`
+	SetSystemProxy   bool   `json:"set-system-proxy"`
+	MixedPort        uint16 `json:"mixed-port"`
+	LocalDnsPort     uint16 `json:"local-dns-port"`
+	MTU              uint32 `json:"mtu"`
+	StrictRoute      bool   `json:"strict-route"`
+	TUNStack         string `json:"tun-stack"`
 }
 
 type URLTestOptions struct {

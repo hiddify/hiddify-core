@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"io"
+	"time"
 
 	"net/http"
 	"net/url"
@@ -96,8 +97,11 @@ func runTunnelService(opt ConfigOptions) (bool, error) {
 	out, err := ExecuteCmd(executablePath, "install", false)
 	fmt.Println("Shell command executed:", out, err)
 	if err != nil {
-		out, err := ExecuteCmd(executablePath, "", true)
+		out, err = ExecuteCmd(executablePath, "", true)
 		fmt.Println("Shell command executed without flag:", out, err)
+	}
+	if err == nil {
+		<-time.After(1 * time.Second) //wait until service loaded completely
 	}
 	return startTunnelRequest(opt, false)
 }

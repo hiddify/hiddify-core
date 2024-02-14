@@ -105,17 +105,17 @@ func patchOutboundFragment(base option.Outbound, configOpt ConfigOptions, obj ou
 func isOutboundReality(base option.Outbound) bool {
 	// this function checks reality status ONLY FOR VLESS.
 	// Some other protocols can also use reality, but it's discouraged as stated in the reality document
-	isReality := false
-	switch base.Type {
-	case C.TypeVLESS:
-		if base.VLESSOptions.OutboundTLSOptionsContainer.TLS == nil {
-			return false
-		}
-		if base.VLESSOptions.OutboundTLSOptionsContainer.TLS.Reality != nil {
-			isReality = base.VLESSOptions.OutboundTLSOptionsContainer.TLS.Reality.Enabled
-		}
+	if base.Type != C.TypeVLESS {
+		return false
 	}
-	return isReality
+	if base.VLESSOptions.OutboundTLSOptionsContainer.TLS == nil {
+		return false
+	}
+	if base.VLESSOptions.OutboundTLSOptionsContainer.TLS.Reality == nil {
+		return false
+	}
+	return base.VLESSOptions.OutboundTLSOptionsContainer.TLS.Reality.Enabled
+
 }
 
 func patchOutbound(base option.Outbound, configOpt ConfigOptions) (*option.Outbound, string, error) {
