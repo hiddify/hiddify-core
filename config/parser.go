@@ -97,11 +97,10 @@ func patchConfig(content []byte, name string) ([]byte, error) {
 	if res, err := b.WaitAndGetResult(); err != nil {
 		return nil, err
 	} else {
-		options.Outbounds = []option.Outbound{}
-		for s := range res {
-			fmt.Println(s)
-			options.Outbounds = append(options.Outbounds, *res[s].Value)
+		for i, base := range options.Outbounds {
+			options.Outbounds[i] = *res[base.Tag].Value
 		}
+
 	}
 
 	content, _ = json.MarshalIndent(options, "", "  ")
