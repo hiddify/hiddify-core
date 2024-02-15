@@ -2,7 +2,7 @@ package config
 
 import (
 	"bytes"
-	"context"
+
 	"encoding/json"
 	"fmt"
 	"net"
@@ -13,7 +13,6 @@ import (
 	C "github.com/sagernet/sing-box/constant"
 	"github.com/sagernet/sing-box/option"
 	dns "github.com/sagernet/sing-dns"
-	"github.com/sagernet/sing/common/batch"
 )
 
 const (
@@ -73,10 +72,10 @@ func BuildConfig(opt ConfigOptions, input option.Options) (*option.Options, erro
 			ClashAPI: &option.ClashAPIOptions{
 				ExternalController: fmt.Sprintf("%s:%d", "127.0.0.1", opt.ClashApiPort),
 			},
-			// CacheFile: &option.CacheFileOptions{
-			// 	Enabled: true,
-			// 	Path:    "clash.db",
-			// },
+			CacheFile: &option.CacheFileOptions{
+				Enabled: true,
+				Path:    "clash.db",
+			},
 		}
 	}
 
@@ -408,10 +407,9 @@ func BuildConfig(opt ConfigOptions, input option.Options) (*option.Options, erro
 		case C.TypeCustom:
 			continue
 		default:
-			if strings.Contains(out.Tag, "§hide§") {
-				continue
+			if !strings.Contains(out.Tag, "§hide§") {
+				tags = append(tags, out.Tag)
 			}
-			tags = append(tags, out.Tag)
 			outbounds = append(outbounds, out)
 		}
 	}
@@ -473,26 +471,26 @@ func BuildConfig(opt ConfigOptions, input option.Options) (*option.Options, erro
 		}...,
 	)
 	if len(directDNSDomains) > 0 {
-		trickDnsDomains := []string{}
-		directDNSDomains = removeDuplicateStr(directDNSDomains)
-		b, _ := batch.New(context.Background(), batch.WithConcurrencyNum[bool](10))
-		for _, d := range directDNSDomains {
-			b.Go(d, func() (bool, error) {
-				return isBlockedDomain(d), nil
-			})
-		}
-		b.Wait()
-		for domain, isBlock := range b.Result() {
-			if isBlock.Value {
-				trickDnsDomains = append(trickDnsDomains, domain)
-			}
-		}
+		// trickDnsDomains := []string{}
+		// directDNSDomains = removeDuplicateStr(directDNSDomains)
+		// b, _ := batch.New(context.Background(), batch.WithConcurrencyNum[bool](10))
+		// for _, d := range directDNSDomains {
+		// 	b.Go(d, func() (bool, error) {
+		// 		return isBlockedDomain(d), nil
+		// 	})
+		// }
+		// b.Wait()
+		// for domain, isBlock := range b.Result() {
+		// 	if isBlock.Value {
+		// 		trickDnsDomains = append(trickDnsDomains, domain)
+		// 	}
+		// }
 
-		trickDomains := strings.Join(trickDnsDomains, ",")
-		trickRule := Rule{Domains: trickDomains, Outbound: OutboundBypassTag}
-		trickDnsRule := trickRule.MakeDNSRule()
-		trickDnsRule.Server = DNSTricksDirectTag
-		options.DNS.Rules = append([]option.DNSRule{{Type: C.RuleTypeDefault, DefaultOptions: trickDnsRule}}, options.DNS.Rules...)
+		// trickDomains := strings.Join(trickDnsDomains, ",")
+		// trickRule := Rule{Domains: trickDomains, Outbound: OutboundBypassTag}
+		// trickDnsRule := trickRule.MakeDNSRule()
+		// trickDnsRule.Server = DNSTricksDirectTag
+		// options.DNS.Rules = append([]option.DNSRule{{Type: C.RuleTypeDefault, DefaultOptions: trickDnsRule}}, options.DNS.Rules...)
 
 		domains := strings.Join(directDNSDomains, ",")
 		directRule := Rule{Domains: domains, Outbound: OutboundBypassTag}

@@ -109,4 +109,4 @@ replace github.com/sagernet/sing-box => github.com/hiddify/hiddify-sing-box v1.8
 
 replace github.com/sagernet/wireguard-go => github.com/hiddify/wireguard-go v0.0.0-20240214142457-fadc619f4357
 
-replace github.com/bepass-org/wireguard-go => github.com/hiddify-com/wireguard-go v0.0.2-alpha.0.20240212065415-62301f758cb7
+replace github.com/bepass-org/wireguard-go => github.com/hiddify-com/wireguard-go v0.0.2-alpha.0.20240215114454-3acea56c88fc

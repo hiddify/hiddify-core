@@ -2,6 +2,7 @@ package config
 
 import (
 	"bytes"
+	"context"
 	_ "embed"
 	"encoding/json"
 	"fmt"
@@ -12,6 +13,7 @@ import (
 	"github.com/hiddify/ray2sing/ray2sing"
 	"github.com/sagernet/sing-box/experimental/libbox"
 	"github.com/sagernet/sing-box/option"
+	"github.com/sagernet/sing/common/batch"
 	SJ "github.com/sagernet/sing/common/json"
 	"github.com/xmdhs/clash2singbox/convert"
 	"github.com/xmdhs/clash2singbox/model/clash"
@@ -80,14 +82,26 @@ func patchConfig(content []byte, name string) ([]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("[SingboxParser] unmarshal error: %w", err)
 	}
-
-	for i, base := range options.Outbounds {
-		err := patchWarp(&base)
-		if err != nil {
-			return nil, fmt.Errorf("[Warp] patch warp error: %w", err)
+	b, _ := batch.New(context.Background(), batch.WithConcurrencyNum[*option.Outbound](10))
+	for _, base := range options.Outbounds {
+		out := base
+		b.Go(base.Tag, func() (*option.Outbound, error) {
+			err := patchWarp(&out)
+			if err != nil {
+				return nil, fmt.Errorf("[Warp] patch warp error: %w", err)
+			}
+			// options.Outbounds[i] = base
+			return &out, nil
+		})
+	}
+	if res, err := b.WaitAndGetResult(); err != nil {
+		return nil, err
+	} else {
+		options.Outbounds = []option.Outbound{}
+		for s := range res {
+			fmt.Println(s)
+			options.Outbounds = append(options.Outbounds, *res[s].Value)
 		}
-		options.Outbounds[i] = base
-
 	}
 
 	content, _ = json.MarshalIndent(options, "", "  ")
