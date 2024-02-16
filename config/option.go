@@ -1,8 +1,6 @@
 package config
 
 import (
-	"time"
-
 	"github.com/sagernet/sing-box/option"
 	dns "github.com/sagernet/sing-dns"
 )
@@ -44,9 +42,9 @@ type InboundOptions struct {
 }
 
 type URLTestOptions struct {
-	ConnectionTestUrl  string          `json:"connection-test-url"`
-	URLTestInterval    option.Duration `json:"url-test-interval"`
-	URLTestIdleTimeout option.Duration `json:"url-test-idle-timeout"`
+	ConnectionTestUrl  string            `json:"connection-test-url"`
+	URLTestInterval    DurationInSeconds `json:"url-test-interval"`
+	URLTestIdleTimeout DurationInSeconds `json:"url-test-idle-timeout"`
 }
 
 type RouteOptions struct {
@@ -94,8 +92,8 @@ func DefaultConfigOptions() *ConfigOptions {
 		},
 		URLTestOptions: URLTestOptions{
 			ConnectionTestUrl:  "http://cp.cloudflare.com/",
-			URLTestInterval:    option.Duration(10 * time.Minute),
-			URLTestIdleTimeout: option.Duration(100 * time.Minute),
+			URLTestInterval:    DurationInSeconds(600),
+			URLTestIdleTimeout: DurationInSeconds(6000),
 		},
 		RouteOptions: RouteOptions{
 			ResolveDestination:     false,
