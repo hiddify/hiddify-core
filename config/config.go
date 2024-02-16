@@ -420,8 +420,8 @@ func BuildConfig(opt ConfigOptions, input option.Options) (*option.Options, erro
 		URLTestOptions: option.URLTestOutboundOptions{
 			Outbounds:   tags,
 			URL:         opt.ConnectionTestUrl,
-			Interval:    opt.URLTestInterval,
-			IdleTimeout: opt.URLTestIdleTimeout,
+			Interval:    option.Duration(opt.URLTestInterval.Duration()),
+			IdleTimeout: option.Duration(opt.URLTestIdleTimeout.Duration()),
 		},
 	}
 
