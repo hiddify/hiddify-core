@@ -257,7 +257,7 @@ func BuildConfig(opt ConfigOptions, input option.Options) (*option.Options, erro
 			option.Rule{
 				Type: C.RuleTypeDefault,
 				DefaultOptions: option.DefaultRule{
-					SourceIPIsPrivate: true,
+					GeoIP:    []string{"private"},
 					Outbound:          OutboundBypassTag,
 				},
 			},
