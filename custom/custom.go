@@ -295,4 +295,16 @@ func urlTest(groupTag *C.char) (CErr *C.char) {
 	return C.CString("")
 }
 
+//export generateWarpConfig
+func generateWarpConfig(licenseKey *C.char, accountId *C.char, accessToken *C.char) (CResp *C.char) {
+	defer config.DeferPanicToError("generateWarpConfig", func(err error) {
+		CResp = C.CString(fmt.Sprint("error: ", err.Error()))
+	})
+	account, err := config.GenerateWarpAccount(C.GoString(licenseKey), C.GoString(accountId), C.GoString(accessToken))
+	if err != nil {
+		return C.CString(fmt.Sprint("error: ", err.Error()))
+	}
+	return C.CString(account)
+}
+
 func main() {}

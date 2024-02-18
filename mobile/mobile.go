@@ -36,3 +36,7 @@ func BuildConfig(path string, configOptionsJson string) (string, error) {
 	}
 	return config.BuildConfigJson(*configOptions, options)
 }
+
+func GenerateWarpConfig(licenseKey string, accountId string, accessToken string) (string, error) {
+	return config.GenerateWarpAccount(licenseKey, accountId, accessToken)
+}
