@@ -82,7 +82,7 @@ func patchConfig(content []byte, name string) ([]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("[SingboxParser] unmarshal error: %w", err)
 	}
-	b, _ := batch.New(context.Background(), batch.WithConcurrencyNum[*option.Outbound](10))
+	b, _ := batch.New(context.Background(), batch.WithConcurrencyNum[*option.Outbound](2))
 	for _, base := range options.Outbounds {
 		out := base
 		b.Go(base.Tag, func() (*option.Outbound, error) {

@@ -3,7 +3,9 @@ package config
 import (
 	"encoding/json"
 	"fmt"
+	"math/rand"
 	"net"
+	"strings"
 
 	C "github.com/sagernet/sing-box/constant"
 	"github.com/sagernet/sing-box/option"
@@ -168,8 +170,11 @@ func patchOutbound(base option.Outbound, configOpt ConfigOptions) (*option.Outbo
 
 func patchWarp(base *option.Outbound) error {
 	if base.Type == C.TypeWireGuard {
-		host := base.WireGuardOptions.Server
-		if host == "default" || host == "random" || host == "auto" {
+		splt := strings.Split(base.WireGuardOptions.Server, "*")
+		host := splt[rand.Intn(len(splt))]
+		base.WireGuardOptions.Server = host
+		fmt.Printf("Selected Host is:%s\n", host)
+		if host == "default" || host == "random" || host == "auto" || isBlockedDomain(host) {
 			base.WireGuardOptions.Server = getRandomIP()
 		}
 		if base.WireGuardOptions.ServerPort == 0 {

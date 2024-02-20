@@ -102,7 +102,7 @@ func generateWarp(license string, host string, port uint16, fakePackets string, 
 }
 
 func generateWarpSingbox(wgConfig warp.WireguardConfig, host string, port uint16, fakePackets string, fakePacketsSize string, fakePacketsDelay string) (*T.Outbound, error) {
-	if host == "" || isBlockedDomain(host) {
+	if host == "" {
 		host = "auto"
 	}
 
