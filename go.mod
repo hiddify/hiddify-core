@@ -104,8 +104,8 @@ require (
 	lukechampine.com/blake3 v1.2.1 // indirect
 )
 
-replace github.com/sagernet/sing-box => github.com/hiddify/hiddify-sing-box v1.8.6-0.20240220121931-358368f656f1
+replace github.com/sagernet/sing-box => github.com/hiddify/hiddify-sing-box v1.8.6-0.20240220174520-6d69118a545d
 
-replace github.com/sagernet/wireguard-go => github.com/hiddify/wireguard-go v0.0.0-20240220151545-6f4ca2400195
+replace github.com/sagernet/wireguard-go => github.com/hiddify/wireguard-go v0.0.0-20240220174328-f5d852d7081c
 
 replace github.com/bepass-org/wireguard-go => github.com/hiddify-com/wireguard-go v0.0.2-alpha.0.20240220074702-29dc5459810f
