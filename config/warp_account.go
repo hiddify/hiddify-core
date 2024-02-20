@@ -1,24 +1,59 @@
 package config
 
-import "encoding/json"
+import (
+	"encoding/json"
+
+	"github.com/bepass-org/wireguard-go/warp"
+)
 
 type WarpAccount struct {
 	AccountID   string `json:"account-id"`
 	AccessToken string `json:"access-token"`
 }
 
+type WarpWireguardConfig struct {
+	PrivateKey       string `json:"private-key"`
+	LocalAddressIPv4 string `json:"local-address-ipv4"`
+	LocalAddressIPv6 string `json:"local-address-ipv6"`
+	PeerPublicKey    string `json:"peer-public-key"`
+}
+
+func (wg WarpWireguardConfig) ToWireguardConfig() warp.WireguardConfig {
+	return warp.WireguardConfig{
+		PrivateKey:       wg.PrivateKey,
+		LocalAddressIPv4: wg.LocalAddressIPv4,
+		LocalAddressIPv6: wg.LocalAddressIPv6,
+		PeerPublicKey:    wg.PeerPublicKey,
+	}
+}
+
+type WarpGenerationResponse struct {
+	WarpAccount
+	Log    string              `json:"log"`
+	Config WarpWireguardConfig `json:"config"`
+}
+
 func GenerateWarpAccount(licenseKey string, accountId string, accessToken string) (string, error) {
-	data, _, _, err := GenerateWarpInfo(licenseKey, accountId, accessToken)
+	account, log, wg, err := GenerateWarpInfo(licenseKey, accountId, accessToken)
 	if err != nil {
 		return "", err
 	}
+
 	warpAccount := WarpAccount{
-		AccountID:   data.AccountID,
-		AccessToken: data.AccessToken,
+		AccountID:   account.AccountID,
+		AccessToken: account.AccessToken,
 	}
-	accountJson, err := json.Marshal(warpAccount)
+	warpConfig := WarpWireguardConfig{
+		PrivateKey:       wg.PrivateKey,
+		LocalAddressIPv4: wg.LocalAddressIPv4,
+		LocalAddressIPv6: wg.LocalAddressIPv6,
+		PeerPublicKey:    wg.PeerPublicKey,
+	}
+	response := WarpGenerationResponse{warpAccount, log, warpConfig}
+
+	responseJson, err := json.Marshal(response)
 	if err != nil {
 		return "", err
 	}
-	return string(accountJson), nil
+	return string(responseJson), nil
 }

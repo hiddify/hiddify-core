@@ -1,25 +1,24 @@
 package config
 
 import (
-	"github.com/bepass-org/wireguard-go/warp"
 	"github.com/sagernet/sing-box/option"
 	dns "github.com/sagernet/sing-dns"
 )
 
 type ConfigOptions struct {
-	LogLevel       string `json:"log-level"`
-	EnableClashApi bool   `json:"enable-clash-api"`
-	ClashApiPort   uint16 `json:"clash-api-port"`
-	GeoIPPath      string `json:"geoip-path"`
-	GeoSitePath    string `json:"geosite-path"`
-	Rules          []Rule `json:"rules"`
+	LogLevel       string      `json:"log-level"`
+	EnableClashApi bool        `json:"enable-clash-api"`
+	ClashApiPort   uint16      `json:"clash-api-port"`
+	GeoIPPath      string      `json:"geoip-path"`
+	GeoSitePath    string      `json:"geosite-path"`
+	Rules          []Rule      `json:"rules"`
+	Warp           WarpOptions `json:"warp"`
 	DNSOptions
 	InboundOptions
 	URLTestOptions
 	RouteOptions
 	MuxOptions
 	TLSTricks
-	*WarpOptions
 }
 
 type DNSOptions struct {
@@ -73,14 +72,15 @@ type MuxOptions struct {
 }
 
 type WarpOptions struct {
-	Mode string `json:"mode"`
-	WarpAccount
-	warp.WireguardConfig
-	FakePackets     string `json:"fake-packets"`
-	FakePacketSize  string `json:"fake-packet-size"`
-	FakePacketDelay string `json:"fake-packet-delay"`
-	CleanIP         string `json:"clean-ip"`
-	CleanPort       uint16 `json:"clean-port"`
+	EnableWarp      bool                `json:"enable"`
+	Mode            string              `json:"mode"`
+	WireguardConfig WarpWireguardConfig `json:"wireguard-config"`
+	FakePackets     string              `json:"fake-packets"`
+	FakePacketSize  string              `json:"fake-packet-size"`
+	FakePacketDelay string              `json:"fake-packet-delay"`
+	CleanIP         string              `json:"clean-ip"`
+	CleanPort       uint16              `json:"clean-port"`
+	Account         WarpAccount
 }
 
 func DefaultConfigOptions() *ConfigOptions {
