@@ -258,7 +258,7 @@ func BuildConfig(opt ConfigOptions, input option.Options) (*option.Options, erro
 				Type: C.RuleTypeDefault,
 				DefaultOptions: option.DefaultRule{
 					GeoIP:    []string{"private"},
-					Outbound:          OutboundBypassTag,
+					Outbound: OutboundBypassTag,
 				},
 			},
 		)
@@ -388,6 +388,17 @@ func BuildConfig(opt ConfigOptions, input option.Options) (*option.Options, erro
 
 	var outbounds []option.Outbound
 	var tags []string
+	if opt.WarpOptions != nil && (opt.WarpOptions.Mode == "proxy_over_warp" || opt.WarpOptions.Mode == "warp_over_proxy") {
+		out, err := generateWarpSingbox(opt.WarpOptions.WireguardConfig, opt.WarpOptions.CleanIP, opt.WarpOptions.CleanPort, opt.WarpOptions.FakePackets, opt.WarpOptions.FakePacketSize, opt.WarpOptions.FakePacketDelay)
+		if err != nil {
+			return nil, fmt.Errorf("failed to generate warp config: %v", err)
+		}
+		out.Tag = "Hiddify Warp Config"
+		if opt.WarpOptions.Mode == "warp_over_proxy" {
+			out.WireGuardOptions.Detour = "select"
+		}
+		outbounds = append(outbounds, *out)
+	}
 	for _, out := range input.Outbounds {
 		outbound, serverDomain, err := patchOutbound(out, opt)
 		if err != nil {
@@ -410,6 +421,7 @@ func BuildConfig(opt ConfigOptions, input option.Options) (*option.Options, erro
 			if !strings.Contains(out.Tag, "§hide§") {
 				tags = append(tags, out.Tag)
 			}
+			out = patchHiddifyWarpFromConfig(out, opt)
 			outbounds = append(outbounds, out)
 		}
 	}
@@ -500,6 +512,27 @@ func BuildConfig(opt ConfigOptions, input option.Options) (*option.Options, erro
 	}
 
 	return &options, nil
+}
+
+func patchHiddifyWarpFromConfig(out option.Outbound, opt ConfigOptions) option.Outbound {
+	if opt.WarpOptions != nil && opt.WarpOptions.Mode == "proxy_over_warp" {
+		out.DirectOptions.Detour = "Hiddify Warp Config"
+		out.HTTPOptions.Detour = "Hiddify Warp Config"
+		out.Hysteria2Options.Detour = "Hiddify Warp Config"
+		out.HysteriaOptions.Detour = "Hiddify Warp Config"
+		out.SSHOptions.Detour = "Hiddify Warp Config"
+		out.ShadowTLSOptions.Detour = "Hiddify Warp Config"
+		out.ShadowsocksOptions.Detour = "Hiddify Warp Config"
+		out.ShadowsocksROptions.Detour = "Hiddify Warp Config"
+		out.SocksOptions.Detour = "Hiddify Warp Config"
+		out.TUICOptions.Detour = "Hiddify Warp Config"
+		out.TorOptions.Detour = "Hiddify Warp Config"
+		out.TrojanOptions.Detour = "Hiddify Warp Config"
+		out.VLESSOptions.Detour = "Hiddify Warp Config"
+		out.VMessOptions.Detour = "Hiddify Warp Config"
+		out.WireGuardOptions.Detour = "Hiddify Warp Config"
+	}
+	return out
 }
 
 func getIPs(domains []string) []string {

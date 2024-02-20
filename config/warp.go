@@ -1,7 +1,6 @@
 package config
 
 import (
-	"encoding/json"
 	"fmt"
 	"math/rand"
 	"net/netip"
@@ -89,6 +88,20 @@ func generateRandomPort() uint16 {
 }
 
 func generateWarp(license string, host string, port uint16, fakePackets string, fakePacketsSize string, fakePacketsDelay string) (*T.Outbound, error) {
+
+	_, _, wgConfig, err := warp.LoadOrCreateIdentityHiddify(license, nil)
+	if err != nil {
+		return nil, err
+	}
+	if wgConfig == nil {
+		return nil, fmt.Errorf("invalid warp config")
+	}
+	fmt.Printf("%v", wgConfig)
+
+	return generateWarpSingbox(*wgConfig, host, port, fakePackets, fakePacketsSize, fakePacketsDelay)
+}
+
+func generateWarpSingbox(wgConfig warp.WireguardConfig, host string, port uint16, fakePackets string, fakePacketsSize string, fakePacketsDelay string) (*T.Outbound, error) {
 	if host == "" || isBlockedDomain(host) {
 		host = "auto"
 	}
@@ -102,16 +115,7 @@ func generateWarp(license string, host string, port uint16, fakePackets string, 
 	if fakePackets != "" && fakePacketsDelay == "" {
 		fakePacketsDelay = "20-250"
 	}
-
-	_, _, wgConfig, err := warp.LoadOrCreateIdentityHiddify(license, nil)
-	if err != nil {
-		return nil, err
-	}
-	if wgConfig == nil {
-		return nil, fmt.Errorf("invalid warp config")
-	}
-	fmt.Printf("%v", wgConfig)
-	singboxConfig, err := wireGuardToSingbox(*wgConfig, host, port)
+	singboxConfig, err := wireGuardToSingbox(wgConfig, host, port)
 	if err != nil {
 		fmt.Printf("%v %v", singboxConfig, err)
 		return nil, err
@@ -120,13 +124,7 @@ func generateWarp(license string, host string, port uint16, fakePackets string, 
 	singboxConfig.WireGuardOptions.FakePackets = fakePackets
 	singboxConfig.WireGuardOptions.FakePacketsSize = fakePacketsSize
 	singboxConfig.WireGuardOptions.FakePacketsDelay = fakePacketsDelay
-	singboxJSON, err := json.MarshalIndent(singboxConfig, "", "    ")
-	if err != nil {
-		fmt.Println("Error marshaling Singbox configuration:", err)
-		return nil, err
-	}
 
-	fmt.Println(string(singboxJSON))
 	return singboxConfig, nil
 }
 

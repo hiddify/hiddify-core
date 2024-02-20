@@ -1,6 +1,7 @@
 package config
 
 import (
+	"github.com/bepass-org/wireguard-go/warp"
 	"github.com/sagernet/sing-box/option"
 	dns "github.com/sagernet/sing-dns"
 )
@@ -18,6 +19,7 @@ type ConfigOptions struct {
 	RouteOptions
 	MuxOptions
 	TLSTricks
+	*WarpOptions
 }
 
 type DNSOptions struct {
@@ -68,6 +70,17 @@ type MuxOptions struct {
 	MuxPadding  bool   `json:"mux-padding"`
 	MaxStreams  int    `json:"mux-max-streams"`
 	MuxProtocol string `json:"mux-protocol"`
+}
+
+type WarpOptions struct {
+	Mode string `json:"mode"`
+	WarpAccount
+	warp.WireguardConfig
+	FakePackets     string `json:"fake-packets"`
+	FakePacketSize  string `json:"fake-packet-size"`
+	FakePacketDelay string `json:"fake-packet-delay"`
+	CleanIP         string `json:"clean-ip"`
+	CleanPort       uint16 `json:"clean-port"`
 }
 
 func DefaultConfigOptions() *ConfigOptions {
