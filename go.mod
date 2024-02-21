@@ -4,7 +4,7 @@ go 1.21.5
 
 require (
 	github.com/bepass-org/wireguard-go v0.0.16-alpha
-	github.com/hiddify/ray2sing v0.0.0-20240213091709-ba1d827e4f4a
+	github.com/hiddify/ray2sing v0.0.0-20240221185915-96fae128815c
 	github.com/kardianos/service v1.2.2
 	github.com/sagernet/gomobile v0.1.1
 	github.com/sagernet/sing v0.3.0
@@ -19,7 +19,6 @@ require (
 require (
 	berty.tech/go-libtor v1.0.385 // indirect
 	github.com/ajg/form v1.5.1 // indirect
-	github.com/akavel/rsrc v0.10.2 // indirect
 	github.com/andybalholm/brotli v1.0.6 // indirect
 	github.com/caddyserver/certmagic v0.20.0 // indirect
 	github.com/cloudflare/circl v1.3.7 // indirect
@@ -105,8 +104,8 @@ require (
 	lukechampine.com/blake3 v1.2.1 // indirect
 )
 
-replace github.com/sagernet/sing-box => github.com/hiddify/hiddify-sing-box v1.8.6-0.20240221142438-1b8e9df9d3f6
+replace github.com/sagernet/sing-box => github.com/hiddify/hiddify-sing-box v1.8.6-0.20240221205250-c6cdbc404d9c
 
-replace github.com/sagernet/wireguard-go => github.com/hiddify/wireguard-go v0.0.0-20240220184421-1831c84ddbf9
+replace github.com/sagernet/wireguard-go => github.com/hiddify/wireguard-go v0.0.0-20240221205201-947c01ba9168
 
 replace github.com/bepass-org/wireguard-go => github.com/hiddify-com/wireguard-go v0.0.2-alpha.0.20240220074702-29dc5459810f
