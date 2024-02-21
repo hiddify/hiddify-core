@@ -36,7 +36,10 @@ const (
 	InboundDNSTag   = "dns-in"
 )
 
+var OutboundMainProxyTag = OutboundSelectTag
+
 func BuildConfigJson(configOpt ConfigOptions, input option.Options) (string, error) {
+
 	options, err := BuildConfig(configOpt, input)
 	if err != nil {
 		return "", err
@@ -246,7 +249,7 @@ func BuildConfig(opt ConfigOptions, input option.Options) (*option.Options, erro
 			Type: C.RuleTypeDefault,
 			DefaultOptions: option.DefaultRule{
 				ClashMode: "Global",
-				Outbound:  OutboundSelectTag,
+				Outbound:  OutboundMainProxyTag,
 			},
 		},
 	}
@@ -388,16 +391,29 @@ func BuildConfig(opt ConfigOptions, input option.Options) (*option.Options, erro
 
 	var outbounds []option.Outbound
 	var tags []string
-	if opt.Warp.EnableWarp && (opt.Warp.Mode == "proxy_over_warp" || opt.Warp.Mode == "warp_over_proxy") {
+	OutboundMainProxyTag = OutboundSelectTag
+	//inbound==warp over proxies
+	//outbound==proxies over warp
+	if opt.Warp.EnableWarp && (opt.Warp.Mode == "inbound" || opt.Warp.Mode == "outbound") {
+		fmt.Println("===========================")
+		fmt.Printf("%+v\n\n", opt.Warp)
+		fmt.Printf("%+v\n\n", opt.Warp.WireguardConfig)
+		fmt.Printf("%+v\n\n", opt.Warp.Account)
+
 		out, err := generateWarpSingbox(opt.Warp.WireguardConfig.ToWireguardConfig(), opt.Warp.CleanIP, opt.Warp.CleanPort, opt.Warp.FakePackets, opt.Warp.FakePacketSize, opt.Warp.FakePacketDelay)
 		if err != nil {
 			return nil, fmt.Errorf("failed to generate warp config: %v", err)
 		}
-		out.Tag = "Hiddify Warp Config"
-		if opt.Warp.Mode == "warp_over_proxy" {
-			out.WireGuardOptions.Detour = "select"
+		out.Tag = "Hiddify Warp ✅"
+		if opt.Warp.Mode == "inbound" {
+			out.WireGuardOptions.Detour = OutboundURLTestTag
+			OutboundMainProxyTag = out.Tag
+		} else {
+			out.WireGuardOptions.Detour = OutboundDirectTag
 		}
+		patchWarp(out)
 		outbounds = append(outbounds, *out)
+		// tags = append(tags, out.Tag)
 	}
 	for _, out := range input.Outbounds {
 		outbound, serverDomain, err := patchOutbound(out, opt)
@@ -439,7 +455,7 @@ func BuildConfig(opt ConfigOptions, input option.Options) (*option.Options, erro
 
 	selector := option.Outbound{
 		Type: C.TypeSelector,
-		Tag:  "select",
+		Tag:  OutboundSelectTag,
 		SelectorOptions: option.SelectorOutboundOptions{
 			Outbounds: append([]string{urlTest.Tag}, tags...),
 			Default:   urlTest.Tag,
@@ -510,27 +526,57 @@ func BuildConfig(opt ConfigOptions, input option.Options) (*option.Options, erro
 		dnsRule.Server = DNSDirectTag
 		options.DNS.Rules = append([]option.DNSRule{{Type: C.RuleTypeDefault, DefaultOptions: dnsRule}}, options.DNS.Rules...)
 	}
-
+	options.Route.Final = OutboundMainProxyTag
 	return &options, nil
 }
 
 func patchHiddifyWarpFromConfig(out option.Outbound, opt ConfigOptions) option.Outbound {
-	if opt.Warp.EnableWarp && opt.Warp.Mode == "proxy_over_warp" {
-		out.DirectOptions.Detour = "Hiddify Warp Config"
-		out.HTTPOptions.Detour = "Hiddify Warp Config"
-		out.Hysteria2Options.Detour = "Hiddify Warp Config"
-		out.HysteriaOptions.Detour = "Hiddify Warp Config"
-		out.SSHOptions.Detour = "Hiddify Warp Config"
-		out.ShadowTLSOptions.Detour = "Hiddify Warp Config"
-		out.ShadowsocksOptions.Detour = "Hiddify Warp Config"
-		out.ShadowsocksROptions.Detour = "Hiddify Warp Config"
-		out.SocksOptions.Detour = "Hiddify Warp Config"
-		out.TUICOptions.Detour = "Hiddify Warp Config"
-		out.TorOptions.Detour = "Hiddify Warp Config"
-		out.TrojanOptions.Detour = "Hiddify Warp Config"
-		out.VLESSOptions.Detour = "Hiddify Warp Config"
-		out.VMessOptions.Detour = "Hiddify Warp Config"
-		out.WireGuardOptions.Detour = "Hiddify Warp Config"
+	if opt.Warp.EnableWarp && opt.Warp.Mode == "outbound" {
+		if out.DirectOptions.Detour == "" {
+			out.DirectOptions.Detour = "Hiddify Warp ✅"
+		}
+		if out.HTTPOptions.Detour == "" {
+			out.HTTPOptions.Detour = "Hiddify Warp ✅"
+		}
+		if out.Hysteria2Options.Detour == "" {
+			out.Hysteria2Options.Detour = "Hiddify Warp ✅"
+		}
+		if out.HysteriaOptions.Detour == "" {
+			out.HysteriaOptions.Detour = "Hiddify Warp ✅"
+		}
+		if out.SSHOptions.Detour == "" {
+			out.SSHOptions.Detour = "Hiddify Warp ✅"
+		}
+		if out.ShadowTLSOptions.Detour == "" {
+			out.ShadowTLSOptions.Detour = "Hiddify Warp ✅"
+		}
+		if out.ShadowsocksOptions.Detour == "" {
+			out.ShadowsocksOptions.Detour = "Hiddify Warp ✅"
+		}
+		if out.ShadowsocksROptions.Detour == "" {
+			out.ShadowsocksROptions.Detour = "Hiddify Warp ✅"
+		}
+		if out.SocksOptions.Detour == "" {
+			out.SocksOptions.Detour = "Hiddify Warp ✅"
+		}
+		if out.TUICOptions.Detour == "" {
+			out.TUICOptions.Detour = "Hiddify Warp ✅"
+		}
+		if out.TorOptions.Detour == "" {
+			out.TorOptions.Detour = "Hiddify Warp ✅"
+		}
+		if out.TrojanOptions.Detour == "" {
+			out.TrojanOptions.Detour = "Hiddify Warp ✅"
+		}
+		if out.VLESSOptions.Detour == "" {
+			out.VLESSOptions.Detour = "Hiddify Warp ✅"
+		}
+		if out.VMessOptions.Detour == "" {
+			out.VMessOptions.Detour = "Hiddify Warp ✅"
+		}
+		if out.WireGuardOptions.Detour == "" {
+			out.WireGuardOptions.Detour = "Hiddify Warp ✅"
+		}
 	}
 	return out
 }

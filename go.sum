@@ -53,8 +53,8 @@ github.com/hashicorp/yamux v0.1.1 h1:yrQxtgseBDrq9Y652vSRDvsKCJKOUD+GzTS4Y0Y8pvE
 github.com/hashicorp/yamux v0.1.1/go.mod h1:CtWFDAQgb7dxtzFs4tWbplKIe2jSi3+5vKbgIO0SLnQ=
 github.com/hiddify-com/wireguard-go v0.0.2-alpha.0.20240220074702-29dc5459810f h1:h9Vsu3eALcx5il3kYVTTZ/la6znEXLrBMJtkRWuUZ+M=
 github.com/hiddify-com/wireguard-go v0.0.2-alpha.0.20240220074702-29dc5459810f/go.mod h1:E1qZQpw2IrbRtFpTloTHGfJ2bJc4ZpZRNS497Eq5jCo=
-github.com/hiddify/hiddify-sing-box v1.8.6-0.20240221131435-1f6e9d56ebd8 h1:6E2QU3kukvQBDg8TXKb1Qkw4xGH1MeejFa4UfOokwho=
-github.com/hiddify/hiddify-sing-box v1.8.6-0.20240221131435-1f6e9d56ebd8/go.mod h1:/Pfh8KgxbWEg5s5rmXjRc6NWW0W4zcIDLDSpnC43snc=
+github.com/hiddify/hiddify-sing-box v1.8.6-0.20240221142438-1b8e9df9d3f6 h1:WYDFYkj04TaW/vgs90eu8IXGgfFOPrjXZ3HpQwTBjxI=
+github.com/hiddify/hiddify-sing-box v1.8.6-0.20240221142438-1b8e9df9d3f6/go.mod h1:/Pfh8KgxbWEg5s5rmXjRc6NWW0W4zcIDLDSpnC43snc=
 github.com/hiddify/ray2sing v0.0.0-20240213091709-ba1d827e4f4a h1:ObxmZ8AyhIxtH2Vu+vmDAsxsbsTPGq9pJzcY0V+3BCU=
 github.com/hiddify/ray2sing v0.0.0-20240213091709-ba1d827e4f4a/go.mod h1:zYKnf7EoPqrk7JOMO9BApTXxfH0sva8AKfoFywN7uuA=
 github.com/hiddify/wireguard-go v0.0.0-20240220184421-1831c84ddbf9 h1:pdb/3VPsfJPBEXaY046ISWYS4yevzzZ4rSjyOsCKy8I=

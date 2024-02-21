@@ -72,15 +72,16 @@ type MuxOptions struct {
 }
 
 type WarpOptions struct {
-	EnableWarp      bool                `json:"enable"`
-	Mode            string              `json:"mode"`
-	WireguardConfig WarpWireguardConfig `json:"wireguard-config"`
-	FakePackets     string              `json:"fake-packets"`
-	FakePacketSize  string              `json:"fake-packet-size"`
-	FakePacketDelay string              `json:"fake-packet-delay"`
-	CleanIP         string              `json:"clean-ip"`
-	CleanPort       uint16              `json:"clean-port"`
-	Account         WarpAccount
+	EnableWarp         bool                `json:"enable"`
+	Mode               string              `json:"mode"`
+	WireguardConfigStr string              `json:"wireguardConfig"`
+	WireguardConfig    WarpWireguardConfig `json:"wireguard-config"`
+	FakePackets        string              `json:"warpNoise"`
+	FakePacketSize     string              `json:"fake-packet-size"`
+	FakePacketDelay    string              `json:"warpNoiseDelay"`
+	CleanIP            string              `json:"cleanIp"`
+	CleanPort          uint16              `json:"cleanPort"`
+	Account            WarpAccount
 }
 
 func DefaultConfigOptions() *ConfigOptions {

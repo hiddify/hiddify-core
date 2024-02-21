@@ -62,6 +62,13 @@ func changeConfigOptions(configOptionsJson string) error {
 	if err != nil {
 		return err
 	}
+	if configOptions.Warp.WireguardConfigStr != "" {
+		err := json.Unmarshal([]byte(configOptions.Warp.WireguardConfigStr), &configOptions.Warp.WireguardConfig)
+		if err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
