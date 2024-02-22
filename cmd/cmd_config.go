@@ -123,7 +123,6 @@ func readConfigOptionsAt(path string) (*config.ConfigOptions, error) {
 	if options.Warp.WireguardConfigStr != "" {
 		err := json.Unmarshal([]byte(options.Warp.WireguardConfigStr), &options.Warp.WireguardConfig)
 		if err != nil {
-			p
 			return nil, err
 		}
 	}

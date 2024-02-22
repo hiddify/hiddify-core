@@ -395,10 +395,6 @@ func BuildConfig(opt ConfigOptions, input option.Options) (*option.Options, erro
 	//inbound==warp over proxies
 	//outbound==proxies over warp
 	if opt.Warp.EnableWarp && (opt.Warp.Mode == "inbound" || opt.Warp.Mode == "outbound") {
-		fmt.Println("===========================")
-		fmt.Printf("%+v\n\n", opt.Warp)
-		fmt.Printf("%+v\n\n", opt.Warp.WireguardConfig)
-		fmt.Printf("%+v\n\n", opt.Warp.Account)
 
 		out, err := generateWarpSingbox(opt.Warp.WireguardConfig.ToWireguardConfig(), opt.Warp.CleanIP, opt.Warp.CleanPort, opt.Warp.FakePackets, opt.Warp.FakePacketSize, opt.Warp.FakePacketDelay)
 		if err != nil {

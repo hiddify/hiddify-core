@@ -34,9 +34,9 @@ func ActivateTunnelService(opt ConfigOptions) (bool, error) {
 }
 
 func DeactivateTunnelService() (bool, error) {
-	if !isSupportedOS() {
-		return true, nil
-	}
+	// if !isSupportedOS() {
+	// 	return true, nil
+	// }
 
 	go stopTunnelRequest()
 	return true, nil
