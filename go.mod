@@ -6,8 +6,8 @@ require (
 	github.com/bepass-org/wireguard-go v0.0.16-alpha
 	github.com/hiddify/ray2sing v0.0.0-20240221185915-96fae128815c
 	github.com/kardianos/service v1.2.2
-	github.com/sagernet/gomobile v0.1.1
-	github.com/sagernet/sing v0.3.0
+	github.com/sagernet/gomobile v0.1.3
+	github.com/sagernet/sing v0.3.2
 	github.com/sagernet/sing-box v1.8.4
 	github.com/sagernet/sing-dns v0.1.12
 	github.com/spf13/cobra v1.8.0
@@ -19,13 +19,14 @@ require (
 require (
 	berty.tech/go-libtor v1.0.385 // indirect
 	github.com/ajg/form v1.5.1 // indirect
+	github.com/akavel/rsrc v0.10.2 // indirect
 	github.com/andybalholm/brotli v1.0.6 // indirect
 	github.com/caddyserver/certmagic v0.20.0 // indirect
 	github.com/cloudflare/circl v1.3.7 // indirect
 	github.com/cretz/bine v0.2.0 // indirect
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
 	github.com/gaukas/godicttls v0.0.4 // indirect
-	github.com/go-chi/chi/v5 v5.0.11 // indirect
+	github.com/go-chi/chi/v5 v5.0.12 // indirect
 	github.com/go-chi/cors v1.2.1 // indirect
 	github.com/go-chi/render v1.0.3 // indirect
 	github.com/go-ole/go-ole v1.3.0 // indirect
@@ -76,7 +77,7 @@ require (
 	github.com/sagernet/sing-shadowsocks v0.2.6 // indirect
 	github.com/sagernet/sing-shadowsocks2 v0.2.0 // indirect
 	github.com/sagernet/sing-shadowtls v0.1.4 // indirect
-	github.com/sagernet/sing-tun v0.2.1 // indirect
+	github.com/sagernet/sing-tun v0.2.3 // indirect
 	github.com/sagernet/sing-vmess v0.1.8 // indirect
 	github.com/sagernet/smux v0.0.0-20231208180855-7041f6ea79e7 // indirect
 	github.com/sagernet/tfo-go v0.0.0-20231209031829-7b5343ac1dc6 // indirect
@@ -89,23 +90,23 @@ require (
 	github.com/vishvananda/netns v0.0.0-20211101163701-50045581ed74 // indirect
 	github.com/zeebo/blake3 v0.2.3 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	go.uber.org/zap v1.26.0 // indirect
+	go.uber.org/zap v1.27.0 // indirect
 	go4.org/netipx v0.0.0-20231129151722-fdeea329fbba // indirect
-	golang.org/x/crypto v0.18.0 // indirect
+	golang.org/x/crypto v0.19.0 // indirect
 	golang.org/x/exp v0.0.0-20240119083558-1b970713d09a // indirect
 	golang.org/x/mod v0.14.0 // indirect
-	golang.org/x/net v0.20.0 // indirect
+	golang.org/x/net v0.21.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
 	golang.org/x/time v0.5.0 // indirect
 	golang.org/x/tools v0.17.0 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20231002182017-d307bd883b97 // indirect
-	google.golang.org/grpc v1.60.1 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20240228224816-df926f6c8641 // indirect
+	google.golang.org/grpc v1.62.0 // indirect
 	google.golang.org/protobuf v1.32.0 // indirect
 	lukechampine.com/blake3 v1.2.1 // indirect
 )
 
-replace github.com/sagernet/sing-box => github.com/hiddify/hiddify-sing-box v1.8.6-0.20240222231202-b2698f09d771
+replace github.com/sagernet/sing-box => github.com/hiddify/hiddify-sing-box v1.8.6-0.20240302175204-a5ccd2d26551
 
-replace github.com/sagernet/wireguard-go => github.com/hiddify/wireguard-go v0.0.0-20240222105640-5d1ea2848503
+replace github.com/sagernet/wireguard-go => github.com/hiddify/wireguard-go v0.0.0-20240302132803-629b7c39b487
 
 replace github.com/bepass-org/wireguard-go => github.com/hiddify-com/wireguard-go v0.0.2-alpha.0.20240220074702-29dc5459810f
