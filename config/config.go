@@ -2,6 +2,7 @@ package config
 
 import (
 	"bytes"
+	"runtime"
 
 	"encoding/json"
 	"fmt"
@@ -149,6 +150,7 @@ func BuildConfig(opt ConfigOptions, input option.Options) (*option.Options, erro
 				AutoRoute:              true,
 				StrictRoute:            opt.StrictRoute,
 				EndpointIndependentNat: true,
+				GSO:                    runtime.GOOS != "windows",
 				InboundOptions: option.InboundOptions{
 					SniffEnabled:             true,
 					SniffOverrideDestination: true,

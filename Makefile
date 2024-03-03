@@ -69,6 +69,9 @@ macos-universal: macos-amd64 macos-arm64
 clean:
 	rm $(BINDIR)/*
 
+build_protobuf:
+	protoc --go_out=. --go-grpc_out=. hiddifyrpc/hiddify.proto 
+
 
 release: # Create a new tag for release.
 	@echo "previous version was $$(git describe --tags $$(git rev-list --tags --max-count=1))"

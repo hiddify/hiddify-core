@@ -46,7 +46,7 @@ func getCurrentExecutableDirectory() string {
 }
 func StartService(goArg string) (int, string) {
 	svcConfig := &service.Config{
-		Name:        "Hiddify Tunnel Service",
+		Name:        "HiddifyTunnelService",
 		DisplayName: "Hiddify Tunnel Service",
 		Description: "This is a bridge for tunnel",
 		Option: map[string]interface{}{

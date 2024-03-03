@@ -29,6 +29,10 @@ func ParseConfig(path string, debug bool) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+	return ParseConfigContent(string(content), debug)
+}
+func ParseConfigContent(contentstr string, debug bool) ([]byte, error) {
+	content := []byte(contentstr)
 	var jsonObj map[string]interface{} = make(map[string]interface{})
 
 	fmt.Printf("Convert using json\n")

@@ -15,12 +15,15 @@ import (
 
 	"github.com/hiddify/libcore/bridge"
 	"github.com/hiddify/libcore/config"
+	pb "github.com/hiddify/libcore/hiddifyrpc"
+	v2 "github.com/hiddify/libcore/v2"
+
 	"github.com/sagernet/sing-box/experimental/libbox"
 	"github.com/sagernet/sing-box/log"
 	"github.com/sagernet/sing-box/option"
 )
 
-var box *libbox.BoxService
+// var v2.Box *libbox.BoxService
 var configOptions *config.ConfigOptions
 var activeConfigPath *string
 var logFactory *log.Factory
@@ -132,10 +135,10 @@ func start(configPath *C.char, disableMemoryLimit bool) (CErr *C.char) {
 		CErr = C.CString(err.Error())
 	})
 
-	if status != Stopped {
+	if v2.CoreState != pb.CoreState_STOPPED {
 		return C.CString("")
 	}
-	propagateStatus(Starting)
+	propagateStatus(pb.CoreState_STARTING)
 
 	path := C.GoString(configPath)
 	activeConfigPath = &path
@@ -184,10 +187,10 @@ func startService(delayStart bool) error {
 	if err != nil {
 		return stopAndAlert(StartService, err)
 	}
-	box = instance
-	commandServer.SetService(box)
+	v2.Box = instance
+	commandServer.SetService(v2.Box)
 
-	propagateStatus(Started)
+	propagateStatus(pb.CoreState_STARTED)
 	return nil
 }
 
@@ -198,29 +201,29 @@ func stop() (CErr *C.char) {
 		CErr = C.CString(err.Error())
 	})
 	config.DeactivateTunnelService()
-	if status != Started {
+	if v2.CoreState != pb.CoreState_STARTED {
 		stopAndAlert("Already Stopped", nil)
 		return C.CString("")
 	}
-	if box == nil {
+	if v2.Box == nil {
 		return C.CString("instance not found")
 	}
-	propagateStatus(Stopping)
+	propagateStatus(pb.CoreState_STOPPING)
 	commandServer.SetService(nil)
 
-	err := box.Close()
+	err := v2.Box.Close()
 	if err != nil {
 		stopAndAlert("Unexpected Error in Close!", err)
 		return C.CString(err.Error())
 	}
-	box = nil
+	v2.Box = nil
 	err = commandServer.Close()
 	if err != nil {
 		stopAndAlert("Unexpected Error in Stop CommandServer/!", err)
 		return C.CString(err.Error())
 	}
 	commandServer = nil
-	propagateStatus(Stopped)
+	propagateStatus(pb.CoreState_STOPPED)
 	return C.CString("")
 }
 
@@ -232,10 +235,10 @@ func restart(configPath *C.char, disableMemoryLimit bool) (CErr *C.char) {
 	})
 	log.Debug("[Service] Restarting")
 
-	if status != Started {
+	if v2.CoreState != pb.CoreState_STARTED {
 		return C.CString("")
 	}
-	if box == nil {
+	if v2.Box == nil {
 		return C.CString("instance not found")
 	}
 
@@ -244,7 +247,7 @@ func restart(configPath *C.char, disableMemoryLimit bool) (CErr *C.char) {
 		return err
 	}
 
-	propagateStatus(Starting)
+	propagateStatus(pb.CoreState_STARTING)
 
 	time.Sleep(250 * time.Millisecond)
 

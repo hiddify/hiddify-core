@@ -175,6 +175,9 @@ func patchWarp(base *option.Outbound) error {
 		if base.WireGuardOptions.ServerPort == 0 {
 			base.WireGuardOptions.ServerPort = generateRandomPort()
 		}
+		// if base.WireGuardOptions.Detour == "" {
+		// 	base.WireGuardOptions.GSO = runtime.GOOS != "windows"
+		// }
 	}
 	if base.Type == C.TypeCustom {
 		if warp, ok := base.CustomOptions["warp"].(map[string]interface{}); ok {
