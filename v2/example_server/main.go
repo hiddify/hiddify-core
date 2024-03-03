@@ -9,7 +9,9 @@ import (
 )
 
 func main() {
-	v2.StartGrpcServer()
+
+	// defer C.free(unsafe.Pointer(port))
+	v2.StartGrpcServerGo("127.0.0.1:50051")
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
 	<-sigChan
