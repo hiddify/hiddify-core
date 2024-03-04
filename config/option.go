@@ -74,13 +74,13 @@ type MuxOptions struct {
 type WarpOptions struct {
 	EnableWarp         bool                `json:"enable"`
 	Mode               string              `json:"mode"`
-	WireguardConfigStr string              `json:"wireguardConfig"`
-	WireguardConfig    WarpWireguardConfig `json:"wireguard-config"`
-	FakePackets        string              `json:"warpNoise"`
+	WireguardConfigStr string              `json:"wireguard-config"`
+	WireguardConfig    WarpWireguardConfig `json:"wireguardConfig"` // TODO check
+	FakePackets        string              `json:"noise"`
 	FakePacketSize     string              `json:"fake-packet-size"`
-	FakePacketDelay    string              `json:"warpNoiseDelay"`
-	CleanIP            string              `json:"cleanIp"`
-	CleanPort          uint16              `json:"cleanPort"`
+	FakePacketDelay    string              `json:"noise-delay"`
+	CleanIP            string              `json:"clean-ip"`
+	CleanPort          uint16              `json:"clean-port"`
 	Account            WarpAccount
 }
 
