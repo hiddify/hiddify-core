@@ -13,12 +13,12 @@ type ConfigOptions struct {
 	GeoSitePath    string      `json:"geosite-path"`
 	Rules          []Rule      `json:"rules"`
 	Warp           WarpOptions `json:"warp"`
+	Mux            MuxOptions  `json:"mux"`
+	TLSTricks      TLSTricks   `json:"tls-tricks"`
 	DNSOptions
 	InboundOptions
 	URLTestOptions
 	RouteOptions
-	MuxOptions
-	TLSTricks
 }
 
 type DNSOptions struct {
@@ -56,19 +56,19 @@ type RouteOptions struct {
 }
 
 type TLSTricks struct {
-	EnableFragment     bool   `json:"enable-tls-fragment"`
-	FragmentSize       string `json:"tls-fragment-size"`
-	FragmentSleep      string `json:"tls-fragment-sleep"`
-	EnableMixedSNICase bool   `json:"enable-tls-mixed-sni-case"`
-	EnablePadding      bool   `json:"enable-tls-padding"`
-	PaddingSize        string `json:"tls-padding-size"`
+	EnableFragment bool   `json:"enable-fragment"`
+	FragmentSize   string `json:"fragment-size"`
+	FragmentSleep  string `json:"fragment-sleep"`
+	MixedSNICase   bool   `json:"mixed-sni-case"`
+	EnablePadding  bool   `json:"enable-padding"`
+	PaddingSize    string `json:"padding-size"`
 }
 
 type MuxOptions struct {
-	EnableMux   bool   `json:"enable-mux"`
-	MuxPadding  bool   `json:"mux-padding"`
-	MaxStreams  int    `json:"mux-max-streams"`
-	MuxProtocol string `json:"mux-protocol"`
+	Enable     bool   `json:"enable"`
+	Padding    bool   `json:"padding"`
+	MaxStreams int    `json:"max-streams"`
+	Protocol   string `json:"protocol"`
 }
 
 type WarpOptions struct {
@@ -121,19 +121,19 @@ func DefaultConfigOptions() *ConfigOptions {
 		GeoIPPath:      "geoip.db",
 		GeoSitePath:    "geosite.db",
 		Rules:          []Rule{},
-		MuxOptions: MuxOptions{
-			EnableMux:   true,
-			MuxPadding:  true,
-			MaxStreams:  8,
-			MuxProtocol: "h2mux",
+		Mux: MuxOptions{
+			Enable:     true,
+			Padding:    true,
+			MaxStreams: 8,
+			Protocol:   "h2mux",
 		},
 		TLSTricks: TLSTricks{
-			EnableFragment:     false,
-			FragmentSize:       "10-100",
-			FragmentSleep:      "50-200",
-			EnableMixedSNICase: false,
-			EnablePadding:      false,
-			PaddingSize:        "1200-1500",
+			EnableFragment: false,
+			FragmentSize:   "10-100",
+			FragmentSleep:  "50-200",
+			MixedSNICase:   false,
+			EnablePadding:  false,
+			PaddingSize:    "1200-1500",
 		},
 	}
 }

@@ -394,16 +394,13 @@ func BuildConfig(opt ConfigOptions, input option.Options) (*option.Options, erro
 	var outbounds []option.Outbound
 	var tags []string
 	OutboundMainProxyTag = OutboundSelectTag
-	//inbound==warp over proxies
-	//outbound==proxies over warp
-	if opt.Warp.EnableWarp && (opt.Warp.Mode == "inbound" || opt.Warp.Mode == "outbound") {
-
+	if opt.Warp.EnableWarp && (opt.Warp.Mode == WarpOverProxy || opt.Warp.Mode == ProxyOverWarp) {
 		out, err := generateWarpSingbox(opt.Warp.WireguardConfig.ToWireguardConfig(), opt.Warp.CleanIP, opt.Warp.CleanPort, opt.Warp.FakePackets, opt.Warp.FakePacketSize, opt.Warp.FakePacketDelay)
 		if err != nil {
 			return nil, fmt.Errorf("failed to generate warp config: %v", err)
 		}
 		out.Tag = "Hiddify Warp ✅"
-		if opt.Warp.Mode == "inbound" {
+		if opt.Warp.Mode == WarpOverProxy {
 			out.WireGuardOptions.Detour = OutboundURLTestTag
 			OutboundMainProxyTag = out.Tag
 		} else {
@@ -529,7 +526,7 @@ func BuildConfig(opt ConfigOptions, input option.Options) (*option.Options, erro
 }
 
 func patchHiddifyWarpFromConfig(out option.Outbound, opt ConfigOptions) option.Outbound {
-	if opt.Warp.EnableWarp && opt.Warp.Mode == "outbound" {
+	if opt.Warp.EnableWarp && opt.Warp.Mode == ProxyOverWarp {
 		if out.DirectOptions.Detour == "" {
 			out.DirectOptions.Detour = "Hiddify Warp ✅"
 		}
