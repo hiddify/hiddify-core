@@ -200,7 +200,7 @@ func stop() (CErr *C.char) {
 		stopAndAlert("Unexpected Error in Stop!", err)
 		CErr = C.CString(err.Error())
 	})
-	config.DeactivateTunnelService()
+
 	if v2.CoreState != pb.CoreState_STARTED {
 		stopAndAlert("Already Stopped", nil)
 		return C.CString("")
@@ -209,6 +209,7 @@ func stop() (CErr *C.char) {
 		return C.CString("instance not found")
 	}
 	propagateStatus(pb.CoreState_STOPPING)
+	config.DeactivateTunnelService()
 	commandServer.SetService(nil)
 
 	err := v2.Box.Close()

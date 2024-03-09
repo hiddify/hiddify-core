@@ -18,6 +18,27 @@ import (
 	"github.com/sagernet/sing-box/option"
 )
 
+func RunStandalone(hiddifySettingPath string, configPath string) error {
+	fmt.Println("Running in standalone mode")
+	current, err := readAndBuildConfig(hiddifySettingPath, configPath)
+	if err != nil {
+		fmt.Printf("Error in read and build config %v", err)
+		return err
+	}
+
+	go StartServiceC(false, current.Config)
+	go updateConfigInterval(current, hiddifySettingPath, configPath)
+	fmt.Printf("Press CTRL+C to stop\n")
+	fmt.Printf("Open http://localhost:6756/?secret=hiddify in your browser\n")
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
+
+	<-sigChan
+	err = StopServiceC()
+
+	return err
+}
+
 type ConfigResult struct {
 	Config          string
 	RefreshInterval int
@@ -154,22 +175,6 @@ func updateConfigInterval(current ConfigResult, hiddifySettingPath string, confi
 		current = new
 	}
 
-}
-func RunStandalone(hiddifySettingPath string, configPath string) error {
-	current, err := readAndBuildConfig(hiddifySettingPath, configPath)
-	if err != nil {
-		return err
-	}
-	go StartServiceC(false, current.Config)
-	go updateConfigInterval(current, hiddifySettingPath, configPath)
-	fmt.Printf("Press CTRL+C to stop\n")
-	fmt.Printf("Open http://localhost:6756/?secret=hiddify in your browser\n")
-	sigChan := make(chan os.Signal, 1)
-	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
-
-	<-sigChan
-	err = StopServiceC()
-	return err
 }
 
 func readConfigBytes(content []byte) (*option.Options, error) {

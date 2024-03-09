@@ -5,7 +5,6 @@ package main
 */
 import "C"
 import (
-	"fmt"
 	"unsafe"
 
 	"github.com/hiddify/libcore/cmd"
@@ -15,7 +14,7 @@ import (
 func parseCli(argc C.int, argv **C.char) *C.char {
 	args := make([]string, argc)
 	for i := 0; i < int(argc); i++ {
-		fmt.Println("parseCli", C.GoString(*argv))
+		// fmt.Println("parseCli", C.GoString(*argv))
 		args[i] = C.GoString(*argv)
 		argv = (**C.char)(unsafe.Pointer(uintptr(unsafe.Pointer(argv)) + uintptr(unsafe.Sizeof(*argv))))
 	}
@@ -23,5 +22,5 @@ func parseCli(argc C.int, argv **C.char) *C.char {
 	if err != nil {
 		return C.CString(err.Error())
 	}
-	return C.CString("Ok")
+	return C.CString("")
 }

@@ -3,13 +3,12 @@ package config
 import (
 	"fmt"
 	"io"
-	"time"
-
 	"net/http"
 	"net/url"
 	"os"
 	"path/filepath"
 	"runtime"
+	"time"
 
 	"github.com/sagernet/sing-box/option"
 	dns "github.com/sagernet/sing-dns"
@@ -21,15 +20,18 @@ const (
 	stopEndpoint  = "/stop"
 )
 
+var tunnelServiceRunning = false
+
 func isSupportedOS() bool {
 	return runtime.GOOS == "windows" || runtime.GOOS == "linux"
 }
 func ActivateTunnelService(opt ConfigOptions) (bool, error) {
+	tunnelServiceRunning = true
 	// if !isSupportedOS() {
 	// 	return false, E.New("Unsupported OS: " + runtime.GOOS)
 	// }
 
-	go startTunnelRequest(opt, true)
+	go startTunnelRequestWithFailover(opt, true)
 	return true, nil
 }
 
@@ -37,9 +39,23 @@ func DeactivateTunnelService() (bool, error) {
 	// if !isSupportedOS() {
 	// 	return true, nil
 	// }
+	if tunnelServiceRunning {
+		stopTunnelRequest()
+	}
+	tunnelServiceRunning = false
 
-	go stopTunnelRequest()
 	return true, nil
+}
+
+func startTunnelRequestWithFailover(opt ConfigOptions, installService bool) {
+	res, err := startTunnelRequest(opt, installService)
+	fmt.Printf("Start Tunnel Result: %v\n", res)
+	if err != nil {
+
+		fmt.Printf("Start Tunnel Failed! Stopping core... err=%v\n", err)
+		// StopAndAlert(pb.MessageType.MessageType_UNEXPECTED_ERROR, "Start Tunnel Failed! Stopping...")
+
+	}
 }
 
 func startTunnelRequest(opt ConfigOptions, installService bool) (bool, error) {
@@ -83,9 +99,9 @@ func stopTunnelRequest() (bool, error) {
 	defer response.Body.Close()
 
 	body, err := io.ReadAll(response.Body)
-	fmt.Printf("Response Code: %d %s. Response Body: %s Error:%v\n", response.StatusCode, response.Status, body, err)
+	// fmt.Printf("Response Code: %d %s. Response Body: %s Error:%v\n", response.StatusCode, response.Status, body, err)
 	if err != nil || response.StatusCode != http.StatusOK {
-		return false, fmt.Errorf("Unexpected Status Code: %d %s. Response Body: %s error:%v", response.StatusCode, response.Status, body, err)
+		return false, fmt.Errorf("unexpected Status Code: %d %s. Response Body: %s error:%v", response.StatusCode, response.Status, body, err)
 	}
 
 	return true, nil

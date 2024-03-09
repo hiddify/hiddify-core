@@ -17,20 +17,17 @@ type hiddifyNext struct{}
 var port int = 18020
 
 func (m *hiddifyNext) Start(s service.Service) error {
-	go m.run()
+	go StartWebServer(port, false)
 	return nil
 }
 func (m *hiddifyNext) Stop(s service.Service) error {
 	err := global.StopServiceC()
 	if err != nil {
-		return err
+		return nil
 	}
 	// Stop should not block. Return with a few seconds.
 	// <-time.After(time.Second * 1)
 	return nil
-}
-func (m *hiddifyNext) run() {
-	StartWebServer(port, false)
 }
 
 func getCurrentExecutableDirectory() string {
@@ -63,7 +60,7 @@ func StartService(goArg string) (int, string) {
 		return 1, fmt.Sprintf("Error: %v", err)
 	}
 
-	if len(goArg) > 0 {
+	if len(goArg) > 0 && goArg != "run" {
 		return control(s, goArg)
 	}
 
@@ -102,6 +99,7 @@ func control(s service.Service, goArg string) (int, string) {
 			}
 			return 0, "Tunnel Service Already Running."
 		} else if status == service.StatusUnknown {
+			s.Uninstall()
 			s.Install()
 			status, serr = s.Status()
 			if dolog {
@@ -112,6 +110,7 @@ func control(s service.Service, goArg string) (int, string) {
 			err = s.Start()
 		}
 	case "install":
+		s.Uninstall()
 		err = s.Install()
 		status, serr = s.Status()
 		if dolog {

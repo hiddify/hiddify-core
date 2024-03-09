@@ -4,6 +4,7 @@ package config
 
 import (
 	"os"
+	"strings"
 	"syscall"
 
 	"golang.org/x/sys/windows"
@@ -19,20 +20,11 @@ func ExecuteCmd(exe string, background bool, args ...string) (string, error) {
 	verbPtr, _ := syscall.UTF16PtrFromString(verb)
 	exePtr, _ := syscall.UTF16PtrFromString(exe)
 	cwdPtr, _ := syscall.UTF16PtrFromString(cwd)
+	argPtr, _ := syscall.UTF16PtrFromString(strings.Join(args, " "))
 
-	// Convert args to UTF16Ptr slice
-	var argsPtr []*uint16
-	for _, arg := range args {
-		argPtr, err := syscall.UTF16PtrFromString(arg)
-		if err != nil {
-			return "", err
-		}
-		argsPtr = append(argsPtr, argPtr)
-	}
+	var showCmd int32 = 0 // SW_NORMAL
 
-	var showCmd int32 = 1 // SW_NORMAL
-
-	err = windows.ShellExecute(0, verbPtr, exePtr, nil, cwdPtr, showCmd)
+	err = windows.ShellExecute(0, verbPtr, exePtr, argPtr, cwdPtr, showCmd)
 	if err != nil {
 		return "", err
 	}

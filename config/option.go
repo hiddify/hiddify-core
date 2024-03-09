@@ -39,7 +39,7 @@ type InboundOptions struct {
 	LocalDnsPort     uint16 `json:"local-dns-port"`
 	MTU              uint32 `json:"mtu"`
 	StrictRoute      bool   `json:"strict-route"`
-	TUNStack         string `json:"tun-stack"`
+	TUNStack         string `json:"tun-implementation"`
 }
 
 type URLTestOptions struct {

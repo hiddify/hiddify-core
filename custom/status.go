@@ -54,7 +54,7 @@ func stopAndAlert(alert string, err error) (resultErr error) {
 	msg, _ := json.Marshal(StatusMessage{Status: convert2OldState(v2.CoreState), Alert: &alert, Message: &message})
 	bridge.SendStringToPort(statusPropagationPort, string(msg))
 
-	config.DeactivateTunnelService()
+	go config.DeactivateTunnelService()
 	if commandServer != nil {
 		commandServer.SetService(nil)
 	}

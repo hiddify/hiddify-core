@@ -19,7 +19,7 @@ var configOptions *config.ConfigOptions
 var activeConfigPath *string
 var logFactory *log.Factory
 
-func stopAndAlert(msgType pb.MessageType, message string) {
+func StopAndAlert(msgType pb.MessageType, message string) {
 	SetCoreStatus(pb.CoreState_STOPPED, msgType, message)
 	config.DeactivateTunnelService()
 	// if commandServer != nil {
@@ -37,7 +37,7 @@ func stopAndAlert(msgType pb.MessageType, message string) {
 func (s *server) Start(ctx context.Context, in *pb.StartRequest) (*pb.CoreInfoResponse, error) {
 	defer config.DeferPanicToError("start", func(err error) {
 		Log(pb.LogLevel_FATAL, pb.LogType_CORE, err.Error())
-		stopAndAlert(pb.MessageType_UNEXPECTED_ERROR, err.Error())
+		StopAndAlert(pb.MessageType_UNEXPECTED_ERROR, err.Error())
 	})
 
 	if CoreState != pb.CoreState_STOPPED {
@@ -112,7 +112,7 @@ func (s *server) StartService(ctx context.Context, in *pb.StartRequest) (*pb.Cor
 func (s *server) Parse(ctx context.Context, in *pb.ParseRequest) (*pb.ParseResponse, error) {
 	defer config.DeferPanicToError("parse", func(err error) {
 		Log(pb.LogLevel_FATAL, pb.LogType_CONFIG, err.Error())
-		stopAndAlert(pb.MessageType_UNEXPECTED_ERROR, err.Error())
+		StopAndAlert(pb.MessageType_UNEXPECTED_ERROR, err.Error())
 	})
 
 	config, err := config.ParseConfigContent(in.Content, true)
@@ -137,7 +137,7 @@ func (s *server) Parse(ctx context.Context, in *pb.ParseRequest) (*pb.ParseRespo
 // func (s *server) GenerateConfig(ctx context.Context, in *pb.GenerateConfigRequest) (*pb.GenerateConfigResponse, error) {
 // 	defer config.DeferPanicToError("generateConfig", func(err error) {
 // 		Log(pb.LogLevel_FATAL, pb.LogType_CONFIG, err.Error())
-// 		stopAndAlert(pb.MessageType_UNEXPECTED_ERROR, err.Error())
+// 		StopAndAlert(pb.MessageType_UNEXPECTED_ERROR, err.Error())
 // 	})
 
 // 	config, err := generateConfigFromFile(C.GoString(path), *configOptions)
@@ -151,7 +151,7 @@ func (s *server) Parse(ctx context.Context, in *pb.ParseRequest) (*pb.ParseRespo
 func (s *server) Stop(ctx context.Context, empty *pb.Empty) (*pb.CoreInfoResponse, error) {
 	defer config.DeferPanicToError("stop", func(err error) {
 		Log(pb.LogLevel_FATAL, pb.LogType_CORE, err.Error())
-		stopAndAlert(pb.MessageType_UNEXPECTED_ERROR, err.Error())
+		StopAndAlert(pb.MessageType_UNEXPECTED_ERROR, err.Error())
 	})
 	config.DeactivateTunnelService()
 	if CoreState != pb.CoreState_STARTED {
@@ -199,7 +199,7 @@ func (s *server) Stop(ctx context.Context, empty *pb.Empty) (*pb.CoreInfoRespons
 func (s *server) Restart(ctx context.Context, in *pb.StartRequest) (*pb.CoreInfoResponse, error) {
 	defer config.DeferPanicToError("restart", func(err error) {
 		Log(pb.LogLevel_FATAL, pb.LogType_CORE, err.Error())
-		stopAndAlert(pb.MessageType_UNEXPECTED_ERROR, err.Error())
+		StopAndAlert(pb.MessageType_UNEXPECTED_ERROR, err.Error())
 	})
 	log.Debug("[Service] Restarting")
 

@@ -163,6 +163,7 @@ func stop() error {
 	if box == nil {
 		return errors.New("instance not found")
 	}
+	config.DeactivateTunnelService()
 	propagateStatus(Stopping)
 
 	commandServer.SetService(nil)
@@ -292,10 +293,10 @@ func StopServiceC() error {
 	// if status != Started {
 	// 	return errors.New("instance not started")
 	// }
+	config.DeactivateTunnelService()
 	if box == nil {
 		return errors.New("instance not found")
 	}
-
 	// propagateStatus(Stopping)
 	err := box.Close()
 	// commandServer.SetService(nil)

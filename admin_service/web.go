@@ -21,6 +21,7 @@ const (
 func StartWebServer(Port int, TLS bool) {
 	http.HandleFunc("/start", startHandler)
 	http.HandleFunc("/stop", StopHandler)
+	http.HandleFunc("/status", StatusHandler)
 	http.HandleFunc("/exit", ExitHandler)
 	server := &http.Server{
 		Addr: "127.0.0.1:" + fmt.Sprintf("%d", Port),
@@ -84,6 +85,8 @@ func startHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	http.Error(w, fmt.Sprintf("Ok"), http.StatusOK)
+}
+func StatusHandler(w http.ResponseWriter, r *http.Request) {
 }
 func StopHandler(w http.ResponseWriter, r *http.Request) {
 	err := global.StopServiceC()
