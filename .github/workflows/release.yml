@@ -18,13 +18,13 @@ jobs:
       fail-fast: false
       matrix:
         job:
-          - { os: 'ubuntu-latest', target: 'android' }
-          - { os: 'ubuntu-20.04', target: 'linux-amd64' }
-          - { os: 'ubuntu-latest', target: 'windows-amd64', aarch: 'x64' }
-          - { os: 'macos-11', target: 'macos-universal' }
-          - { os: "macos-11", target: "ios" }
+          - { name: 'android', os: 'ubuntu-latest', target: 'android' }
+          - { name: 'linux-amd64', os: 'ubuntu-20.04', target: 'linux-amd64' }
+          - { name: "windows-amd64", os: 'ubuntu-latest', target: 'windows-amd64', aarch: 'x64' }
+          - { name: "macos-universal", os: 'macos-11', target: 'macos-universal' }
+          - { name: "ios", os: "macos-11", target: "ios" }
           # linux custom
-          - {name: linux-amd64, goos: linux, goarch: amd64, goamd64: v1, target: 'linux-custom', os: 'ubuntu-20.04'}
+          - {name: linux-amd64-v1, goos: linux, goarch: amd64, goamd64: v1, target: 'linux-custom', os: 'ubuntu-20.04'}
           - {name: linux-amd64-v3, goos: linux, goarch: amd64, goamd64: v3, target: 'linux-custom', os: 'ubuntu-20.04'}
           - {name: linux-386, goos: linux, goarch: 386, target: 'linux-custom', os: 'ubuntu-20.04'}
           - {name: linux-arm64, goos: linux, goarch: arm64, target: 'linux-custom', os: 'ubuntu-20.04'}
@@ -40,6 +40,12 @@ jobs:
           - {name: linux-s390x, goos: linux, goarch: s390x, target: 'linux-custom', os: 'ubuntu-20.04'}
     
     runs-on: ${{ matrix.job.os }}
+    env:
+      GOOS: ${{ matrix.job.goos }}
+      GOARCH: ${{ matrix.job.goarch }}
+      GOAMD64: ${{ matrix.job.goamd64 }}
+      GOARM: ${{ matrix.job.goarm }}
+      GOMIPS: ${{ matrix.job.gomips }}
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -47,7 +53,7 @@ jobs:
           fetch-depth: 0
 
       - name: Setup Go
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v5
         with:
           go-version-file: 'go.mod'
           check-latest: false
@@ -80,12 +86,6 @@ jobs:
           brew install create-dmg tree coreutils
 
       - name: Build
-        env:
-          GOOS: ${{ matrix.job.goos }}
-          GOARCH: ${{ matrix.job.goarch }}
-          GOAMD64: ${{ matrix.job.goamd64 }}
-          GOARM: ${{ matrix.job.goarm }}
-          GOMIPS: ${{ matrix.job.gomips }}
         run: |
           make -j$(($(nproc) + 1)) ${{ matrix.job.target }}
 
@@ -96,8 +96,7 @@ jobs:
           rm ./hiddify-libcore*sources* ||echo "no source"
           rm ./hiddify-libcore-macos-a*.dylib || echo "no macos arm and amd"
           files=$(ls | grep -E '^(libcore\.(dll|so|dylib|aar)|webui|Libcore.xcframework|HiddifyCli(\.exe)?)$')
-          filename="${{ matrix.job.target }}${{ matrix.job.goos }}${{ matrix.job.goarch }}-${{ matrix.job.goamd64 }}${{ matrix.job.goarm }}${{ matrix.job.gomips }}"
-          echo tar -czvf hiddify-core-${filename}.tar.gz  $files
+          echo tar -czvf hiddify-core-${{ matrix.job.name }}.tar.gz  $files
           tar -czvf hiddify-core-${filename}.tar.gz  $files
           
         working-directory: bin

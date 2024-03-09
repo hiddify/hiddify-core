@@ -55,16 +55,19 @@ windows-amd64:
 	
 
 linux-amd64:
-	env GOOS=linux GOARCH=amd64 make linux-custom 
+	env GOOS=linux GOARCH=amd64 $(GOBUILDLIB) -o $(BINDIR)/$(LIBNAME).so ./custom
+	mkdir lib
+	cp $(BINDIR)/$(LIBNAME).so ./lib/$(LIBNAME).so
+	env GOOS=linux GOARCH=amd64  CGO_LDFLAGS="./lib/$(LIBNAME).so" $(GOBUILDSRV) -o $(BINDIR)/$(CLINAME) ./cli/bydll
+	rm -rf ./lib
+	chmod +x $(BINDIR)/$(CLINAME)
+	make webui
 
 
 linux-custom:
-	mkdir -p $(BINDIR)/lib/
-	env $(GOBUILDLIB) -o $(BINDIR)/lib/$(LIBNAME).so ./custom
-	mkdir lib
-	cp $(BINDIR)/lib/$(LIBNAME).so ./lib/$(LIBNAME).so
-	env CGO_LDFLAGS="./lib/$(LIBNAME).so" $(GOBUILDSRV) -o $(BINDIR)/$(CLINAME) ./cli/bydll
-	rm -rf ./lib
+	mkdir -p $(BINDIR)/
+	env $(GOBUILDSRV) -o $(BINDIR)/$(CLINAME) ./cli/
+	#go build -trimpath -tags $(TAGS) -o $(BINDIR)/$(CLINAME) ./cli/
 	chmod +x $(BINDIR)/$(CLINAME)
 	make webui
 
