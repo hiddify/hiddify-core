@@ -8,13 +8,12 @@ require (
 	github.com/hiddify/ray2sing v0.0.0-20240221185915-96fae128815c
 	github.com/kardianos/service v1.2.2
 	github.com/sagernet/gomobile v0.1.3
-	github.com/sagernet/sing v0.3.2
+	github.com/sagernet/sing v0.3.5
 	github.com/sagernet/sing-box v1.8.4
 	github.com/sagernet/sing-dns v0.1.12
 	github.com/spf13/cobra v1.8.0
-	github.com/urfave/cli/v2 v2.27.1
 	github.com/xmdhs/clash2singbox v0.0.2
-	golang.org/x/sys v0.17.0
+	golang.org/x/sys v0.18.0
 	google.golang.org/grpc v1.62.0
 	gopkg.in/yaml.v3 v3.0.1
 )
@@ -25,7 +24,6 @@ require (
 	github.com/andybalholm/brotli v1.0.6 // indirect
 	github.com/caddyserver/certmagic v0.20.0 // indirect
 	github.com/cloudflare/circl v1.3.7 // indirect
-	github.com/cpuguy83/go-md2man/v2 v2.0.3 // indirect
 	github.com/cretz/bine v0.2.0 // indirect
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
 	github.com/gaukas/godicttls v0.0.4 // indirect
@@ -68,7 +66,6 @@ require (
 	github.com/quic-go/qtls-go1-20 v0.4.1 // indirect
 	github.com/quic-go/quic-go v0.40.1 // indirect
 	github.com/refraction-networking/utls v1.6.1 // indirect
-	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/sagernet/bbolt v0.0.0-20231014093535-ea5cb2fe9f0a // indirect
 	github.com/sagernet/cloudflare-tls v0.0.0-20231208171750-a4483c1b7cd1 // indirect
 	github.com/sagernet/gvisor v0.0.0-20231209105102-8d27a30e436e // indirect
@@ -91,25 +88,23 @@ require (
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/u-root/uio v0.0.0-20230220225925-ffce2a382923 // indirect
 	github.com/vishvananda/netns v0.0.0-20211101163701-50045581ed74 // indirect
-	github.com/xrash/smetrics v0.0.0-20201216005158-039620a65673 // indirect
 	github.com/zeebo/blake3 v0.2.3 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.27.0 // indirect
 	go4.org/netipx v0.0.0-20231129151722-fdeea329fbba // indirect
-	golang.org/x/crypto v0.19.0 // indirect
+	golang.org/x/crypto v0.20.0 // indirect
 	golang.org/x/exp v0.0.0-20240119083558-1b970713d09a // indirect
 	golang.org/x/mod v0.14.0 // indirect
 	golang.org/x/net v0.21.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
 	golang.org/x/time v0.5.0 // indirect
 	golang.org/x/tools v0.17.0 // indirect
-	golang.zx2c4.com/wireguard/windows v0.5.3 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240228224816-df926f6c8641 // indirect
 	google.golang.org/protobuf v1.32.0 // indirect
 	lukechampine.com/blake3 v1.2.1 // indirect
 )
 
-replace github.com/sagernet/sing-box => github.com/hiddify/hiddify-sing-box v1.8.6-0.20240302175204-a5ccd2d26551
+replace github.com/sagernet/sing-box => github.com/hiddify/hiddify-sing-box v1.8.6-0.20240309155646-c6eb3ba29ce4
 
 replace github.com/sagernet/wireguard-go => github.com/hiddify/wireguard-go v0.0.0-20240302132803-629b7c39b487
 
