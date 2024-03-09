@@ -19,11 +19,26 @@ jobs:
       matrix:
         job:
           - { os: 'ubuntu-latest', target: 'android' }
-          - { os: 'ubuntu-20.04', target: 'linux-amd64', aarch: 'x64' }
+          - { os: 'ubuntu-20.04', target: 'linux-amd64' }
           - { os: 'ubuntu-latest', target: 'windows-amd64', aarch: 'x64' }
           - { os: 'macos-11', target: 'macos-universal' }
           - { os: "macos-11", target: "ios" }
-
+          # linux custom
+          - {name: linux-amd64, goos: linux, goarch: amd64, goamd64: v1, target: 'linux-custom', os: 'ubuntu-20.04'}
+          - {name: linux-amd64-v3, goos: linux, goarch: amd64, goamd64: v3, target: 'linux-custom', os: 'ubuntu-20.04'}
+          - {name: linux-386, goos: linux, goarch: 386, target: 'linux-custom', os: 'ubuntu-20.04'}
+          - {name: linux-arm64, goos: linux, goarch: arm64, target: 'linux-custom', os: 'ubuntu-20.04'}
+          - {name: linux-armv5, goos: linux, goarch: arm, goarm: 5, target: 'linux-custom', os: 'ubuntu-20.04'}
+          - {name: linux-armv6, goos: linux, goarch: arm, goarm: 6, target: 'linux-custom', os: 'ubuntu-20.04'}
+          - {name: linux-armv7, goos: linux, goarch: arm, goarm: 7, target: 'linux-custom', os: 'ubuntu-20.04'}
+          - {name: linux-mips-softfloat, goos: linux, goarch: mips, gomips: softfloat, target: 'linux-custom', os: 'ubuntu-20.04'}
+          - {name: linux-mips-hardfloat, goos: linux, goarch: mips, gomips: hardfloat, target: 'linux-custom', os: 'ubuntu-20.04'}
+          - {name: linux-mipsel-softfloat, goos: linux, goarch: mipsle, gomips: softfloat, target: 'linux-custom', os: 'ubuntu-20.04'}
+          - {name: linux-mipsel-hardfloat, goos: linux, goarch: mipsle, gomips: hardfloat, target: 'linux-custom', os: 'ubuntu-20.04'}
+          - {name: linux-mips64, goos: linux, goarch: mips64, target: 'linux-custom', os: 'ubuntu-20.04'}
+          - {name: linux-mips64el, goos: linux, goarch: mips64le, target: 'linux-custom', os: 'ubuntu-20.04'}
+          - {name: linux-s390x, goos: linux, goarch: s390x, target: 'linux-custom', os: 'ubuntu-20.04'}
+    
     runs-on: ${{ matrix.job.os }}
     steps:
       - name: Checkout
@@ -65,6 +80,12 @@ jobs:
           brew install create-dmg tree coreutils
 
       - name: Build
+        env:
+          GOOS: ${{ matrix.job.goos }}
+          GOARCH: ${{ matrix.job.goarch }}
+          GOAMD64: ${{ matrix.job.goamd64 }}
+          GOARM: ${{ matrix.job.goarm }}
+          GOMIPS: ${{ matrix.job.gomips }}
         run: |
           make -j$(($(nproc) + 1)) ${{ matrix.job.target }}
 
