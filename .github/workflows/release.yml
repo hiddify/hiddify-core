@@ -116,6 +116,7 @@ jobs:
     steps:
       - uses: actions/download-artifact@v4
         with:
+          merge-multiple: true
           pattern: hiddify-*
           path: bin/
 
