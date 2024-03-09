@@ -96,8 +96,9 @@ jobs:
           rm ./hiddify-libcore*sources* ||echo "no source"
           rm ./hiddify-libcore-macos-a*.dylib || echo "no macos arm and amd"
           files=$(ls | grep -E '^(libcore\.(dll|so|dylib|aar)|webui|Libcore.xcframework|HiddifyCli(\.exe)?)$')
-          echo tar -czvf hiddify-core-${{ matrix.job.target }}.tar.gz  $files
-          tar -czvf hiddify-core-${{ matrix.job.target }}.tar.gz  $files
+          filename="${{ matrix.job.target }}${{ matrix.job.goos }}${{ matrix.job.goarch }}-${{ matrix.job.goamd64 }}${{ matrix.job.goarm }}${{ matrix.job.gomips }}"
+          echo tar -czvf hiddify-core-${filename}.tar.gz  $files
+          tar -czvf hiddify-core-${filename}.tar.gz  $files
           
         working-directory: bin
       - uses: actions/upload-artifact@v3
