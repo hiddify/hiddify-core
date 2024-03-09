@@ -1,6 +1,5 @@
 package global
 
-import "C"
 import (
 	"encoding/json"
 	"fmt"

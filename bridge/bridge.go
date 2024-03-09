@@ -1,3 +1,4 @@
+// +build cgo
 package bridge
 
 // #include "stdint.h"

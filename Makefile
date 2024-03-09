@@ -66,8 +66,8 @@ linux-amd64:
 
 linux-custom:
 	mkdir -p $(BINDIR)/
-	env $(GOBUILDSRV) -o $(BINDIR)/$(CLINAME) ./cli/
-	#go build -trimpath -tags $(TAGS) -o $(BINDIR)/$(CLINAME) ./cli/
+	#env GOARCH=mips $(GOBUILDSRV) -o $(BINDIR)/$(CLINAME) ./cli/
+	go build -trimpath -tags $(TAGS) -o $(BINDIR)/$(CLINAME) ./cli/
 	chmod +x $(BINDIR)/$(CLINAME)
 	make webui
 
