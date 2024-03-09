@@ -100,10 +100,10 @@ jobs:
           tar -czvf ${{ matrix.job.name }}.tar.gz  $files
           
         working-directory: bin
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         if: ${{ success() }}
         with:
-          name: artifact
+          name: ${{ matrix.job.name }}
           path: bin/
 
   upload-prerelease:
@@ -112,9 +112,8 @@ jobs:
     needs: [build]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
-          name: artifact
           path: bin/
 
       - name: Display Files Structure
