@@ -16,9 +16,6 @@ import (
 func AdminServiceStart(arg *C.char) *C.char {
 	goArg := C.GoString(arg)
 	exitCode, outMessage := admin_service.StartService(goArg)
-
-	// Allocate memory for the message and copy the string content
-
 	return C.CString(fmt.Sprintf("%d %s", exitCode, outMessage))
 
 }

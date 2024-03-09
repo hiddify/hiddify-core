@@ -94,10 +94,10 @@ func stopTunnelRequest() (bool, error) {
 func runTunnelService(opt ConfigOptions) (bool, error) {
 	executablePath := getTunnelServicePath()
 	fmt.Printf("Executable path is %s", executablePath)
-	out, err := ExecuteCmd(executablePath, "install", false)
+	out, err := ExecuteCmd(executablePath, false, "tunnel", "install")
 	fmt.Println("Shell command executed:", out, err)
 	if err != nil {
-		out, err = ExecuteCmd(executablePath, "", true)
+		out, err = ExecuteCmd(executablePath, true, "tunnel", "run")
 		fmt.Println("Shell command executed without flag:", out, err)
 	}
 	if err == nil {
@@ -112,11 +112,11 @@ func getTunnelServicePath() string {
 	binFolder := filepath.Dir(exePath)
 	switch runtime.GOOS {
 	case "windows":
-		fullPath = "HiddifyService.exe"
+		fullPath = "HiddifyCli.exe"
 	case "darwin":
 		fallthrough
 	default:
-		fullPath = "HiddifyService"
+		fullPath = "HiddifyCli"
 	}
 
 	abspath, _ := filepath.Abs(filepath.Join(binFolder, fullPath))

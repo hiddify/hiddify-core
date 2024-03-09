@@ -96,7 +96,7 @@ func DefaultConfigOptions() *ConfigOptions {
 			EnableDNSRouting:        false,
 		},
 		InboundOptions: InboundOptions{
-			EnableTun:      true,
+			EnableTun:      false,
 			SetSystemProxy: true,
 			MixedPort:      2334,
 			LocalDnsPort:   16450,
@@ -117,12 +117,12 @@ func DefaultConfigOptions() *ConfigOptions {
 		},
 		LogLevel:       "info",
 		EnableClashApi: true,
-		ClashApiPort:   16756,
+		ClashApiPort:   6756,
 		GeoIPPath:      "geoip.db",
 		GeoSitePath:    "geosite.db",
 		Rules:          []Rule{},
 		MuxOptions: MuxOptions{
-			EnableMux:   true,
+			EnableMux:   false,
 			MuxPadding:  true,
 			MaxStreams:  8,
 			MuxProtocol: "h2mux",

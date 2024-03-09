@@ -7,54 +7,43 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 )
 
-func ExecuteCmd(executablePath, args string, background bool) (string, error) {
+func ExecuteCmd(executablePath string, background bool, args ...string) (string, error) {
 	cwd := filepath.Dir(executablePath)
 	if appimage := os.Getenv("APPIMAGE"); appimage != "" {
-		executablePath = appimage + " HiddifyService"
+		executablePath = appimage
 		if !background {
-			return "Fail", fmt.Errorf("Appimage can not have service")
+			return "Fail", fmt.Errorf("Appimage cannot have service")
 		}
 	}
 
-	if err := execCmdImp([]string{"cocoasudo", "--prompt=Hiddify needs root for tunneling.", executablePath, args}, cwd, background); err == nil {
-		return "Ok", nil
-	}
-	if err := execCmdImp([]string{"gksu", executablePath, args}, cwd, background); err == nil {
-		return "Ok", nil
-	}
-	if err := execCmdImp([]string{"pkexec", executablePath, args}, cwd, background); err == nil {
-		return "Ok", nil
-	}
-	if err := execCmdImp([]string{"xterm", "-e", "sudo " + executablePath + " " + args}, cwd, background); err == nil {
-		return "Ok", nil
+	commands := [][]string{
+		{"cocoasudo", "--prompt=Hiddify needs root for tunneling.", executablePath},
+		{"gksu", executablePath},
+		{"pkexec", executablePath},
+		{"xterm", "-e", "sudo", executablePath, strings.Join(args, " ")},
+		{"sudo", executablePath},
 	}
 
-	if err := execCmdImp([]string{"sudo", executablePath, args}, cwd, background); err == nil {
-		return "Ok", nil
+	var err error
+	var cmd *exec.Cmd
+	for _, command := range commands {
+		cmd = exec.Command(command[0], command[1:]...)
+		cmd.Dir = cwd
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		fmt.Printf("Running command: %v\n", command)
+		if background {
+			err = cmd.Start()
+		} else {
+			err = cmd.Run()
+		}
+		if err == nil {
+			return "Ok", nil
+		}
 	}
 
 	return "", fmt.Errorf("Error executing run as root shell command")
-
-}
-
-func execCmdImp(commands []string, cwd string, background bool) error {
-	cmd := exec.Command(commands[0], commands[1:]...)
-	cmd.Dir = cwd
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	fmt.Printf("Running command: %v", commands)
-	if background {
-		if err := cmd.Start(); err != nil {
-			fmt.Printf("Error: %v\n", err)
-			return err
-		}
-	} else {
-		if err := cmd.Run(); err != nil {
-			fmt.Printf("Error: %v\n", err)
-			return err
-		}
-	}
-	return nil
 }

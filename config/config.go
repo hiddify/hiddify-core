@@ -61,7 +61,7 @@ func BuildConfig(opt ConfigOptions, input option.Options) (*option.Options, erro
 	fmt.Printf("config options: %+v\n", opt)
 
 	var options option.Options
-	directDNSDomains := []string{}
+	directDNSDomains := make(map[string]bool)
 	dnsRules := []option.DefaultDNSRule{}
 
 	var bind string
@@ -221,7 +221,7 @@ func BuildConfig(opt ConfigOptions, input option.Options) (*option.Options, erro
 	}
 	parsedUrl, err := url.Parse(fmt.Sprintf("https://%s", remoteDNSAddress))
 	if err == nil && net.ParseIP(parsedUrl.Host) == nil {
-		directDNSDomains = append(directDNSDomains, fmt.Sprintf("full:%s", parsedUrl.Host))
+		directDNSDomains["full:"+parsedUrl.Host] = true
 		//TODO: IS it really needed
 	}
 
@@ -420,7 +420,7 @@ func BuildConfig(opt ConfigOptions, input option.Options) (*option.Options, erro
 		}
 
 		if serverDomain != "" {
-			directDNSDomains = append(directDNSDomains, serverDomain)
+			directDNSDomains[serverDomain] = true
 		}
 		out = *outbound
 
@@ -518,7 +518,12 @@ func BuildConfig(opt ConfigOptions, input option.Options) (*option.Options, erro
 		// trickDnsRule.Server = DNSTricksDirectTag
 		// options.DNS.Rules = append([]option.DNSRule{{Type: C.RuleTypeDefault, DefaultOptions: trickDnsRule}}, options.DNS.Rules...)
 
-		domains := strings.Join(directDNSDomains, ",")
+		directDNSDomainskeys := make([]string, 0, len(directDNSDomains))
+		for key := range directDNSDomains {
+			directDNSDomainskeys = append(directDNSDomainskeys, key)
+		}
+
+		domains := strings.Join(directDNSDomainskeys, ",")
 		directRule := Rule{Domains: domains, Outbound: OutboundBypassTag}
 		dnsRule := directRule.MakeDNSRule()
 		dnsRule.Server = DNSDirectTag

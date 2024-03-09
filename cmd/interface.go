@@ -1,4 +1,4 @@
-package main
+package cmd
 
 import (
 	"os"
@@ -17,7 +17,7 @@ var (
 )
 
 var mainCommand = &cobra.Command{
-	Use:              "hiddify-next",
+	Use:              "HiddifyCli",
 	PersistentPreRun: preRun,
 }
 
@@ -30,10 +30,13 @@ func init() {
 
 }
 
-func main() {
-	if err := mainCommand.Execute(); err != nil {
+func ParseCli(args []string) error {
+	mainCommand.SetArgs(args)
+	err := mainCommand.Execute()
+	if err != nil {
 		log.Fatal(err)
 	}
+	return err
 }
 
 func preRun(cmd *cobra.Command, args []string) {
