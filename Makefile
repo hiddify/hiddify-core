@@ -46,10 +46,8 @@ webui:
 windows-amd64:
 	curl http://localhost:18020/exit || echo "exited"
 	env GOOS=windows GOARCH=amd64 CC=x86_64-w64-mingw32-gcc $(GOBUILDLIB) -o $(BINDIR)/$(LIBNAME).dll ./custom
-	go install github.com/akavel/rsrc
+	go install -mod=readonly github.com/akavel/rsrc@latest
 	cp $(BINDIR)/$(LIBNAME).dll ./$(LIBNAME).dll 
-	# $$(go env GOPATH)/bin/rsrc -manifest admin_service/cmd/admin_service.manifest -ico ./assets/hiddify-service.ico -o admin_service/cmd/admin_service.syso
-	
 	$$(go env GOPATH)/bin/rsrc -ico ./assets/hiddify-cli.ico -o ./cli/bydll/cli.syso
 	env GOOS=windows GOARCH=amd64 CC=x86_64-w64-mingw32-gcc CGO_LDFLAGS="$(LIBNAME).dll" $(GOBUILDSRV) -o $(BINDIR)/$(CLINAME).exe ./cli/bydll
 	rm ./$(LIBNAME).dll
