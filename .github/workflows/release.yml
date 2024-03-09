@@ -45,7 +45,7 @@ jobs:
       GOARCH: ${{ matrix.job.goarch }}
       GOAMD64: ${{ matrix.job.goamd64 }}
       GOARM: ${{ matrix.job.goarm }}
-      GOMIPS: ${{ matrix.job.gomips }}
+      GOMIPS: ${{ matrix.j ob.gomips }}
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -148,9 +148,10 @@ jobs:
     needs: [build]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
-          name: artifact
+          merge-multiple: true
+          pattern: hiddify-*
           path: bin/
 
       - name: Display Files Structure
