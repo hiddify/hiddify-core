@@ -46,8 +46,7 @@ webui:
 windows-amd64:
 	curl http://localhost:18020/exit || echo "exited"
 	env GOOS=windows GOARCH=amd64 CC=x86_64-w64-mingw32-gcc $(GOBUILDLIB) -o $(BINDIR)/$(LIBNAME).dll ./custom
-	# go get github.com/akavel/rsrc
-	# go install github.com/akavel/rsrc
+	go install github.com/akavel/rsrc
 	cp $(BINDIR)/$(LIBNAME).dll ./$(LIBNAME).dll 
 	# $$(go env GOPATH)/bin/rsrc -manifest admin_service/cmd/admin_service.manifest -ico ./assets/hiddify-service.ico -o admin_service/cmd/admin_service.syso
 	
@@ -74,7 +73,7 @@ macos-arm64:
 macos-universal: macos-amd64 macos-arm64 
 	lipo -create $(BINDIR)/$(LIBNAME)-amd64.dylib $(BINDIR)/$(LIBNAME)-arm64.dylib -output $(BINDIR)/$(LIBNAME).dylib
 	cp $(BINDIR)/$(LIBNAME).dylib ./$(LIBNAME).dylib 
-	env GOOS=darwin GOARCH=amd64 CGO_CFLAGS="-mmacosx-version-min=10.11" CGO_LDFLAGS="-mmacosx-version-min=10.11" CGO_LDFLAGS="bin/$(LIBNAME).dylib"  CGO_ENABLED=1 $(GOBUILDSRV)  -o $(BINDIR)/$(CLINAME) ./admin_service/cmd
+	env GOOS=darwin GOARCH=amd64 CGO_CFLAGS="-mmacosx-version-min=10.11" CGO_LDFLAGS="-mmacosx-version-min=10.11" CGO_LDFLAGS="bin/$(LIBNAME).dylib"  CGO_ENABLED=1 $(GOBUILDSRV)  -o $(BINDIR)/$(CLINAME) ./cli/bydll
 	rm ./$(LIBNAME).dylib
 	chmod +x $(BINDIR)/$(CLINAME)
 
