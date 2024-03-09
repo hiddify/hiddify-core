@@ -12,12 +12,12 @@ import (
 type outboundMap map[string]interface{}
 
 func patchOutboundMux(base option.Outbound, configOpt ConfigOptions, obj outboundMap) outboundMap {
-	if configOpt.EnableMux {
+	if configOpt.Mux.Enable {
 		multiplex := option.OutboundMultiplexOptions{
 			Enabled:    true,
-			Padding:    configOpt.MuxPadding,
-			MaxStreams: configOpt.MaxStreams,
-			Protocol:   configOpt.MuxProtocol,
+			Padding:    configOpt.Mux.Padding,
+			MaxStreams: configOpt.Mux.MaxStreams,
+			Protocol:   configOpt.Mux.Protocol,
 		}
 		obj["multiplex"] = multiplex
 		// } else {
@@ -66,7 +66,7 @@ func patchOutboundTLSTricks(base option.Outbound, configOpt ConfigOptions, obj o
 		if tlsTricks == nil {
 			tlsTricks = &option.TLSTricksOptions{}
 		}
-		tlsTricks.MixedCaseSNI = tlsTricks.MixedCaseSNI || configOpt.TLSTricks.EnableMixedSNICase
+		tlsTricks.MixedCaseSNI = tlsTricks.MixedCaseSNI || configOpt.TLSTricks.MixedSNICase
 
 		if configOpt.TLSTricks.EnablePadding {
 			tlsTricks.PaddingMode = "random"
@@ -89,8 +89,7 @@ func patchOutboundTLSTricks(base option.Outbound, configOpt ConfigOptions, obj o
 }
 
 func patchOutboundFragment(base option.Outbound, configOpt ConfigOptions, obj outboundMap) outboundMap {
-	if configOpt.EnableFragment {
-
+	if configOpt.TLSTricks.EnableFragment {
 		obj["tls_fragment"] = option.TLSFragmentOptions{
 			Enabled: configOpt.TLSTricks.EnableFragment,
 			Size:    configOpt.TLSTricks.FragmentSize,
