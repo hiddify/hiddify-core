@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"runtime"
 	"strconv"
 	"strings"
 	"syscall"
@@ -70,9 +71,19 @@ func readConfigContent(configPath string) (ConfigResult, error) {
 	var refreshInterval int
 
 	if strings.HasPrefix(configPath, "http://") || strings.HasPrefix(configPath, "https://") {
-		resp, err := http.Get(configPath)
+		client := &http.Client{}
+
+		// Create a new request
+		req, err := http.NewRequest("GET", configPath, nil)
 		if err != nil {
-			return ConfigResult{}, fmt.Errorf("failed to get config from URL: %w", err)
+			fmt.Println("Error creating request:", err)
+			return ConfigResult{}, err
+		}
+		req.Header.Set("User-Agent", "HiddifyNext/17.5.0 ("+runtime.GOOS+") like ClashMeta v2ray sing-box")
+		resp, err := client.Do(req)
+		if err != nil {
+			fmt.Println("Error making GET request:", err)
+			return ConfigResult{}, err
 		}
 		defer resp.Body.Close()
 
