@@ -2,8 +2,6 @@ package config
 
 import (
 	"bytes"
-	"runtime"
-
 	"encoding/json"
 	"fmt"
 	"net"
