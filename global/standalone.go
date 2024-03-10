@@ -150,7 +150,12 @@ func buildConfig(configContent string, options config.ConfigOptions) (string, er
 
 	finalconfig.Log.Output = ""
 	finalconfig.Experimental.ClashAPI.ExternalUI = "webui"
-	finalconfig.Experimental.ClashAPI.ExternalController = "0.0.0.0:6756"
+	if options.AllowConnectionFromLAN {
+		finalconfig.Experimental.ClashAPI.ExternalController = "0.0.0.0:6756"
+	} else {
+		finalconfig.Experimental.ClashAPI.ExternalController = "127.0.0.1:6756"
+	}
+
 	if finalconfig.Experimental.ClashAPI.Secret == "" {
 		// finalconfig.Experimental.ClashAPI.Secret = "hiddify"
 	}
