@@ -5,7 +5,7 @@ go 1.21.5
 require (
 	github.com/bepass-org/wireguard-go v0.0.16-alpha
 	github.com/golang/protobuf v1.5.3
-	github.com/hiddify/ray2sing v0.0.0-20240308092548-61c2276f23ae
+	github.com/hiddify/ray2sing v0.0.0-20240310185814-af4a46d2946f
 	github.com/kardianos/service v1.2.2
 	github.com/sagernet/gomobile v0.1.3
 	github.com/sagernet/sing v0.3.5
