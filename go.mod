@@ -13,6 +13,8 @@ require (
 	github.com/sagernet/sing-dns v0.1.12
 	github.com/spf13/cobra v1.8.0
 	github.com/xmdhs/clash2singbox v0.0.2
+	go.jonnrb.io/speedtest v0.2.0
+	golang.org/x/sync v0.6.0
 	golang.org/x/sys v0.18.0
 	google.golang.org/grpc v1.62.0
 	gopkg.in/yaml.v3 v3.0.1

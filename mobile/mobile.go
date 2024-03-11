@@ -10,6 +10,14 @@ import (
 	"github.com/sagernet/sing-box/option"
 )
 
+func PraseString(configStr string, debug bool) (string, error) {
+	config, err := config.ParseConfigContent(configStr, debug)
+	if err != nil {
+		return "", err
+	}
+	return string(config[:]), nil
+}
+
 func Parse(path string, tempPath string, debug bool) error {
 	config, err := config.ParseConfig(tempPath, debug)
 	if err != nil {
