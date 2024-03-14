@@ -97,7 +97,7 @@ func DefaultConfigOptions() *ConfigOptions {
 		},
 		InboundOptions: InboundOptions{
 			EnableTun:      false,
-			SetSystemProxy: true,
+			SetSystemProxy: false,
 			MixedPort:      2334,
 			LocalDnsPort:   16450,
 			MTU:            9000,
