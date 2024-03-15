@@ -16,6 +16,10 @@ IOS_ADD_TAGS=with_dhcp,with_low_memory,with_conntrack
 GOBUILDLIB=CGO_ENABLED=1 go build -trimpath -tags $(TAGS) -ldflags="-w -s" -buildmode=c-shared
 GOBUILDSRV=CGO_ENABLED=1 go build -trimpath -tags $(TAGS)
 
+.PHONY: protos
+protos:
+	protoc --go_out=config --go-grpc_out=config --proto_path=protos protos/*.proto
+
 lib_install:
 	go install -v github.com/sagernet/gomobile/cmd/gomobile@v0.1.1
 	go install -v github.com/sagernet/gomobile/cmd/gobind@v0.1.1
