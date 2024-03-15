@@ -40,6 +40,7 @@ type InboundOptions struct {
 	MTU              uint32 `json:"mtu"`
 	StrictRoute      bool   `json:"strict-route"`
 	TUNStack         string `json:"tun-implementation"`
+	TProxyPort       uint16 `json:"tproxy-port"`
 }
 
 type URLTestOptions struct {
@@ -99,6 +100,7 @@ func DefaultConfigOptions() *ConfigOptions {
 			EnableTun:      false,
 			SetSystemProxy: false,
 			MixedPort:      2334,
+			TProxyPort:     2335,
 			LocalDnsPort:   16450,
 			MTU:            9000,
 			StrictRoute:    true,
