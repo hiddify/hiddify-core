@@ -10,6 +10,10 @@ import (
 	"github.com/sagernet/sing-box/option"
 )
 
+func Setup() error {
+	return config.StartGRPCServer(7078)
+}
+
 func Parse(path string, tempPath string, debug bool) error {
 	config, err := config.ParseConfig(tempPath, debug)
 	if err != nil {
