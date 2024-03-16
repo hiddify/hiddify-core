@@ -1,16 +1,18 @@
 package v2
 
 import (
+	"encoding/json"
 	"time"
 
+	"github.com/hiddify/libcore/bridge"
 	pb "github.com/hiddify/libcore/hiddifyrpc"
-	"github.com/sagernet/sing/common/observable"
 )
 
-var coreInfoObserver = observable.Observer[pb.CoreInfoResponse]{}
+var coreInfoObserver = NewObserver[pb.CoreInfoResponse](10)
 var CoreState = pb.CoreState_STOPPED
 
 func SetCoreStatus(state pb.CoreState, msgType pb.MessageType, message string) pb.CoreInfoResponse {
+	Log(pb.LogLevel_INFO, pb.LogType_CORE, message)
 	CoreState = state
 	info := pb.CoreInfoResponse{
 		CoreState:   state,
@@ -18,11 +20,13 @@ func SetCoreStatus(state pb.CoreState, msgType pb.MessageType, message string) p
 		Message:     message,
 	}
 	coreInfoObserver.Emit(info)
+	msg, _ := json.Marshal(StatusMessage{Status: convert2OldState(CoreState)})
+	bridge.SendStringToPort(statusPropagationPort, string(msg))
 	return info
 
 }
 
-func (s *server) CoreInfoListener(stream pb.Hiddify_CoreInfoListenerServer) error {
+func (s *CoreService) CoreInfoListener(stream pb.Core_CoreInfoListenerServer) error {
 	coreSub, _, _ := coreInfoObserver.Subscribe()
 	defer coreInfoObserver.UnSubscribe(coreSub)
 	stopch := make(chan int)

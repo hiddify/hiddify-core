@@ -1,11 +1,10 @@
-package main
+package v2
 
 import (
 	pb "github.com/hiddify/libcore/hiddifyrpc"
-	v2 "github.com/hiddify/libcore/v2"
+
 	"github.com/sagernet/sing-box/experimental/libbox"
 	"github.com/sagernet/sing-box/log"
-	
 )
 
 var commandServer *libbox.CommandServer
@@ -16,16 +15,21 @@ type CommandServerHandler struct {
 
 func (csh *CommandServerHandler) ServiceReload() error {
 	csh.logger.Trace("Reloading service")
-	propagateStatus(pb.CoreState_STARTING)
+	SetCoreStatus(pb.CoreState_STARTING, pb.MessageType_EMPTY, "")
+
 	if commandServer != nil {
 		commandServer.SetService(nil)
 		commandServer = nil
 	}
-	if v2.Box != nil {
-		v2.Box.Close()
-		v2.Box = nil
+	if Box != nil {
+		Box.Close()
+		Box = nil
 	}
-	return startService(true)
+	_, err := StartService(&pb.StartRequest{
+		EnableOldCommandServer: true,
+		DelayStart:             true,
+	})
+	return err
 }
 
 func (csh *CommandServerHandler) GetSystemProxyStatus() *libbox.SystemProxyStatus {

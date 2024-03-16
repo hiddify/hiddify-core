@@ -19,40 +19,197 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	Hiddify_SayHello_FullMethodName              = "/hiddifyrpc.Hiddify/SayHello"
-	Hiddify_SayHelloStream_FullMethodName        = "/hiddifyrpc.Hiddify/SayHelloStream"
-	Hiddify_Start_FullMethodName                 = "/hiddifyrpc.Hiddify/Start"
-	Hiddify_CoreInfoListener_FullMethodName      = "/hiddifyrpc.Hiddify/CoreInfoListener"
-	Hiddify_OutboundsInfo_FullMethodName         = "/hiddifyrpc.Hiddify/OutboundsInfo"
-	Hiddify_MainOutboundsInfo_FullMethodName     = "/hiddifyrpc.Hiddify/MainOutboundsInfo"
-	Hiddify_GetSystemInfo_FullMethodName         = "/hiddifyrpc.Hiddify/GetSystemInfo"
-	Hiddify_Setup_FullMethodName                 = "/hiddifyrpc.Hiddify/Setup"
-	Hiddify_Parse_FullMethodName                 = "/hiddifyrpc.Hiddify/Parse"
-	Hiddify_StartService_FullMethodName          = "/hiddifyrpc.Hiddify/StartService"
-	Hiddify_Stop_FullMethodName                  = "/hiddifyrpc.Hiddify/Stop"
-	Hiddify_Restart_FullMethodName               = "/hiddifyrpc.Hiddify/Restart"
-	Hiddify_SelectOutbound_FullMethodName        = "/hiddifyrpc.Hiddify/SelectOutbound"
-	Hiddify_UrlTest_FullMethodName               = "/hiddifyrpc.Hiddify/UrlTest"
-	Hiddify_GenerateWarpConfig_FullMethodName    = "/hiddifyrpc.Hiddify/GenerateWarpConfig"
-	Hiddify_GetSystemProxyStatus_FullMethodName  = "/hiddifyrpc.Hiddify/GetSystemProxyStatus"
-	Hiddify_SetSystemProxyEnabled_FullMethodName = "/hiddifyrpc.Hiddify/SetSystemProxyEnabled"
-	Hiddify_LogListener_FullMethodName           = "/hiddifyrpc.Hiddify/LogListener"
+	Hello_SayHello_FullMethodName       = "/hiddifyrpc.Hello/SayHello"
+	Hello_SayHelloStream_FullMethodName = "/hiddifyrpc.Hello/SayHelloStream"
 )
 
-// HiddifyClient is the client API for Hiddify service.
+// HelloClient is the client API for Hello service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
-type HiddifyClient interface {
+type HelloClient interface {
 	SayHello(ctx context.Context, in *HelloRequest, opts ...grpc.CallOption) (*HelloResponse, error)
-	SayHelloStream(ctx context.Context, opts ...grpc.CallOption) (Hiddify_SayHelloStreamClient, error)
+	SayHelloStream(ctx context.Context, opts ...grpc.CallOption) (Hello_SayHelloStreamClient, error)
+}
+
+type helloClient struct {
+	cc grpc.ClientConnInterface
+}
+
+func NewHelloClient(cc grpc.ClientConnInterface) HelloClient {
+	return &helloClient{cc}
+}
+
+func (c *helloClient) SayHello(ctx context.Context, in *HelloRequest, opts ...grpc.CallOption) (*HelloResponse, error) {
+	out := new(HelloResponse)
+	err := c.cc.Invoke(ctx, Hello_SayHello_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *helloClient) SayHelloStream(ctx context.Context, opts ...grpc.CallOption) (Hello_SayHelloStreamClient, error) {
+	stream, err := c.cc.NewStream(ctx, &Hello_ServiceDesc.Streams[0], Hello_SayHelloStream_FullMethodName, opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &helloSayHelloStreamClient{stream}
+	return x, nil
+}
+
+type Hello_SayHelloStreamClient interface {
+	Send(*HelloRequest) error
+	Recv() (*HelloResponse, error)
+	grpc.ClientStream
+}
+
+type helloSayHelloStreamClient struct {
+	grpc.ClientStream
+}
+
+func (x *helloSayHelloStreamClient) Send(m *HelloRequest) error {
+	return x.ClientStream.SendMsg(m)
+}
+
+func (x *helloSayHelloStreamClient) Recv() (*HelloResponse, error) {
+	m := new(HelloResponse)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+// HelloServer is the server API for Hello service.
+// All implementations must embed UnimplementedHelloServer
+// for forward compatibility
+type HelloServer interface {
+	SayHello(context.Context, *HelloRequest) (*HelloResponse, error)
+	SayHelloStream(Hello_SayHelloStreamServer) error
+	mustEmbedUnimplementedHelloServer()
+}
+
+// UnimplementedHelloServer must be embedded to have forward compatible implementations.
+type UnimplementedHelloServer struct {
+}
+
+func (UnimplementedHelloServer) SayHello(context.Context, *HelloRequest) (*HelloResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SayHello not implemented")
+}
+func (UnimplementedHelloServer) SayHelloStream(Hello_SayHelloStreamServer) error {
+	return status.Errorf(codes.Unimplemented, "method SayHelloStream not implemented")
+}
+func (UnimplementedHelloServer) mustEmbedUnimplementedHelloServer() {}
+
+// UnsafeHelloServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to HelloServer will
+// result in compilation errors.
+type UnsafeHelloServer interface {
+	mustEmbedUnimplementedHelloServer()
+}
+
+func RegisterHelloServer(s grpc.ServiceRegistrar, srv HelloServer) {
+	s.RegisterService(&Hello_ServiceDesc, srv)
+}
+
+func _Hello_SayHello_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(HelloRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(HelloServer).SayHello(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Hello_SayHello_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(HelloServer).SayHello(ctx, req.(*HelloRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Hello_SayHelloStream_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(HelloServer).SayHelloStream(&helloSayHelloStreamServer{stream})
+}
+
+type Hello_SayHelloStreamServer interface {
+	Send(*HelloResponse) error
+	Recv() (*HelloRequest, error)
+	grpc.ServerStream
+}
+
+type helloSayHelloStreamServer struct {
+	grpc.ServerStream
+}
+
+func (x *helloSayHelloStreamServer) Send(m *HelloResponse) error {
+	return x.ServerStream.SendMsg(m)
+}
+
+func (x *helloSayHelloStreamServer) Recv() (*HelloRequest, error) {
+	m := new(HelloRequest)
+	if err := x.ServerStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+// Hello_ServiceDesc is the grpc.ServiceDesc for Hello service.
+// It's only intended for direct use with grpc.RegisterService,
+// and not to be introspected or modified (even as a copy)
+var Hello_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "hiddifyrpc.Hello",
+	HandlerType: (*HelloServer)(nil),
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "SayHello",
+			Handler:    _Hello_SayHello_Handler,
+		},
+	},
+	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "SayHelloStream",
+			Handler:       _Hello_SayHelloStream_Handler,
+			ServerStreams: true,
+			ClientStreams: true,
+		},
+	},
+	Metadata: "hiddifyrpc/hiddify.proto",
+}
+
+const (
+	Core_Start_FullMethodName                 = "/hiddifyrpc.Core/Start"
+	Core_CoreInfoListener_FullMethodName      = "/hiddifyrpc.Core/CoreInfoListener"
+	Core_OutboundsInfo_FullMethodName         = "/hiddifyrpc.Core/OutboundsInfo"
+	Core_MainOutboundsInfo_FullMethodName     = "/hiddifyrpc.Core/MainOutboundsInfo"
+	Core_GetSystemInfo_FullMethodName         = "/hiddifyrpc.Core/GetSystemInfo"
+	Core_Setup_FullMethodName                 = "/hiddifyrpc.Core/Setup"
+	Core_Parse_FullMethodName                 = "/hiddifyrpc.Core/Parse"
+	Core_ChangeConfigOptions_FullMethodName   = "/hiddifyrpc.Core/ChangeConfigOptions"
+	Core_StartService_FullMethodName          = "/hiddifyrpc.Core/StartService"
+	Core_Stop_FullMethodName                  = "/hiddifyrpc.Core/Stop"
+	Core_Restart_FullMethodName               = "/hiddifyrpc.Core/Restart"
+	Core_SelectOutbound_FullMethodName        = "/hiddifyrpc.Core/SelectOutbound"
+	Core_UrlTest_FullMethodName               = "/hiddifyrpc.Core/UrlTest"
+	Core_GenerateWarpConfig_FullMethodName    = "/hiddifyrpc.Core/GenerateWarpConfig"
+	Core_GetSystemProxyStatus_FullMethodName  = "/hiddifyrpc.Core/GetSystemProxyStatus"
+	Core_SetSystemProxyEnabled_FullMethodName = "/hiddifyrpc.Core/SetSystemProxyEnabled"
+	Core_LogListener_FullMethodName           = "/hiddifyrpc.Core/LogListener"
+)
+
+// CoreClient is the client API for Core service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+type CoreClient interface {
 	Start(ctx context.Context, in *StartRequest, opts ...grpc.CallOption) (*CoreInfoResponse, error)
-	CoreInfoListener(ctx context.Context, opts ...grpc.CallOption) (Hiddify_CoreInfoListenerClient, error)
-	OutboundsInfo(ctx context.Context, opts ...grpc.CallOption) (Hiddify_OutboundsInfoClient, error)
-	MainOutboundsInfo(ctx context.Context, opts ...grpc.CallOption) (Hiddify_MainOutboundsInfoClient, error)
-	GetSystemInfo(ctx context.Context, opts ...grpc.CallOption) (Hiddify_GetSystemInfoClient, error)
+	CoreInfoListener(ctx context.Context, opts ...grpc.CallOption) (Core_CoreInfoListenerClient, error)
+	OutboundsInfo(ctx context.Context, opts ...grpc.CallOption) (Core_OutboundsInfoClient, error)
+	MainOutboundsInfo(ctx context.Context, opts ...grpc.CallOption) (Core_MainOutboundsInfoClient, error)
+	GetSystemInfo(ctx context.Context, opts ...grpc.CallOption) (Core_GetSystemInfoClient, error)
 	Setup(ctx context.Context, in *SetupRequest, opts ...grpc.CallOption) (*Response, error)
 	Parse(ctx context.Context, in *ParseRequest, opts ...grpc.CallOption) (*ParseResponse, error)
-	//rpc ChangeConfigOptions (ChangeConfigOptionsRequest) returns (CoreInfoResponse);
+	ChangeConfigOptions(ctx context.Context, in *ChangeConfigOptionsRequest, opts ...grpc.CallOption) (*CoreInfoResponse, error)
 	//rpc GenerateConfig (GenerateConfigRequest) returns (GenerateConfigResponse);
 	StartService(ctx context.Context, in *StartRequest, opts ...grpc.CallOption) (*CoreInfoResponse, error)
 	Stop(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*CoreInfoResponse, error)
@@ -62,90 +219,50 @@ type HiddifyClient interface {
 	GenerateWarpConfig(ctx context.Context, in *GenerateWarpConfigRequest, opts ...grpc.CallOption) (*WarpGenerationResponse, error)
 	GetSystemProxyStatus(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*SystemProxyStatus, error)
 	SetSystemProxyEnabled(ctx context.Context, in *SetSystemProxyEnabledRequest, opts ...grpc.CallOption) (*Response, error)
-	LogListener(ctx context.Context, opts ...grpc.CallOption) (Hiddify_LogListenerClient, error)
+	LogListener(ctx context.Context, opts ...grpc.CallOption) (Core_LogListenerClient, error)
 }
 
-type hiddifyClient struct {
+type coreClient struct {
 	cc grpc.ClientConnInterface
 }
 
-func NewHiddifyClient(cc grpc.ClientConnInterface) HiddifyClient {
-	return &hiddifyClient{cc}
+func NewCoreClient(cc grpc.ClientConnInterface) CoreClient {
+	return &coreClient{cc}
 }
 
-func (c *hiddifyClient) SayHello(ctx context.Context, in *HelloRequest, opts ...grpc.CallOption) (*HelloResponse, error) {
-	out := new(HelloResponse)
-	err := c.cc.Invoke(ctx, Hiddify_SayHello_FullMethodName, in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *hiddifyClient) SayHelloStream(ctx context.Context, opts ...grpc.CallOption) (Hiddify_SayHelloStreamClient, error) {
-	stream, err := c.cc.NewStream(ctx, &Hiddify_ServiceDesc.Streams[0], Hiddify_SayHelloStream_FullMethodName, opts...)
-	if err != nil {
-		return nil, err
-	}
-	x := &hiddifySayHelloStreamClient{stream}
-	return x, nil
-}
-
-type Hiddify_SayHelloStreamClient interface {
-	Send(*HelloRequest) error
-	Recv() (*HelloResponse, error)
-	grpc.ClientStream
-}
-
-type hiddifySayHelloStreamClient struct {
-	grpc.ClientStream
-}
-
-func (x *hiddifySayHelloStreamClient) Send(m *HelloRequest) error {
-	return x.ClientStream.SendMsg(m)
-}
-
-func (x *hiddifySayHelloStreamClient) Recv() (*HelloResponse, error) {
-	m := new(HelloResponse)
-	if err := x.ClientStream.RecvMsg(m); err != nil {
-		return nil, err
-	}
-	return m, nil
-}
-
-func (c *hiddifyClient) Start(ctx context.Context, in *StartRequest, opts ...grpc.CallOption) (*CoreInfoResponse, error) {
+func (c *coreClient) Start(ctx context.Context, in *StartRequest, opts ...grpc.CallOption) (*CoreInfoResponse, error) {
 	out := new(CoreInfoResponse)
-	err := c.cc.Invoke(ctx, Hiddify_Start_FullMethodName, in, out, opts...)
+	err := c.cc.Invoke(ctx, Core_Start_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *hiddifyClient) CoreInfoListener(ctx context.Context, opts ...grpc.CallOption) (Hiddify_CoreInfoListenerClient, error) {
-	stream, err := c.cc.NewStream(ctx, &Hiddify_ServiceDesc.Streams[1], Hiddify_CoreInfoListener_FullMethodName, opts...)
+func (c *coreClient) CoreInfoListener(ctx context.Context, opts ...grpc.CallOption) (Core_CoreInfoListenerClient, error) {
+	stream, err := c.cc.NewStream(ctx, &Core_ServiceDesc.Streams[0], Core_CoreInfoListener_FullMethodName, opts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &hiddifyCoreInfoListenerClient{stream}
+	x := &coreCoreInfoListenerClient{stream}
 	return x, nil
 }
 
-type Hiddify_CoreInfoListenerClient interface {
+type Core_CoreInfoListenerClient interface {
 	Send(*StopRequest) error
 	Recv() (*CoreInfoResponse, error)
 	grpc.ClientStream
 }
 
-type hiddifyCoreInfoListenerClient struct {
+type coreCoreInfoListenerClient struct {
 	grpc.ClientStream
 }
 
-func (x *hiddifyCoreInfoListenerClient) Send(m *StopRequest) error {
+func (x *coreCoreInfoListenerClient) Send(m *StopRequest) error {
 	return x.ClientStream.SendMsg(m)
 }
 
-func (x *hiddifyCoreInfoListenerClient) Recv() (*CoreInfoResponse, error) {
+func (x *coreCoreInfoListenerClient) Recv() (*CoreInfoResponse, error) {
 	m := new(CoreInfoResponse)
 	if err := x.ClientStream.RecvMsg(m); err != nil {
 		return nil, err
@@ -153,30 +270,30 @@ func (x *hiddifyCoreInfoListenerClient) Recv() (*CoreInfoResponse, error) {
 	return m, nil
 }
 
-func (c *hiddifyClient) OutboundsInfo(ctx context.Context, opts ...grpc.CallOption) (Hiddify_OutboundsInfoClient, error) {
-	stream, err := c.cc.NewStream(ctx, &Hiddify_ServiceDesc.Streams[2], Hiddify_OutboundsInfo_FullMethodName, opts...)
+func (c *coreClient) OutboundsInfo(ctx context.Context, opts ...grpc.CallOption) (Core_OutboundsInfoClient, error) {
+	stream, err := c.cc.NewStream(ctx, &Core_ServiceDesc.Streams[1], Core_OutboundsInfo_FullMethodName, opts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &hiddifyOutboundsInfoClient{stream}
+	x := &coreOutboundsInfoClient{stream}
 	return x, nil
 }
 
-type Hiddify_OutboundsInfoClient interface {
+type Core_OutboundsInfoClient interface {
 	Send(*StopRequest) error
 	Recv() (*OutboundGroupList, error)
 	grpc.ClientStream
 }
 
-type hiddifyOutboundsInfoClient struct {
+type coreOutboundsInfoClient struct {
 	grpc.ClientStream
 }
 
-func (x *hiddifyOutboundsInfoClient) Send(m *StopRequest) error {
+func (x *coreOutboundsInfoClient) Send(m *StopRequest) error {
 	return x.ClientStream.SendMsg(m)
 }
 
-func (x *hiddifyOutboundsInfoClient) Recv() (*OutboundGroupList, error) {
+func (x *coreOutboundsInfoClient) Recv() (*OutboundGroupList, error) {
 	m := new(OutboundGroupList)
 	if err := x.ClientStream.RecvMsg(m); err != nil {
 		return nil, err
@@ -184,30 +301,30 @@ func (x *hiddifyOutboundsInfoClient) Recv() (*OutboundGroupList, error) {
 	return m, nil
 }
 
-func (c *hiddifyClient) MainOutboundsInfo(ctx context.Context, opts ...grpc.CallOption) (Hiddify_MainOutboundsInfoClient, error) {
-	stream, err := c.cc.NewStream(ctx, &Hiddify_ServiceDesc.Streams[3], Hiddify_MainOutboundsInfo_FullMethodName, opts...)
+func (c *coreClient) MainOutboundsInfo(ctx context.Context, opts ...grpc.CallOption) (Core_MainOutboundsInfoClient, error) {
+	stream, err := c.cc.NewStream(ctx, &Core_ServiceDesc.Streams[2], Core_MainOutboundsInfo_FullMethodName, opts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &hiddifyMainOutboundsInfoClient{stream}
+	x := &coreMainOutboundsInfoClient{stream}
 	return x, nil
 }
 
-type Hiddify_MainOutboundsInfoClient interface {
+type Core_MainOutboundsInfoClient interface {
 	Send(*StopRequest) error
 	Recv() (*OutboundGroupList, error)
 	grpc.ClientStream
 }
 
-type hiddifyMainOutboundsInfoClient struct {
+type coreMainOutboundsInfoClient struct {
 	grpc.ClientStream
 }
 
-func (x *hiddifyMainOutboundsInfoClient) Send(m *StopRequest) error {
+func (x *coreMainOutboundsInfoClient) Send(m *StopRequest) error {
 	return x.ClientStream.SendMsg(m)
 }
 
-func (x *hiddifyMainOutboundsInfoClient) Recv() (*OutboundGroupList, error) {
+func (x *coreMainOutboundsInfoClient) Recv() (*OutboundGroupList, error) {
 	m := new(OutboundGroupList)
 	if err := x.ClientStream.RecvMsg(m); err != nil {
 		return nil, err
@@ -215,30 +332,30 @@ func (x *hiddifyMainOutboundsInfoClient) Recv() (*OutboundGroupList, error) {
 	return m, nil
 }
 
-func (c *hiddifyClient) GetSystemInfo(ctx context.Context, opts ...grpc.CallOption) (Hiddify_GetSystemInfoClient, error) {
-	stream, err := c.cc.NewStream(ctx, &Hiddify_ServiceDesc.Streams[4], Hiddify_GetSystemInfo_FullMethodName, opts...)
+func (c *coreClient) GetSystemInfo(ctx context.Context, opts ...grpc.CallOption) (Core_GetSystemInfoClient, error) {
+	stream, err := c.cc.NewStream(ctx, &Core_ServiceDesc.Streams[3], Core_GetSystemInfo_FullMethodName, opts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &hiddifyGetSystemInfoClient{stream}
+	x := &coreGetSystemInfoClient{stream}
 	return x, nil
 }
 
-type Hiddify_GetSystemInfoClient interface {
+type Core_GetSystemInfoClient interface {
 	Send(*StopRequest) error
 	Recv() (*SystemInfo, error)
 	grpc.ClientStream
 }
 
-type hiddifyGetSystemInfoClient struct {
+type coreGetSystemInfoClient struct {
 	grpc.ClientStream
 }
 
-func (x *hiddifyGetSystemInfoClient) Send(m *StopRequest) error {
+func (x *coreGetSystemInfoClient) Send(m *StopRequest) error {
 	return x.ClientStream.SendMsg(m)
 }
 
-func (x *hiddifyGetSystemInfoClient) Recv() (*SystemInfo, error) {
+func (x *coreGetSystemInfoClient) Recv() (*SystemInfo, error) {
 	m := new(SystemInfo)
 	if err := x.ClientStream.RecvMsg(m); err != nil {
 		return nil, err
@@ -246,120 +363,129 @@ func (x *hiddifyGetSystemInfoClient) Recv() (*SystemInfo, error) {
 	return m, nil
 }
 
-func (c *hiddifyClient) Setup(ctx context.Context, in *SetupRequest, opts ...grpc.CallOption) (*Response, error) {
+func (c *coreClient) Setup(ctx context.Context, in *SetupRequest, opts ...grpc.CallOption) (*Response, error) {
 	out := new(Response)
-	err := c.cc.Invoke(ctx, Hiddify_Setup_FullMethodName, in, out, opts...)
+	err := c.cc.Invoke(ctx, Core_Setup_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *hiddifyClient) Parse(ctx context.Context, in *ParseRequest, opts ...grpc.CallOption) (*ParseResponse, error) {
+func (c *coreClient) Parse(ctx context.Context, in *ParseRequest, opts ...grpc.CallOption) (*ParseResponse, error) {
 	out := new(ParseResponse)
-	err := c.cc.Invoke(ctx, Hiddify_Parse_FullMethodName, in, out, opts...)
+	err := c.cc.Invoke(ctx, Core_Parse_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *hiddifyClient) StartService(ctx context.Context, in *StartRequest, opts ...grpc.CallOption) (*CoreInfoResponse, error) {
+func (c *coreClient) ChangeConfigOptions(ctx context.Context, in *ChangeConfigOptionsRequest, opts ...grpc.CallOption) (*CoreInfoResponse, error) {
 	out := new(CoreInfoResponse)
-	err := c.cc.Invoke(ctx, Hiddify_StartService_FullMethodName, in, out, opts...)
+	err := c.cc.Invoke(ctx, Core_ChangeConfigOptions_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *hiddifyClient) Stop(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*CoreInfoResponse, error) {
+func (c *coreClient) StartService(ctx context.Context, in *StartRequest, opts ...grpc.CallOption) (*CoreInfoResponse, error) {
 	out := new(CoreInfoResponse)
-	err := c.cc.Invoke(ctx, Hiddify_Stop_FullMethodName, in, out, opts...)
+	err := c.cc.Invoke(ctx, Core_StartService_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *hiddifyClient) Restart(ctx context.Context, in *StartRequest, opts ...grpc.CallOption) (*CoreInfoResponse, error) {
+func (c *coreClient) Stop(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*CoreInfoResponse, error) {
 	out := new(CoreInfoResponse)
-	err := c.cc.Invoke(ctx, Hiddify_Restart_FullMethodName, in, out, opts...)
+	err := c.cc.Invoke(ctx, Core_Stop_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *hiddifyClient) SelectOutbound(ctx context.Context, in *SelectOutboundRequest, opts ...grpc.CallOption) (*Response, error) {
+func (c *coreClient) Restart(ctx context.Context, in *StartRequest, opts ...grpc.CallOption) (*CoreInfoResponse, error) {
+	out := new(CoreInfoResponse)
+	err := c.cc.Invoke(ctx, Core_Restart_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *coreClient) SelectOutbound(ctx context.Context, in *SelectOutboundRequest, opts ...grpc.CallOption) (*Response, error) {
 	out := new(Response)
-	err := c.cc.Invoke(ctx, Hiddify_SelectOutbound_FullMethodName, in, out, opts...)
+	err := c.cc.Invoke(ctx, Core_SelectOutbound_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *hiddifyClient) UrlTest(ctx context.Context, in *UrlTestRequest, opts ...grpc.CallOption) (*Response, error) {
+func (c *coreClient) UrlTest(ctx context.Context, in *UrlTestRequest, opts ...grpc.CallOption) (*Response, error) {
 	out := new(Response)
-	err := c.cc.Invoke(ctx, Hiddify_UrlTest_FullMethodName, in, out, opts...)
+	err := c.cc.Invoke(ctx, Core_UrlTest_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *hiddifyClient) GenerateWarpConfig(ctx context.Context, in *GenerateWarpConfigRequest, opts ...grpc.CallOption) (*WarpGenerationResponse, error) {
+func (c *coreClient) GenerateWarpConfig(ctx context.Context, in *GenerateWarpConfigRequest, opts ...grpc.CallOption) (*WarpGenerationResponse, error) {
 	out := new(WarpGenerationResponse)
-	err := c.cc.Invoke(ctx, Hiddify_GenerateWarpConfig_FullMethodName, in, out, opts...)
+	err := c.cc.Invoke(ctx, Core_GenerateWarpConfig_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *hiddifyClient) GetSystemProxyStatus(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*SystemProxyStatus, error) {
+func (c *coreClient) GetSystemProxyStatus(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*SystemProxyStatus, error) {
 	out := new(SystemProxyStatus)
-	err := c.cc.Invoke(ctx, Hiddify_GetSystemProxyStatus_FullMethodName, in, out, opts...)
+	err := c.cc.Invoke(ctx, Core_GetSystemProxyStatus_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *hiddifyClient) SetSystemProxyEnabled(ctx context.Context, in *SetSystemProxyEnabledRequest, opts ...grpc.CallOption) (*Response, error) {
+func (c *coreClient) SetSystemProxyEnabled(ctx context.Context, in *SetSystemProxyEnabledRequest, opts ...grpc.CallOption) (*Response, error) {
 	out := new(Response)
-	err := c.cc.Invoke(ctx, Hiddify_SetSystemProxyEnabled_FullMethodName, in, out, opts...)
+	err := c.cc.Invoke(ctx, Core_SetSystemProxyEnabled_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *hiddifyClient) LogListener(ctx context.Context, opts ...grpc.CallOption) (Hiddify_LogListenerClient, error) {
-	stream, err := c.cc.NewStream(ctx, &Hiddify_ServiceDesc.Streams[5], Hiddify_LogListener_FullMethodName, opts...)
+func (c *coreClient) LogListener(ctx context.Context, opts ...grpc.CallOption) (Core_LogListenerClient, error) {
+	stream, err := c.cc.NewStream(ctx, &Core_ServiceDesc.Streams[4], Core_LogListener_FullMethodName, opts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &hiddifyLogListenerClient{stream}
+	x := &coreLogListenerClient{stream}
 	return x, nil
 }
 
-type Hiddify_LogListenerClient interface {
+type Core_LogListenerClient interface {
 	Send(*StopRequest) error
 	Recv() (*LogMessage, error)
 	grpc.ClientStream
 }
 
-type hiddifyLogListenerClient struct {
+type coreLogListenerClient struct {
 	grpc.ClientStream
 }
 
-func (x *hiddifyLogListenerClient) Send(m *StopRequest) error {
+func (x *coreLogListenerClient) Send(m *StopRequest) error {
 	return x.ClientStream.SendMsg(m)
 }
 
-func (x *hiddifyLogListenerClient) Recv() (*LogMessage, error) {
+func (x *coreLogListenerClient) Recv() (*LogMessage, error) {
 	m := new(LogMessage)
 	if err := x.ClientStream.RecvMsg(m); err != nil {
 		return nil, err
@@ -367,20 +493,18 @@ func (x *hiddifyLogListenerClient) Recv() (*LogMessage, error) {
 	return m, nil
 }
 
-// HiddifyServer is the server API for Hiddify service.
-// All implementations must embed UnimplementedHiddifyServer
+// CoreServer is the server API for Core service.
+// All implementations must embed UnimplementedCoreServer
 // for forward compatibility
-type HiddifyServer interface {
-	SayHello(context.Context, *HelloRequest) (*HelloResponse, error)
-	SayHelloStream(Hiddify_SayHelloStreamServer) error
+type CoreServer interface {
 	Start(context.Context, *StartRequest) (*CoreInfoResponse, error)
-	CoreInfoListener(Hiddify_CoreInfoListenerServer) error
-	OutboundsInfo(Hiddify_OutboundsInfoServer) error
-	MainOutboundsInfo(Hiddify_MainOutboundsInfoServer) error
-	GetSystemInfo(Hiddify_GetSystemInfoServer) error
+	CoreInfoListener(Core_CoreInfoListenerServer) error
+	OutboundsInfo(Core_OutboundsInfoServer) error
+	MainOutboundsInfo(Core_MainOutboundsInfoServer) error
+	GetSystemInfo(Core_GetSystemInfoServer) error
 	Setup(context.Context, *SetupRequest) (*Response, error)
 	Parse(context.Context, *ParseRequest) (*ParseResponse, error)
-	//rpc ChangeConfigOptions (ChangeConfigOptionsRequest) returns (CoreInfoResponse);
+	ChangeConfigOptions(context.Context, *ChangeConfigOptionsRequest) (*CoreInfoResponse, error)
 	//rpc GenerateConfig (GenerateConfigRequest) returns (GenerateConfigResponse);
 	StartService(context.Context, *StartRequest) (*CoreInfoResponse, error)
 	Stop(context.Context, *Empty) (*CoreInfoResponse, error)
@@ -390,162 +514,115 @@ type HiddifyServer interface {
 	GenerateWarpConfig(context.Context, *GenerateWarpConfigRequest) (*WarpGenerationResponse, error)
 	GetSystemProxyStatus(context.Context, *Empty) (*SystemProxyStatus, error)
 	SetSystemProxyEnabled(context.Context, *SetSystemProxyEnabledRequest) (*Response, error)
-	LogListener(Hiddify_LogListenerServer) error
-	mustEmbedUnimplementedHiddifyServer()
+	LogListener(Core_LogListenerServer) error
+	mustEmbedUnimplementedCoreServer()
 }
 
-// UnimplementedHiddifyServer must be embedded to have forward compatible implementations.
-type UnimplementedHiddifyServer struct {
+// UnimplementedCoreServer must be embedded to have forward compatible implementations.
+type UnimplementedCoreServer struct {
 }
 
-func (UnimplementedHiddifyServer) SayHello(context.Context, *HelloRequest) (*HelloResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method SayHello not implemented")
-}
-func (UnimplementedHiddifyServer) SayHelloStream(Hiddify_SayHelloStreamServer) error {
-	return status.Errorf(codes.Unimplemented, "method SayHelloStream not implemented")
-}
-func (UnimplementedHiddifyServer) Start(context.Context, *StartRequest) (*CoreInfoResponse, error) {
+func (UnimplementedCoreServer) Start(context.Context, *StartRequest) (*CoreInfoResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Start not implemented")
 }
-func (UnimplementedHiddifyServer) CoreInfoListener(Hiddify_CoreInfoListenerServer) error {
+func (UnimplementedCoreServer) CoreInfoListener(Core_CoreInfoListenerServer) error {
 	return status.Errorf(codes.Unimplemented, "method CoreInfoListener not implemented")
 }
-func (UnimplementedHiddifyServer) OutboundsInfo(Hiddify_OutboundsInfoServer) error {
+func (UnimplementedCoreServer) OutboundsInfo(Core_OutboundsInfoServer) error {
 	return status.Errorf(codes.Unimplemented, "method OutboundsInfo not implemented")
 }
-func (UnimplementedHiddifyServer) MainOutboundsInfo(Hiddify_MainOutboundsInfoServer) error {
+func (UnimplementedCoreServer) MainOutboundsInfo(Core_MainOutboundsInfoServer) error {
 	return status.Errorf(codes.Unimplemented, "method MainOutboundsInfo not implemented")
 }
-func (UnimplementedHiddifyServer) GetSystemInfo(Hiddify_GetSystemInfoServer) error {
+func (UnimplementedCoreServer) GetSystemInfo(Core_GetSystemInfoServer) error {
 	return status.Errorf(codes.Unimplemented, "method GetSystemInfo not implemented")
 }
-func (UnimplementedHiddifyServer) Setup(context.Context, *SetupRequest) (*Response, error) {
+func (UnimplementedCoreServer) Setup(context.Context, *SetupRequest) (*Response, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Setup not implemented")
 }
-func (UnimplementedHiddifyServer) Parse(context.Context, *ParseRequest) (*ParseResponse, error) {
+func (UnimplementedCoreServer) Parse(context.Context, *ParseRequest) (*ParseResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Parse not implemented")
 }
-func (UnimplementedHiddifyServer) StartService(context.Context, *StartRequest) (*CoreInfoResponse, error) {
+func (UnimplementedCoreServer) ChangeConfigOptions(context.Context, *ChangeConfigOptionsRequest) (*CoreInfoResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ChangeConfigOptions not implemented")
+}
+func (UnimplementedCoreServer) StartService(context.Context, *StartRequest) (*CoreInfoResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method StartService not implemented")
 }
-func (UnimplementedHiddifyServer) Stop(context.Context, *Empty) (*CoreInfoResponse, error) {
+func (UnimplementedCoreServer) Stop(context.Context, *Empty) (*CoreInfoResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Stop not implemented")
 }
-func (UnimplementedHiddifyServer) Restart(context.Context, *StartRequest) (*CoreInfoResponse, error) {
+func (UnimplementedCoreServer) Restart(context.Context, *StartRequest) (*CoreInfoResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Restart not implemented")
 }
-func (UnimplementedHiddifyServer) SelectOutbound(context.Context, *SelectOutboundRequest) (*Response, error) {
+func (UnimplementedCoreServer) SelectOutbound(context.Context, *SelectOutboundRequest) (*Response, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SelectOutbound not implemented")
 }
-func (UnimplementedHiddifyServer) UrlTest(context.Context, *UrlTestRequest) (*Response, error) {
+func (UnimplementedCoreServer) UrlTest(context.Context, *UrlTestRequest) (*Response, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UrlTest not implemented")
 }
-func (UnimplementedHiddifyServer) GenerateWarpConfig(context.Context, *GenerateWarpConfigRequest) (*WarpGenerationResponse, error) {
+func (UnimplementedCoreServer) GenerateWarpConfig(context.Context, *GenerateWarpConfigRequest) (*WarpGenerationResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GenerateWarpConfig not implemented")
 }
-func (UnimplementedHiddifyServer) GetSystemProxyStatus(context.Context, *Empty) (*SystemProxyStatus, error) {
+func (UnimplementedCoreServer) GetSystemProxyStatus(context.Context, *Empty) (*SystemProxyStatus, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetSystemProxyStatus not implemented")
 }
-func (UnimplementedHiddifyServer) SetSystemProxyEnabled(context.Context, *SetSystemProxyEnabledRequest) (*Response, error) {
+func (UnimplementedCoreServer) SetSystemProxyEnabled(context.Context, *SetSystemProxyEnabledRequest) (*Response, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SetSystemProxyEnabled not implemented")
 }
-func (UnimplementedHiddifyServer) LogListener(Hiddify_LogListenerServer) error {
+func (UnimplementedCoreServer) LogListener(Core_LogListenerServer) error {
 	return status.Errorf(codes.Unimplemented, "method LogListener not implemented")
 }
-func (UnimplementedHiddifyServer) mustEmbedUnimplementedHiddifyServer() {}
+func (UnimplementedCoreServer) mustEmbedUnimplementedCoreServer() {}
 
-// UnsafeHiddifyServer may be embedded to opt out of forward compatibility for this service.
-// Use of this interface is not recommended, as added methods to HiddifyServer will
+// UnsafeCoreServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to CoreServer will
 // result in compilation errors.
-type UnsafeHiddifyServer interface {
-	mustEmbedUnimplementedHiddifyServer()
+type UnsafeCoreServer interface {
+	mustEmbedUnimplementedCoreServer()
 }
 
-func RegisterHiddifyServer(s grpc.ServiceRegistrar, srv HiddifyServer) {
-	s.RegisterService(&Hiddify_ServiceDesc, srv)
+func RegisterCoreServer(s grpc.ServiceRegistrar, srv CoreServer) {
+	s.RegisterService(&Core_ServiceDesc, srv)
 }
 
-func _Hiddify_SayHello_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(HelloRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(HiddifyServer).SayHello(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: Hiddify_SayHello_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(HiddifyServer).SayHello(ctx, req.(*HelloRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _Hiddify_SayHelloStream_Handler(srv interface{}, stream grpc.ServerStream) error {
-	return srv.(HiddifyServer).SayHelloStream(&hiddifySayHelloStreamServer{stream})
-}
-
-type Hiddify_SayHelloStreamServer interface {
-	Send(*HelloResponse) error
-	Recv() (*HelloRequest, error)
-	grpc.ServerStream
-}
-
-type hiddifySayHelloStreamServer struct {
-	grpc.ServerStream
-}
-
-func (x *hiddifySayHelloStreamServer) Send(m *HelloResponse) error {
-	return x.ServerStream.SendMsg(m)
-}
-
-func (x *hiddifySayHelloStreamServer) Recv() (*HelloRequest, error) {
-	m := new(HelloRequest)
-	if err := x.ServerStream.RecvMsg(m); err != nil {
-		return nil, err
-	}
-	return m, nil
-}
-
-func _Hiddify_Start_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Core_Start_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(StartRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(HiddifyServer).Start(ctx, in)
+		return srv.(CoreServer).Start(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: Hiddify_Start_FullMethodName,
+		FullMethod: Core_Start_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(HiddifyServer).Start(ctx, req.(*StartRequest))
+		return srv.(CoreServer).Start(ctx, req.(*StartRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Hiddify_CoreInfoListener_Handler(srv interface{}, stream grpc.ServerStream) error {
-	return srv.(HiddifyServer).CoreInfoListener(&hiddifyCoreInfoListenerServer{stream})
+func _Core_CoreInfoListener_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(CoreServer).CoreInfoListener(&coreCoreInfoListenerServer{stream})
 }
 
-type Hiddify_CoreInfoListenerServer interface {
+type Core_CoreInfoListenerServer interface {
 	Send(*CoreInfoResponse) error
 	Recv() (*StopRequest, error)
 	grpc.ServerStream
 }
 
-type hiddifyCoreInfoListenerServer struct {
+type coreCoreInfoListenerServer struct {
 	grpc.ServerStream
 }
 
-func (x *hiddifyCoreInfoListenerServer) Send(m *CoreInfoResponse) error {
+func (x *coreCoreInfoListenerServer) Send(m *CoreInfoResponse) error {
 	return x.ServerStream.SendMsg(m)
 }
 
-func (x *hiddifyCoreInfoListenerServer) Recv() (*StopRequest, error) {
+func (x *coreCoreInfoListenerServer) Recv() (*StopRequest, error) {
 	m := new(StopRequest)
 	if err := x.ServerStream.RecvMsg(m); err != nil {
 		return nil, err
@@ -553,25 +630,25 @@ func (x *hiddifyCoreInfoListenerServer) Recv() (*StopRequest, error) {
 	return m, nil
 }
 
-func _Hiddify_OutboundsInfo_Handler(srv interface{}, stream grpc.ServerStream) error {
-	return srv.(HiddifyServer).OutboundsInfo(&hiddifyOutboundsInfoServer{stream})
+func _Core_OutboundsInfo_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(CoreServer).OutboundsInfo(&coreOutboundsInfoServer{stream})
 }
 
-type Hiddify_OutboundsInfoServer interface {
+type Core_OutboundsInfoServer interface {
 	Send(*OutboundGroupList) error
 	Recv() (*StopRequest, error)
 	grpc.ServerStream
 }
 
-type hiddifyOutboundsInfoServer struct {
+type coreOutboundsInfoServer struct {
 	grpc.ServerStream
 }
 
-func (x *hiddifyOutboundsInfoServer) Send(m *OutboundGroupList) error {
+func (x *coreOutboundsInfoServer) Send(m *OutboundGroupList) error {
 	return x.ServerStream.SendMsg(m)
 }
 
-func (x *hiddifyOutboundsInfoServer) Recv() (*StopRequest, error) {
+func (x *coreOutboundsInfoServer) Recv() (*StopRequest, error) {
 	m := new(StopRequest)
 	if err := x.ServerStream.RecvMsg(m); err != nil {
 		return nil, err
@@ -579,25 +656,25 @@ func (x *hiddifyOutboundsInfoServer) Recv() (*StopRequest, error) {
 	return m, nil
 }
 
-func _Hiddify_MainOutboundsInfo_Handler(srv interface{}, stream grpc.ServerStream) error {
-	return srv.(HiddifyServer).MainOutboundsInfo(&hiddifyMainOutboundsInfoServer{stream})
+func _Core_MainOutboundsInfo_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(CoreServer).MainOutboundsInfo(&coreMainOutboundsInfoServer{stream})
 }
 
-type Hiddify_MainOutboundsInfoServer interface {
+type Core_MainOutboundsInfoServer interface {
 	Send(*OutboundGroupList) error
 	Recv() (*StopRequest, error)
 	grpc.ServerStream
 }
 
-type hiddifyMainOutboundsInfoServer struct {
+type coreMainOutboundsInfoServer struct {
 	grpc.ServerStream
 }
 
-func (x *hiddifyMainOutboundsInfoServer) Send(m *OutboundGroupList) error {
+func (x *coreMainOutboundsInfoServer) Send(m *OutboundGroupList) error {
 	return x.ServerStream.SendMsg(m)
 }
 
-func (x *hiddifyMainOutboundsInfoServer) Recv() (*StopRequest, error) {
+func (x *coreMainOutboundsInfoServer) Recv() (*StopRequest, error) {
 	m := new(StopRequest)
 	if err := x.ServerStream.RecvMsg(m); err != nil {
 		return nil, err
@@ -605,25 +682,25 @@ func (x *hiddifyMainOutboundsInfoServer) Recv() (*StopRequest, error) {
 	return m, nil
 }
 
-func _Hiddify_GetSystemInfo_Handler(srv interface{}, stream grpc.ServerStream) error {
-	return srv.(HiddifyServer).GetSystemInfo(&hiddifyGetSystemInfoServer{stream})
+func _Core_GetSystemInfo_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(CoreServer).GetSystemInfo(&coreGetSystemInfoServer{stream})
 }
 
-type Hiddify_GetSystemInfoServer interface {
+type Core_GetSystemInfoServer interface {
 	Send(*SystemInfo) error
 	Recv() (*StopRequest, error)
 	grpc.ServerStream
 }
 
-type hiddifyGetSystemInfoServer struct {
+type coreGetSystemInfoServer struct {
 	grpc.ServerStream
 }
 
-func (x *hiddifyGetSystemInfoServer) Send(m *SystemInfo) error {
+func (x *coreGetSystemInfoServer) Send(m *SystemInfo) error {
 	return x.ServerStream.SendMsg(m)
 }
 
-func (x *hiddifyGetSystemInfoServer) Recv() (*StopRequest, error) {
+func (x *coreGetSystemInfoServer) Recv() (*StopRequest, error) {
 	m := new(StopRequest)
 	if err := x.ServerStream.RecvMsg(m); err != nil {
 		return nil, err
@@ -631,205 +708,223 @@ func (x *hiddifyGetSystemInfoServer) Recv() (*StopRequest, error) {
 	return m, nil
 }
 
-func _Hiddify_Setup_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Core_Setup_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(SetupRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(HiddifyServer).Setup(ctx, in)
+		return srv.(CoreServer).Setup(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: Hiddify_Setup_FullMethodName,
+		FullMethod: Core_Setup_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(HiddifyServer).Setup(ctx, req.(*SetupRequest))
+		return srv.(CoreServer).Setup(ctx, req.(*SetupRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Hiddify_Parse_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Core_Parse_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ParseRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(HiddifyServer).Parse(ctx, in)
+		return srv.(CoreServer).Parse(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: Hiddify_Parse_FullMethodName,
+		FullMethod: Core_Parse_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(HiddifyServer).Parse(ctx, req.(*ParseRequest))
+		return srv.(CoreServer).Parse(ctx, req.(*ParseRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Hiddify_StartService_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Core_ChangeConfigOptions_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ChangeConfigOptionsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CoreServer).ChangeConfigOptions(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Core_ChangeConfigOptions_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CoreServer).ChangeConfigOptions(ctx, req.(*ChangeConfigOptionsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Core_StartService_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(StartRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(HiddifyServer).StartService(ctx, in)
+		return srv.(CoreServer).StartService(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: Hiddify_StartService_FullMethodName,
+		FullMethod: Core_StartService_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(HiddifyServer).StartService(ctx, req.(*StartRequest))
+		return srv.(CoreServer).StartService(ctx, req.(*StartRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Hiddify_Stop_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Core_Stop_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(Empty)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(HiddifyServer).Stop(ctx, in)
+		return srv.(CoreServer).Stop(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: Hiddify_Stop_FullMethodName,
+		FullMethod: Core_Stop_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(HiddifyServer).Stop(ctx, req.(*Empty))
+		return srv.(CoreServer).Stop(ctx, req.(*Empty))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Hiddify_Restart_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Core_Restart_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(StartRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(HiddifyServer).Restart(ctx, in)
+		return srv.(CoreServer).Restart(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: Hiddify_Restart_FullMethodName,
+		FullMethod: Core_Restart_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(HiddifyServer).Restart(ctx, req.(*StartRequest))
+		return srv.(CoreServer).Restart(ctx, req.(*StartRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Hiddify_SelectOutbound_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Core_SelectOutbound_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(SelectOutboundRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(HiddifyServer).SelectOutbound(ctx, in)
+		return srv.(CoreServer).SelectOutbound(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: Hiddify_SelectOutbound_FullMethodName,
+		FullMethod: Core_SelectOutbound_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(HiddifyServer).SelectOutbound(ctx, req.(*SelectOutboundRequest))
+		return srv.(CoreServer).SelectOutbound(ctx, req.(*SelectOutboundRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Hiddify_UrlTest_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Core_UrlTest_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(UrlTestRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(HiddifyServer).UrlTest(ctx, in)
+		return srv.(CoreServer).UrlTest(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: Hiddify_UrlTest_FullMethodName,
+		FullMethod: Core_UrlTest_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(HiddifyServer).UrlTest(ctx, req.(*UrlTestRequest))
+		return srv.(CoreServer).UrlTest(ctx, req.(*UrlTestRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Hiddify_GenerateWarpConfig_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Core_GenerateWarpConfig_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(GenerateWarpConfigRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(HiddifyServer).GenerateWarpConfig(ctx, in)
+		return srv.(CoreServer).GenerateWarpConfig(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: Hiddify_GenerateWarpConfig_FullMethodName,
+		FullMethod: Core_GenerateWarpConfig_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(HiddifyServer).GenerateWarpConfig(ctx, req.(*GenerateWarpConfigRequest))
+		return srv.(CoreServer).GenerateWarpConfig(ctx, req.(*GenerateWarpConfigRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Hiddify_GetSystemProxyStatus_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Core_GetSystemProxyStatus_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(Empty)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(HiddifyServer).GetSystemProxyStatus(ctx, in)
+		return srv.(CoreServer).GetSystemProxyStatus(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: Hiddify_GetSystemProxyStatus_FullMethodName,
+		FullMethod: Core_GetSystemProxyStatus_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(HiddifyServer).GetSystemProxyStatus(ctx, req.(*Empty))
+		return srv.(CoreServer).GetSystemProxyStatus(ctx, req.(*Empty))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Hiddify_SetSystemProxyEnabled_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Core_SetSystemProxyEnabled_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(SetSystemProxyEnabledRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(HiddifyServer).SetSystemProxyEnabled(ctx, in)
+		return srv.(CoreServer).SetSystemProxyEnabled(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: Hiddify_SetSystemProxyEnabled_FullMethodName,
+		FullMethod: Core_SetSystemProxyEnabled_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(HiddifyServer).SetSystemProxyEnabled(ctx, req.(*SetSystemProxyEnabledRequest))
+		return srv.(CoreServer).SetSystemProxyEnabled(ctx, req.(*SetSystemProxyEnabledRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Hiddify_LogListener_Handler(srv interface{}, stream grpc.ServerStream) error {
-	return srv.(HiddifyServer).LogListener(&hiddifyLogListenerServer{stream})
+func _Core_LogListener_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(CoreServer).LogListener(&coreLogListenerServer{stream})
 }
 
-type Hiddify_LogListenerServer interface {
+type Core_LogListenerServer interface {
 	Send(*LogMessage) error
 	Recv() (*StopRequest, error)
 	grpc.ServerStream
 }
 
-type hiddifyLogListenerServer struct {
+type coreLogListenerServer struct {
 	grpc.ServerStream
 }
 
-func (x *hiddifyLogListenerServer) Send(m *LogMessage) error {
+func (x *coreLogListenerServer) Send(m *LogMessage) error {
 	return x.ServerStream.SendMsg(m)
 }
 
-func (x *hiddifyLogListenerServer) Recv() (*StopRequest, error) {
+func (x *coreLogListenerServer) Recv() (*StopRequest, error) {
 	m := new(StopRequest)
 	if err := x.ServerStream.RecvMsg(m); err != nil {
 		return nil, err
@@ -837,99 +932,294 @@ func (x *hiddifyLogListenerServer) Recv() (*StopRequest, error) {
 	return m, nil
 }
 
-// Hiddify_ServiceDesc is the grpc.ServiceDesc for Hiddify service.
+// Core_ServiceDesc is the grpc.ServiceDesc for Core service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
-var Hiddify_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "hiddifyrpc.Hiddify",
-	HandlerType: (*HiddifyServer)(nil),
+var Core_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "hiddifyrpc.Core",
+	HandlerType: (*CoreServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "SayHello",
-			Handler:    _Hiddify_SayHello_Handler,
-		},
-		{
 			MethodName: "Start",
-			Handler:    _Hiddify_Start_Handler,
+			Handler:    _Core_Start_Handler,
 		},
 		{
 			MethodName: "Setup",
-			Handler:    _Hiddify_Setup_Handler,
+			Handler:    _Core_Setup_Handler,
 		},
 		{
 			MethodName: "Parse",
-			Handler:    _Hiddify_Parse_Handler,
+			Handler:    _Core_Parse_Handler,
+		},
+		{
+			MethodName: "ChangeConfigOptions",
+			Handler:    _Core_ChangeConfigOptions_Handler,
 		},
 		{
 			MethodName: "StartService",
-			Handler:    _Hiddify_StartService_Handler,
+			Handler:    _Core_StartService_Handler,
 		},
 		{
 			MethodName: "Stop",
-			Handler:    _Hiddify_Stop_Handler,
+			Handler:    _Core_Stop_Handler,
 		},
 		{
 			MethodName: "Restart",
-			Handler:    _Hiddify_Restart_Handler,
+			Handler:    _Core_Restart_Handler,
 		},
 		{
 			MethodName: "SelectOutbound",
-			Handler:    _Hiddify_SelectOutbound_Handler,
+			Handler:    _Core_SelectOutbound_Handler,
 		},
 		{
 			MethodName: "UrlTest",
-			Handler:    _Hiddify_UrlTest_Handler,
+			Handler:    _Core_UrlTest_Handler,
 		},
 		{
 			MethodName: "GenerateWarpConfig",
-			Handler:    _Hiddify_GenerateWarpConfig_Handler,
+			Handler:    _Core_GenerateWarpConfig_Handler,
 		},
 		{
 			MethodName: "GetSystemProxyStatus",
-			Handler:    _Hiddify_GetSystemProxyStatus_Handler,
+			Handler:    _Core_GetSystemProxyStatus_Handler,
 		},
 		{
 			MethodName: "SetSystemProxyEnabled",
-			Handler:    _Hiddify_SetSystemProxyEnabled_Handler,
+			Handler:    _Core_SetSystemProxyEnabled_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{
 		{
-			StreamName:    "SayHelloStream",
-			Handler:       _Hiddify_SayHelloStream_Handler,
-			ServerStreams: true,
-			ClientStreams: true,
-		},
-		{
 			StreamName:    "CoreInfoListener",
-			Handler:       _Hiddify_CoreInfoListener_Handler,
+			Handler:       _Core_CoreInfoListener_Handler,
 			ServerStreams: true,
 			ClientStreams: true,
 		},
 		{
 			StreamName:    "OutboundsInfo",
-			Handler:       _Hiddify_OutboundsInfo_Handler,
+			Handler:       _Core_OutboundsInfo_Handler,
 			ServerStreams: true,
 			ClientStreams: true,
 		},
 		{
 			StreamName:    "MainOutboundsInfo",
-			Handler:       _Hiddify_MainOutboundsInfo_Handler,
+			Handler:       _Core_MainOutboundsInfo_Handler,
 			ServerStreams: true,
 			ClientStreams: true,
 		},
 		{
 			StreamName:    "GetSystemInfo",
-			Handler:       _Hiddify_GetSystemInfo_Handler,
+			Handler:       _Core_GetSystemInfo_Handler,
 			ServerStreams: true,
 			ClientStreams: true,
 		},
 		{
 			StreamName:    "LogListener",
-			Handler:       _Hiddify_LogListener_Handler,
+			Handler:       _Core_LogListener_Handler,
 			ServerStreams: true,
 			ClientStreams: true,
 		},
 	},
+	Metadata: "hiddifyrpc/hiddify.proto",
+}
+
+const (
+	TunnelService_Start_FullMethodName  = "/hiddifyrpc.TunnelService/Start"
+	TunnelService_Stop_FullMethodName   = "/hiddifyrpc.TunnelService/Stop"
+	TunnelService_Status_FullMethodName = "/hiddifyrpc.TunnelService/Status"
+	TunnelService_Exit_FullMethodName   = "/hiddifyrpc.TunnelService/Exit"
+)
+
+// TunnelServiceClient is the client API for TunnelService service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+type TunnelServiceClient interface {
+	Start(ctx context.Context, in *StartRequest, opts ...grpc.CallOption) (*TunnelResponse, error)
+	Stop(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*TunnelResponse, error)
+	Status(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*TunnelResponse, error)
+	Exit(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*TunnelResponse, error)
+}
+
+type tunnelServiceClient struct {
+	cc grpc.ClientConnInterface
+}
+
+func NewTunnelServiceClient(cc grpc.ClientConnInterface) TunnelServiceClient {
+	return &tunnelServiceClient{cc}
+}
+
+func (c *tunnelServiceClient) Start(ctx context.Context, in *StartRequest, opts ...grpc.CallOption) (*TunnelResponse, error) {
+	out := new(TunnelResponse)
+	err := c.cc.Invoke(ctx, TunnelService_Start_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *tunnelServiceClient) Stop(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*TunnelResponse, error) {
+	out := new(TunnelResponse)
+	err := c.cc.Invoke(ctx, TunnelService_Stop_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *tunnelServiceClient) Status(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*TunnelResponse, error) {
+	out := new(TunnelResponse)
+	err := c.cc.Invoke(ctx, TunnelService_Status_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *tunnelServiceClient) Exit(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*TunnelResponse, error) {
+	out := new(TunnelResponse)
+	err := c.cc.Invoke(ctx, TunnelService_Exit_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// TunnelServiceServer is the server API for TunnelService service.
+// All implementations must embed UnimplementedTunnelServiceServer
+// for forward compatibility
+type TunnelServiceServer interface {
+	Start(context.Context, *StartRequest) (*TunnelResponse, error)
+	Stop(context.Context, *Empty) (*TunnelResponse, error)
+	Status(context.Context, *Empty) (*TunnelResponse, error)
+	Exit(context.Context, *Empty) (*TunnelResponse, error)
+	mustEmbedUnimplementedTunnelServiceServer()
+}
+
+// UnimplementedTunnelServiceServer must be embedded to have forward compatible implementations.
+type UnimplementedTunnelServiceServer struct {
+}
+
+func (UnimplementedTunnelServiceServer) Start(context.Context, *StartRequest) (*TunnelResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Start not implemented")
+}
+func (UnimplementedTunnelServiceServer) Stop(context.Context, *Empty) (*TunnelResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Stop not implemented")
+}
+func (UnimplementedTunnelServiceServer) Status(context.Context, *Empty) (*TunnelResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Status not implemented")
+}
+func (UnimplementedTunnelServiceServer) Exit(context.Context, *Empty) (*TunnelResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Exit not implemented")
+}
+func (UnimplementedTunnelServiceServer) mustEmbedUnimplementedTunnelServiceServer() {}
+
+// UnsafeTunnelServiceServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to TunnelServiceServer will
+// result in compilation errors.
+type UnsafeTunnelServiceServer interface {
+	mustEmbedUnimplementedTunnelServiceServer()
+}
+
+func RegisterTunnelServiceServer(s grpc.ServiceRegistrar, srv TunnelServiceServer) {
+	s.RegisterService(&TunnelService_ServiceDesc, srv)
+}
+
+func _TunnelService_Start_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(StartRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TunnelServiceServer).Start(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: TunnelService_Start_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TunnelServiceServer).Start(ctx, req.(*StartRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _TunnelService_Stop_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Empty)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TunnelServiceServer).Stop(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: TunnelService_Stop_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TunnelServiceServer).Stop(ctx, req.(*Empty))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _TunnelService_Status_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Empty)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TunnelServiceServer).Status(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: TunnelService_Status_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TunnelServiceServer).Status(ctx, req.(*Empty))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _TunnelService_Exit_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Empty)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TunnelServiceServer).Exit(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: TunnelService_Exit_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TunnelServiceServer).Exit(ctx, req.(*Empty))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+// TunnelService_ServiceDesc is the grpc.ServiceDesc for TunnelService service.
+// It's only intended for direct use with grpc.RegisterService,
+// and not to be introspected or modified (even as a copy)
+var TunnelService_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "hiddifyrpc.TunnelService",
+	HandlerType: (*TunnelServiceServer)(nil),
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "Start",
+			Handler:    _TunnelService_Start_Handler,
+		},
+		{
+			MethodName: "Stop",
+			Handler:    _TunnelService_Stop_Handler,
+		},
+		{
+			MethodName: "Status",
+			Handler:    _TunnelService_Status_Handler,
+		},
+		{
+			MethodName: "Exit",
+			Handler:    _TunnelService_Exit_Handler,
+		},
+	},
+	Streams:  []grpc.StreamDesc{},
 	Metadata: "hiddifyrpc/hiddify.proto",
 }

@@ -44,6 +44,7 @@ message StartRequest {
   string config_content = 2;  // Optional if configPath is not provided.
   bool disable_memory_limit = 3;
   bool delay_start = 4;
+  bool enable_old_command_server = 5;
 }
 
 message SetupRequest {
@@ -123,8 +124,10 @@ message SystemProxyStatus {
 }
 
 message ParseRequest {
-  string content = 1;  
-  bool debug = 2;
+  string content = 1; 
+  string config_path = 2; 
+  string temp_path = 3; 
+  bool debug = 4;
 }
 
 message ParseResponse {
@@ -189,9 +192,31 @@ message LogMessage {
 message StopRequest{
 }
 
-service Hiddify {
+
+enum StackType {
+    SYSTEM = 0;
+    GVISOR = 1;
+    MIXED = 2;
+
+}
+
+message TunnelStartRequest {
+    bool ipv6 = 1;
+    int32 server_port = 2;
+    bool strict_route = 3;
+    bool endpoint_independent_nat = 4;
+    StackType stack = 5;
+}
+
+message TunnelResponse {
+    string message = 1;
+}
+
+service Hello {
   rpc SayHello (HelloRequest) returns (HelloResponse);
   rpc SayHelloStream (stream HelloRequest) returns (stream HelloResponse);
+}
+service Core {
   rpc Start (StartRequest) returns (CoreInfoResponse);
   rpc CoreInfoListener (stream StopRequest) returns (stream CoreInfoResponse);
   rpc OutboundsInfo (stream StopRequest) returns (stream OutboundGroupList);
@@ -199,7 +224,7 @@ service Hiddify {
   rpc GetSystemInfo (stream StopRequest) returns (stream SystemInfo);
   rpc Setup (SetupRequest) returns (Response);
   rpc Parse (ParseRequest) returns (ParseResponse);
-  //rpc ChangeConfigOptions (ChangeConfigOptionsRequest) returns (CoreInfoResponse);
+  rpc ChangeConfigOptions (ChangeConfigOptionsRequest) returns (CoreInfoResponse);
   //rpc GenerateConfig (GenerateConfigRequest) returns (GenerateConfigResponse);
   rpc StartService (StartRequest) returns (CoreInfoResponse);
   rpc Stop (Empty) returns (CoreInfoResponse);
@@ -209,6 +234,14 @@ service Hiddify {
   rpc GenerateWarpConfig (GenerateWarpConfigRequest) returns (WarpGenerationResponse);
   rpc GetSystemProxyStatus (Empty) returns (SystemProxyStatus);
   rpc SetSystemProxyEnabled (SetSystemProxyEnabledRequest) returns (Response);
-  rpc LogListener (stream StopRequest) returns (stream LogMessage);  
+  rpc LogListener (stream StopRequest) returns (stream LogMessage); 
+}
 
+
+
+service TunnelService {
+    rpc Start(StartRequest) returns (TunnelResponse);
+    rpc Stop(Empty) returns (TunnelResponse);
+    rpc Status(Empty) returns (TunnelResponse);
+    rpc Exit(Empty) returns (TunnelResponse);
 }

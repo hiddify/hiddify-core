@@ -6,12 +6,11 @@ import (
 
 	pb "github.com/hiddify/libcore/hiddifyrpc"
 	"github.com/sagernet/sing-box/experimental/libbox"
-	"github.com/sagernet/sing/common/observable"
 )
 
-var systemInfoObserver = observable.Observer[pb.SystemInfo]{}
-var outboundsInfoObserver = observable.Observer[pb.OutboundGroupList]{}
-var mainOutboundsInfoObserver = observable.Observer[pb.OutboundGroupList]{}
+var systemInfoObserver = NewObserver[pb.SystemInfo](10)
+var outboundsInfoObserver = NewObserver[pb.OutboundGroupList](10)
+var mainOutboundsInfoObserver = NewObserver[pb.OutboundGroupList](10)
 
 var (
 	statusClient        *libbox.CommandClient
@@ -19,7 +18,7 @@ var (
 	groupInfoOnlyClient *libbox.CommandClient
 )
 
-func (s *server) GetSystemInfo(stream pb.Hiddify_GetSystemInfoServer) error {
+func (s *CoreService) GetSystemInfo(stream pb.Core_GetSystemInfoServer) error {
 	if statusClient == nil {
 		statusClient = libbox.NewCommandClient(
 			&CommandClientHandler{},
@@ -55,7 +54,7 @@ func (s *server) GetSystemInfo(stream pb.Hiddify_GetSystemInfoServer) error {
 	}
 }
 
-func (s *server) OutboundsInfo(stream pb.Hiddify_OutboundsInfoServer) error {
+func (s *CoreService) OutboundsInfo(stream pb.Core_OutboundsInfoServer) error {
 	if groupClient == nil {
 		groupClient = libbox.NewCommandClient(
 			&CommandClientHandler{},
@@ -91,7 +90,7 @@ func (s *server) OutboundsInfo(stream pb.Hiddify_OutboundsInfoServer) error {
 	}
 }
 
-func (s *server) MainOutboundsInfo(stream pb.Hiddify_MainOutboundsInfoServer) error {
+func (s *CoreService) MainOutboundsInfo(stream pb.Core_MainOutboundsInfoServer) error {
 	if groupInfoOnlyClient == nil {
 		groupInfoOnlyClient = libbox.NewCommandClient(
 			&CommandClientHandler{},
@@ -127,8 +126,10 @@ func (s *server) MainOutboundsInfo(stream pb.Hiddify_MainOutboundsInfoServer) er
 	}
 }
 
-// Implement the SelectOutbound method
-func (s *server) SelectOutbound(ctx context.Context, in *pb.SelectOutboundRequest) (*pb.Response, error) {
+func (s *CoreService) SelectOutbound(ctx context.Context, in *pb.SelectOutboundRequest) (*pb.Response, error) {
+	return SelectOutbound(in)
+}
+func SelectOutbound(in *pb.SelectOutboundRequest) (*pb.Response, error) {
 	err := libbox.NewStandaloneCommandClient().SelectOutbound(in.GroupTag, in.OutboundTag)
 
 	if err != nil {
@@ -144,8 +145,10 @@ func (s *server) SelectOutbound(ctx context.Context, in *pb.SelectOutboundReques
 	}, nil
 }
 
-// Implement the UrlTest method
-func (s *server) UrlTest(ctx context.Context, in *pb.UrlTestRequest) (*pb.Response, error) {
+func (s *CoreService) UrlTest(ctx context.Context, in *pb.UrlTestRequest) (*pb.Response, error) {
+	return UrlTest(in)
+}
+func UrlTest(in *pb.UrlTestRequest) (*pb.Response, error) {
 	err := libbox.NewStandaloneCommandClient().URLTest(in.GroupTag)
 
 	if err != nil {

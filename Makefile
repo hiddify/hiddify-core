@@ -111,7 +111,7 @@ release: # Create a new tag for release.
 	sed -i -e "s|<key>CFBundleVersion</key>\s*<string>[^<]*</string>|<key>CFBundleVersion</key><string>$${VERSION_STR}</string>|" Info.plist &&\
     sed -i -e "s|<key>CFBundleShortVersionString</key>\s*<string>[^<]*</string>|<key>CFBundleShortVersionString</key><string>$${VERSION_STR}</string>|" Info.plist &&\
 	sed -i "s|ENV VERSION=.*|ENV VERSION=v$${TAG}|g" docker/Dockerfile && \
-	git add Info.plist && \
+	git add Info.plist docker/Dockerfile && \
 	git commit -m "release: version $${TAG}" && \
 	echo "creating git tag : v$${TAG}" && \
 	git push && \

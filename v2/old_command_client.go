@@ -1,4 +1,4 @@
-package main
+package v2
 
 import (
 	"encoding/json"
@@ -6,31 +6,34 @@ import (
 
 	"github.com/hiddify/libcore/bridge"
 	"github.com/sagernet/sing-box/experimental/libbox"
-	"github.com/sagernet/sing-box/log"
 )
 
-type CommandClientHandler struct {
-	port   int64
-	logger log.Logger
+var (
+	_ libbox.CommandClientHandler = (*OldCommandClientHandler)(nil)
+)
+
+type OldCommandClientHandler struct {
+	port int64
+	// logger log.Logger
 }
 
-func (cch *CommandClientHandler) Connected() {
-	cch.logger.Debug("CONNECTED")
+func (cch *OldCommandClientHandler) Connected() {
+	// cch.logger.Debug("CONNECTED")
 }
 
-func (cch *CommandClientHandler) Disconnected(message string) {
-	cch.logger.Debug("DISCONNECTED: ", message)
+func (cch *OldCommandClientHandler) Disconnected(message string) {
+	// cch.logger.Debug("DISCONNECTED: ", message)
 }
 
-func (cch *CommandClientHandler) ClearLog() {
-	cch.logger.Debug("clear log")
+func (cch *OldCommandClientHandler) ClearLog() {
+	// cch.logger.Debug("clear log")
 }
 
-func (cch *CommandClientHandler) WriteLog(message string) {
-	cch.logger.Debug("log: ", message)
+func (cch *OldCommandClientHandler) WriteLog(message string) {
+	// cch.logger.Debug("log: ", message)
 }
 
-func (cch *CommandClientHandler) WriteStatus(message *libbox.StatusMessage) {
+func (cch *OldCommandClientHandler) WriteStatus(message *libbox.StatusMessage) {
 	msg, err := json.Marshal(
 		map[string]int64{
 			"connections-in":  int64(message.ConnectionsIn),
@@ -41,7 +44,7 @@ func (cch *CommandClientHandler) WriteStatus(message *libbox.StatusMessage) {
 			"downlink-total":  message.DownlinkTotal,
 		},
 	)
-	cch.logger.Debug("Memory: ", libbox.FormatBytes(message.Memory), ", Goroutines: ", message.Goroutines)
+	// cch.logger.Debug("Memory: ", libbox.FormatBytes(message.Memory), ", Goroutines: ", message.Goroutines)
 	if err != nil {
 		bridge.SendStringToPort(cch.port, fmt.Sprintf("error: %e", err))
 	} else {
@@ -49,7 +52,7 @@ func (cch *CommandClientHandler) WriteStatus(message *libbox.StatusMessage) {
 	}
 }
 
-func (cch *CommandClientHandler) WriteGroups(message libbox.OutboundGroupIterator) {
+func (cch *OldCommandClientHandler) WriteGroups(message libbox.OutboundGroupIterator) {
 	if message == nil {
 		return
 	}
@@ -79,12 +82,12 @@ func (cch *CommandClientHandler) WriteGroups(message libbox.OutboundGroupIterato
 	}
 }
 
-func (cch *CommandClientHandler) InitializeClashMode(modeList libbox.StringIterator, currentMode string) {
-	cch.logger.Debug("initial clash mode: ", currentMode)
+func (cch *OldCommandClientHandler) InitializeClashMode(modeList libbox.StringIterator, currentMode string) {
+	// cch.logger.Debug("initial clash mode: ", currentMode)
 }
 
-func (cch *CommandClientHandler) UpdateClashMode(newMode string) {
-	cch.logger.Debug("update clash mode: ", newMode)
+func (cch *OldCommandClientHandler) UpdateClashMode(newMode string) {
+	// cch.logger.Debug("update clash mode: ", newMode)
 }
 
 type OutboundGroup struct {
