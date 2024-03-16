@@ -2,6 +2,7 @@ package v2
 
 import (
 	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/hiddify/libcore/bridge"
@@ -13,7 +14,7 @@ var coreInfoObserver = NewObserver[pb.CoreInfoResponse](10)
 var CoreState = pb.CoreState_STOPPED
 
 func SetCoreStatus(state pb.CoreState, msgType pb.MessageType, message string) pb.CoreInfoResponse {
-	Log(pb.LogLevel_INFO, pb.LogType_CORE, message)
+	Log(pb.LogLevel_INFO, pb.LogType_CORE, fmt.Sprintf("%s: %s %s", state.String(), msgType.String(), message))
 	CoreState = state
 	info := pb.CoreInfoResponse{
 		CoreState:   state,

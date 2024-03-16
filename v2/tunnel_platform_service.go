@@ -16,8 +16,7 @@ type hiddifyNext struct{}
 var port int = 18020
 
 func (m *hiddifyNext) Start(s service.Service) error {
-	go StartTunnelGrpcServer(fmt.Sprintf("127.0.0.1:%d", port))
-	return nil
+	return StartTunnelGrpcServer(fmt.Sprintf("127.0.0.1:%d", port))
 }
 func (m *hiddifyNext) Stop(s service.Service) error {
 	_, err := Stop()

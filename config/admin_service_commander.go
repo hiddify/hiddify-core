@@ -35,15 +35,22 @@ func ActivateTunnelService(opt ConfigOptions) (bool, error) {
 	go startTunnelRequestWithFailover(opt, true)
 	return true, nil
 }
-
+func DeactivateTunnelServiceForce() (bool, error) {
+	return stopTunnelRequest()
+}
 func DeactivateTunnelService() (bool, error) {
+
 	// if !isSupportedOS() {
 	// 	return true, nil
 	// }
+
 	if tunnelServiceRunning {
-		stopTunnelRequest()
+		res, err := stopTunnelRequest()
+		if err != nil {
+			tunnelServiceRunning = false
+		}
+		return res, err
 	}
-	tunnelServiceRunning = false
 
 	return true, nil
 }
@@ -91,14 +98,36 @@ func stopTunnelRequest() (bool, error) {
 	conn, err := grpc.Dial("127.0.0.1:18020", grpc.WithInsecure())
 	if err != nil {
 		log.Printf("did not connect: %v", err)
+		return false, err
 	}
 	defer conn.Close()
 	c := pb.NewTunnelServiceClient(conn)
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*1)
 	defer cancel()
 
-	_, err = c.Stop(ctx, &pb.Empty{})
+	res, err := c.Stop(ctx, &pb.Empty{})
 	if err != nil {
+		log.Printf("did not Stopped: %v %v", res, err)
+		return false, err
+	}
+
+	return true, nil
+}
+
+func ExitTunnelService() (bool, error) {
+	conn, err := grpc.Dial("127.0.0.1:18020", grpc.WithInsecure())
+	if err != nil {
+		log.Printf("did not connect: %v", err)
+		return false, err
+	}
+	defer conn.Close()
+	c := pb.NewTunnelServiceClient(conn)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*1)
+	defer cancel()
+
+	res, err := c.Exit(ctx, &pb.Empty{})
+	if res != nil {
+		log.Printf("did not exit: %v %v", res, err)
 		return false, err
 	}
 
