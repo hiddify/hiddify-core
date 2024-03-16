@@ -66,7 +66,7 @@ func startTunnelRequest(opt ConfigOptions, installService bool) (bool, error) {
 	}
 	defer conn.Close()
 	c := pb.NewTunnelServiceClient(conn)
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*1)
 	defer cancel()
 	_, err = c.Start(ctx, &pb.TunnelStartRequest{
 		Ipv6:                   opt.IPv6Mode == option.DomainStrategy(dns.DomainStrategyUseIPv4),
@@ -94,7 +94,7 @@ func stopTunnelRequest() (bool, error) {
 	}
 	defer conn.Close()
 	c := pb.NewTunnelServiceClient(conn)
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*1)
 	defer cancel()
 
 	_, err = c.Stop(ctx, &pb.Empty{})

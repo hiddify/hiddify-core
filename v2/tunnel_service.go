@@ -3,6 +3,7 @@ package v2
 import (
 	"context"
 	"fmt"
+	"log"
 	"os"
 
 	pb "github.com/hiddify/libcore/hiddifyrpc"
@@ -67,12 +68,14 @@ func makeTunnelConfig(Ipv6 bool, ServerPort int32, StrictRoute bool, EndpointInd
 }
 
 func (s *TunnelService) Stop(ctx context.Context, _ *pb.Empty) (*pb.TunnelResponse, error) {
-	_, err := Stop()
+	res, err := Stop()
+	log.Printf("Stop Result: %+v\n", res)
 	if err != nil {
 		return &pb.TunnelResponse{
 			Message: err.Error(),
 		}, err
 	}
+
 	return &pb.TunnelResponse{
 		Message: "OK",
 	}, err
