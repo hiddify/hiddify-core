@@ -60,8 +60,32 @@ func makeTunnelConfig(Ipv6 bool, ServerPort int32, StrictRoute bool, EndpointInd
 			"server": "127.0.0.1",
 			"server_port": ` + fmt.Sprintf("%d", ServerPort) + `,
 			"version": "5"
+		  },
+		  {
+			"type": "direct",
+			"tag": "direct-out"
 		  }
-		]
+		],
+		"route": {
+		  "rules": [
+			{
+				"process_name":"Hiddify.exe",
+				"outbound": "direct-out"
+			},
+			{
+				"process_name":"Hiddify",
+				"outbound": "direct-out"
+			},
+			{
+				"process_name":"HiddifyCli",
+				"outbound": "direct-out"
+			},
+			{
+				"process_name":"HiddifyCli.exe",
+				"outbound": "direct-out"
+			}
+		  ]
+		}
 	  }`
 
 	return base

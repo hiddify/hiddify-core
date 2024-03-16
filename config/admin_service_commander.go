@@ -4,6 +4,7 @@ import (
 	context "context"
 	"fmt"
 	"log"
+	"net"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -65,17 +66,30 @@ func startTunnelRequestWithFailover(opt ConfigOptions, installService bool) {
 
 	}
 }
-
+func isPortInUse(port string) bool {
+	listener, err := net.Listen("tcp", "127.0.0.1:"+port)
+	if err != nil {
+		return true // Port is in use
+	}
+	defer listener.Close()
+	return false // Port is available
+}
 func startTunnelRequest(opt ConfigOptions, installService bool) (bool, error) {
+	if !isPortInUse("18020") {
+		if installService {
+			return runTunnelService(opt)
+		}
+		return false, fmt.Errorf("service is not running")
+	}
 	conn, err := grpc.Dial("127.0.0.1:18020", grpc.WithInsecure())
 	if err != nil {
 		log.Printf("did not connect: %v", err)
 	}
 	defer conn.Close()
 	c := pb.NewTunnelServiceClient(conn)
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*1)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
-	_, err = c.Start(ctx, &pb.TunnelStartRequest{
+	res, err := c.Start(ctx, &pb.TunnelStartRequest{
 		Ipv6:                   opt.IPv6Mode == option.DomainStrategy(dns.DomainStrategyUseIPv4),
 		ServerPort:             int32(opt.InboundOptions.MixedPort),
 		StrictRoute:            opt.InboundOptions.StrictRoute,
@@ -83,9 +97,10 @@ func startTunnelRequest(opt ConfigOptions, installService bool) (bool, error) {
 		Stack:                  opt.InboundOptions.TUNStack,
 	})
 	if err != nil {
-		log.Printf("could not greet: %v", err)
+		log.Printf("could not greet: %+v %+v", res, err)
 
 		if installService {
+			ExitTunnelService()
 			return runTunnelService(opt)
 		}
 		return false, err
