@@ -8,6 +8,7 @@ import (
 	pb "github.com/hiddify/libcore/hiddifyrpc"
 )
 
+var EnableBridge = true
 var coreInfoObserver = NewObserver[pb.CoreInfoResponse](10)
 var CoreState = pb.CoreState_STOPPED
 
@@ -20,8 +21,10 @@ func SetCoreStatus(state pb.CoreState, msgType pb.MessageType, message string) p
 		Message:     message,
 	}
 	coreInfoObserver.Emit(info)
-	msg, _ := json.Marshal(StatusMessage{Status: convert2OldState(CoreState)})
-	bridge.SendStringToPort(statusPropagationPort, string(msg))
+	if EnableBridge {
+		msg, _ := json.Marshal(StatusMessage{Status: convert2OldState(CoreState)})
+		bridge.SendStringToPort(statusPropagationPort, string(msg))
+	}
 	return info
 
 }

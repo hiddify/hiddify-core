@@ -1,17 +1,18 @@
 package config
 
 import (
+	context "context"
 	"fmt"
-	"io"
-	"net/http"
-	"net/url"
+	"log"
 	"os"
 	"path/filepath"
 	"runtime"
 	"time"
 
+	pb "github.com/hiddify/libcore/hiddifyrpc"
 	"github.com/sagernet/sing-box/option"
 	dns "github.com/sagernet/sing-dns"
+	grpc "google.golang.org/grpc"
 )
 
 const (
@@ -59,49 +60,46 @@ func startTunnelRequestWithFailover(opt ConfigOptions, installService bool) {
 }
 
 func startTunnelRequest(opt ConfigOptions, installService bool) (bool, error) {
-	params := map[string]interface{}{
-		"Ipv6":                   opt.IPv6Mode == option.DomainStrategy(dns.DomainStrategyUseIPv4),
-		"ServerPort":             opt.InboundOptions.MixedPort,
-		"StrictRoute":            opt.InboundOptions.StrictRoute,
-		"EndpointIndependentNat": true,
-		"Stack":                  opt.InboundOptions.TUNStack,
-	}
-
-	values := url.Values{}
-	for key, value := range params {
-		values.Add(key, fmt.Sprint(value))
-	}
-
-	url := fmt.Sprintf("%s%s?%s", serviceURL, startEndpoint, values.Encode())
-	fmt.Printf("URL: %s\n", url)
-	response, err := http.Get(url)
+	conn, err := grpc.Dial("127.0.0.1:18020", grpc.WithInsecure())
 	if err != nil {
+		log.Printf("did not connect: %v", err)
+	}
+	defer conn.Close()
+	c := pb.NewTunnelServiceClient(conn)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+	defer cancel()
+	_, err = c.Start(ctx, &pb.TunnelStartRequest{
+		Ipv6:                   opt.IPv6Mode == option.DomainStrategy(dns.DomainStrategyUseIPv4),
+		ServerPort:             int32(opt.InboundOptions.MixedPort),
+		StrictRoute:            opt.InboundOptions.StrictRoute,
+		EndpointIndependentNat: true,
+		Stack:                  opt.InboundOptions.TUNStack,
+	})
+	if err != nil {
+		log.Printf("could not greet: %v", err)
+
 		if installService {
 			return runTunnelService(opt)
 		}
 		return false, err
-	}
-	defer response.Body.Close()
-	body, err := io.ReadAll(response.Body)
-	fmt.Printf("Response Code: %d %s. Response Body: %s Error:%v\n", response.StatusCode, response.Status, body, err)
-	if err != nil || response.StatusCode != http.StatusOK {
-		return false, fmt.Errorf("Unexpected Status Code: %d %s. Response Body: %s error:%v", response.StatusCode, response.Status, body, err)
 	}
 
 	return true, nil
 }
 
 func stopTunnelRequest() (bool, error) {
-	response, err := http.Get(serviceURL + stopEndpoint)
+	conn, err := grpc.Dial("127.0.0.1:18020", grpc.WithInsecure())
 	if err != nil {
-		return false, fmt.Errorf("HTTP Request Error: %v", err)
+		log.Printf("did not connect: %v", err)
 	}
-	defer response.Body.Close()
+	defer conn.Close()
+	c := pb.NewTunnelServiceClient(conn)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+	defer cancel()
 
-	body, err := io.ReadAll(response.Body)
-	// fmt.Printf("Response Code: %d %s. Response Body: %s Error:%v\n", response.StatusCode, response.Status, body, err)
-	if err != nil || response.StatusCode != http.StatusOK {
-		return false, fmt.Errorf("unexpected Status Code: %d %s. Response Body: %s error:%v", response.StatusCode, response.Status, body, err)
+	_, err = c.Stop(ctx, &pb.Empty{})
+	if err != nil {
+		return false, err
 	}
 
 	return true, nil

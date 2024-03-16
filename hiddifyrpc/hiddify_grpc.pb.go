@@ -1034,7 +1034,7 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type TunnelServiceClient interface {
-	Start(ctx context.Context, in *StartRequest, opts ...grpc.CallOption) (*TunnelResponse, error)
+	Start(ctx context.Context, in *TunnelStartRequest, opts ...grpc.CallOption) (*TunnelResponse, error)
 	Stop(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*TunnelResponse, error)
 	Status(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*TunnelResponse, error)
 	Exit(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*TunnelResponse, error)
@@ -1048,7 +1048,7 @@ func NewTunnelServiceClient(cc grpc.ClientConnInterface) TunnelServiceClient {
 	return &tunnelServiceClient{cc}
 }
 
-func (c *tunnelServiceClient) Start(ctx context.Context, in *StartRequest, opts ...grpc.CallOption) (*TunnelResponse, error) {
+func (c *tunnelServiceClient) Start(ctx context.Context, in *TunnelStartRequest, opts ...grpc.CallOption) (*TunnelResponse, error) {
 	out := new(TunnelResponse)
 	err := c.cc.Invoke(ctx, TunnelService_Start_FullMethodName, in, out, opts...)
 	if err != nil {
@@ -1088,7 +1088,7 @@ func (c *tunnelServiceClient) Exit(ctx context.Context, in *Empty, opts ...grpc.
 // All implementations must embed UnimplementedTunnelServiceServer
 // for forward compatibility
 type TunnelServiceServer interface {
-	Start(context.Context, *StartRequest) (*TunnelResponse, error)
+	Start(context.Context, *TunnelStartRequest) (*TunnelResponse, error)
 	Stop(context.Context, *Empty) (*TunnelResponse, error)
 	Status(context.Context, *Empty) (*TunnelResponse, error)
 	Exit(context.Context, *Empty) (*TunnelResponse, error)
@@ -1099,7 +1099,7 @@ type TunnelServiceServer interface {
 type UnimplementedTunnelServiceServer struct {
 }
 
-func (UnimplementedTunnelServiceServer) Start(context.Context, *StartRequest) (*TunnelResponse, error) {
+func (UnimplementedTunnelServiceServer) Start(context.Context, *TunnelStartRequest) (*TunnelResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Start not implemented")
 }
 func (UnimplementedTunnelServiceServer) Stop(context.Context, *Empty) (*TunnelResponse, error) {
@@ -1125,7 +1125,7 @@ func RegisterTunnelServiceServer(s grpc.ServiceRegistrar, srv TunnelServiceServe
 }
 
 func _TunnelService_Start_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(StartRequest)
+	in := new(TunnelStartRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -1137,7 +1137,7 @@ func _TunnelService_Start_Handler(srv interface{}, ctx context.Context, dec func
 		FullMethod: TunnelService_Start_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(TunnelServiceServer).Start(ctx, req.(*StartRequest))
+		return srv.(TunnelServiceServer).Start(ctx, req.(*TunnelStartRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }

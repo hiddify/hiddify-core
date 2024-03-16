@@ -45,6 +45,7 @@ message StartRequest {
   bool disable_memory_limit = 3;
   bool delay_start = 4;
   bool enable_old_command_server = 5;
+  bool enable_raw_config = 6;
 }
 
 message SetupRequest {
@@ -193,19 +194,14 @@ message StopRequest{
 }
 
 
-enum StackType {
-    SYSTEM = 0;
-    GVISOR = 1;
-    MIXED = 2;
-
-}
 
 message TunnelStartRequest {
     bool ipv6 = 1;
     int32 server_port = 2;
     bool strict_route = 3;
     bool endpoint_independent_nat = 4;
-    StackType stack = 5;
+    string stack = 5;
+
 }
 
 message TunnelResponse {
@@ -240,7 +236,7 @@ service Core {
 
 
 service TunnelService {
-    rpc Start(StartRequest) returns (TunnelResponse);
+    rpc Start(TunnelStartRequest  ) returns (TunnelResponse);
     rpc Stop(Empty) returns (TunnelResponse);
     rpc Status(Empty) returns (TunnelResponse);
     rpc Exit(Empty) returns (TunnelResponse);

@@ -1,4 +1,4 @@
-package admin_service
+package v2
 
 import (
 	"fmt"
@@ -6,7 +6,6 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/hiddify/libcore/global"
 	"github.com/kardianos/service"
 )
 
@@ -17,11 +16,11 @@ type hiddifyNext struct{}
 var port int = 18020
 
 func (m *hiddifyNext) Start(s service.Service) error {
-	go StartWebServer(port, false)
+	go StartTunnelGrpcServer(fmt.Sprintf("127.0.0.1:%d", port))
 	return nil
 }
 func (m *hiddifyNext) Stop(s service.Service) error {
-	err := global.StopServiceC()
+	_, err := Stop()
 	if err != nil {
 		return nil
 	}
@@ -41,7 +40,7 @@ func getCurrentExecutableDirectory() string {
 
 	return executableDirectory
 }
-func StartService(goArg string) (int, string) {
+func StartTunnelService(goArg string) (int, string) {
 	svcConfig := &service.Config{
 		Name:        "HiddifyTunnelService",
 		DisplayName: "Hiddify Tunnel Service",

@@ -1,7 +1,7 @@
 package cmd
 
 import (
-	"github.com/hiddify/libcore/global"
+	v2 "github.com/hiddify/libcore/v2"
 
 	"github.com/spf13/cobra"
 )
@@ -29,5 +29,5 @@ func init() {
 }
 
 func runCommand(cmd *cobra.Command, args []string) {
-	global.RunStandalone(hiddifySettingPath, configPath)
+	v2.RunStandalone(hiddifySettingPath, configPath)
 }

@@ -13,7 +13,6 @@ import (
 	pb "github.com/hiddify/libcore/hiddifyrpc"
 	"github.com/sagernet/sing-box/experimental/libbox"
 	"github.com/sagernet/sing-box/log"
-	"github.com/sagernet/sing-box/option"
 )
 
 var Box *libbox.BoxService
@@ -34,9 +33,11 @@ func StopAndAlert(msgType pb.MessageType, message string) {
 	if commandServer != nil {
 		commandServer.Close()
 	}
-	alert := msgType.String()
-	msg, _ := json.Marshal(StatusMessage{Status: convert2OldState(CoreState), Alert: &alert, Message: &message})
-	bridge.SendStringToPort(statusPropagationPort, string(msg))
+	if EnableBridge {
+		alert := msgType.String()
+		msg, _ := json.Marshal(StatusMessage{Status: convert2OldState(CoreState), Alert: &alert, Message: &message})
+		bridge.SendStringToPort(statusPropagationPort, string(msg))
+	}
 }
 
 func (s *CoreService) Start(ctx context.Context, in *pb.StartRequest) (*pb.CoreInfoResponse, error) {
@@ -48,15 +49,17 @@ func Start(in *pb.StartRequest) (*pb.CoreInfoResponse, error) {
 		Log(pb.LogLevel_FATAL, pb.LogType_CORE, err.Error())
 		StopAndAlert(pb.MessageType_UNEXPECTED_ERROR, err.Error())
 	})
-
+	Log(pb.LogLevel_INFO, pb.LogType_CORE, "Starting")
 	if CoreState != pb.CoreState_STOPPED {
+		Log(pb.LogLevel_INFO, pb.LogType_CORE, "Starting0000")
 		return &pb.CoreInfoResponse{
 			CoreState:   CoreState,
 			MessageType: pb.MessageType_INSTANCE_NOT_STOPPED,
 		}, fmt.Errorf("instance not stopped")
 	}
-	SetCoreStatus(pb.CoreState_STARTING, pb.MessageType_EMPTY, "")
-
+	Log(pb.LogLevel_INFO, pb.LogType_CORE, "Starting1111")
+	SetCoreStatus(pb.CoreState_STARTING, pb.MessageType_EMPTY, "Starting222")
+	Log(pb.LogLevel_INFO, pb.LogType_CORE, "Starting2")
 	libbox.SetMemoryLimit(!in.DisableMemoryLimit)
 	resp, err := StartService(in)
 	return resp, err
@@ -65,7 +68,7 @@ func (s *CoreService) StartService(ctx context.Context, in *pb.StartRequest) (*p
 	return StartService(in)
 }
 func StartService(in *pb.StartRequest) (*pb.CoreInfoResponse, error) {
-
+	Log(pb.LogLevel_INFO, pb.LogType_CORE, "Starting3")
 	content := in.ConfigContent
 	if content == "" {
 
@@ -80,22 +83,28 @@ func StartService(in *pb.StartRequest) (*pb.CoreInfoResponse, error) {
 		}
 		content = string(fileContent)
 	}
-
+	Log(pb.LogLevel_INFO, pb.LogType_CORE, "Starting4")
+	Log(pb.LogLevel_INFO, pb.LogType_CORE, content)
 	parsedContent, err := parseConfig(content)
+	Log(pb.LogLevel_INFO, pb.LogType_CORE, "Parsed")
+
 	if err != nil {
 		Log(pb.LogLevel_FATAL, pb.LogType_CORE, err.Error())
 		resp := SetCoreStatus(pb.CoreState_STOPPED, pb.MessageType_ERROR_PARSING_CONFIG, err.Error())
 		return &resp, err
 	}
-	var patchedOptions *option.Options
-	patchedOptions, err = config.BuildConfig(*configOptions, parsedContent)
-	if err != nil {
-		Log(pb.LogLevel_FATAL, pb.LogType_CORE, err.Error())
-		resp := SetCoreStatus(pb.CoreState_STOPPED, pb.MessageType_ERROR_BUILDING_CONFIG, err.Error())
-		return &resp, err
+	if !in.EnableRawConfig {
+		Log(pb.LogLevel_INFO, pb.LogType_CORE, "Building config")
+		parsedContent_tmp, err := config.BuildConfig(*configOptions, parsedContent)
+		parsedContent = *parsedContent_tmp
+		if err != nil {
+			Log(pb.LogLevel_FATAL, pb.LogType_CORE, err.Error())
+			resp := SetCoreStatus(pb.CoreState_STOPPED, pb.MessageType_ERROR_BUILDING_CONFIG, err.Error())
+			return &resp, err
+		}
 	}
-
-	config.SaveCurrentConfig(filepath.Join(sWorkingPath, "current-config.json"), *patchedOptions)
+	Log(pb.LogLevel_INFO, pb.LogType_CORE, "Saving Contnet")
+	config.SaveCurrentConfig(filepath.Join(sWorkingPath, "current-config.json"), parsedContent)
 	if in.EnableOldCommandServer {
 		err = startCommandServer(*logFactory)
 		if err != nil {
@@ -105,13 +114,15 @@ func StartService(in *pb.StartRequest) (*pb.CoreInfoResponse, error) {
 		}
 	}
 
-	instance, err := NewService(*patchedOptions)
+	Log(pb.LogLevel_INFO, pb.LogType_CORE, "Stating Service ")
+	instance, err := NewService(parsedContent)
+
 	if err != nil {
 		Log(pb.LogLevel_FATAL, pb.LogType_CORE, err.Error())
 		resp := SetCoreStatus(pb.CoreState_STOPPED, pb.MessageType_CREATE_SERVICE, err.Error())
 		return &resp, err
 	}
-
+	Log(pb.LogLevel_INFO, pb.LogType_CORE, "Service.. started")
 	if in.DelayStart {
 		<-time.After(250 * time.Millisecond)
 	}
