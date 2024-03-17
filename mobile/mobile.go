@@ -11,7 +11,8 @@ import (
 )
 
 func Setup() error {
-	return config.StartGRPCServer(7078)
+	// return config.StartGRPCServer(7078)
+	return nil
 }
 
 func Parse(path string, tempPath string, debug bool) error {
@@ -44,6 +45,7 @@ func BuildConfig(path string, configOptionsJson string) (string, error) {
 			return "", err
 		}
 	}
+
 	return config.BuildConfigJson(*configOptions, options)
 }
 
