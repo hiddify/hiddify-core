@@ -42,6 +42,9 @@ func (csh *CommandServerHandler) SetSystemProxyEnabled(isEnabled bool) error {
 	return csh.ServiceReload()
 }
 
+func (csh *CommandServerHandler) PostServiceClose() {
+
+}
 func startCommandServer(logFactory log.Factory) error {
 	logger := logFactory.NewLogger("[Command Server Handler]")
 	logger.Trace("Starting command server")
