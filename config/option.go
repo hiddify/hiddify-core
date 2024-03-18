@@ -121,7 +121,7 @@ func DefaultConfigOptions() *ConfigOptions {
 		LogLevel:       "warn",
 		EnableClashApi: true,
 		ClashApiPort:   6756,
-		ClashApiSecret: "hiddify",
+		ClashApiSecret: "",
 		GeoIPPath:      "geoip.db",
 		GeoSitePath:    "geosite.db",
 		Rules:          []Rule{},

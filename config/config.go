@@ -2,8 +2,10 @@ package config
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"math/rand"
 	"net"
 	"net/netip"
 	"net/url"
@@ -70,6 +72,9 @@ func BuildConfig(opt ConfigOptions, input option.Options) (*option.Options, erro
 	}
 
 	if opt.EnableClashApi {
+		if opt.ClashApiSecret == "" {
+			opt.ClashApiSecret = generateRandomString(16)
+		}
 		options.Experimental = &option.ExperimentalOptions{
 			ClashAPI: &option.ClashAPIOptions{
 				ExternalController: fmt.Sprintf("%s:%d", "127.0.0.1", opt.ClashApiPort),
@@ -631,4 +636,22 @@ func removeDuplicateStr(strSlice []string) []string {
 		}
 	}
 	return list
+}
+
+func generateRandomString(length int) string {
+	// Determine the number of bytes needed
+	bytesNeeded := (length*6 + 7) / 8
+
+	// Generate random bytes
+	randomBytes := make([]byte, bytesNeeded)
+	_, err := rand.Read(randomBytes)
+	if err != nil {
+		return "hiddify"
+	}
+
+	// Encode random bytes to base64
+	randomString := base64.URLEncoding.EncodeToString(randomBytes)
+
+	// Trim padding characters and return the string
+	return randomString[:length]
 }
