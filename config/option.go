@@ -9,6 +9,7 @@ type ConfigOptions struct {
 	LogLevel       string      `json:"log-level"`
 	EnableClashApi bool        `json:"enable-clash-api"`
 	ClashApiPort   uint16      `json:"clash-api-port"`
+	ClashApiSecret string      `json:"clash-api-secret"`
 	GeoIPPath      string      `json:"geoip-path"`
 	GeoSitePath    string      `json:"geosite-path"`
 	Rules          []Rule      `json:"rules"`
@@ -117,9 +118,10 @@ func DefaultConfigOptions() *ConfigOptions {
 			BypassLAN:              false,
 			AllowConnectionFromLAN: false,
 		},
-		LogLevel:       "info",
+		LogLevel:       "warn",
 		EnableClashApi: true,
 		ClashApiPort:   6756,
+		ClashApiSecret: "hiddify",
 		GeoIPPath:      "geoip.db",
 		GeoSitePath:    "geosite.db",
 		Rules:          []Rule{},

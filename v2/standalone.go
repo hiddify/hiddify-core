@@ -21,6 +21,7 @@ import (
 
 func RunStandalone(hiddifySettingPath string, configPath string) error {
 	fmt.Println("Running in standalone mode")
+	useFlutterBridge = false
 	current, err := readAndBuildConfig(hiddifySettingPath, configPath)
 	if err != nil {
 		fmt.Printf("Error in read and build config %v", err)
@@ -28,17 +29,19 @@ func RunStandalone(hiddifySettingPath string, configPath string) error {
 	}
 
 	go StartService(&pb.StartRequest{
-		ConfigPath:             configPath,
+		ConfigContent:          current.Config,
 		EnableOldCommandServer: false,
 		DelayStart:             false,
+		EnableRawConfig:        true,
 	})
 	go updateConfigInterval(current, hiddifySettingPath, configPath)
-	fmt.Printf("Press CTRL+C to stop\n")
-	fmt.Printf("Open http://localhost:6756/?secret=hiddify in your browser\n")
+
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
 
+	fmt.Printf("Waiting for CTRL+C to stop\n")
 	<-sigChan
+	fmt.Printf("CTRL+C recived-->stopping\n")
 	_, err = Stop()
 
 	return err
@@ -63,6 +66,7 @@ func readAndBuildConfig(hiddifySettingPath string, configPath string) (ConfigRes
 			return result, err
 		}
 	}
+	configOptions = hiddifyconfig
 	result.Config, err = buildConfig(result.Config, *hiddifyconfig)
 	if err != nil {
 		return result, err
@@ -161,9 +165,7 @@ func buildConfig(configContent string, options config.ConfigOptions) (string, er
 		finalconfig.Experimental.ClashAPI.ExternalController = "127.0.0.1:6756"
 	}
 
-	if finalconfig.Experimental.ClashAPI.Secret == "" {
-		// finalconfig.Experimental.ClashAPI.Secret = "hiddify"
-	}
+	fmt.Printf("Open http://localhost:6756/ui/?secret=%s in your browser\n", finalconfig.Experimental.ClashAPI.Secret)
 
 	if err := Setup("./", "./", "./tmp", 0, false); err != nil {
 		return "", fmt.Errorf("failed to set up global configuration: %w", err)
@@ -195,6 +197,7 @@ func updateConfigInterval(current ConfigResult, hiddifySettingPath string, confi
 				DelayStart:             false,
 				EnableOldCommandServer: false,
 				DisableMemoryLimit:     false,
+				EnableRawConfig:        true,
 			})
 		}
 		current = new

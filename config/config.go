@@ -73,7 +73,9 @@ func BuildConfig(opt ConfigOptions, input option.Options) (*option.Options, erro
 		options.Experimental = &option.ExperimentalOptions{
 			ClashAPI: &option.ClashAPIOptions{
 				ExternalController: fmt.Sprintf("%s:%d", "127.0.0.1", opt.ClashApiPort),
+				Secret:             opt.ClashApiSecret,
 			},
+
 			CacheFile: &option.CacheFileOptions{
 				Enabled: true,
 				Path:    "clash.db",

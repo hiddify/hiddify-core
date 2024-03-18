@@ -13,7 +13,7 @@ func (s *TunnelService) Start(ctx context.Context, in *pb.TunnelStartRequest) (*
 	if in.ServerPort == 0 {
 		in.ServerPort = 2334
 	}
-	EnableBridge = false
+	useFlutterBridge = false
 	res, err := Start(&pb.StartRequest{
 		ConfigContent:          makeTunnelConfig(in.Ipv6, in.ServerPort, in.StrictRoute, in.EndpointIndependentNat, in.Stack),
 		EnableOldCommandServer: false,

@@ -9,12 +9,15 @@ import (
 	pb "github.com/hiddify/libcore/hiddifyrpc"
 )
 
-var EnableBridge = true
 var coreInfoObserver = NewObserver[pb.CoreInfoResponse](10)
 var CoreState = pb.CoreState_STOPPED
 
 func SetCoreStatus(state pb.CoreState, msgType pb.MessageType, message string) pb.CoreInfoResponse {
-	Log(pb.LogLevel_INFO, pb.LogType_CORE, fmt.Sprintf("%s: %s %s", state.String(), msgType.String(), message))
+	msg := fmt.Sprintf("%s: %s %s", state.String(), msgType.String(), message)
+	if msgType == pb.MessageType_EMPTY {
+		msg = fmt.Sprintf("%s: %s", state.String(), message)
+	}
+	Log(pb.LogLevel_INFO, pb.LogType_CORE, msg)
 	CoreState = state
 	info := pb.CoreInfoResponse{
 		CoreState:   state,
@@ -22,7 +25,7 @@ func SetCoreStatus(state pb.CoreState, msgType pb.MessageType, message string) p
 		Message:     message,
 	}
 	coreInfoObserver.Emit(info)
-	if EnableBridge {
+	if useFlutterBridge {
 		msg, _ := json.Marshal(StatusMessage{Status: convert2OldState(CoreState)})
 		bridge.SendStringToPort(statusPropagationPort, string(msg))
 	}
@@ -41,9 +44,9 @@ func (s *CoreService) CoreInfoListener(stream pb.Core_CoreInfoListenerServer) er
 	for {
 		select {
 		case <-stream.Context().Done():
-			break
+			return nil
 		case <-stopch:
-			break
+			return nil
 		case info := <-coreSub:
 			stream.Send(&info)
 		case <-time.After(500 * time.Millisecond):

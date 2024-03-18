@@ -15,10 +15,13 @@ import (
 	"github.com/sagernet/sing-box/log"
 )
 
-var Box *libbox.BoxService
-var configOptions *config.ConfigOptions
-var activeConfigPath *string
-var coreLogFactory log.Factory
+var (
+	Box              *libbox.BoxService
+	configOptions    *config.ConfigOptions
+	activeConfigPath string
+	coreLogFactory   log.Factory
+	useFlutterBridge bool = true
+)
 
 func StopAndAlert(msgType pb.MessageType, message string) {
 	SetCoreStatus(pb.CoreState_STOPPED, msgType, message)
@@ -33,7 +36,7 @@ func StopAndAlert(msgType pb.MessageType, message string) {
 	if oldCommandServer != nil {
 		oldCommandServer.Close()
 	}
-	if EnableBridge {
+	if useFlutterBridge {
 		alert := msgType.String()
 		msg, _ := json.Marshal(StatusMessage{Status: convert2OldState(CoreState), Alert: &alert, Message: &message})
 		bridge.SendStringToPort(statusPropagationPort, string(msg))
@@ -57,9 +60,8 @@ func Start(in *pb.StartRequest) (*pb.CoreInfoResponse, error) {
 			MessageType: pb.MessageType_INSTANCE_NOT_STOPPED,
 		}, fmt.Errorf("instance not stopped")
 	}
-	Log(pb.LogLevel_INFO, pb.LogType_CORE, "Starting1111")
-	SetCoreStatus(pb.CoreState_STARTING, pb.MessageType_EMPTY, "Starting222")
-	Log(pb.LogLevel_INFO, pb.LogType_CORE, "Starting2")
+	Log(pb.LogLevel_DEBUG, pb.LogType_CORE, "Starting Core")
+	SetCoreStatus(pb.CoreState_STARTING, pb.MessageType_EMPTY, "")
 	libbox.SetMemoryLimit(!in.DisableMemoryLimit)
 	resp, err := StartService(in)
 	return resp, err
@@ -68,14 +70,12 @@ func (s *CoreService) StartService(ctx context.Context, in *pb.StartRequest) (*p
 	return StartService(in)
 }
 func StartService(in *pb.StartRequest) (*pb.CoreInfoResponse, error) {
-	Log(pb.LogLevel_INFO, pb.LogType_CORE, "Starting3")
+	Log(pb.LogLevel_DEBUG, pb.LogType_CORE, "Starting Core Service")
 	content := in.ConfigContent
 	if content == "" {
 
-		if in.ConfigPath != "" {
-			activeConfigPath = &in.ConfigPath
-		}
-		fileContent, err := os.ReadFile(*activeConfigPath)
+		activeConfigPath = in.ConfigPath
+		fileContent, err := os.ReadFile(activeConfigPath)
 		if err != nil {
 			Log(pb.LogLevel_FATAL, pb.LogType_CORE, err.Error())
 			resp := SetCoreStatus(pb.CoreState_STOPPED, pb.MessageType_ERROR_READING_CONFIG, err.Error())
@@ -84,10 +84,10 @@ func StartService(in *pb.StartRequest) (*pb.CoreInfoResponse, error) {
 		}
 		content = string(fileContent)
 	}
-	Log(pb.LogLevel_INFO, pb.LogType_CORE, "Starting4")
-	Log(pb.LogLevel_INFO, pb.LogType_CORE, content)
+	Log(pb.LogLevel_DEBUG, pb.LogType_CORE, "Parsing Config")
+
 	parsedContent, err := parseConfig(content)
-	Log(pb.LogLevel_INFO, pb.LogType_CORE, "Parsed")
+	Log(pb.LogLevel_DEBUG, pb.LogType_CORE, "Parsed")
 
 	if err != nil {
 		Log(pb.LogLevel_FATAL, pb.LogType_CORE, err.Error())
@@ -96,20 +96,24 @@ func StartService(in *pb.StartRequest) (*pb.CoreInfoResponse, error) {
 		return &resp, err
 	}
 	if !in.EnableRawConfig {
-		Log(pb.LogLevel_INFO, pb.LogType_CORE, "Building config")
+		Log(pb.LogLevel_DEBUG, pb.LogType_CORE, "Building config")
 		parsedContent_tmp, err := config.BuildConfig(*configOptions, parsedContent)
-		parsedContent = *parsedContent_tmp
 		if err != nil {
 			Log(pb.LogLevel_FATAL, pb.LogType_CORE, err.Error())
 			resp := SetCoreStatus(pb.CoreState_STOPPED, pb.MessageType_ERROR_BUILDING_CONFIG, err.Error())
 			StopAndAlert(pb.MessageType_UNEXPECTED_ERROR, err.Error())
 			return &resp, err
 		}
+		parsedContent = *parsedContent_tmp
 	}
-	Log(pb.LogLevel_INFO, pb.LogType_CORE, "Saving Contnet")
-	config.SaveCurrentConfig(filepath.Join(sWorkingPath, "current-config.json"), parsedContent)
+	Log(pb.LogLevel_DEBUG, pb.LogType_CORE, "Saving config")
+	currentBuildConfigPath := filepath.Join(sWorkingPath, "current-config.json")
+	config.SaveCurrentConfig(currentBuildConfigPath, parsedContent)
+	if activeConfigPath == "" {
+		activeConfigPath = currentBuildConfigPath
+	}
 	if in.EnableOldCommandServer {
-		Log(pb.LogLevel_INFO, pb.LogType_CORE, "Starting Command Server")
+		Log(pb.LogLevel_DEBUG, pb.LogType_CORE, "Starting Command Server")
 		err = startCommandServer()
 		if err != nil {
 			Log(pb.LogLevel_FATAL, pb.LogType_CORE, err.Error())
@@ -119,7 +123,7 @@ func StartService(in *pb.StartRequest) (*pb.CoreInfoResponse, error) {
 		}
 	}
 
-	Log(pb.LogLevel_INFO, pb.LogType_CORE, "Stating Service ")
+	Log(pb.LogLevel_DEBUG, pb.LogType_CORE, "Stating Service ")
 	instance, err := NewService(parsedContent)
 
 	if err != nil {
@@ -128,7 +132,7 @@ func StartService(in *pb.StartRequest) (*pb.CoreInfoResponse, error) {
 		StopAndAlert(pb.MessageType_UNEXPECTED_ERROR, err.Error())
 		return &resp, err
 	}
-	Log(pb.LogLevel_INFO, pb.LogType_CORE, "Service.. started")
+	Log(pb.LogLevel_DEBUG, pb.LogType_CORE, "Service.. started")
 	if in.DelayStart {
 		<-time.After(250 * time.Millisecond)
 	}

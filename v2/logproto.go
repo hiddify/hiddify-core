@@ -15,7 +15,10 @@ func NewObserver[T any](listenerBufferSize int) *observable.Observer[T] {
 var logObserver = NewObserver[pb.LogMessage](10)
 
 func Log(level pb.LogLevel, typ pb.LogType, message string) {
-	fmt.Printf("%s %s %s\n", level, typ, message)
+	if level != pb.LogLevel_DEBUG {
+		fmt.Printf("%s %s %s\n", level, typ, message)
+
+	}
 	logObserver.Emit(pb.LogMessage{
 		Level:   level,
 		Type:    typ,
