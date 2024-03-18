@@ -45,9 +45,14 @@ func Setup(basePath string, workingPath string, tempPath string, statusPort int6
 		log.Options{
 			DefaultWriter: defaultWriter,
 			BaseTime:      time.Now(),
-			Observable:    false,
+			Observable:    true,
+			// Options: option.LogOptions{
+			// 	Disabled: false,
+			// 	Level:    "trace",
+			// 	Output:   "stdout",
+			// },
 		})
-	logFactory = &factory
+	coreLogFactory = factory
 	return err
 }
 

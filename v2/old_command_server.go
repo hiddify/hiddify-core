@@ -7,7 +7,7 @@ import (
 	"github.com/sagernet/sing-box/log"
 )
 
-var commandServer *libbox.CommandServer
+var oldCommandServer *libbox.CommandServer
 
 type CommandServerHandler struct {
 	logger log.Logger
@@ -17,9 +17,9 @@ func (csh *CommandServerHandler) ServiceReload() error {
 	csh.logger.Trace("Reloading service")
 	SetCoreStatus(pb.CoreState_STARTING, pb.MessageType_EMPTY, "")
 
-	if commandServer != nil {
-		commandServer.SetService(nil)
-		commandServer = nil
+	if oldCommandServer != nil {
+		oldCommandServer.SetService(nil)
+		oldCommandServer = nil
 	}
 	if Box != nil {
 		Box.Close()
@@ -45,9 +45,9 @@ func (csh *CommandServerHandler) SetSystemProxyEnabled(isEnabled bool) error {
 func (csh *CommandServerHandler) PostServiceClose() {
 
 }
-func startCommandServer(logFactory log.Factory) error {
-	logger := logFactory.NewLogger("[Command Server Handler]")
+func startCommandServer() error {
+	logger := coreLogFactory.NewLogger("[Command Server Handler]")
 	logger.Trace("Starting command server")
-	commandServer = libbox.NewCommandServer(&CommandServerHandler{logger: logger}, 300)
-	return commandServer.Start()
+	oldCommandServer = libbox.NewCommandServer(&CommandServerHandler{logger: logger}, 300)
+	return oldCommandServer.Start()
 }

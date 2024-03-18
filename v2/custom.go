@@ -18,20 +18,20 @@ import (
 var Box *libbox.BoxService
 var configOptions *config.ConfigOptions
 var activeConfigPath *string
-var logFactory *log.Factory
+var coreLogFactory log.Factory
 
 func StopAndAlert(msgType pb.MessageType, message string) {
 	SetCoreStatus(pb.CoreState_STOPPED, msgType, message)
 	config.DeactivateTunnelService()
-	if commandServer != nil {
-		commandServer.SetService(nil)
+	if oldCommandServer != nil {
+		oldCommandServer.SetService(nil)
 	}
 	if Box != nil {
 		Box.Close()
 		Box = nil
 	}
-	if commandServer != nil {
-		commandServer.Close()
+	if oldCommandServer != nil {
+		oldCommandServer.Close()
 	}
 	if EnableBridge {
 		alert := msgType.String()
@@ -79,6 +79,7 @@ func StartService(in *pb.StartRequest) (*pb.CoreInfoResponse, error) {
 		if err != nil {
 			Log(pb.LogLevel_FATAL, pb.LogType_CORE, err.Error())
 			resp := SetCoreStatus(pb.CoreState_STOPPED, pb.MessageType_ERROR_READING_CONFIG, err.Error())
+			StopAndAlert(pb.MessageType_UNEXPECTED_ERROR, err.Error())
 			return &resp, err
 		}
 		content = string(fileContent)
@@ -91,6 +92,7 @@ func StartService(in *pb.StartRequest) (*pb.CoreInfoResponse, error) {
 	if err != nil {
 		Log(pb.LogLevel_FATAL, pb.LogType_CORE, err.Error())
 		resp := SetCoreStatus(pb.CoreState_STOPPED, pb.MessageType_ERROR_PARSING_CONFIG, err.Error())
+		StopAndAlert(pb.MessageType_UNEXPECTED_ERROR, err.Error())
 		return &resp, err
 	}
 	if !in.EnableRawConfig {
@@ -100,16 +102,19 @@ func StartService(in *pb.StartRequest) (*pb.CoreInfoResponse, error) {
 		if err != nil {
 			Log(pb.LogLevel_FATAL, pb.LogType_CORE, err.Error())
 			resp := SetCoreStatus(pb.CoreState_STOPPED, pb.MessageType_ERROR_BUILDING_CONFIG, err.Error())
+			StopAndAlert(pb.MessageType_UNEXPECTED_ERROR, err.Error())
 			return &resp, err
 		}
 	}
 	Log(pb.LogLevel_INFO, pb.LogType_CORE, "Saving Contnet")
 	config.SaveCurrentConfig(filepath.Join(sWorkingPath, "current-config.json"), parsedContent)
 	if in.EnableOldCommandServer {
-		err = startCommandServer(*logFactory)
+		Log(pb.LogLevel_INFO, pb.LogType_CORE, "Starting Command Server")
+		err = startCommandServer()
 		if err != nil {
 			Log(pb.LogLevel_FATAL, pb.LogType_CORE, err.Error())
 			resp := SetCoreStatus(pb.CoreState_STOPPED, pb.MessageType_START_COMMAND_SERVER, err.Error())
+			StopAndAlert(pb.MessageType_UNEXPECTED_ERROR, err.Error())
 			return &resp, err
 		}
 	}
@@ -120,6 +125,7 @@ func StartService(in *pb.StartRequest) (*pb.CoreInfoResponse, error) {
 	if err != nil {
 		Log(pb.LogLevel_FATAL, pb.LogType_CORE, err.Error())
 		resp := SetCoreStatus(pb.CoreState_STOPPED, pb.MessageType_CREATE_SERVICE, err.Error())
+		StopAndAlert(pb.MessageType_UNEXPECTED_ERROR, err.Error())
 		return &resp, err
 	}
 	Log(pb.LogLevel_INFO, pb.LogType_CORE, "Service.. started")
@@ -131,11 +137,12 @@ func StartService(in *pb.StartRequest) (*pb.CoreInfoResponse, error) {
 	if err != nil {
 		Log(pb.LogLevel_FATAL, pb.LogType_CORE, err.Error())
 		resp := SetCoreStatus(pb.CoreState_STOPPED, pb.MessageType_START_SERVICE, err.Error())
+		StopAndAlert(pb.MessageType_UNEXPECTED_ERROR, err.Error())
 		return &resp, err
 	}
 	Box = instance
 	if in.EnableOldCommandServer {
-		commandServer.SetService(Box)
+		oldCommandServer.SetService(Box)
 	}
 
 	resp := SetCoreStatus(pb.CoreState_STARTED, pb.MessageType_EMPTY, "")
@@ -263,8 +270,8 @@ func Stop() (*pb.CoreInfoResponse, error) {
 	}
 	SetCoreStatus(pb.CoreState_STOPPING, pb.MessageType_EMPTY, "")
 	config.DeactivateTunnelService()
-	if commandServer != nil {
-		commandServer.SetService(nil)
+	if oldCommandServer != nil {
+		oldCommandServer.SetService(nil)
 	}
 
 	err := Box.Close()
@@ -276,16 +283,16 @@ func Stop() (*pb.CoreInfoResponse, error) {
 		}, fmt.Errorf("Error while stopping the service.")
 	}
 	Box = nil
-	if commandServer != nil {
-		err = commandServer.Close()
+	if oldCommandServer != nil {
+		err = oldCommandServer.Close()
 		if err != nil {
 			return &pb.CoreInfoResponse{
 				CoreState:   CoreState,
 				MessageType: pb.MessageType_UNEXPECTED_ERROR,
 				Message:     "Error while Closing the comand server.",
-			}, fmt.Errorf("Error while Closing the comand server.")
+			}, fmt.Errorf("error while Closing the comand server.")
 		}
-		commandServer = nil
+		oldCommandServer = nil
 	}
 	resp := SetCoreStatus(pb.CoreState_STOPPED, pb.MessageType_EMPTY, "")
 	return &resp, nil

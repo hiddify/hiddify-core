@@ -15,8 +15,8 @@ func StartCommand(command int32, port int64) error {
 	case libbox.CommandStatus:
 		oldStatusClient = libbox.NewCommandClient(
 			&OldCommandClientHandler{
-				port: port,
-				// logger: logFactory.NewLogger("[Status Command Client]"),
+				port:   port,
+				logger: coreLogFactory.NewLogger("[Status Command Client]"),
 			},
 			&libbox.CommandClientOptions{
 				Command:        libbox.CommandStatus,
@@ -27,8 +27,8 @@ func StartCommand(command int32, port int64) error {
 	case libbox.CommandGroup:
 		oldGroupClient = libbox.NewCommandClient(
 			&OldCommandClientHandler{
-				port: port,
-				// logger: logFactory.NewLogger("[Group Command Client]"),
+				port:   port,
+				logger: coreLogFactory.NewLogger("[Group Command Client]"),
 			},
 			&libbox.CommandClientOptions{
 				Command:        libbox.CommandGroup,
@@ -39,8 +39,8 @@ func StartCommand(command int32, port int64) error {
 	case libbox.CommandGroupInfoOnly:
 		oldGroupInfoOnlyClient = libbox.NewCommandClient(
 			&OldCommandClientHandler{
-				port: port,
-				// logger: logFactory.NewLogger("[GroupInfoOnly Command Client]"),
+				port:   port,
+				logger: coreLogFactory.NewLogger("[GroupInfoOnly Command Client]"),
 			},
 			&libbox.CommandClientOptions{
 				Command:        libbox.CommandGroupInfoOnly,
