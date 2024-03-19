@@ -53,8 +53,8 @@ github.com/hiddify-com/wireguard-go v0.0.2-alpha.0.20240220074702-29dc5459810f h
 github.com/hiddify-com/wireguard-go v0.0.2-alpha.0.20240220074702-29dc5459810f/go.mod h1:E1qZQpw2IrbRtFpTloTHGfJ2bJc4ZpZRNS497Eq5jCo=
 github.com/hiddify/hiddify-sing-box v1.8.9-0.20240317200213-86ca8ebe3f03 h1:LHMR3XCDrlaE1L0kLs+Z+FbR3NXTQh/wEQf82YCj39g=
 github.com/hiddify/hiddify-sing-box v1.8.9-0.20240317200213-86ca8ebe3f03/go.mod h1:2vu3eP0ACqN3CllaSIhWKXJToutw2s//ark656PpgEU=
-github.com/hiddify/ray2sing v0.0.0-20240317215336-1b509113fb3c h1:XEsRxIymIRQJOqKc3JN7ZSdFrCsBsqNhZmRzY1f/1/4=
-github.com/hiddify/ray2sing v0.0.0-20240317215336-1b509113fb3c/go.mod h1:zYKnf7EoPqrk7JOMO9BApTXxfH0sva8AKfoFywN7uuA=
+github.com/hiddify/ray2sing v0.0.0-20240319101544-08daaf978197 h1:DeSFnFifp/bd83rvX4RYUwOOlCZkUGk+REuMTXBaBHk=
+github.com/hiddify/ray2sing v0.0.0-20240319101544-08daaf978197/go.mod h1:UYYahiWAtp1PfWAnhZQv+GyYSLms5/foB63q3ACYryE=
 github.com/hiddify/wireguard-go v0.0.0-20240302132803-629b7c39b487 h1:OtYe5IXuTqnpz7uS5RFzvQHACzMyqOoiv+mDbsBrhO0=
 github.com/hiddify/wireguard-go v0.0.0-20240302132803-629b7c39b487/go.mod h1:K4J7/npM+VAMUeUmTa2JaA02JmyheP0GpRBOUvn3ecc=
 github.com/imkira/go-observer/v2 v2.0.0-20230629064422-8e0b61f11f1b h1:1+115FqGoS8p6Iry9AYmrcWDvSveH0F7P2nX1LU00qg=
