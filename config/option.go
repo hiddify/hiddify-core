@@ -45,9 +45,9 @@ type InboundOptions struct {
 }
 
 type URLTestOptions struct {
-	ConnectionTestUrl  string            `json:"connection-test-url"`
-	URLTestInterval    DurationInSeconds `json:"url-test-interval"`
-	URLTestIdleTimeout DurationInSeconds `json:"url-test-idle-timeout"`
+	ConnectionTestUrl string            `json:"connection-test-url"`
+	URLTestInterval   DurationInSeconds `json:"url-test-interval"`
+	// URLTestIdleTimeout DurationInSeconds `json:"url-test-idle-timeout"`
 }
 
 type RouteOptions struct {
@@ -108,9 +108,9 @@ func DefaultConfigOptions() *ConfigOptions {
 			TUNStack:       "mixed",
 		},
 		URLTestOptions: URLTestOptions{
-			ConnectionTestUrl:  "http://cp.cloudflare.com/",
-			URLTestInterval:    DurationInSeconds(600),
-			URLTestIdleTimeout: DurationInSeconds(6000),
+			ConnectionTestUrl: "http://cp.cloudflare.com/",
+			URLTestInterval:   DurationInSeconds(600),
+			// URLTestIdleTimeout: DurationInSeconds(6000),
 		},
 		RouteOptions: RouteOptions{
 			ResolveDestination:     false,
