@@ -18,8 +18,9 @@ RUN chmod +x hiddify.sh
 COPY hiddify.json ./data/
 
 EXPOSE 2334
+EXPOSE 2335
 EXPOSE 6756
 EXPOSE 6450
 
 
-ENTRYPOINT [ "/opt/hiddify.sh" ]
+ENTRYPOINT [ "/hiddify/hiddify.sh" ]
