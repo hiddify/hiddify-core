@@ -1,4 +1,4 @@
-module github.com/hiddify/libcore
+module github.com/hiddify/hiddify-core
 
 go 1.21.5
 
