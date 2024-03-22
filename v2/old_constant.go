@@ -1,6 +1,6 @@
 package v2
 
-import pb "github.com/hiddify/libcore/hiddifyrpc"
+import pb "github.com/hiddify/hiddify-core/hiddifyrpc"
 
 const (
 	Stopped  = "Stopped"

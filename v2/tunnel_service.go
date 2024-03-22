@@ -6,7 +6,7 @@ import (
 	"log"
 	"os"
 
-	pb "github.com/hiddify/libcore/hiddifyrpc"
+	pb "github.com/hiddify/hiddify-core/hiddifyrpc"
 )
 
 func (s *TunnelService) Start(ctx context.Context, in *pb.TunnelStartRequest) (*pb.TunnelResponse, error) {

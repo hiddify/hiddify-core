@@ -1,7 +1,7 @@
 package cmd
 
 import (
-	v2 "github.com/hiddify/libcore/v2"
+	v2 "github.com/hiddify/hiddify-core/v2"
 
 	"github.com/spf13/cobra"
 )

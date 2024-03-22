@@ -3,8 +3,8 @@ package v2
 import (
 	"context"
 
-	"github.com/hiddify/libcore/config"
-	pb "github.com/hiddify/libcore/hiddifyrpc"
+	"github.com/hiddify/hiddify-core/config"
+	pb "github.com/hiddify/hiddify-core/hiddifyrpc"
 )
 
 func (s *CoreService) GenerateWarpConfig(ctx context.Context, in *pb.GenerateWarpConfigRequest) (*pb.WarpGenerationResponse, error) {

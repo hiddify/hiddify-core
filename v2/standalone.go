@@ -13,8 +13,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/hiddify/libcore/config"
-	pb "github.com/hiddify/libcore/hiddifyrpc"
+	"github.com/hiddify/hiddify-core/config"
+	pb "github.com/hiddify/hiddify-core/hiddifyrpc"
 
 	"github.com/sagernet/sing-box/option"
 )

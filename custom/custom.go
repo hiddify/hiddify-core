@@ -10,10 +10,10 @@ import (
 	"os"
 	"unsafe"
 
-	"github.com/hiddify/libcore/bridge"
-	"github.com/hiddify/libcore/config"
-	pb "github.com/hiddify/libcore/hiddifyrpc"
-	v2 "github.com/hiddify/libcore/v2"
+	"github.com/hiddify/hiddify-core/bridge"
+	"github.com/hiddify/hiddify-core/config"
+	pb "github.com/hiddify/hiddify-core/hiddifyrpc"
+	v2 "github.com/hiddify/hiddify-core/v2"
 
 	"github.com/sagernet/sing-box/log"
 )

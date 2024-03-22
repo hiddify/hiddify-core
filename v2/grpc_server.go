@@ -4,12 +4,11 @@ package v2
 #include "stdint.h"
 */
 
-import "C"
 import (
 	"log"
 	"net"
 
-	pb "github.com/hiddify/libcore/hiddifyrpc"
+	pb "github.com/hiddify/hiddify-core/hiddifyrpc"
 	"google.golang.org/grpc"
 )
 

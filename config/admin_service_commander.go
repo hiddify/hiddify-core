@@ -10,7 +10,7 @@ import (
 	"runtime"
 	"time"
 
-	pb "github.com/hiddify/libcore/hiddifyrpc"
+	pb "github.com/hiddify/hiddify-core/hiddifyrpc"
 	"github.com/sagernet/sing-box/option"
 	dns "github.com/sagernet/sing-dns"
 	grpc "google.golang.org/grpc"

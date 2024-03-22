@@ -3,7 +3,7 @@ package main
 import (
 	"os"
 
-	"github.com/hiddify/libcore/cmd"
+	"github.com/hiddify/hiddify-core/cmd"
 )
 
 func main() {

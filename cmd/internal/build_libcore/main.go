@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/hiddify/libcore/cmd/internal/build_shared"
+	"github.com/hiddify/hiddify-core/cmd/internal/build_shared"
 	_ "github.com/sagernet/gomobile"
 	"github.com/sagernet/sing-box/log"
 	"github.com/sagernet/sing/common/rw"
