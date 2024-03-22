@@ -14,7 +14,7 @@ endif
 TAGS=with_gvisor,with_quic,with_wireguard,with_ech,with_utls,with_clash_api,with_grpc
 IOS_ADD_TAGS=with_dhcp,with_low_memory,with_conntrack
 GOBUILDLIB=CGO_ENABLED=1 go build -trimpath -tags $(TAGS) -ldflags="-w -s" -buildmode=c-shared
-GOBUILDSRV=CGO_ENABLED=1 go build -ldflags "-s gc-w" -trimpath -tags $(TAGS)
+GOBUILDSRV=CGO_ENABLED=1 go build -ldflags "-s -w" -trimpath -tags $(TAGS)
 
 .PHONY: protos
 protos:
@@ -74,7 +74,7 @@ linux-amd64:
 linux-custom:
 	mkdir -p $(BINDIR)/
 	#env GOARCH=mips $(GOBUILDSRV) -o $(BINDIR)/$(CLINAME) ./cli/
-	go build -ldflags "-w" -trimpath -tags $(TAGS) -o $(BINDIR)/$(CLINAME) ./cli/
+	$(GOBUILDSRV) -o $(BINDIR)/$(CLINAME) ./cli/
 	chmod +x $(BINDIR)/$(CLINAME)
 	make webui
 
