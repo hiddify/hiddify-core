@@ -1,5 +1,5 @@
 {
-	"clash-api-secret": "your-hidden-secret",
+	"web-secret": "your-hidden-secret",
 	"enable-tun": true,
 	"mixed-port": 2334,
 	"tproxy-port": 2335,

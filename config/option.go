@@ -9,7 +9,7 @@ type ConfigOptions struct {
 	LogLevel       string      `json:"log-level"`
 	EnableClashApi bool        `json:"enable-clash-api"`
 	ClashApiPort   uint16      `json:"clash-api-port"`
-	ClashApiSecret string      `json:"clash-api-secret"`
+	ClashApiSecret string      `json:"web-secret"`
 	GeoIPPath      string      `json:"geoip-path"`
 	GeoSitePath    string      `json:"geosite-path"`
 	Rules          []Rule      `json:"rules"`
