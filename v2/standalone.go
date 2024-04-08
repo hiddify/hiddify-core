@@ -143,7 +143,7 @@ func extractRefreshInterval(header http.Header, bodyStr string) (int, error) {
 	return 0, nil
 }
 func buildConfig(configContent string, options config.ConfigOptions) (string, error) {
-	parsedContent, err := config.ParseConfigContent(configContent, true)
+	parsedContent, err := config.ParseConfigContent(configContent, true, options.EnableFullConfig)
 	if err != nil {
 		return "", fmt.Errorf("failed to parse config content: %w", err)
 	}

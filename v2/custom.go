@@ -173,7 +173,7 @@ func Parse(in *pb.ParseRequest) (*pb.ParseResponse, error) {
 
 	}
 
-	config, err := config.ParseConfigContent(content, true)
+	config, err := config.ParseConfigContent(content, true, false)
 	if err != nil {
 		return &pb.ParseResponse{
 			ResponseCode: pb.ResponseCode_FAILED,

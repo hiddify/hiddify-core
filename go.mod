@@ -49,6 +49,7 @@ require (
 	github.com/libdns/cloudflare v0.1.0 // indirect
 	github.com/libdns/libdns v0.2.1 // indirect
 	github.com/logrusorgru/aurora v2.0.3+incompatible // indirect
+	github.com/macronut/godivert v0.0.0-20220121081532-78e5dd672daf // indirect
 	github.com/mholt/acmez v1.2.0 // indirect
 	github.com/miekg/dns v1.1.58 // indirect
 	github.com/onsi/ginkgo/v2 v2.9.7 // indirect
@@ -89,6 +90,7 @@ require (
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/u-root/uio v0.0.0-20230220225925-ffce2a382923 // indirect
 	github.com/vishvananda/netns v0.0.0-20211101163701-50045581ed74 // indirect
+	github.com/williamfhe/godivert v0.0.0-20181229124620-a48c5b872c73 // indirect
 	github.com/zeebo/blake3 v0.2.3 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.27.0 // indirect

@@ -29,9 +29,9 @@ func ParseConfig(path string, debug bool) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	return ParseConfigContent(string(content), debug)
+	return ParseConfigContent(string(content), debug, false)
 }
-func ParseConfigContent(contentstr string, debug bool) ([]byte, error) {
+func ParseConfigContent(contentstr string, debug bool, enableFullConfig bool) ([]byte, error) {
 	content := []byte(contentstr)
 	var jsonObj map[string]interface{} = make(map[string]interface{})
 
@@ -43,7 +43,12 @@ func ParseConfigContent(contentstr string, debug bool) ([]byte, error) {
 			if tmpJsonObj["outbounds"] == nil {
 				jsonObj["outbounds"] = []interface{}{jsonObj}
 			} else {
-				jsonObj["outbounds"] = tmpJsonObj["outbounds"]
+				if enableFullConfig {
+					jsonObj = tmpJsonObj
+				} else {
+					jsonObj["outbounds"] = tmpJsonObj["outbounds"]
+				}
+
 			}
 		} else if jsonArray, ok := tmpJsonResult.([]map[string]interface{}); ok {
 			jsonObj["outbounds"] = jsonArray

@@ -84,6 +84,8 @@ github.com/libdns/libdns v0.2.1 h1:Wu59T7wSHRgtA0cfxC+n1c/e+O3upJGWytknkmFEDis=
 github.com/libdns/libdns v0.2.1/go.mod h1:yQCXzk1lEZmmCPa857bnk4TsOiqYasqpyOEeSObbb40=
 github.com/logrusorgru/aurora v2.0.3+incompatible h1:tOpm7WcpBTn4fjmVfgpQq0EfczGlG91VSDkswnjF5A8=
 github.com/logrusorgru/aurora v2.0.3+incompatible/go.mod h1:7rIyQOR62GCctdiQpZ/zOJlFyk6y+94wXzv6RNZgaR4=
+github.com/macronut/godivert v0.0.0-20220121081532-78e5dd672daf h1:dBleIe0eYiqh4QxsuEwXheUKljUDD8xio4ndLImrHv4=
+github.com/macronut/godivert v0.0.0-20220121081532-78e5dd672daf/go.mod h1:WBXFEDDmnnVWR14TQAvMxdaHrW7Ewbt7pNerMHiyNzY=
 github.com/mholt/acmez v1.2.0 h1:1hhLxSgY5FvH5HCnGUuwbKY2VQVo8IU7rxXKSnZ7F30=
 github.com/mholt/acmez v1.2.0/go.mod h1:VT9YwH1xgNX1kmYY89gY8xPJC84BFAisjo8Egigt4kE=
 github.com/miekg/dns v1.1.58 h1:ca2Hdkz+cDg/7eNF6V56jjzuZ4aCAE+DbVkILdQWG/4=
@@ -191,6 +193,8 @@ github.com/u-root/uio v0.0.0-20230220225925-ffce2a382923 h1:tHNk7XK9GkmKUR6Gh8gV
 github.com/u-root/uio v0.0.0-20230220225925-ffce2a382923/go.mod h1:eLL9Nub3yfAho7qB0MzZizFhTU2QkLeoVsWdHtDW264=
 github.com/vishvananda/netns v0.0.0-20211101163701-50045581ed74 h1:gga7acRE695APm9hlsSMoOoE65U4/TcqNj90mc69Rlg=
 github.com/vishvananda/netns v0.0.0-20211101163701-50045581ed74/go.mod h1:DD4vA1DwXk04H54A1oHXtwZmA0grkVMdPxx/VGLCah0=
+github.com/williamfhe/godivert v0.0.0-20181229124620-a48c5b872c73 h1:uTcyLPxotESVvsf6sWcw+6MyDAsuuI7Q2TJn+pWyt/c=
+github.com/williamfhe/godivert v0.0.0-20181229124620-a48c5b872c73/go.mod h1:2A+pcb3S0puG6gpwq2d8+7HGgCWXyCBwnsv/n3abx4U=
 github.com/xmdhs/clash2singbox v0.0.2 h1:/gxaFm8fmv+UcUZzK508Z0yR01wg1LHrrq872Qibk1I=
 github.com/xmdhs/clash2singbox v0.0.2/go.mod h1:B5pbJCwIHhJg6YRPCT04EXw6XXNIIOllMfL3XyJ7ob8=
 github.com/yuin/goldmark v1.4.13/go.mod h1:6yULJ656Px+3vBD8DxQVa3kxgyrAnzto9xy5taEt/CY=
