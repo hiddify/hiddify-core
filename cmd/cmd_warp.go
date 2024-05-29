@@ -8,7 +8,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/bepass-org/wireguard-go/warp"
+	"github.com/hiddify/hiddify-core/config"
 	T "github.com/sagernet/sing-box/option"
 	"github.com/spf13/cobra"
 )
@@ -146,22 +146,10 @@ func parsePeerConfig(peerConfig *PeerConfig, line string) {
 	}
 }
 func generateWarp() (*T.Outbound, error) {
-	license := ""
+	_, _, wg, err := config.GenerateWarpInfo("", "", "")
 
-	if !warp.CheckProfileExists(license) {
-		err := warp.LoadOrCreateIdentity(license)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	wgConfig, err := readWireGuardConfig("wgcf-profile.ini")
-	if err != nil {
-		fmt.Println("Error reading WireGuard configuration:", err)
-		return nil, err
-	}
 	// fmt.Printf("%v", wgConfig)
-	singboxConfig, err := wireGuardToSingbox(wgConfig, "162.159.192.91", 939)
+	singboxConfig, err := config.GenerateWarpSingbox(*wg, "", 0, "", "", "")
 	singboxJSON, err := json.MarshalIndent(singboxConfig, "", "    ")
 	if err != nil {
 		fmt.Println("Error marshaling Singbox configuration:", err)

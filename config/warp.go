@@ -1,11 +1,16 @@
 package config
 
 import (
+	"encoding/base64"
 	"fmt"
-	"math/rand"
 	"net/netip"
+	"os"
 
-	"github.com/bepass-org/wireguard-go/warp"
+	"github.com/bepass-org/warp-plus/warp"
+
+	// "github.com/bepass-org/wireguard-go/warp"
+	"log/slog"
+
 	T "github.com/sagernet/sing-box/option"
 )
 
@@ -21,13 +26,15 @@ type SingboxConfig struct {
 	MTU           int      `json:"mtu"`
 }
 
-func wireGuardToSingbox(wgConfig warp.WireguardConfig, server string, port uint16) (*T.Outbound, error) {
+func wireGuardToSingbox(wgConfig WarpWireguardConfig, server string, port uint16) (*T.Outbound, error) {
 	// splt := strings.Split(wgConfig.Peer.Endpoint, ":")
 	// port, err := strconv.Atoi(splt[1])
 	// if err != nil {
 	// 	fmt.Printf("%v", err)
 	// 	return nil
 	// }
+	clientID, _ := base64.StdEncoding.DecodeString(wgConfig.ClientID)
+
 	out := T.Outbound{
 		Type: "wireguard",
 		Tag:  "WARP",
@@ -39,8 +46,8 @@ func wireGuardToSingbox(wgConfig warp.WireguardConfig, server string, port uint1
 
 			PrivateKey:    wgConfig.PrivateKey,
 			PeerPublicKey: wgConfig.PeerPublicKey,
-			Reserved:      []uint8{0, 0, 0},
-			MTU:           1280,
+			Reserved:      []uint8{clientID[0], clientID[1], clientID[2]},
+			MTU:           1330,
 		},
 	}
 
@@ -58,38 +65,18 @@ func wireGuardToSingbox(wgConfig warp.WireguardConfig, server string, port uint1
 	return &out, nil
 }
 
-var warpIPList = []string{
-	"162.159.192.0/24",
-	"162.159.193.0/24",
-	"162.159.195.0/24",
-	"162.159.204.0/24",
-	"188.114.96.0/24",
-	"188.114.97.0/24",
-	"188.114.98.0/24",
-	"188.114.99.0/24",
-}
-var warpPorts = []uint16{500, 854, 859, 864, 878, 880, 890, 891, 894, 903, 908, 928, 934, 939, 942,
-	943, 945, 946, 955, 968, 987, 988, 1002, 1010, 1014, 1018, 1070, 1074, 1180, 1387, 1701,
-	1843, 2371, 2408, 2506, 3138, 3476, 3581, 3854, 4177, 4198, 4233, 4500, 5279,
-	5956, 7103, 7152, 7156, 7281, 7559, 8319, 8742, 8854, 8886}
-
 func getRandomIP() string {
-	randomRange := warpIPList[rand.Intn(len(warpIPList))]
 
-	ip, err := warp.RandomIPFromRange(randomRange)
+	ipPort, err := warp.RandomWarpEndpoint(true, true)
 	if err == nil {
-		return ip.String()
+		return ipPort.Addr().String()
 	}
 	return "engage.cloudflareclient.com"
 }
 
-func generateRandomPort() uint16 {
-	return warpPorts[rand.Intn(len(warpPorts))]
-}
-
 func generateWarp(license string, host string, port uint16, fakePackets string, fakePacketsSize string, fakePacketsDelay string) (*T.Outbound, error) {
 
-	_, _, wgConfig, err := warp.LoadOrCreateIdentityHiddify(license, nil)
+	_, _, wgConfig, err := GenerateWarpInfo(license, "", "")
 	if err != nil {
 		return nil, err
 	}
@@ -98,10 +85,10 @@ func generateWarp(license string, host string, port uint16, fakePackets string, 
 	}
 	fmt.Printf("%v", wgConfig)
 
-	return generateWarpSingbox(*wgConfig, host, port, fakePackets, fakePacketsSize, fakePacketsDelay)
+	return GenerateWarpSingbox(*wgConfig, host, port, fakePackets, fakePacketsSize, fakePacketsDelay)
 }
 
-func generateWarpSingbox(wgConfig warp.WireguardConfig, host string, port uint16, fakePackets string, fakePacketsSize string, fakePacketsDelay string) (*T.Outbound, error) {
+func GenerateWarpSingbox(wgConfig WarpWireguardConfig, host string, port uint16, fakePackets string, fakePacketsSize string, fakePacketsDelay string) (*T.Outbound, error) {
 	if host == "" {
 		host = "auto"
 	}
@@ -128,20 +115,31 @@ func generateWarpSingbox(wgConfig warp.WireguardConfig, host string, port uint16
 	return singboxConfig, nil
 }
 
-func GenerateWarpInfo(license string, oldAccountId string, oldAccessToken string) (*warp.AccountData, string, *warp.WireguardConfig, error) {
+func GenerateWarpInfo(license string, oldAccountId string, oldAccessToken string) (*warp.Identity, string, *WarpWireguardConfig, error) {
 	if oldAccountId != "" && oldAccessToken != "" {
-		accountData := warp.AccountData{
-			AccountID:   oldAccountId,
-			AccessToken: oldAccessToken,
-		}
-		err := warp.RemoveDevice(accountData)
+		err := warp.DeleteDevice(oldAccessToken, oldAccountId)
 		if err != nil {
 			fmt.Printf("Error in removing old device: %v\n", err)
 		} else {
 			fmt.Printf("Old Device Removed")
 		}
 	}
+	l := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo}))
+	identity, err := warp.CreateIdentityOnly(l, license)
+	res := "Error!"
+	var warpcfg WarpWireguardConfig
+	if err == nil {
+		res = "Success"
+		res = fmt.Sprintf("Warp+ enabled: %t\n", identity.Account.WarpPlus)
+		res += fmt.Sprintf("\nAccount type: %s\n", identity.Account.AccountType)
+		warpcfg = WarpWireguardConfig{
+			PrivateKey:       identity.PrivateKey,
+			LocalAddressIPv4: identity.Config.Interface.Addresses.V4,
+			LocalAddressIPv6: identity.Config.Interface.Addresses.V6,
+			ClientID:         identity.Config.ClientID,
+		}
+	}
 
-	return warp.LoadOrCreateIdentityHiddify(license, nil)
+	return &identity, res, &warpcfg, err
 
 }

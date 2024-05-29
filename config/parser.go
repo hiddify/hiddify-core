@@ -29,9 +29,9 @@ func ParseConfig(path string, debug bool) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	return ParseConfigContent(string(content), debug, false)
+	return ParseConfigContent(string(content), debug, nil, false)
 }
-func ParseConfigContent(contentstr string, debug bool, enableFullConfig bool) ([]byte, error) {
+func ParseConfigContent(contentstr string, debug bool, configOpt *ConfigOptions, fullConfig bool) ([]byte, error) {
 	content := []byte(contentstr)
 	var jsonObj map[string]interface{} = make(map[string]interface{})
 
@@ -43,7 +43,7 @@ func ParseConfigContent(contentstr string, debug bool, enableFullConfig bool) ([
 			if tmpJsonObj["outbounds"] == nil {
 				jsonObj["outbounds"] = []interface{}{jsonObj}
 			} else {
-				if enableFullConfig {
+				if configOpt.EnableFullConfig || fullConfig {
 					jsonObj = tmpJsonObj
 				} else {
 					jsonObj["outbounds"] = tmpJsonObj["outbounds"]
@@ -57,12 +57,12 @@ func ParseConfigContent(contentstr string, debug bool, enableFullConfig bool) ([
 		}
 
 		newContent, _ := json.MarshalIndent(jsonObj, "", "  ")
-		return patchConfig(newContent, "SingboxParser")
+		return patchConfig(newContent, "SingboxParser", configOpt)
 	}
 
 	v2rayStr, err := ray2sing.Ray2Singbox(string(content))
 	if err == nil {
-		return patchConfig([]byte(v2rayStr), "V2rayParser")
+		return patchConfig([]byte(v2rayStr), "V2rayParser", configOpt)
 	}
 	fmt.Printf("Convert using clash\n")
 	clashObj := clash.Clash{}
@@ -79,13 +79,13 @@ func ParseConfigContent(contentstr string, debug bool, enableFullConfig bool) ([
 		if err != nil {
 			return nil, fmt.Errorf("[ClashParser] patching clash config error: %w", err)
 		}
-		return patchConfig(output, "ClashParser")
+		return patchConfig(output, "ClashParser", configOpt)
 	}
 
 	return nil, fmt.Errorf("unable to determine config format")
 }
 
-func patchConfig(content []byte, name string) ([]byte, error) {
+func patchConfig(content []byte, name string, configOpt *ConfigOptions) ([]byte, error) {
 	options := option.Options{}
 	err := json.Unmarshal(content, &options)
 	if err != nil {
@@ -95,7 +95,7 @@ func patchConfig(content []byte, name string) ([]byte, error) {
 	for _, base := range options.Outbounds {
 		out := base
 		b.Go(base.Tag, func() (*option.Outbound, error) {
-			err := patchWarp(&out)
+			err := patchWarp(&out, configOpt)
 			if err != nil {
 				return nil, fmt.Errorf("[Warp] patch warp error: %w", err)
 			}

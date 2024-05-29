@@ -22,6 +22,7 @@ func String(s string) *string {
 
 func (s *server) ParseConfig(ctx context.Context, in *ParseConfigRequest) (*ParseConfigResponse, error) {
 	config, err := ParseConfig(in.TempPath, in.Debug)
+
 	if err != nil {
 		return &ParseConfigResponse{Error: String(err.Error())}, nil
 	}

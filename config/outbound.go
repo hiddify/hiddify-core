@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"net"
 
+	"github.com/bepass-org/warp-plus/warp"
 	C "github.com/sagernet/sing-box/constant"
 	"github.com/sagernet/sing-box/option"
+	T "github.com/sagernet/sing-box/option"
 )
 
 type outboundMap map[string]interface{}
@@ -122,7 +124,7 @@ func patchOutbound(base option.Outbound, configOpt ConfigOptions) (*option.Outbo
 	formatErr := func(err error) error {
 		return fmt.Errorf("error patching outbound[%s][%s]: %w", base.Tag, base.Type, err)
 	}
-	err := patchWarp(&base)
+	err := patchWarp(&base, &configOpt)
 	if err != nil {
 		return nil, "", formatErr(err)
 	}
@@ -165,14 +167,17 @@ func patchOutbound(base option.Outbound, configOpt ConfigOptions) (*option.Outbo
 	return &outbound, serverDomain, nil
 }
 
-func patchWarp(base *option.Outbound) error {
+func patchWarp(base *option.Outbound, configOpt *ConfigOptions) error {
 	if base.Type == C.TypeWireGuard {
 		host := base.WireGuardOptions.Server
+
 		if host == "default" || host == "random" || host == "auto" || isBlockedDomain(host) {
-			base.WireGuardOptions.Server = getRandomIP()
+			randomIpPort, _ := warp.RandomWarpEndpoint(true, false)
+			base.WireGuardOptions.Server = randomIpPort.Addr().String()
 		}
 		if base.WireGuardOptions.ServerPort == 0 {
-			base.WireGuardOptions.ServerPort = generateRandomPort()
+			port := warp.RandomWarpPort()
+			base.WireGuardOptions.ServerPort = port
 		}
 		// if base.WireGuardOptions.Detour == "" {
 		// 	base.WireGuardOptions.GSO = runtime.GOOS != "windows"
@@ -187,7 +192,13 @@ func patchWarp(base *option.Outbound) error {
 			fakePackets, _ := warp["fake_packets"].(string)
 			fakePacketsSize, _ := warp["fake_packets_size"].(string)
 			fakePacketsDelay, _ := warp["fake_packets_delay"].(string)
-			warpConfig, err := generateWarp(key, host, uint16(port), fakePackets, fakePacketsSize, fakePacketsDelay)
+			var warpConfig *T.Outbound
+			var err error
+			if configOpt != nil && (key == "p1" || key == "p2") {
+				warpConfig = base
+			} else {
+				warpConfig, err = generateWarp(key, host, uint16(port), fakePackets, fakePacketsSize, fakePacketsDelay)
+			}
 			if err != nil {
 				fmt.Printf("Error generating warp config: %v", err)
 				return err
@@ -197,7 +208,7 @@ func patchWarp(base *option.Outbound) error {
 			warpConfig.WireGuardOptions.Detour = detour
 			if detour != "" {
 				if warpConfig.WireGuardOptions.MTU > 1000 {
-					warpConfig.WireGuardOptions.MTU -= 160
+					warpConfig.WireGuardOptions.MTU -= 50
 				}
 				warpConfig.WireGuardOptions.FakePackets = ""
 			}
