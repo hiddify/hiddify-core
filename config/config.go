@@ -61,6 +61,11 @@ func BuildConfig(opt ConfigOptions, input option.Options) (*option.Options, erro
 	fmt.Printf("config options: %+v\n", opt)
 
 	var options option.Options
+	if opt.EnableFullConfig {
+		options.Inbounds = input.Inbounds
+		options.DNS = input.DNS
+		options.Route = input.Route
+	}
 	directDNSDomains := make(map[string]bool)
 	dnsRules := []option.DefaultDNSRule{}
 

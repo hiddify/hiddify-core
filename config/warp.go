@@ -134,6 +134,7 @@ func GenerateWarpInfo(license string, oldAccountId string, oldAccessToken string
 		res += fmt.Sprintf("\nAccount type: %s\n", identity.Account.AccountType)
 		warpcfg = WarpWireguardConfig{
 			PrivateKey:       identity.PrivateKey,
+			PeerPublicKey:    identity.Config.Peers[0].PublicKey,
 			LocalAddressIPv4: identity.Config.Interface.Addresses.V4,
 			LocalAddressIPv6: identity.Config.Interface.Addresses.V6,
 			ClientID:         identity.Config.ClientID,

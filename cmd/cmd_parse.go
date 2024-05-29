@@ -26,6 +26,7 @@ var commandParse = &cobra.Command{
 
 func init() {
 	commandParse.Flags().StringVarP(&commandParseOutputPath, "output", "o", "", "write result to file path instead of stdout")
+
 	mainCommand.AddCommand(commandParse)
 }
 

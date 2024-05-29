@@ -19,10 +19,10 @@ import (
 	"github.com/sagernet/sing-box/option"
 )
 
-func RunStandalone(hiddifySettingPath string, configPath string) error {
+func RunStandalone(hiddifySettingPath string, configPath string, defaultConfig config.ConfigOptions) error {
 	fmt.Println("Running in standalone mode")
 	useFlutterBridge = false
-	current, err := readAndBuildConfig(hiddifySettingPath, configPath)
+	current, err := readAndBuildConfig(hiddifySettingPath, configPath, &defaultConfig)
 	if err != nil {
 		fmt.Printf("Error in read and build config %v", err)
 		return err
@@ -48,26 +48,34 @@ func RunStandalone(hiddifySettingPath string, configPath string) error {
 }
 
 type ConfigResult struct {
-	Config          string
-	RefreshInterval int
+	Config               string
+	RefreshInterval      int
+	HiddifyConfigOptions *config.ConfigOptions
 }
 
-func readAndBuildConfig(hiddifySettingPath string, configPath string) (ConfigResult, error) {
+func readAndBuildConfig(hiddifySettingPath string, configPath string, defaultConfig *config.ConfigOptions) (ConfigResult, error) {
 	var result ConfigResult
 
 	result, err := readConfigContent(configPath)
 	if err != nil {
 		return result, err
 	}
+
 	hiddifyconfig := config.DefaultConfigOptions()
+
+	if defaultConfig != nil {
+		hiddifyconfig = defaultConfig
+	}
+
 	if hiddifySettingPath != "" {
 		hiddifyconfig, err = readConfigOptionsAt(hiddifySettingPath)
 		if err != nil {
 			return result, err
 		}
 	}
-	configOptions = hiddifyconfig
-	result.Config, err = buildConfig(result.Config, *hiddifyconfig)
+
+	result.HiddifyConfigOptions = hiddifyconfig
+	result.Config, err = buildConfig(result.Config, *result.HiddifyConfigOptions)
 	if err != nil {
 		return result, err
 	}
@@ -186,7 +194,7 @@ func updateConfigInterval(current ConfigResult, hiddifySettingPath string, confi
 
 	for {
 		<-time.After(time.Duration(current.RefreshInterval) * time.Hour)
-		new, err := readAndBuildConfig(hiddifySettingPath, configPath)
+		new, err := readAndBuildConfig(hiddifySettingPath, configPath, current.HiddifyConfigOptions)
 		if err != nil {
 			continue
 		}

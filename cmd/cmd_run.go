@@ -22,12 +22,13 @@ func init() {
 	commandRun.PersistentFlags().BoolP("help", "", false, "help for this command")
 	commandRun.Flags().StringVarP(&hiddifySettingPath, "hiddify", "h", "", "Hiddify Setting JSON Path")
 	commandRun.Flags().StringVarP(&configPath, "config", "c", "", "proxy config path or url")
-
+	addHConfigFlags(commandRun)
 	commandRun.MarkFlagRequired("config")
 
 	mainCommand.AddCommand(commandRun)
 }
 
 func runCommand(cmd *cobra.Command, args []string) {
-	v2.RunStandalone(hiddifySettingPath, configPath)
+
+	v2.RunStandalone(hiddifySettingPath, configPath, defaultConfigs)
 }

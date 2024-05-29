@@ -15,7 +15,7 @@ type ConfigOptions struct {
 	GeoSitePath      string      `json:"geosite-path"`
 	Rules            []Rule      `json:"rules"`
 	Warp             WarpOptions `json:"warp"`
-	Warp2            WarpOptions `json:"warp"`
+	Warp2            WarpOptions `json:"warp2"`
 	Mux              MuxOptions  `json:"mux"`
 	TLSTricks        TLSTricks   `json:"tls-tricks"`
 	DNSOptions
