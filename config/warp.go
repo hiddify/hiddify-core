@@ -184,8 +184,13 @@ func patchWarp(base *option.Outbound, configOpt *ConfigOptions, final bool) erro
 		host := base.WireGuardOptions.Server
 
 		if host == "default" || host == "random" || host == "auto" || isBlockedDomain(host) {
-			randomIpPort, _ := warp.RandomWarpEndpoint(true, false)
-			base.WireGuardOptions.Server = randomIpPort.Addr().String()
+			if base.WireGuardOptions.Detour != "" {
+				base.WireGuardOptions.Server = "162.159.192.1"
+			} else {
+				randomIpPort, _ := warp.RandomWarpEndpoint(true, false)
+				base.WireGuardOptions.Server = randomIpPort.Addr().String()
+			}
+
 		}
 		if base.WireGuardOptions.ServerPort == 0 {
 			port := warp.RandomWarpPort()
