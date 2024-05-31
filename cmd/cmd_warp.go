@@ -4,7 +4,7 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
-	"net/netip"
+
 	"os"
 	"strings"
 
@@ -62,40 +62,6 @@ type SingboxConfig struct {
 	MTU           int      `json:"mtu"`
 }
 
-func wireGuardToSingbox(wgConfig WireGuardConfig, server string, port uint16) (*T.Outbound, error) {
-	// splt := strings.Split(wgConfig.Peer.Endpoint, ":")
-	// port, err := strconv.Atoi(splt[1])
-	// if err != nil {
-	// 	fmt.Printf("%v", err)
-	// 	return nil
-	// }
-	out := T.Outbound{
-		Type: "wireguard",
-		Tag:  "WARP",
-		WireGuardOptions: T.WireGuardOutboundOptions{
-			ServerOptions: T.ServerOptions{
-				Server:     server,
-				ServerPort: port,
-			},
-
-			PrivateKey:    wgConfig.Interface.PrivateKey,
-			PeerPublicKey: wgConfig.Peer.PublicKey,
-			Reserved:      []uint8{0, 0, 0},
-			MTU:           1280,
-		},
-	}
-
-	for _, addr := range wgConfig.Interface.Address {
-		prefix, err := netip.ParsePrefix(addr)
-		if err != nil {
-			return nil, err // Handle the error appropriately
-		}
-		out.WireGuardOptions.LocalAddress = append(out.WireGuardOptions.LocalAddress, prefix)
-
-	}
-
-	return &out, nil
-}
 func readWireGuardConfig(filePath string) (WireGuardConfig, error) {
 	file, err := os.Open(filePath)
 	if err != nil {

@@ -219,8 +219,8 @@ func BuildConfig(opt ConfigOptions, input option.Options) (*option.Options, erro
 					Listen:     option.NewListenAddress(netip.MustParseAddr(bind)),
 					ListenPort: opt.LocalDnsPort,
 				},
-				OverrideAddress: "1.1.1.1",
-				OverridePort:    53,
+				// OverrideAddress: "1.1.1.1",
+				// OverridePort:    53,
 			},
 		},
 	)
@@ -406,9 +406,24 @@ func BuildConfig(opt ConfigOptions, input option.Options) (*option.Options, erro
 	OutboundMainProxyTag = OutboundSelectTag
 	//inbound==warp over proxies
 	//outbound==proxies over warp
-	fmt.Printf("opt.Warp=%+v\n", opt.Warp)
+	if opt.Warp.EnableWarp {
+		for _, out := range input.Outbounds {
+			if out.Type == C.TypeCustom {
+				if warp, ok := out.CustomOptions["warp"].(map[string]interface{}); ok {
+					key, _ := warp["key"].(string)
+					if key == "p1" {
+						opt.Warp.EnableWarp = false
+						break
+					}
+				}
+			}
+			if out.Type == C.TypeWireGuard && (out.WireGuardOptions.PrivateKey == opt.Warp.WireguardConfig.PrivateKey || out.WireGuardOptions.PrivateKey == "p1") {
+				opt.Warp.EnableWarp = false
+				break
+			}
+		}
+	}
 	if opt.Warp.EnableWarp && (opt.Warp.Mode == "warp_over_proxy" || opt.Warp.Mode == "proxy_over_warp") {
-
 		out, err := GenerateWarpSingbox(opt.Warp.WireguardConfig, opt.Warp.CleanIP, opt.Warp.CleanPort, opt.Warp.FakePackets, opt.Warp.FakePacketSize, opt.Warp.FakePacketDelay)
 		if err != nil {
 			return nil, fmt.Errorf("failed to generate warp config: %v", err)
@@ -420,7 +435,7 @@ func BuildConfig(opt ConfigOptions, input option.Options) (*option.Options, erro
 		} else {
 			out.WireGuardOptions.Detour = OutboundDirectTag
 		}
-		patchWarp(out, &opt)
+		patchWarp(out, &opt, true)
 		outbounds = append(outbounds, *out)
 		// tags = append(tags, out.Tag)
 	}

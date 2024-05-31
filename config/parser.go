@@ -95,7 +95,7 @@ func patchConfig(content []byte, name string, configOpt *ConfigOptions) ([]byte,
 	for _, base := range options.Outbounds {
 		out := base
 		b.Go(base.Tag, func() (*option.Outbound, error) {
-			err := patchWarp(&out, configOpt)
+			err := patchWarp(&out, configOpt, false)
 			if err != nil {
 				return nil, fmt.Errorf("[Warp] patch warp error: %w", err)
 			}

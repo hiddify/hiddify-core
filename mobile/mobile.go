@@ -46,6 +46,13 @@ func BuildConfig(path string, configOptionsJson string) (string, error) {
 		}
 	}
 
+	if configOptions.Warp2.WireguardConfigStr != "" {
+		err := json.Unmarshal([]byte(configOptions.Warp2.WireguardConfigStr), &configOptions.Warp2.WireguardConfig)
+		if err != nil {
+			return "", err
+		}
+	}
+
 	return config.BuildConfigJson(*configOptions, options)
 }
 

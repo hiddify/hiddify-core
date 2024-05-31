@@ -10,7 +10,7 @@ go build -trimpath -tags with_gvisor,with_quic,with_wireguard,with_ech,with_utls
 go get github.com/akavel/rsrc
 go install github.com/akavel/rsrc
 
-rsrc  -ico .\assets\images\hiddify-cli.ico -o cli\bydll\cli.syso
+rsrc  -ico .\assets\hiddify-cli.ico -o cli\bydll\cli.syso
 
 copy bin\libcore.dll .
 set CGO_LDFLAGS="libcore.dll"

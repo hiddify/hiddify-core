@@ -111,6 +111,7 @@ message WarpWireguardConfig {
   string local_address_ipv4 = 2;
   string local_address_ipv6 = 3;
   string peer_public_key = 4;
+  string client_id=5;
 }
 
 message WarpGenerationResponse {

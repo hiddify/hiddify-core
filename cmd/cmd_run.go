@@ -6,11 +6,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var (
-	hiddifySettingPath string
-	configPath         string
-)
-
 var commandRun = &cobra.Command{
 	Use:   "run",
 	Short: "run",
@@ -19,11 +14,10 @@ var commandRun = &cobra.Command{
 }
 
 func init() {
-	commandRun.PersistentFlags().BoolP("help", "", false, "help for this command")
-	commandRun.Flags().StringVarP(&hiddifySettingPath, "hiddify", "h", "", "Hiddify Setting JSON Path")
-	commandRun.Flags().StringVarP(&configPath, "config", "c", "", "proxy config path or url")
+	// commandRun.PersistentFlags().BoolP("help", "", false, "help for this command")
+	// commandRun.Flags().StringVarP(&hiddifySettingPath, "hiddify", "d", "", "Hiddify Setting JSON Path")
+
 	addHConfigFlags(commandRun)
-	commandRun.MarkFlagRequired("config")
 
 	mainCommand.AddCommand(commandRun)
 }

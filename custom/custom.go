@@ -151,6 +151,7 @@ func generateWarpConfig(licenseKey *C.char, accountId *C.char, accessToken *C.ch
 		LocalAddressIPv4: res.Config.LocalAddressIpv4,
 		LocalAddressIPv6: res.Config.LocalAddressIpv6,
 		PeerPublicKey:    res.Config.PeerPublicKey,
+		ClientID:         res.Config.ClientId,
 	}
 	log := res.Log
 	response := &config.WarpGenerationResponse{

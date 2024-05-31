@@ -2,7 +2,6 @@ package config
 
 import (
 	"encoding/json"
-	
 )
 
 type WarpAccount struct {
@@ -15,7 +14,7 @@ type WarpWireguardConfig struct {
 	LocalAddressIPv4 string `json:"local-address-ipv4"`
 	LocalAddressIPv6 string `json:"local-address-ipv6"`
 	PeerPublicKey    string `json:"peer-public-key"`
-	ClientID         string `json:"ClientID"`
+	ClientID         string `json:"client-id"`
 }
 
 type WarpGenerationResponse struct {
@@ -39,6 +38,7 @@ func GenerateWarpAccount(licenseKey string, accountId string, accessToken string
 		LocalAddressIPv4: wg.LocalAddressIPv4,
 		LocalAddressIPv6: wg.LocalAddressIPv6,
 		PeerPublicKey:    wg.PeerPublicKey,
+		ClientID:         wg.ClientID,
 	}
 	response := WarpGenerationResponse{warpAccount, log, warpConfig}
 

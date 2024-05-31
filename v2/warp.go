@@ -25,6 +25,7 @@ func GenerateWarpConfig(in *pb.GenerateWarpConfigRequest) (*pb.WarpGenerationRes
 			LocalAddressIpv4: wg.LocalAddressIPv4,
 			LocalAddressIpv6: wg.LocalAddressIPv6,
 			PeerPublicKey:    wg.PeerPublicKey,
+			ClientId:         wg.ClientID,
 		},
 		Log: log,
 	}, nil

@@ -213,6 +213,12 @@ func ChangeConfigOptions(in *pb.ChangeConfigOptionsRequest) (*pb.CoreInfoRespons
 			return nil, err
 		}
 	}
+	if configOptions.Warp2.WireguardConfigStr != "" {
+		err := json.Unmarshal([]byte(configOptions.Warp2.WireguardConfigStr), &configOptions.Warp2.WireguardConfig)
+		if err != nil {
+			return nil, err
+		}
+	}
 	return &pb.CoreInfoResponse{}, nil
 }
 func (s *CoreService) GenerateConfig(ctx context.Context, in *pb.GenerateConfigRequest) (*pb.GenerateConfigResponse, error) {
