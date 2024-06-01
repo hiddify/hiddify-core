@@ -29,7 +29,7 @@ func ParseConfig(path string, debug bool) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	return ParseConfigContent(string(content), debug, nil, false)
+	return ParseConfigContent(string(content), debug, DefaultConfigOptions(), false)
 }
 func ParseConfigContent(contentstr string, debug bool, configOpt *ConfigOptions, fullConfig bool) ([]byte, error) {
 	content := []byte(contentstr)
