@@ -29,7 +29,7 @@ func ParseConfig(path string, debug bool) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	return ParseConfigContent(string(content), debug, DefaultConfigOptions(), false)
+	return ParseConfigContent(string(content), debug, nil, false)
 }
 func ParseConfigContent(contentstr string, debug bool, configOpt *ConfigOptions, fullConfig bool) ([]byte, error) {
 	content := []byte(contentstr)
@@ -43,7 +43,7 @@ func ParseConfigContent(contentstr string, debug bool, configOpt *ConfigOptions,
 			if tmpJsonObj["outbounds"] == nil {
 				jsonObj["outbounds"] = []interface{}{jsonObj}
 			} else {
-				if configOpt.EnableFullConfig || fullConfig {
+				if fullConfig || (configOpt != nil && configOpt.EnableFullConfig) {
 					jsonObj = tmpJsonObj
 				} else {
 					jsonObj["outbounds"] = tmpJsonObj["outbounds"]
