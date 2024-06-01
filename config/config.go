@@ -477,13 +477,19 @@ func BuildConfig(opt ConfigOptions, input option.Options) (*option.Options, erro
 			IdleTimeout: option.Duration(opt.URLTestInterval.Duration().Nanoseconds() * 10),
 		},
 	}
+	defaultSelect := urlTest.Tag
 
+	for _, tag := range tags {
+		if strings.Contains(tag, "§default§") {
+			defaultSelect = "§default§"
+		}
+	}
 	selector := option.Outbound{
 		Type: C.TypeSelector,
 		Tag:  OutboundSelectTag,
 		SelectorOptions: option.SelectorOutboundOptions{
 			Outbounds: append([]string{urlTest.Tag}, tags...),
-			Default:   urlTest.Tag,
+			Default:   defaultSelect,
 		},
 	}
 
