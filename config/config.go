@@ -10,6 +10,7 @@ import (
 	"net/netip"
 	"net/url"
 	"strings"
+	"time"
 
 	C "github.com/sagernet/sing-box/constant"
 	"github.com/sagernet/sing-box/option"
@@ -383,24 +384,68 @@ func BuildConfig(opt ConfigOptions, input option.Options) (*option.Options, erro
 		Rules:               routeRules,
 		AutoDetectInterface: true,
 		OverrideAndroidVPN:  true,
-		// RuleSet: []option.RuleSet{
-		// 	{
-		// 		Type: C.RuleSetTypeRemote,
-		// 		Tag:  "geoip-" + opt,
-		// 		RemoteOptions: option.RemoteRuleSet{
-		// 			URL:            "https://raw.githubusercontent.com/Chocolate4U/Iran-sing-box-rules/rule-set/geoip-ir.srs",
-		// 			UpdateInterval: option.Duration(5 * time.day),
-		// 		},
-		// 	},
+		// RuleSet:             []option.RuleSet{},
+		// GeoIP: &option.GeoIPOptions{
+		// 	Path: opt.GeoIPPath,
 		// },
-		GeoIP: &option.GeoIPOptions{
-			Path: opt.GeoIPPath,
-		},
-		Geosite: &option.GeositeOptions{
-			Path: opt.GeoSitePath,
-		},
+		// Geosite: &option.GeositeOptions{
+		// 	Path: opt.GeoSitePath,
+		// },
 	}
+	fmt.Println("Region==========================", opt.Region)
+	if opt.Region != "other" {
 
+		options.Route.RuleSet = append(options.Route.RuleSet, option.RuleSet{
+			Type: C.RuleSetTypeRemote,
+			Tag:  "geoip-" + opt.Region,
+			RemoteOptions: option.RemoteRuleSet{
+				URL:            "https://raw.githubusercontent.com/Chocolate4U/Iran-sing-box-rules/rule-set/geoip-" + opt.Region + ".srs",
+				UpdateInterval: option.Duration(5 * time.Hour * 24),
+			},
+		})
+		options.Route.RuleSet = append(options.Route.RuleSet, option.RuleSet{
+			Type: C.RuleSetTypeRemote,
+			Tag:  "geosite-" + opt.Region,
+			RemoteOptions: option.RemoteRuleSet{
+				URL:            "https://raw.githubusercontent.com/Chocolate4U/Iran-sing-box-rules/rule-set/geosite-" + opt.Region + ".srs",
+				UpdateInterval: option.Duration(5 * time.Hour * 24),
+			},
+		})
+
+		routeRuleIp := option.Rule{
+			Type: C.RuleTypeDefault,
+			DefaultOptions: option.DefaultRule{
+				RuleSet:  []string{"geoip-" + opt.Region},
+				Outbound: OutboundDirectTag,
+			},
+		}
+		routeRuleSite := option.Rule{
+			Type: C.RuleTypeDefault,
+			DefaultOptions: option.DefaultRule{
+				RuleSet:  []string{"geosite-" + opt.Region},
+				Outbound: OutboundDirectTag,
+			},
+		}
+		options.Route.Rules = append([]option.Rule{routeRuleIp, routeRuleSite}, options.Route.Rules...)
+	}
+	if opt.BlockAds {
+		options.Route.RuleSet = append(options.Route.RuleSet, option.RuleSet{
+			Type: C.RuleSetTypeRemote,
+			Tag:  "geosite-ads",
+			RemoteOptions: option.RemoteRuleSet{
+				URL:            "https://raw.githubusercontent.com/Chocolate4U/Iran-sing-box-rules/rule-set/geosite-ads.srs",
+				UpdateInterval: option.Duration(5 * time.Hour * 24),
+			},
+		})
+		routeRule := option.Rule{
+			Type: C.RuleTypeDefault,
+			DefaultOptions: option.DefaultRule{
+				RuleSet:  []string{"geosite-ads"},
+				Outbound: OutboundBlockTag,
+			},
+		}
+		options.Route.Rules = append([]option.Rule{routeRule}, options.Route.Rules...)
+	}
 	var outbounds []option.Outbound
 	var tags []string
 	OutboundMainProxyTag = OutboundSelectTag

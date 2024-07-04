@@ -8,12 +8,13 @@ import (
 )
 
 type Rule struct {
-	Domains  string `json:"domains"`
-	IP       string `json:"ip"`
-	Port     string `json:"port"`
-	Network  string `json:"network"`
-	Protocol string `json:"protocol"`
-	Outbound string `json:"outbound"`
+	RuleSetUrl string `json:"rule-set-url"`
+	Domains    string `json:"domains"`
+	IP         string `json:"ip"`
+	Port       string `json:"port"`
+	Network    string `json:"network"`
+	Protocol   string `json:"protocol"`
+	Outbound   string `json:"outbound"`
 }
 
 func (r *Rule) MakeRule() option.DefaultRule {
