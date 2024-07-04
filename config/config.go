@@ -396,16 +396,19 @@ func BuildConfig(opt ConfigOptions, input option.Options) (*option.Options, erro
 	if opt.Region != "other" {
 
 		options.Route.RuleSet = append(options.Route.RuleSet, option.RuleSet{
-			Type: C.RuleSetTypeRemote,
-			Tag:  "geoip-" + opt.Region,
+			Type:   C.RuleSetTypeRemote,
+			Tag:    "geoip-" + opt.Region,
+			Format: C.RuleSetFormatBinary,
 			RemoteOptions: option.RemoteRuleSet{
-				URL:            "https://raw.githubusercontent.com/Chocolate4U/Iran-sing-box-rules/rule-set/geoip-" + opt.Region + ".srs",
+				URL: "https://raw.githubusercontent.com/Chocolate4U/Iran-sing-box-rules/rule-set/geoip-" + opt.Region + ".srs",
+
 				UpdateInterval: option.Duration(5 * time.Hour * 24),
 			},
 		})
 		options.Route.RuleSet = append(options.Route.RuleSet, option.RuleSet{
-			Type: C.RuleSetTypeRemote,
-			Tag:  "geosite-" + opt.Region,
+			Type:   C.RuleSetTypeRemote,
+			Tag:    "geosite-" + opt.Region,
+			Format: C.RuleSetFormatBinary,
 			RemoteOptions: option.RemoteRuleSet{
 				URL:            "https://raw.githubusercontent.com/Chocolate4U/Iran-sing-box-rules/rule-set/geosite-" + opt.Region + ".srs",
 				UpdateInterval: option.Duration(5 * time.Hour * 24),
@@ -415,32 +418,83 @@ func BuildConfig(opt ConfigOptions, input option.Options) (*option.Options, erro
 		routeRuleIp := option.Rule{
 			Type: C.RuleTypeDefault,
 			DefaultOptions: option.DefaultRule{
-				RuleSet:  []string{"geoip-" + opt.Region},
+				RuleSet: []string{
+					"geoip-" + opt.Region,
+					"geosite-" + opt.Region,
+				},
 				Outbound: OutboundDirectTag,
 			},
 		}
-		routeRuleSite := option.Rule{
-			Type: C.RuleTypeDefault,
-			DefaultOptions: option.DefaultRule{
-				RuleSet:  []string{"geosite-" + opt.Region},
-				Outbound: OutboundDirectTag,
-			},
-		}
-		options.Route.Rules = append([]option.Rule{routeRuleIp, routeRuleSite}, options.Route.Rules...)
+
+		options.Route.Rules = append([]option.Rule{routeRuleIp}, options.Route.Rules...)
 	}
 	if opt.BlockAds {
 		options.Route.RuleSet = append(options.Route.RuleSet, option.RuleSet{
-			Type: C.RuleSetTypeRemote,
-			Tag:  "geosite-ads",
+			Type:   C.RuleSetTypeRemote,
+			Tag:    "geosite-ads",
+			Format: C.RuleSetFormatBinary,
 			RemoteOptions: option.RemoteRuleSet{
-				URL:            "https://raw.githubusercontent.com/Chocolate4U/Iran-sing-box-rules/rule-set/geosite-ads.srs",
+				URL:            "https://raw.githubusercontent.com/Chocolate4U/Iran-sing-box-rules/rule-set/geosite-category-ads-all.srs",
 				UpdateInterval: option.Duration(5 * time.Hour * 24),
 			},
 		})
+		options.Route.RuleSet = append(options.Route.RuleSet, option.RuleSet{
+			Type:   C.RuleSetTypeRemote,
+			Tag:    "geosite-malware",
+			Format: C.RuleSetFormatBinary,
+			RemoteOptions: option.RemoteRuleSet{
+				URL:            "https://raw.githubusercontent.com/Chocolate4U/Iran-sing-box-rules/rule-set/geosite-malware.srs",
+				UpdateInterval: option.Duration(5 * time.Hour * 24),
+			},
+		})
+		options.Route.RuleSet = append(options.Route.RuleSet, option.RuleSet{
+			Type:   C.RuleSetTypeRemote,
+			Tag:    "geosite-phishing",
+			Format: C.RuleSetFormatBinary,
+			RemoteOptions: option.RemoteRuleSet{
+				URL:            "https://raw.githubusercontent.com/Chocolate4U/Iran-sing-box-rules/rule-set/geosite-phishing.srs",
+				UpdateInterval: option.Duration(5 * time.Hour * 24),
+			},
+		})
+		options.Route.RuleSet = append(options.Route.RuleSet, option.RuleSet{
+			Type:   C.RuleSetTypeRemote,
+			Tag:    "geosite-cryptominers",
+			Format: C.RuleSetFormatBinary,
+			RemoteOptions: option.RemoteRuleSet{
+				URL:            "https://raw.githubusercontent.com/Chocolate4U/Iran-sing-box-rules/rule-set/geosite-cryptominers.srs",
+				UpdateInterval: option.Duration(5 * time.Hour * 24),
+			},
+		})
+		options.Route.RuleSet = append(options.Route.RuleSet, option.RuleSet{
+			Type:   C.RuleSetTypeRemote,
+			Tag:    "geoip-phishing",
+			Format: C.RuleSetFormatBinary,
+			RemoteOptions: option.RemoteRuleSet{
+				URL:            "https://raw.githubusercontent.com/Chocolate4U/Iran-sing-box-rules/rule-set/geoip-phishing.srs",
+				UpdateInterval: option.Duration(5 * time.Hour * 24),
+			},
+		})
+		options.Route.RuleSet = append(options.Route.RuleSet, option.RuleSet{
+			Type:   C.RuleSetTypeRemote,
+			Tag:    "geoip-malware",
+			Format: C.RuleSetFormatBinary,
+			RemoteOptions: option.RemoteRuleSet{
+				URL:            "https://raw.githubusercontent.com/Chocolate4U/Iran-sing-box-rules/rule-set/geoip-malware.srs",
+				UpdateInterval: option.Duration(5 * time.Hour * 24),
+			},
+		})
+
 		routeRule := option.Rule{
 			Type: C.RuleTypeDefault,
 			DefaultOptions: option.DefaultRule{
-				RuleSet:  []string{"geosite-ads"},
+				RuleSet: []string{
+					"geosite-ads",
+					"geosite-malware",
+					"geosite-phishing",
+					"geosite-cryptominers",
+					"geoip-malware",
+					"geoip-phishing",
+				},
 				Outbound: OutboundBlockTag,
 			},
 		}
