@@ -21,8 +21,8 @@ jobs:
           - { name: 'hiddify-core-android', os: 'ubuntu-latest', target: 'android' }
           - { name: 'hiddify-core-linux-amd64', os: 'ubuntu-20.04', target: 'linux-amd64' }
           - { name: "hiddify-core-windows-amd64", os: 'ubuntu-latest', target: 'windows-amd64', aarch: 'x64' }
-          - { name: "hiddify-core-macos-universal", os: 'macos-11', target: 'macos-universal' }
-          - { name: "hiddify-core-ios", os: "macos-11", target: "ios" }
+          - { name: "hiddify-core-macos-universal", os: 'macos-12', target: 'macos-universal' }
+          - { name: "hiddify-core-ios", os: "macos-12", target: "ios" }
           # linux custom
           - {name: hiddify-cli-linux-amd64, goos: linux, goarch: amd64, goamd64: v1, target: 'linux-custom', os: 'ubuntu-20.04'}
           - {name: hiddify-cli-linux-amd64-v3, goos: linux, goarch: amd64, goamd64: v3, target: 'linux-custom', os: 'ubuntu-20.04'}
