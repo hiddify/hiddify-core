@@ -400,7 +400,7 @@ func BuildConfig(opt ConfigOptions, input option.Options) (*option.Options, erro
 			Tag:    "geoip-" + opt.Region,
 			Format: C.RuleSetFormatBinary,
 			RemoteOptions: option.RemoteRuleSet{
-				URL: "https://raw.githubusercontent.com/Chocolate4U/Iran-sing-box-rules/rule-set/geoip-" + opt.Region + ".srs",
+				URL: "https://raw.githubusercontent.com/hiddify/hiddify-geo/rule-set/country/geoip-" + opt.Region + ".srs",
 
 				UpdateInterval: option.Duration(5 * time.Hour * 24),
 			},
@@ -410,7 +410,7 @@ func BuildConfig(opt ConfigOptions, input option.Options) (*option.Options, erro
 			Tag:    "geosite-" + opt.Region,
 			Format: C.RuleSetFormatBinary,
 			RemoteOptions: option.RemoteRuleSet{
-				URL:            "https://raw.githubusercontent.com/Chocolate4U/Iran-sing-box-rules/rule-set/geosite-" + opt.Region + ".srs",
+				URL:            "https://raw.githubusercontent.com/hiddify/hiddify-geo/rule-set/country/geosite-" + opt.Region + ".srs",
 				UpdateInterval: option.Duration(5 * time.Hour * 24),
 			},
 		})
@@ -434,7 +434,7 @@ func BuildConfig(opt ConfigOptions, input option.Options) (*option.Options, erro
 			Tag:    "geosite-ads",
 			Format: C.RuleSetFormatBinary,
 			RemoteOptions: option.RemoteRuleSet{
-				URL:            "https://raw.githubusercontent.com/Chocolate4U/Iran-sing-box-rules/rule-set/geosite-category-ads-all.srs",
+				URL:            "https://raw.githubusercontent.com/hiddify/hiddify-geo/rule-set/block/geosite-category-ads-all.srs",
 				UpdateInterval: option.Duration(5 * time.Hour * 24),
 			},
 		})
@@ -443,7 +443,7 @@ func BuildConfig(opt ConfigOptions, input option.Options) (*option.Options, erro
 			Tag:    "geosite-malware",
 			Format: C.RuleSetFormatBinary,
 			RemoteOptions: option.RemoteRuleSet{
-				URL:            "https://raw.githubusercontent.com/Chocolate4U/Iran-sing-box-rules/rule-set/geosite-malware.srs",
+				URL:            "https://raw.githubusercontent.com/hiddify/hiddify-geo/rule-set/block/geosite-malware.srs",
 				UpdateInterval: option.Duration(5 * time.Hour * 24),
 			},
 		})
@@ -452,7 +452,7 @@ func BuildConfig(opt ConfigOptions, input option.Options) (*option.Options, erro
 			Tag:    "geosite-phishing",
 			Format: C.RuleSetFormatBinary,
 			RemoteOptions: option.RemoteRuleSet{
-				URL:            "https://raw.githubusercontent.com/Chocolate4U/Iran-sing-box-rules/rule-set/geosite-phishing.srs",
+				URL:            "https://raw.githubusercontent.com/hiddify/hiddify-geo/rule-set/block/geosite-phishing.srs",
 				UpdateInterval: option.Duration(5 * time.Hour * 24),
 			},
 		})
@@ -461,7 +461,7 @@ func BuildConfig(opt ConfigOptions, input option.Options) (*option.Options, erro
 			Tag:    "geosite-cryptominers",
 			Format: C.RuleSetFormatBinary,
 			RemoteOptions: option.RemoteRuleSet{
-				URL:            "https://raw.githubusercontent.com/Chocolate4U/Iran-sing-box-rules/rule-set/geosite-cryptominers.srs",
+				URL:            "https://raw.githubusercontent.com/hiddify/hiddify-geo/rule-set/block/geosite-cryptominers.srs",
 				UpdateInterval: option.Duration(5 * time.Hour * 24),
 			},
 		})
@@ -470,7 +470,7 @@ func BuildConfig(opt ConfigOptions, input option.Options) (*option.Options, erro
 			Tag:    "geoip-phishing",
 			Format: C.RuleSetFormatBinary,
 			RemoteOptions: option.RemoteRuleSet{
-				URL:            "https://raw.githubusercontent.com/Chocolate4U/Iran-sing-box-rules/rule-set/geoip-phishing.srs",
+				URL:            "https://raw.githubusercontent.com/hiddify/hiddify-geo/rule-set/block/geoip-phishing.srs",
 				UpdateInterval: option.Duration(5 * time.Hour * 24),
 			},
 		})
@@ -479,7 +479,7 @@ func BuildConfig(opt ConfigOptions, input option.Options) (*option.Options, erro
 			Tag:    "geoip-malware",
 			Format: C.RuleSetFormatBinary,
 			RemoteOptions: option.RemoteRuleSet{
-				URL:            "https://raw.githubusercontent.com/Chocolate4U/Iran-sing-box-rules/rule-set/geoip-malware.srs",
+				URL:            "https://raw.githubusercontent.com/hiddify/hiddify-geo/rule-set/block/geoip-malware.srs",
 				UpdateInterval: option.Duration(5 * time.Hour * 24),
 			},
 		})
