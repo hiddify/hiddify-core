@@ -394,7 +394,19 @@ func BuildConfig(opt ConfigOptions, input option.Options) (*option.Options, erro
 	}
 	fmt.Println("Region==========================", opt.Region)
 	if opt.Region != "other" {
-
+		options.DNS.Rules = append(
+			options.DNS.Rules,
+			option.DNSRule{
+				Type: C.RuleTypeDefault,
+				DefaultOptions: option.DefaultDNSRule{
+					RuleSet: []string{
+						"geoip-" + opt.Region,
+						"geosite-" + opt.Region,
+					},
+					Server: DNSDirectTag,
+				},
+			},
+		)
 		options.Route.RuleSet = append(options.Route.RuleSet, option.RuleSet{
 			Type:   C.RuleSetTypeRemote,
 			Tag:    "geoip-" + opt.Region,
