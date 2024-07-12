@@ -92,13 +92,13 @@ func GenerateWarpSingbox(wgConfig WarpWireguardConfig, host string, port uint16,
 	}
 
 	if host == "auto" && fakePackets == "" {
-		fakePackets = "8-15"
+		fakePackets = "1-3"
 	}
 	if fakePackets != "" && fakePacketsSize == "" {
-		fakePacketsSize = "40-100"
+		fakePacketsSize = "10-30"
 	}
 	if fakePackets != "" && fakePacketsDelay == "" {
-		fakePacketsDelay = "20-250"
+		fakePacketsDelay = "10-30"
 	}
 	singboxConfig, err := wireGuardToSingbox(wgConfig, host, port)
 	if err != nil {
