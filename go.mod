@@ -7,7 +7,7 @@ toolchain go1.22.3
 require (
 	github.com/bepass-org/warp-plus v0.0.0-00010101000000-000000000000
 	github.com/golang/protobuf v1.5.4
-	github.com/hiddify/ray2sing v0.0.0-20240620091605-2d6d49ad762d
+	github.com/hiddify/ray2sing v0.0.0-20240709163254-0b78d4fa3a42
 	github.com/kardianos/service v1.2.2
 	github.com/macronut/godivert v0.0.0-20220121081532-78e5dd672daf
 	github.com/sagernet/gomobile v0.1.3
@@ -25,7 +25,6 @@ require (
 require (
 	berty.tech/go-libtor v1.0.385 // indirect
 	github.com/ajg/form v1.5.1 // indirect
-	github.com/akavel/rsrc v0.10.2 // indirect
 	github.com/andybalholm/brotli v1.0.6 // indirect
 	github.com/caddyserver/certmagic v0.20.0 // indirect
 	github.com/cloudflare/circl v1.3.7 // indirect
