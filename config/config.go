@@ -104,7 +104,7 @@ func BuildConfig(opt ConfigOptions, input option.Options) (*option.Options, erro
 
 	options.DNS = &option.DNSOptions{
 		StaticIPs: map[string][]string{
-			"sky.rethinkdns.com": getIPs([]string{"zula.ir", "www.speedtest.net", "sky.rethinkdns.com"}),
+			"sky.rethinkdns.com": getIPs([]string{"www.speedtest.net", "sky.rethinkdns.com"}),
 		},
 		DNSClientOptions: option.DNSClientOptions{
 			IndependentCache: opt.IndependentDNSCache,
