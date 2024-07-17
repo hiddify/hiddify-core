@@ -115,7 +115,7 @@ func generateWarp() (*T.Outbound, error) {
 	_, _, wg, err := config.GenerateWarpInfo("", "", "")
 
 	// fmt.Printf("%v", wgConfig)
-	singboxConfig, err := config.GenerateWarpSingbox(*wg, "", 0, "", "", "")
+	singboxConfig, err := config.GenerateWarpSingbox(*wg, "", 0, "", "", "", "")
 	singboxJSON, err := json.MarshalIndent(singboxConfig, "", "    ")
 	if err != nil {
 		fmt.Println("Error marshaling Singbox configuration:", err)

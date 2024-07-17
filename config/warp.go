@@ -73,7 +73,7 @@ func getRandomIP() string {
 	return "engage.cloudflareclient.com"
 }
 
-func generateWarp(license string, host string, port uint16, fakePackets string, fakePacketsSize string, fakePacketsDelay string) (*T.Outbound, error) {
+func generateWarp(license string, host string, port uint16, fakePackets string, fakePacketsSize string, fakePacketsDelay string, fakePacketsMode string) (*T.Outbound, error) {
 
 	_, _, wgConfig, err := GenerateWarpInfo(license, "", "")
 	if err != nil {
@@ -83,15 +83,15 @@ func generateWarp(license string, host string, port uint16, fakePackets string, 
 		return nil, fmt.Errorf("invalid warp config")
 	}
 
-	return GenerateWarpSingbox(*wgConfig, host, port, fakePackets, fakePacketsSize, fakePacketsDelay)
+	return GenerateWarpSingbox(*wgConfig, host, port, fakePackets, fakePacketsSize, fakePacketsDelay, fakePacketsMode)
 }
 
-func GenerateWarpSingbox(wgConfig WarpWireguardConfig, host string, port uint16, fakePackets string, fakePacketsSize string, fakePacketsDelay string) (*T.Outbound, error) {
+func GenerateWarpSingbox(wgConfig WarpWireguardConfig, host string, port uint16, fakePackets string, fakePacketsSize string, fakePacketsDelay string, fakePacketMode string) (*T.Outbound, error) {
 	if host == "" {
-		host = "auto"
+		host = "auto4"
 	}
 
-	if host == "auto" && fakePackets == "" {
+	if (host == "auto" || host == "auto4" || host == "auto6") && fakePackets == "" {
 		fakePackets = "1-3"
 	}
 	if fakePackets != "" && fakePacketsSize == "" {
@@ -109,6 +109,7 @@ func GenerateWarpSingbox(wgConfig WarpWireguardConfig, host string, port uint16,
 	singboxConfig.WireGuardOptions.FakePackets = fakePackets
 	singboxConfig.WireGuardOptions.FakePacketsSize = fakePacketsSize
 	singboxConfig.WireGuardOptions.FakePacketsDelay = fakePacketsDelay
+	singboxConfig.WireGuardOptions.FakePacketsMode = fakePacketMode
 
 	return singboxConfig, nil
 }
@@ -143,7 +144,7 @@ func GenerateWarpInfo(license string, oldAccountId string, oldAccessToken string
 
 }
 
-func patchWarp(base *option.Outbound, configOpt *ConfigOptions, final bool) error {
+func patchWarp(base *option.Outbound, configOpt *ConfigOptions, final bool, staticIpsDns map[string][]string) error {
 	if base.Type == C.TypeCustom {
 		if warp, ok := base.CustomOptions["warp"].(map[string]interface{}); ok {
 			key, _ := warp["key"].(string)
@@ -153,6 +154,7 @@ func patchWarp(base *option.Outbound, configOpt *ConfigOptions, final bool) erro
 			fakePackets, _ := warp["fake_packets"].(string)
 			fakePacketsSize, _ := warp["fake_packets_size"].(string)
 			fakePacketsDelay, _ := warp["fake_packets_delay"].(string)
+			fakePacketsMode, _ := warp["fake_packets_mode"].(string)
 			var warpConfig *T.Outbound
 			var err error
 
@@ -160,11 +162,11 @@ func patchWarp(base *option.Outbound, configOpt *ConfigOptions, final bool) erro
 				warpConfig = base
 				return nil
 			} else if key == "p1" {
-				warpConfig, err = GenerateWarpSingbox(configOpt.Warp.WireguardConfig, host, port, fakePackets, fakePacketsSize, fakePacketsDelay)
+				warpConfig, err = GenerateWarpSingbox(configOpt.Warp.WireguardConfig, host, port, fakePackets, fakePacketsSize, fakePacketsDelay, fakePacketsMode)
 			} else if key == "p2" {
-				warpConfig, err = GenerateWarpSingbox(configOpt.Warp2.WireguardConfig, host, port, fakePackets, fakePacketsSize, fakePacketsDelay)
+				warpConfig, err = GenerateWarpSingbox(configOpt.Warp2.WireguardConfig, host, port, fakePackets, fakePacketsSize, fakePacketsDelay, fakePacketsMode)
 			} else {
-				warpConfig, err = generateWarp(key, host, uint16(port), fakePackets, fakePacketsSize, fakePacketsDelay)
+				warpConfig, err = generateWarp(key, host, uint16(port), fakePackets, fakePacketsSize, fakePacketsDelay, fakePacketsMode)
 			}
 			if err != nil {
 				fmt.Printf("Error generating warp config: %v", err)
@@ -183,12 +185,21 @@ func patchWarp(base *option.Outbound, configOpt *ConfigOptions, final bool) erro
 	if final && base.Type == C.TypeWireGuard {
 		host := base.WireGuardOptions.Server
 
-		if host == "default" || host == "random" || host == "auto" || isBlockedDomain(host) {
+		if host == "default" || host == "random" || host == "auto" || host == "auto4" || host == "auto6" || isBlockedDomain(host) {
 			if base.WireGuardOptions.Detour != "" {
 				base.WireGuardOptions.Server = "162.159.192.1"
 			} else {
-				randomIpPort, _ := warp.RandomWarpEndpoint(true, false)
-				base.WireGuardOptions.Server = randomIpPort.Addr().String()
+				rndDomain := generateRandomString(20)
+				staticIpsDns[rndDomain] = []string{}
+				if host != "auto4" {
+					randomIpPort, _ := warp.RandomWarpEndpoint(false, true)
+					staticIpsDns[rndDomain] = append(staticIpsDns[rndDomain], randomIpPort.Addr().String())
+				}
+				if host != "auto6" {
+					randomIpPort, _ := warp.RandomWarpEndpoint(true, false)
+					staticIpsDns[rndDomain] = append(staticIpsDns[rndDomain], randomIpPort.Addr().String())
+				}
+				base.WireGuardOptions.Server = rndDomain
 			}
 
 		}

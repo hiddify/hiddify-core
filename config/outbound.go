@@ -117,12 +117,12 @@ func isOutboundReality(base option.Outbound) bool {
 
 }
 
-func patchOutbound(base option.Outbound, configOpt ConfigOptions) (*option.Outbound, string, error) {
+func patchOutbound(base option.Outbound, configOpt ConfigOptions, staticIpsDns map[string][]string) (*option.Outbound, string, error) {
 
 	formatErr := func(err error) error {
 		return fmt.Errorf("error patching outbound[%s][%s]: %w", base.Tag, base.Type, err)
 	}
-	err := patchWarp(&base, &configOpt, true)
+	err := patchWarp(&base, &configOpt, true, staticIpsDns)
 	if err != nil {
 		return nil, "", formatErr(err)
 	}

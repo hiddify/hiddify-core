@@ -7,7 +7,7 @@ toolchain go1.22.3
 require (
 	github.com/bepass-org/warp-plus v0.0.0-00010101000000-000000000000
 	github.com/golang/protobuf v1.5.4
-	github.com/hiddify/ray2sing v0.0.0-20240709163254-0b78d4fa3a42
+	github.com/hiddify/ray2sing v0.0.0-20240717205915-5b3735b9a990
 	github.com/kardianos/service v1.2.2
 	github.com/macronut/godivert v0.0.0-20220121081532-78e5dd672daf
 	github.com/sagernet/gomobile v0.1.3
@@ -25,6 +25,7 @@ require (
 require (
 	berty.tech/go-libtor v1.0.385 // indirect
 	github.com/ajg/form v1.5.1 // indirect
+	github.com/akavel/rsrc v0.10.2 // indirect
 	github.com/andybalholm/brotli v1.0.6 // indirect
 	github.com/caddyserver/certmagic v0.20.0 // indirect
 	github.com/cloudflare/circl v1.3.7 // indirect
@@ -108,8 +109,8 @@ require (
 	lukechampine.com/blake3 v1.2.1 // indirect
 )
 
-replace github.com/sagernet/sing-box => github.com/hiddify/hiddify-sing-box v1.8.9-0.20240712192523-0af1865bbfe4
+replace github.com/sagernet/sing-box => github.com/hiddify/hiddify-sing-box v1.8.9-0.20240717205631-60d55deb81f9
 
-replace github.com/sagernet/wireguard-go => github.com/hiddify/wireguard-go v0.0.0-20240712191632-973cb66a43af
+replace github.com/sagernet/wireguard-go => github.com/hiddify/wireguard-go v0.0.0-20240717205116-b0de5e908866
 
-replace github.com/bepass-org/warp-plus => github.com/hiddify/warp-plus v0.0.0-20240529120935-6c534fdb70b1
+replace github.com/bepass-org/warp-plus => github.com/hiddify/warp-plus v0.0.0-20240717223357-4f3122e0d11d

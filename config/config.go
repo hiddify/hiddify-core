@@ -535,7 +535,7 @@ func BuildConfig(opt ConfigOptions, input option.Options) (*option.Options, erro
 		}
 	}
 	if opt.Warp.EnableWarp && (opt.Warp.Mode == "warp_over_proxy" || opt.Warp.Mode == "proxy_over_warp") {
-		out, err := GenerateWarpSingbox(opt.Warp.WireguardConfig, opt.Warp.CleanIP, opt.Warp.CleanPort, opt.Warp.FakePackets, opt.Warp.FakePacketSize, opt.Warp.FakePacketDelay)
+		out, err := GenerateWarpSingbox(opt.Warp.WireguardConfig, opt.Warp.CleanIP, opt.Warp.CleanPort, opt.Warp.FakePackets, opt.Warp.FakePacketSize, opt.Warp.FakePacketDelay, opt.Warp.FakePacketMode)
 		if err != nil {
 			return nil, fmt.Errorf("failed to generate warp config: %v", err)
 		}
@@ -546,12 +546,12 @@ func BuildConfig(opt ConfigOptions, input option.Options) (*option.Options, erro
 		} else {
 			out.WireGuardOptions.Detour = OutboundDirectTag
 		}
-		patchWarp(out, &opt, true)
+		patchWarp(out, &opt, true,nil)
 		outbounds = append(outbounds, *out)
 		// tags = append(tags, out.Tag)
 	}
 	for _, out := range input.Outbounds {
-		outbound, serverDomain, err := patchOutbound(out, opt)
+		outbound, serverDomain, err := patchOutbound(out, opt, options.DNS.StaticIPs)
 		if err != nil {
 			return nil, err
 		}

@@ -83,8 +83,9 @@ type WarpOptions struct {
 	WireguardConfigStr string              `json:"wireguard-config"`
 	WireguardConfig    WarpWireguardConfig `json:"wireguardConfig"` // TODO check
 	FakePackets        string              `json:"noise"`
-	FakePacketSize     string              `json:"fake-packet-size"`
+	FakePacketSize     string              `json:"noise-size"`
 	FakePacketDelay    string              `json:"noise-delay"`
+	FakePacketMode     string              `json:"noise-mode"`
 	CleanIP            string              `json:"clean-ip"`
 	CleanPort          uint16              `json:"clean-port"`
 	Account            WarpAccount
