@@ -1,36 +1,40 @@
-package global
+package v2
 
 import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/hiddify/libcore/bridge"
+	"github.com/hiddify/hiddify-core/bridge"
 	"github.com/sagernet/sing-box/experimental/libbox"
 	"github.com/sagernet/sing-box/log"
 )
 
-type CommandClientHandler struct {
+var (
+	_ libbox.CommandClientHandler = (*OldCommandClientHandler)(nil)
+)
+
+type OldCommandClientHandler struct {
 	port   int64
 	logger log.Logger
 }
 
-func (cch *CommandClientHandler) Connected() {
+func (cch *OldCommandClientHandler) Connected() {
 	cch.logger.Debug("CONNECTED")
 }
 
-func (cch *CommandClientHandler) Disconnected(message string) {
+func (cch *OldCommandClientHandler) Disconnected(message string) {
 	cch.logger.Debug("DISCONNECTED: ", message)
 }
 
-func (cch *CommandClientHandler) ClearLog() {
+func (cch *OldCommandClientHandler) ClearLog() {
 	cch.logger.Debug("clear log")
 }
 
-func (cch *CommandClientHandler) WriteLog(message string) {
+func (cch *OldCommandClientHandler) WriteLog(message string) {
 	cch.logger.Debug("log: ", message)
 }
 
-func (cch *CommandClientHandler) WriteStatus(message *libbox.StatusMessage) {
+func (cch *OldCommandClientHandler) WriteStatus(message *libbox.StatusMessage) {
 	msg, err := json.Marshal(
 		map[string]int64{
 			"connections-in":  int64(message.ConnectionsIn),
@@ -49,7 +53,7 @@ func (cch *CommandClientHandler) WriteStatus(message *libbox.StatusMessage) {
 	}
 }
 
-func (cch *CommandClientHandler) WriteGroups(message libbox.OutboundGroupIterator) {
+func (cch *OldCommandClientHandler) WriteGroups(message libbox.OutboundGroupIterator) {
 	if message == nil {
 		return
 	}
@@ -79,11 +83,11 @@ func (cch *CommandClientHandler) WriteGroups(message libbox.OutboundGroupIterato
 	}
 }
 
-func (cch *CommandClientHandler) InitializeClashMode(modeList libbox.StringIterator, currentMode string) {
+func (cch *OldCommandClientHandler) InitializeClashMode(modeList libbox.StringIterator, currentMode string) {
 	cch.logger.Debug("initial clash mode: ", currentMode)
 }
 
-func (cch *CommandClientHandler) UpdateClashMode(newMode string) {
+func (cch *OldCommandClientHandler) UpdateClashMode(newMode string) {
 	cch.logger.Debug("update clash mode: ", newMode)
 }
 

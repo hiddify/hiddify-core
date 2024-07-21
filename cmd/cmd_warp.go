@@ -4,11 +4,11 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
-	"net/netip"
+
 	"os"
 	"strings"
 
-	"github.com/bepass-org/wireguard-go/warp"
+	"github.com/hiddify/hiddify-core/config"
 	T "github.com/sagernet/sing-box/option"
 	"github.com/spf13/cobra"
 )
@@ -62,40 +62,6 @@ type SingboxConfig struct {
 	MTU           int      `json:"mtu"`
 }
 
-func wireGuardToSingbox(wgConfig WireGuardConfig, server string, port uint16) (*T.Outbound, error) {
-	// splt := strings.Split(wgConfig.Peer.Endpoint, ":")
-	// port, err := strconv.Atoi(splt[1])
-	// if err != nil {
-	// 	fmt.Printf("%v", err)
-	// 	return nil
-	// }
-	out := T.Outbound{
-		Type: "wireguard",
-		Tag:  "WARP",
-		WireGuardOptions: T.WireGuardOutboundOptions{
-			ServerOptions: T.ServerOptions{
-				Server:     server,
-				ServerPort: port,
-			},
-
-			PrivateKey:    wgConfig.Interface.PrivateKey,
-			PeerPublicKey: wgConfig.Peer.PublicKey,
-			Reserved:      []uint8{0, 0, 0},
-			MTU:           1280,
-		},
-	}
-
-	for _, addr := range wgConfig.Interface.Address {
-		prefix, err := netip.ParsePrefix(addr)
-		if err != nil {
-			return nil, err // Handle the error appropriately
-		}
-		out.WireGuardOptions.LocalAddress = append(out.WireGuardOptions.LocalAddress, prefix)
-
-	}
-
-	return &out, nil
-}
 func readWireGuardConfig(filePath string) (WireGuardConfig, error) {
 	file, err := os.Open(filePath)
 	if err != nil {
@@ -146,22 +112,10 @@ func parsePeerConfig(peerConfig *PeerConfig, line string) {
 	}
 }
 func generateWarp() (*T.Outbound, error) {
-	license := ""
+	_, _, wg, err := config.GenerateWarpInfo("", "", "")
 
-	if !warp.CheckProfileExists(license) {
-		err := warp.LoadOrCreateIdentity(license)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	wgConfig, err := readWireGuardConfig("wgcf-profile.ini")
-	if err != nil {
-		fmt.Println("Error reading WireGuard configuration:", err)
-		return nil, err
-	}
 	// fmt.Printf("%v", wgConfig)
-	singboxConfig, err := wireGuardToSingbox(wgConfig, "162.159.192.91", 939)
+	singboxConfig, err := config.GenerateWarpSingbox(*wg, "", 0, "", "", "", "")
 	singboxJSON, err := json.MarshalIndent(singboxConfig, "", "    ")
 	if err != nil {
 		fmt.Println("Error marshaling Singbox configuration:", err)

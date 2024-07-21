@@ -1,0 +1,57 @@
+{
+	"web-secret": "your-hidden-secret",
+	"enable-tun": true,
+	"mixed-port": 2334,
+	"tproxy-port": 2335,
+	"allow-connection-from-lan": false,
+	"tls-tricks": {
+		"enable-fragment": false,
+		"fragment-size": "1-500",
+		"fragment-sleep": "0-500",
+		"mixed-sni-case": false,
+		"enable-padding": false,
+		"padding-size": "1-1500"
+	  },
+	"execute-config-as-is": false,
+	"log-level": "warn",
+	"resolve-destination": false,
+	"ipv6-mode": "ipv4_only",
+	"remote-dns-address": "udp://1.1.1.1",
+	"remote-dns-domain-strategy": "ipv4_only",
+	"direct-dns-address": "1.1.1.1",
+	"direct-dns-domain-strategy": "ipv4_only",
+	
+	"set-system-proxy": false,
+	"local-dns-port": 6450,
+	"tun-implementation": "gvisor",
+	"mtu": 9000,
+	"strict-route": true,
+	"connection-test-url": "http://cp.cloudflare.com/",
+	"url-test-interval": 600,
+	"enable-clash-api": true,
+	"clash-api-port": 6756,
+	"enable-tun-service": false,
+	"bypass-lan": false,
+	
+	"enable-fake-dns": false,
+	"enable-dns-routing": true,
+	"independent-dns-cache": true,
+	"geoip-path": "geo-assets\\sagernet-sing-geoip-geoip.db",
+	"geosite-path": "geo-assets\\sagernet-sing-geosite-geosite.db",
+	"rules": [],
+	"mux": {
+	  "enable": false,
+	  "padding": false,
+	  "max-streams": 8,
+	  "protocol": "smux"
+	},
+	
+	"warp": {
+	  "enable": false,
+	  "mode": "warp_over_proxy",
+	  "clean-ip": "auto",
+	  "clean-port": 0,
+	  "noise": "5-10",
+	  "noise-delay": "20-200"
+	}
+  }

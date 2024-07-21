@@ -5,7 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/hiddify/libcore/config"
+	"github.com/hiddify/hiddify-core/config"
 	"github.com/sagernet/sing-box/log"
 	"github.com/spf13/cobra"
 )
@@ -26,6 +26,7 @@ var commandParse = &cobra.Command{
 
 func init() {
 	commandParse.Flags().StringVarP(&commandParseOutputPath, "output", "o", "", "write result to file path instead of stdout")
+
 	mainCommand.AddCommand(commandParse)
 }
 

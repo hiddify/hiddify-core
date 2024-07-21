@@ -4,33 +4,26 @@ package v2
 #include "stdint.h"
 */
 
-import "C"
 import (
 	"log"
 	"net"
 
-	pb "github.com/hiddify/libcore/hiddifyrpc"
+	pb "github.com/hiddify/hiddify-core/hiddifyrpc"
 	"google.golang.org/grpc"
 )
 
-type server struct {
-	pb.UnimplementedHiddifyServer
+type HelloService struct {
+	pb.UnimplementedHelloServer
+}
+type CoreService struct {
+	pb.UnimplementedCoreServer
 }
 
-//export StartGrpcServer
-func StartGrpcServer(listenAddress *C.char) (CErr *C.char) {
-	//Example Listen Address: "127.0.0.1:50051"
-	err := StartGrpcServerGo(C.GoString(listenAddress))
-	if err != nil {
-		return C.CString(err.Error())
-	}
-	return nil
+type TunnelService struct {
+	pb.UnimplementedTunnelServiceServer
 }
 
-func StartGrpcServerGo(listenAddressG string) error {
-	//Example Listen Address: "127.0.0.1:50051"
-	// defer C.free(unsafe.Pointer(CErr))          // free the C string when it's no longer needed
-	// defer C.free(unsafe.Pointer(listenAddress)) // free the C string when it's no longer needed
+func StartGrpcServer(listenAddressG string, service string) error {
 
 	lis, err := net.Listen("tcp", listenAddressG)
 	if err != nil {
@@ -38,7 +31,13 @@ func StartGrpcServerGo(listenAddressG string) error {
 		return err
 	}
 	s := grpc.NewServer()
-	pb.RegisterHiddifyServer(s, &server{})
+	if service == "core" {
+		pb.RegisterCoreServer(s, &CoreService{})
+	} else if service == "hello" {
+		pb.RegisterHelloServer(s, &HelloService{})
+	} else if service == "tunnel" {
+		pb.RegisterTunnelServiceServer(s, &TunnelService{})
+	}
 	log.Printf("Server listening on %s", listenAddressG)
 	go func() {
 		if err := s.Serve(lis); err != nil {
@@ -46,4 +45,15 @@ func StartGrpcServerGo(listenAddressG string) error {
 		}
 	}()
 	return nil
+}
+func StartCoreGrpcServer(listenAddressG string) error {
+	return StartGrpcServer(listenAddressG, "core")
+}
+
+func StartHelloGrpcServer(listenAddressG string) error {
+	return StartGrpcServer(listenAddressG, "hello")
+}
+
+func StartTunnelGrpcServer(listenAddressG string) error {
+	return StartGrpcServer(listenAddressG, "tunnel")
 }

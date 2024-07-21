@@ -2,13 +2,16 @@ package v2
 
 import (
 	"context"
+	"io"
 	"os"
 	"runtime"
 	runtimeDebug "runtime/debug"
+	"time"
 
 	B "github.com/sagernet/sing-box"
 	"github.com/sagernet/sing-box/common/urltest"
 	"github.com/sagernet/sing-box/experimental/libbox"
+	"github.com/sagernet/sing-box/log"
 	"github.com/sagernet/sing-box/option"
 	E "github.com/sagernet/sing/common/exceptions"
 	"github.com/sagernet/sing/service"
@@ -17,13 +20,15 @@ import (
 )
 
 var (
-	sWorkingPath string
-	sTempPath    string
-	sUserID      int
-	sGroupID     int
+	sWorkingPath          string
+	sTempPath             string
+	sUserID               int
+	sGroupID              int
+	statusPropagationPort int64
 )
 
-func Setup(basePath string, workingPath string, tempPath string) {
+func Setup(basePath string, workingPath string, tempPath string, statusPort int64, debug bool) error {
+	statusPropagationPort = int64(statusPort)
 	tcpConn := runtime.GOOS == "windows" //TODO add TVOS
 	libbox.Setup(basePath, workingPath, tempPath, tcpConn)
 	sWorkingPath = workingPath
@@ -31,6 +36,24 @@ func Setup(basePath string, workingPath string, tempPath string) {
 	sTempPath = tempPath
 	sUserID = os.Getuid()
 	sGroupID = os.Getgid()
+
+	var defaultWriter io.Writer
+	if !debug {
+		defaultWriter = io.Discard
+	}
+	factory, err := log.New(
+		log.Options{
+			DefaultWriter: defaultWriter,
+			BaseTime:      time.Now(),
+			Observable:    true,
+			// Options: option.LogOptions{
+			// 	Disabled: false,
+			// 	Level:    "trace",
+			// 	Output:   "stdout",
+			// },
+		})
+	coreLogFactory = factory
+	return err
 }
 
 func NewService(options option.Options) (*libbox.BoxService, error) {

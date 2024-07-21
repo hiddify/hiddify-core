@@ -1,4 +1,4 @@
-package global
+package v2
 
 import (
 	"encoding/json"
@@ -13,52 +13,69 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/hiddify/libcore/config"
+	"github.com/hiddify/hiddify-core/config"
+	pb "github.com/hiddify/hiddify-core/hiddifyrpc"
 
 	"github.com/sagernet/sing-box/option"
 )
 
-func RunStandalone(hiddifySettingPath string, configPath string) error {
+func RunStandalone(hiddifySettingPath string, configPath string, defaultConfig config.ConfigOptions) error {
 	fmt.Println("Running in standalone mode")
-	current, err := readAndBuildConfig(hiddifySettingPath, configPath)
+	useFlutterBridge = false
+	current, err := readAndBuildConfig(hiddifySettingPath, configPath, &defaultConfig)
 	if err != nil {
 		fmt.Printf("Error in read and build config %v", err)
 		return err
 	}
 
-	go StartServiceC(false, current.Config)
+	go StartService(&pb.StartRequest{
+		ConfigContent:          current.Config,
+		EnableOldCommandServer: false,
+		DelayStart:             false,
+		EnableRawConfig:        true,
+	})
 	go updateConfigInterval(current, hiddifySettingPath, configPath)
-	fmt.Printf("Press CTRL+C to stop\n")
-	fmt.Printf("Open http://localhost:6756/?secret=hiddify in your browser\n")
+
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
 
+	fmt.Printf("Waiting for CTRL+C to stop\n")
 	<-sigChan
-	err = StopServiceC()
+	fmt.Printf("CTRL+C recived-->stopping\n")
+	_, err = Stop()
 
 	return err
 }
 
 type ConfigResult struct {
-	Config          string
-	RefreshInterval int
+	Config               string
+	RefreshInterval      int
+	HiddifyConfigOptions *config.ConfigOptions
 }
 
-func readAndBuildConfig(hiddifySettingPath string, configPath string) (ConfigResult, error) {
+func readAndBuildConfig(hiddifySettingPath string, configPath string, defaultConfig *config.ConfigOptions) (ConfigResult, error) {
 	var result ConfigResult
 
 	result, err := readConfigContent(configPath)
 	if err != nil {
 		return result, err
 	}
+
 	hiddifyconfig := config.DefaultConfigOptions()
+
+	if defaultConfig != nil {
+		hiddifyconfig = defaultConfig
+	}
+
 	if hiddifySettingPath != "" {
 		hiddifyconfig, err = readConfigOptionsAt(hiddifySettingPath)
 		if err != nil {
 			return result, err
 		}
 	}
-	result.Config, err = buildConfig(result.Config, *hiddifyconfig)
+
+	result.HiddifyConfigOptions = hiddifyconfig
+	result.Config, err = buildConfig(result.Config, *result.HiddifyConfigOptions)
 	if err != nil {
 		return result, err
 	}
@@ -134,7 +151,7 @@ func extractRefreshInterval(header http.Header, bodyStr string) (int, error) {
 	return 0, nil
 }
 func buildConfig(configContent string, options config.ConfigOptions) (string, error) {
-	parsedContent, err := config.ParseConfigContent(configContent, true)
+	parsedContent, err := config.ParseConfigContent(configContent, true, &options, false)
 	if err != nil {
 		return "", fmt.Errorf("failed to parse config content: %w", err)
 	}
@@ -156,11 +173,9 @@ func buildConfig(configContent string, options config.ConfigOptions) (string, er
 		finalconfig.Experimental.ClashAPI.ExternalController = "127.0.0.1:6756"
 	}
 
-	if finalconfig.Experimental.ClashAPI.Secret == "" {
-		// finalconfig.Experimental.ClashAPI.Secret = "hiddify"
-	}
+	fmt.Printf("Open http://localhost:6756/ui/?secret=%s in your browser\n", finalconfig.Experimental.ClashAPI.Secret)
 
-	if err := SetupC("./", "./", "./tmp", false); err != nil {
+	if err := Setup("./", "./", "./tmp", 0, false); err != nil {
 		return "", fmt.Errorf("failed to set up global configuration: %w", err)
 	}
 
@@ -179,13 +194,19 @@ func updateConfigInterval(current ConfigResult, hiddifySettingPath string, confi
 
 	for {
 		<-time.After(time.Duration(current.RefreshInterval) * time.Hour)
-		new, err := readAndBuildConfig(hiddifySettingPath, configPath)
+		new, err := readAndBuildConfig(hiddifySettingPath, configPath, current.HiddifyConfigOptions)
 		if err != nil {
 			continue
 		}
 		if new.Config != current.Config {
-			go StopServiceC()
-			go StartServiceC(false, new.Config)
+			go Stop()
+			go StartService(&pb.StartRequest{
+				ConfigContent:          new.Config,
+				DelayStart:             false,
+				EnableOldCommandServer: false,
+				DisableMemoryLimit:     false,
+				EnableRawConfig:        true,
+			})
 		}
 		current = new
 	}
@@ -218,6 +239,11 @@ func readConfigOptionsAt(path string) (*config.ConfigOptions, error) {
 			return nil, err
 		}
 	}
-
+	if options.Warp2.WireguardConfigStr != "" {
+		err := json.Unmarshal([]byte(options.Warp2.WireguardConfigStr), &options.Warp2.WireguardConfig)
+		if err != nil {
+			return nil, err
+		}
+	}
 	return &options, nil
 }

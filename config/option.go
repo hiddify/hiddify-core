@@ -6,15 +6,20 @@ import (
 )
 
 type ConfigOptions struct {
-	LogLevel       string      `json:"log-level"`
-	EnableClashApi bool        `json:"enable-clash-api"`
-	ClashApiPort   uint16      `json:"clash-api-port"`
-	GeoIPPath      string      `json:"geoip-path"`
-	GeoSitePath    string      `json:"geosite-path"`
-	Rules          []Rule      `json:"rules"`
-	Warp           WarpOptions `json:"warp"`
-	Mux            MuxOptions  `json:"mux"`
-	TLSTricks      TLSTricks   `json:"tls-tricks"`
+	EnableFullConfig bool   `json:"enable-full-config"`
+	LogLevel         string `json:"log-level"`
+	EnableClashApi   bool   `json:"enable-clash-api"`
+	ClashApiPort     uint16 `json:"clash-api-port"`
+	ClashApiSecret   string `json:"web-secret"`
+	Region           string `json:"region"`
+	BlockAds         bool   `json:"block-ads"`
+	// GeoIPPath        string      `json:"geoip-path"`
+	// GeoSitePath      string      `json:"geosite-path"`
+	Rules     []Rule      `json:"rules"`
+	Warp      WarpOptions `json:"warp"`
+	Warp2     WarpOptions `json:"warp2"`
+	Mux       MuxOptions  `json:"mux"`
+	TLSTricks TLSTricks   `json:"tls-tricks"`
 	DNSOptions
 	InboundOptions
 	URLTestOptions
@@ -36,6 +41,7 @@ type InboundOptions struct {
 	EnableTunService bool   `json:"enable-tun-service"`
 	SetSystemProxy   bool   `json:"set-system-proxy"`
 	MixedPort        uint16 `json:"mixed-port"`
+	TProxyPort       uint16 `json:"tproxy-port"`
 	LocalDnsPort     uint16 `json:"local-dns-port"`
 	MTU              uint32 `json:"mtu"`
 	StrictRoute      bool   `json:"strict-route"`
@@ -43,9 +49,9 @@ type InboundOptions struct {
 }
 
 type URLTestOptions struct {
-	ConnectionTestUrl  string            `json:"connection-test-url"`
-	URLTestInterval    DurationInSeconds `json:"url-test-interval"`
-	URLTestIdleTimeout DurationInSeconds `json:"url-test-idle-timeout"`
+	ConnectionTestUrl string            `json:"connection-test-url"`
+	URLTestInterval   DurationInSeconds `json:"url-test-interval"`
+	// URLTestIdleTimeout DurationInSeconds `json:"url-test-idle-timeout"`
 }
 
 type RouteOptions struct {
@@ -77,8 +83,9 @@ type WarpOptions struct {
 	WireguardConfigStr string              `json:"wireguard-config"`
 	WireguardConfig    WarpWireguardConfig `json:"wireguardConfig"` // TODO check
 	FakePackets        string              `json:"noise"`
-	FakePacketSize     string              `json:"fake-packet-size"`
+	FakePacketSize     string              `json:"noise-size"`
 	FakePacketDelay    string              `json:"noise-delay"`
+	FakePacketMode     string              `json:"noise-mode"`
 	CleanIP            string              `json:"clean-ip"`
 	CleanPort          uint16              `json:"clean-port"`
 	Account            WarpAccount
@@ -97,17 +104,18 @@ func DefaultConfigOptions() *ConfigOptions {
 		},
 		InboundOptions: InboundOptions{
 			EnableTun:      false,
-			SetSystemProxy: true,
+			SetSystemProxy: false,
 			MixedPort:      2334,
+			TProxyPort:     2335,
 			LocalDnsPort:   16450,
 			MTU:            9000,
 			StrictRoute:    true,
 			TUNStack:       "mixed",
 		},
 		URLTestOptions: URLTestOptions{
-			ConnectionTestUrl:  "http://cp.cloudflare.com/",
-			URLTestInterval:    DurationInSeconds(600),
-			URLTestIdleTimeout: DurationInSeconds(6000),
+			ConnectionTestUrl: "http://cp.cloudflare.com/",
+			URLTestInterval:   DurationInSeconds(600),
+			// URLTestIdleTimeout: DurationInSeconds(6000),
 		},
 		RouteOptions: RouteOptions{
 			ResolveDestination:     false,
@@ -115,12 +123,13 @@ func DefaultConfigOptions() *ConfigOptions {
 			BypassLAN:              false,
 			AllowConnectionFromLAN: false,
 		},
-		LogLevel:       "info",
+		LogLevel:       "warn",
 		EnableClashApi: true,
 		ClashApiPort:   6756,
-		GeoIPPath:      "geoip.db",
-		GeoSitePath:    "geosite.db",
-		Rules:          []Rule{},
+		ClashApiSecret: "",
+		// GeoIPPath:      "geoip.db",
+		// GeoSitePath:    "geosite.db",
+		Rules: []Rule{},
 		Mux: MuxOptions{
 			Enable:     false,
 			Padding:    true,
