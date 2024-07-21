@@ -7,26 +7,16 @@ import "C"
 import (
 	"encoding/json"
 	"fmt"
-	"io"
 	"os"
-	"path/filepath"
-	"time"
 	"unsafe"
 
-	"github.com/hiddify/libcore/bridge"
-	"github.com/hiddify/libcore/config"
-	pb "github.com/hiddify/libcore/hiddifyrpc"
-	v2 "github.com/hiddify/libcore/v2"
+	"github.com/hiddify/hiddify-core/bridge"
+	"github.com/hiddify/hiddify-core/config"
+	pb "github.com/hiddify/hiddify-core/hiddifyrpc"
+	v2 "github.com/hiddify/hiddify-core/v2"
 
-	"github.com/sagernet/sing-box/experimental/libbox"
 	"github.com/sagernet/sing-box/log"
-	"github.com/sagernet/sing-box/option"
 )
-
-// var v2.Box *libbox.BoxService
-var configOptions *config.ConfigOptions
-var activeConfigPath *string
-var logFactory *log.Factory
 
 //export setupOnce
 func setupOnce(api unsafe.Pointer) {
@@ -35,287 +25,147 @@ func setupOnce(api unsafe.Pointer) {
 
 //export setup
 func setup(baseDir *C.char, workingDir *C.char, tempDir *C.char, statusPort C.longlong, debug bool) (CErr *C.char) {
-	defer config.DeferPanicToError("setup", func(err error) {
-		CErr = C.CString(err.Error())
-		fmt.Printf("Error: %+v\n", err)
-	})
+	err := v2.Setup(C.GoString(baseDir), C.GoString(workingDir), C.GoString(tempDir), int64(statusPort), debug)
 
-	Setup(C.GoString(baseDir), C.GoString(workingDir), C.GoString(tempDir))
-	statusPropagationPort = int64(statusPort)
-
-	var defaultWriter io.Writer
-	if !debug {
-		defaultWriter = io.Discard
-	}
-	factory, err := log.New(
-		log.Options{
-			DefaultWriter: defaultWriter,
-			BaseTime:      time.Now(),
-			Observable:    false,
-		})
-	if err != nil {
-		return C.CString(err.Error())
-	}
-	logFactory = &factory
-	return C.CString("")
+	return emptyOrErrorC(err)
 }
 
 //export parse
 func parse(path *C.char, tempPath *C.char, debug bool) (CErr *C.char) {
-	defer config.DeferPanicToError("parse", func(err error) {
-		CErr = C.CString(err.Error())
+	res, err := v2.Parse(&pb.ParseRequest{
+		ConfigPath: C.GoString(path),
+		TempPath:   C.GoString(tempPath),
 	})
+	if err != nil {
+		log.Error(err.Error())
+		return C.CString(err.Error())
+	}
 
-	config, err := config.ParseConfig(C.GoString(tempPath), debug)
-	if err != nil {
-		return C.CString(err.Error())
-	}
-	err = os.WriteFile(C.GoString(path), config, 0644)
-	if err != nil {
-		return C.CString(err.Error())
-	}
-	return C.CString("")
+	err = os.WriteFile(C.GoString(path), []byte(res.Content), 0644)
+	return emptyOrErrorC(err)
 }
 
 //export changeConfigOptions
 func changeConfigOptions(configOptionsJson *C.char) (CErr *C.char) {
-	defer config.DeferPanicToError("changeConfigOptions", func(err error) {
-		CErr = C.CString(err.Error())
+
+	_, err := v2.ChangeConfigOptions(&pb.ChangeConfigOptionsRequest{
+		ConfigOptionsJson: C.GoString(configOptionsJson),
 	})
-
-	configOptions = &config.ConfigOptions{}
-	err := json.Unmarshal([]byte(C.GoString(configOptionsJson)), configOptions)
-	if err != nil {
-		return C.CString(err.Error())
-	}
-	if configOptions.Warp.WireguardConfigStr != "" {
-		err := json.Unmarshal([]byte(configOptions.Warp.WireguardConfigStr), &configOptions.Warp.WireguardConfig)
-		if err != nil {
-			return C.CString(err.Error())
-		}
-	}
-
-	return C.CString("")
+	return emptyOrErrorC(err)
 }
 
 //export generateConfig
 func generateConfig(path *C.char) (res *C.char) {
-	defer config.DeferPanicToError("generateConfig", func(err error) {
-		res = C.CString("error" + err.Error())
+	_, err := v2.GenerateConfig(&pb.GenerateConfigRequest{
+		Path: C.GoString(path),
 	})
-
-	config, err := generateConfigFromFile(C.GoString(path), *configOptions)
-	if err != nil {
-		return C.CString("error" + err.Error())
-	}
-	return C.CString(config)
-}
-
-func generateConfigFromFile(path string, configOpt config.ConfigOptions) (string, error) {
-	os.Chdir(filepath.Dir(path))
-	content, err := os.ReadFile(path)
-	if err != nil {
-		return "", err
-	}
-	options, err := parseConfig(string(content))
-	if err != nil {
-		return "", err
-	}
-	config, err := config.BuildConfigJson(configOpt, options)
-	if err != nil {
-		return "", err
-	}
-	return config, nil
+	return emptyOrErrorC(err)
 }
 
 //export start
 func start(configPath *C.char, disableMemoryLimit bool) (CErr *C.char) {
-	defer config.DeferPanicToError("start", func(err error) {
-		stopAndAlert("Unexpected Error!", err)
-		CErr = C.CString(err.Error())
+
+	_, err := v2.Start(&pb.StartRequest{
+		ConfigPath:             C.GoString(configPath),
+		EnableOldCommandServer: true,
+		DisableMemoryLimit:     disableMemoryLimit,
 	})
-
-	if v2.CoreState != pb.CoreState_STOPPED {
-		return C.CString("")
-	}
-	propagateStatus(pb.CoreState_STARTING)
-
-	path := C.GoString(configPath)
-	activeConfigPath = &path
-
-	libbox.SetMemoryLimit(!disableMemoryLimit)
-	err := startService(false)
-	if err != nil {
-		return C.CString(err.Error())
-	}
-	return C.CString("")
-}
-
-func startService(delayStart bool) error {
-	content, err := os.ReadFile(*activeConfigPath)
-	if err != nil {
-		return stopAndAlert(EmptyConfiguration, err)
-	}
-	options, err := parseConfig(string(content))
-	if err != nil {
-		return stopAndAlert(EmptyConfiguration, err)
-	}
-	os.Chdir(filepath.Dir(*activeConfigPath))
-	var patchedOptions *option.Options
-	patchedOptions, err = config.BuildConfig(*configOptions, options)
-	if err != nil {
-		return stopAndAlert("Error Building Config", err)
-	}
-
-	config.SaveCurrentConfig(filepath.Join(sWorkingPath, "current-config.json"), *patchedOptions)
-
-	err = startCommandServer(*logFactory)
-	if err != nil {
-		return stopAndAlert(StartCommandServer, err)
-	}
-
-	instance, err := NewService(*patchedOptions)
-	if err != nil {
-		return stopAndAlert(CreateService, err)
-	}
-
-	if delayStart {
-		time.Sleep(250 * time.Millisecond)
-	}
-
-	err = instance.Start()
-	if err != nil {
-		return stopAndAlert(StartService, err)
-	}
-	v2.Box = instance
-	commandServer.SetService(v2.Box)
-
-	propagateStatus(pb.CoreState_STARTED)
-	return nil
+	return emptyOrErrorC(err)
 }
 
 //export stop
 func stop() (CErr *C.char) {
-	defer config.DeferPanicToError("stop", func(err error) {
-		stopAndAlert("Unexpected Error in Stop!", err)
-		CErr = C.CString(err.Error())
-	})
 
-	if v2.CoreState != pb.CoreState_STARTED {
-		stopAndAlert("Already Stopped", nil)
-		return C.CString("")
-	}
-	if v2.Box == nil {
-		return C.CString("instance not found")
-	}
-	propagateStatus(pb.CoreState_STOPPING)
-	config.DeactivateTunnelService()
-	commandServer.SetService(nil)
-
-	err := v2.Box.Close()
-	if err != nil {
-		stopAndAlert("Unexpected Error in Close!", err)
-		return C.CString(err.Error())
-	}
-	v2.Box = nil
-	err = commandServer.Close()
-	if err != nil {
-		stopAndAlert("Unexpected Error in Stop CommandServer/!", err)
-		return C.CString(err.Error())
-	}
-	commandServer = nil
-	propagateStatus(pb.CoreState_STOPPED)
-	return C.CString("")
+	_, err := v2.Stop()
+	return emptyOrErrorC(err)
 }
 
 //export restart
 func restart(configPath *C.char, disableMemoryLimit bool) (CErr *C.char) {
-	defer config.DeferPanicToError("restart", func(err error) {
-		stopAndAlert("Unexpected Error!", err)
-		CErr = C.CString(err.Error())
+
+	_, err := v2.Restart(&pb.StartRequest{
+		ConfigPath:             C.GoString(configPath),
+		EnableOldCommandServer: true,
+		DisableMemoryLimit:     disableMemoryLimit,
 	})
-	log.Debug("[Service] Restarting")
-
-	if v2.CoreState != pb.CoreState_STARTED {
-		return C.CString("")
-	}
-	if v2.Box == nil {
-		return C.CString("instance not found")
-	}
-
-	err := stop()
-	if C.GoString(err) != "" {
-		return err
-	}
-
-	propagateStatus(pb.CoreState_STARTING)
-
-	time.Sleep(250 * time.Millisecond)
-
-	path := C.GoString(configPath)
-	activeConfigPath = &path
-	libbox.SetMemoryLimit(!disableMemoryLimit)
-	gErr := startService(false)
-	if gErr != nil {
-		return C.CString(gErr.Error())
-	}
-	return C.CString("")
+	return emptyOrErrorC(err)
 }
 
 //export startCommandClient
 func startCommandClient(command C.int, port C.longlong) *C.char {
-	err := StartCommand(int32(command), int64(port), *logFactory)
-	if err != nil {
-		return C.CString(err.Error())
-	}
-	return C.CString("")
+	err := v2.StartCommand(int32(command), int64(port))
+	return emptyOrErrorC(err)
 }
 
 //export stopCommandClient
 func stopCommandClient(command C.int) *C.char {
-	err := StopCommand(int32(command))
-	if err != nil {
-		return C.CString(err.Error())
-	}
-	return C.CString("")
+	err := v2.StopCommand(int32(command))
+	return emptyOrErrorC(err)
 }
 
 //export selectOutbound
 func selectOutbound(groupTag *C.char, outboundTag *C.char) (CErr *C.char) {
-	defer config.DeferPanicToError("selectOutbound", func(err error) {
-		CErr = C.CString(err.Error())
+
+	_, err := v2.SelectOutbound(&pb.SelectOutboundRequest{
+		GroupTag:    C.GoString(groupTag),
+		OutboundTag: C.GoString(outboundTag),
 	})
 
-	err := libbox.NewStandaloneCommandClient().SelectOutbound(C.GoString(groupTag), C.GoString(outboundTag))
-	if err != nil {
-		return C.CString(err.Error())
-	}
-	return C.CString("")
+	return emptyOrErrorC(err)
 }
 
 //export urlTest
 func urlTest(groupTag *C.char) (CErr *C.char) {
-	defer config.DeferPanicToError("urlTest", func(err error) {
-		CErr = C.CString(err.Error())
+	_, err := v2.UrlTest(&pb.UrlTestRequest{
+		GroupTag: C.GoString(groupTag),
 	})
 
-	err := libbox.NewStandaloneCommandClient().URLTest(C.GoString(groupTag))
-	if err != nil {
-		return C.CString(err.Error())
+	return emptyOrErrorC(err)
+}
+
+func emptyOrErrorC(err error) *C.char {
+	if err == nil {
+		return C.CString("")
 	}
-	return C.CString("")
+	log.Error(err.Error())
+	return C.CString(err.Error())
 }
 
 //export generateWarpConfig
 func generateWarpConfig(licenseKey *C.char, accountId *C.char, accessToken *C.char) (CResp *C.char) {
-	defer config.DeferPanicToError("generateWarpConfig", func(err error) {
-		CResp = C.CString(fmt.Sprint("error: ", err.Error()))
+	res, err := v2.GenerateWarpConfig(&pb.GenerateWarpConfigRequest{
+		LicenseKey:  C.GoString(licenseKey),
+		AccountId:   C.GoString(accountId),
+		AccessToken: C.GoString(accessToken),
 	})
-	account, err := config.GenerateWarpAccount(C.GoString(licenseKey), C.GoString(accountId), C.GoString(accessToken))
+
 	if err != nil {
 		return C.CString(fmt.Sprint("error: ", err.Error()))
 	}
-	return C.CString(account)
+	warpAccount := config.WarpAccount{
+		AccountID:   res.Account.AccountId,
+		AccessToken: res.Account.AccessToken,
+	}
+	warpConfig := config.WarpWireguardConfig{
+		PrivateKey:       res.Config.PrivateKey,
+		LocalAddressIPv4: res.Config.LocalAddressIpv4,
+		LocalAddressIPv6: res.Config.LocalAddressIpv6,
+		PeerPublicKey:    res.Config.PeerPublicKey,
+		ClientID:         res.Config.ClientId,
+	}
+	log := res.Log
+	response := &config.WarpGenerationResponse{
+		WarpAccount: warpAccount,
+		Log:         log,
+		Config:      warpConfig,
+	}
+
+	responseJson, err := json.Marshal(response)
+	if err != nil {
+		return C.CString("")
+	}
+	return C.CString(string(responseJson))
+
 }
 
 func main() {}

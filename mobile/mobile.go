@@ -5,17 +5,22 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/hiddify/libcore/config"
+	"github.com/hiddify/hiddify-core/config"
 	_ "github.com/sagernet/gomobile"
 	"github.com/sagernet/sing-box/option"
 )
 
 func PraseString(configStr string, debug bool) (string, error) {
-	config, err := config.ParseConfigContent(configStr, debug)
+	config, err := config.ParseConfigContent(configStr, debug, nil, false)
 	if err != nil {
 		return "", err
 	}
 	return string(config[:]), nil
+}
+
+func Setup() error {
+	// return config.StartGRPCServer(7078)
+	return nil
 }
 
 func Parse(path string, tempPath string, debug bool) error {
@@ -48,6 +53,14 @@ func BuildConfig(path string, configOptionsJson string) (string, error) {
 			return "", err
 		}
 	}
+
+	if configOptions.Warp2.WireguardConfigStr != "" {
+		err := json.Unmarshal([]byte(configOptions.Warp2.WireguardConfigStr), &configOptions.Warp2.WireguardConfig)
+		if err != nil {
+			return "", err
+		}
+	}
+
 	return config.BuildConfigJson(*configOptions, options)
 }
 

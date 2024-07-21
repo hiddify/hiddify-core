@@ -2,12 +2,15 @@ package config
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"math/rand"
 	"net"
 	"net/netip"
 	"net/url"
 	"strings"
+	"time"
 
 	C "github.com/sagernet/sing-box/constant"
 	"github.com/sagernet/sing-box/option"
@@ -59,6 +62,11 @@ func BuildConfig(opt ConfigOptions, input option.Options) (*option.Options, erro
 	fmt.Printf("config options: %+v\n", opt)
 
 	var options option.Options
+	if opt.EnableFullConfig {
+		options.Inbounds = input.Inbounds
+		options.DNS = input.DNS
+		options.Route = input.Route
+	}
 	directDNSDomains := make(map[string]bool)
 	dnsRules := []option.DefaultDNSRule{}
 
@@ -70,10 +78,15 @@ func BuildConfig(opt ConfigOptions, input option.Options) (*option.Options, erro
 	}
 
 	if opt.EnableClashApi {
+		if opt.ClashApiSecret == "" {
+			opt.ClashApiSecret = generateRandomString(16)
+		}
 		options.Experimental = &option.ExperimentalOptions{
 			ClashAPI: &option.ClashAPIOptions{
 				ExternalController: fmt.Sprintf("%s:%d", "127.0.0.1", opt.ClashApiPort),
+				Secret:             opt.ClashApiSecret,
 			},
+
 			CacheFile: &option.CacheFileOptions{
 				Enabled: true,
 				Path:    "clash.db",
@@ -91,7 +104,7 @@ func BuildConfig(opt ConfigOptions, input option.Options) (*option.Options, erro
 
 	options.DNS = &option.DNSOptions{
 		StaticIPs: map[string][]string{
-			"sky.rethinkdns.com": getIPs([]string{"zula.ir", "www.speedtest.net", "sky.rethinkdns.com"}),
+			"sky.rethinkdns.com": getIPs([]string{"www.speedtest.net", "sky.rethinkdns.com"}),
 		},
 		DNSClientOptions: option.DNSClientOptions{
 			IndependentCache: opt.IndependentDNSCache,
@@ -207,8 +220,8 @@ func BuildConfig(opt ConfigOptions, input option.Options) (*option.Options, erro
 					Listen:     option.NewListenAddress(netip.MustParseAddr(bind)),
 					ListenPort: opt.LocalDnsPort,
 				},
-				OverrideAddress: "1.1.1.1",
-				OverridePort:    53,
+				// OverrideAddress: "1.1.1.1",
+				// OverridePort:    53,
 			},
 		},
 	)
@@ -371,32 +384,158 @@ func BuildConfig(opt ConfigOptions, input option.Options) (*option.Options, erro
 		Rules:               routeRules,
 		AutoDetectInterface: true,
 		OverrideAndroidVPN:  true,
-		// RuleSet: []option.RuleSet{
-		// 	{
-		// 		Type: C.RuleSetTypeRemote,
-		// 		Tag:  "geoip-" + opt,
-		// 		RemoteOptions: option.RemoteRuleSet{
-		// 			URL:            "https://raw.githubusercontent.com/Chocolate4U/Iran-sing-box-rules/rule-set/geoip-ir.srs",
-		// 			UpdateInterval: option.Duration(5 * time.day),
-		// 		},
-		// 	},
+		// RuleSet:             []option.RuleSet{},
+		// GeoIP: &option.GeoIPOptions{
+		// 	Path: opt.GeoIPPath,
 		// },
-		GeoIP: &option.GeoIPOptions{
-			Path: opt.GeoIPPath,
-		},
-		Geosite: &option.GeositeOptions{
-			Path: opt.GeoSitePath,
-		},
+		// Geosite: &option.GeositeOptions{
+		// 	Path: opt.GeoSitePath,
+		// },
 	}
+	fmt.Println("Region==========================", opt.Region)
+	if opt.Region != "other" {
+		options.DNS.Rules = append(
+			options.DNS.Rules,
+			option.DNSRule{
+				Type: C.RuleTypeDefault,
+				DefaultOptions: option.DefaultDNSRule{
+					RuleSet: []string{
+						"geoip-" + opt.Region,
+						"geosite-" + opt.Region,
+					},
+					Server: DNSDirectTag,
+				},
+			},
+		)
+		options.Route.RuleSet = append(options.Route.RuleSet, option.RuleSet{
+			Type:   C.RuleSetTypeRemote,
+			Tag:    "geoip-" + opt.Region,
+			Format: C.RuleSetFormatBinary,
+			RemoteOptions: option.RemoteRuleSet{
+				URL: "https://raw.githubusercontent.com/hiddify/hiddify-geo/rule-set/country/geoip-" + opt.Region + ".srs",
 
+				UpdateInterval: option.Duration(5 * time.Hour * 24),
+			},
+		})
+		options.Route.RuleSet = append(options.Route.RuleSet, option.RuleSet{
+			Type:   C.RuleSetTypeRemote,
+			Tag:    "geosite-" + opt.Region,
+			Format: C.RuleSetFormatBinary,
+			RemoteOptions: option.RemoteRuleSet{
+				URL:            "https://raw.githubusercontent.com/hiddify/hiddify-geo/rule-set/country/geosite-" + opt.Region + ".srs",
+				UpdateInterval: option.Duration(5 * time.Hour * 24),
+			},
+		})
+
+		routeRuleIp := option.Rule{
+			Type: C.RuleTypeDefault,
+			DefaultOptions: option.DefaultRule{
+				RuleSet: []string{
+					"geoip-" + opt.Region,
+					"geosite-" + opt.Region,
+				},
+				Outbound: OutboundDirectTag,
+			},
+		}
+
+		options.Route.Rules = append([]option.Rule{routeRuleIp}, options.Route.Rules...)
+	}
+	if opt.BlockAds {
+		options.Route.RuleSet = append(options.Route.RuleSet, option.RuleSet{
+			Type:   C.RuleSetTypeRemote,
+			Tag:    "geosite-ads",
+			Format: C.RuleSetFormatBinary,
+			RemoteOptions: option.RemoteRuleSet{
+				URL:            "https://raw.githubusercontent.com/hiddify/hiddify-geo/rule-set/block/geosite-category-ads-all.srs",
+				UpdateInterval: option.Duration(5 * time.Hour * 24),
+			},
+		})
+		options.Route.RuleSet = append(options.Route.RuleSet, option.RuleSet{
+			Type:   C.RuleSetTypeRemote,
+			Tag:    "geosite-malware",
+			Format: C.RuleSetFormatBinary,
+			RemoteOptions: option.RemoteRuleSet{
+				URL:            "https://raw.githubusercontent.com/hiddify/hiddify-geo/rule-set/block/geosite-malware.srs",
+				UpdateInterval: option.Duration(5 * time.Hour * 24),
+			},
+		})
+		options.Route.RuleSet = append(options.Route.RuleSet, option.RuleSet{
+			Type:   C.RuleSetTypeRemote,
+			Tag:    "geosite-phishing",
+			Format: C.RuleSetFormatBinary,
+			RemoteOptions: option.RemoteRuleSet{
+				URL:            "https://raw.githubusercontent.com/hiddify/hiddify-geo/rule-set/block/geosite-phishing.srs",
+				UpdateInterval: option.Duration(5 * time.Hour * 24),
+			},
+		})
+		options.Route.RuleSet = append(options.Route.RuleSet, option.RuleSet{
+			Type:   C.RuleSetTypeRemote,
+			Tag:    "geosite-cryptominers",
+			Format: C.RuleSetFormatBinary,
+			RemoteOptions: option.RemoteRuleSet{
+				URL:            "https://raw.githubusercontent.com/hiddify/hiddify-geo/rule-set/block/geosite-cryptominers.srs",
+				UpdateInterval: option.Duration(5 * time.Hour * 24),
+			},
+		})
+		options.Route.RuleSet = append(options.Route.RuleSet, option.RuleSet{
+			Type:   C.RuleSetTypeRemote,
+			Tag:    "geoip-phishing",
+			Format: C.RuleSetFormatBinary,
+			RemoteOptions: option.RemoteRuleSet{
+				URL:            "https://raw.githubusercontent.com/hiddify/hiddify-geo/rule-set/block/geoip-phishing.srs",
+				UpdateInterval: option.Duration(5 * time.Hour * 24),
+			},
+		})
+		options.Route.RuleSet = append(options.Route.RuleSet, option.RuleSet{
+			Type:   C.RuleSetTypeRemote,
+			Tag:    "geoip-malware",
+			Format: C.RuleSetFormatBinary,
+			RemoteOptions: option.RemoteRuleSet{
+				URL:            "https://raw.githubusercontent.com/hiddify/hiddify-geo/rule-set/block/geoip-malware.srs",
+				UpdateInterval: option.Duration(5 * time.Hour * 24),
+			},
+		})
+
+		routeRule := option.Rule{
+			Type: C.RuleTypeDefault,
+			DefaultOptions: option.DefaultRule{
+				RuleSet: []string{
+					"geosite-ads",
+					"geosite-malware",
+					"geosite-phishing",
+					"geosite-cryptominers",
+					"geoip-malware",
+					"geoip-phishing",
+				},
+				Outbound: OutboundBlockTag,
+			},
+		}
+		options.Route.Rules = append([]option.Rule{routeRule}, options.Route.Rules...)
+	}
 	var outbounds []option.Outbound
 	var tags []string
 	OutboundMainProxyTag = OutboundSelectTag
 	//inbound==warp over proxies
 	//outbound==proxies over warp
+	if opt.Warp.EnableWarp {
+		for _, out := range input.Outbounds {
+			if out.Type == C.TypeCustom {
+				if warp, ok := out.CustomOptions["warp"].(map[string]interface{}); ok {
+					key, _ := warp["key"].(string)
+					if key == "p1" {
+						opt.Warp.EnableWarp = false
+						break
+					}
+				}
+			}
+			if out.Type == C.TypeWireGuard && (out.WireGuardOptions.PrivateKey == opt.Warp.WireguardConfig.PrivateKey || out.WireGuardOptions.PrivateKey == "p1") {
+				opt.Warp.EnableWarp = false
+				break
+			}
+		}
+	}
 	if opt.Warp.EnableWarp && (opt.Warp.Mode == "warp_over_proxy" || opt.Warp.Mode == "proxy_over_warp") {
-
-		out, err := generateWarpSingbox(opt.Warp.WireguardConfig.ToWireguardConfig(), opt.Warp.CleanIP, opt.Warp.CleanPort, opt.Warp.FakePackets, opt.Warp.FakePacketSize, opt.Warp.FakePacketDelay)
+		out, err := GenerateWarpSingbox(opt.Warp.WireguardConfig, opt.Warp.CleanIP, opt.Warp.CleanPort, opt.Warp.FakePackets, opt.Warp.FakePacketSize, opt.Warp.FakePacketDelay, opt.Warp.FakePacketMode)
 		if err != nil {
 			return nil, fmt.Errorf("failed to generate warp config: %v", err)
 		}
@@ -407,12 +546,12 @@ func BuildConfig(opt ConfigOptions, input option.Options) (*option.Options, erro
 		} else {
 			out.WireGuardOptions.Detour = OutboundDirectTag
 		}
-		patchWarp(out)
+		patchWarp(out, &opt, true,nil)
 		outbounds = append(outbounds, *out)
 		// tags = append(tags, out.Tag)
 	}
 	for _, out := range input.Outbounds {
-		outbound, serverDomain, err := patchOutbound(out, opt)
+		outbound, serverDomain, err := patchOutbound(out, opt, options.DNS.StaticIPs)
 		if err != nil {
 			return nil, err
 		}
@@ -442,19 +581,26 @@ func BuildConfig(opt ConfigOptions, input option.Options) (*option.Options, erro
 		Type: C.TypeURLTest,
 		Tag:  OutboundURLTestTag,
 		URLTestOptions: option.URLTestOutboundOptions{
-			Outbounds:   tags,
-			URL:         opt.ConnectionTestUrl,
-			Interval:    option.Duration(opt.URLTestInterval.Duration()),
-			IdleTimeout: option.Duration(opt.URLTestIdleTimeout.Duration()),
+			Outbounds: tags,
+			URL:       opt.ConnectionTestUrl,
+			Interval:  option.Duration(opt.URLTestInterval.Duration()),
+			// IdleTimeout: option.Duration(opt.URLTestIdleTimeout.Duration()),
+			IdleTimeout: option.Duration(opt.URLTestInterval.Duration().Nanoseconds() * 10),
 		},
 	}
+	defaultSelect := urlTest.Tag
 
+	for _, tag := range tags {
+		if strings.Contains(tag, "§default§") {
+			defaultSelect = "§default§"
+		}
+	}
 	selector := option.Outbound{
 		Type: C.TypeSelector,
 		Tag:  OutboundSelectTag,
 		SelectorOptions: option.SelectorOutboundOptions{
 			Outbounds: append([]string{urlTest.Tag}, tags...),
-			Default:   urlTest.Tag,
+			Default:   defaultSelect,
 		},
 	}
 
@@ -628,4 +774,22 @@ func removeDuplicateStr(strSlice []string) []string {
 		}
 	}
 	return list
+}
+
+func generateRandomString(length int) string {
+	// Determine the number of bytes needed
+	bytesNeeded := (length*6 + 7) / 8
+
+	// Generate random bytes
+	randomBytes := make([]byte, bytesNeeded)
+	_, err := rand.Read(randomBytes)
+	if err != nil {
+		return "hiddify"
+	}
+
+	// Encode random bytes to base64
+	randomString := base64.URLEncoding.EncodeToString(randomBytes)
+
+	// Trim padding characters and return the string
+	return randomString[:length]
 }

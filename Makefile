@@ -1,3 +1,4 @@
+.ONESHELL:
 PRODUCT_NAME=libcore
 BASENAME=$(PRODUCT_NAME)
 BINDIR=bin
@@ -13,7 +14,11 @@ endif
 TAGS=with_gvisor,with_quic,with_wireguard,with_ech,with_utls,with_clash_api,with_grpc
 IOS_ADD_TAGS=with_dhcp,with_low_memory,with_conntrack
 GOBUILDLIB=CGO_ENABLED=1 go build -trimpath -tags $(TAGS) -ldflags="-w -s" -buildmode=c-shared
-GOBUILDSRV=CGO_ENABLED=1 go build -trimpath -tags $(TAGS)
+GOBUILDSRV=CGO_ENABLED=1 go build -ldflags "-s -w" -trimpath -tags $(TAGS)
+
+.PHONY: protos
+protos:
+	protoc --go_out=config --go-grpc_out=config --proto_path=protos protos/*.proto
 
 lib_install:
 	go install -v github.com/sagernet/gomobile/cmd/gomobile@v0.1.1
@@ -47,6 +52,7 @@ windows-amd64:
 	curl http://localhost:18020/exit || echo "exited"
 	env GOOS=windows GOARCH=amd64 CC=x86_64-w64-mingw32-gcc $(GOBUILDLIB) -o $(BINDIR)/$(LIBNAME).dll ./custom
 	go install -mod=readonly github.com/akavel/rsrc@latest ||echo "rsrc error in installation"
+	go run ./cli tunnel exit
 	cp $(BINDIR)/$(LIBNAME).dll ./$(LIBNAME).dll 
 	$$(go env GOPATH)/bin/rsrc -ico ./assets/hiddify-cli.ico -o ./cli/bydll/cli.syso ||echo "rsrc error in syso"
 	env GOOS=windows GOARCH=amd64 CC=x86_64-w64-mingw32-gcc CGO_LDFLAGS="$(LIBNAME).dll" $(GOBUILDSRV) -o $(BINDIR)/$(CLINAME).exe ./cli/bydll
@@ -68,7 +74,7 @@ linux-amd64:
 linux-custom:
 	mkdir -p $(BINDIR)/
 	#env GOARCH=mips $(GOBUILDSRV) -o $(BINDIR)/$(CLINAME) ./cli/
-	go build -trimpath -tags $(TAGS) -o $(BINDIR)/$(CLINAME) ./cli/
+	go build -ldflags "-s -w" -trimpath -tags $(TAGS) -o $(BINDIR)/$(CLINAME) ./cli/
 	chmod +x $(BINDIR)/$(CLINAME)
 	make webui
 
@@ -105,7 +111,8 @@ release: # Create a new tag for release.
 	echo "version: $${VERSION_STR}+$${BUILD_NUMBER}" && \
 	sed -i -e "s|<key>CFBundleVersion</key>\s*<string>[^<]*</string>|<key>CFBundleVersion</key><string>$${VERSION_STR}</string>|" Info.plist &&\
     sed -i -e "s|<key>CFBundleShortVersionString</key>\s*<string>[^<]*</string>|<key>CFBundleShortVersionString</key><string>$${VERSION_STR}</string>|" Info.plist &&\
-	git add Info.plist && \
+	sed -i "s|ENV VERSION=.*|ENV VERSION=v$${TAG}|g" docker/Dockerfile && \
+	git add Info.plist docker/Dockerfile && \
 	git commit -m "release: version $${TAG}" && \
 	echo "creating git tag : v$${TAG}" && \
 	git push && \
