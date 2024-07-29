@@ -7,7 +7,7 @@ toolchain go1.22.3
 require (
 	github.com/bepass-org/warp-plus v0.0.0-00010101000000-000000000000
 	github.com/golang/protobuf v1.5.4
-	github.com/hiddify/ray2sing v0.0.0-20240727195851-8acc89f46131
+	github.com/hiddify/ray2sing v0.0.0-20240729073001-0dd13bbaecd3
 	github.com/kardianos/service v1.2.2
 	github.com/macronut/godivert v0.0.0-20220121081532-78e5dd672daf
 	github.com/sagernet/gomobile v0.1.3
@@ -25,7 +25,6 @@ require (
 require (
 	berty.tech/go-libtor v1.0.385 // indirect
 	github.com/ajg/form v1.5.1 // indirect
-	github.com/akavel/rsrc v0.10.2 // indirect
 	github.com/andybalholm/brotli v1.1.0 // indirect
 	github.com/caddyserver/certmagic v0.20.0 // indirect
 	github.com/cloudflare/circl v1.3.9 // indirect
@@ -123,7 +122,7 @@ require (
 
 replace github.com/sagernet/sing-box => github.com/hiddify/hiddify-sing-box v1.8.9-0.20240727194612-aeb0c78d6aa5
 
-replace github.com/xtls/xray-core => github.com/hiddify/xray-core v0.0.0-20240727184702-fcf01338c17a
+replace github.com/xtls/xray-core => github.com/hiddify/xray-core v0.0.0-20240729110224-c3df022f042a
 
 replace github.com/sagernet/wireguard-go => github.com/hiddify/wireguard-go v0.0.0-20240727191222-383c1da14ff1
 
