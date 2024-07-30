@@ -100,10 +100,10 @@ github.com/gregjones/httpcache v0.0.0-20180305231024-9cad4c3443a7/go.mod h1:Fecb
 github.com/grpc-ecosystem/grpc-gateway v1.5.0/go.mod h1:RSKVYQBd5MCa4OVpNdGskqpgL2+G+NZTnrVHpWWfpdw=
 github.com/hashicorp/yamux v0.1.1 h1:yrQxtgseBDrq9Y652vSRDvsKCJKOUD+GzTS4Y0Y8pvE=
 github.com/hashicorp/yamux v0.1.1/go.mod h1:CtWFDAQgb7dxtzFs4tWbplKIe2jSi3+5vKbgIO0SLnQ=
-github.com/hiddify/hiddify-sing-box v1.8.9-0.20240727194612-aeb0c78d6aa5 h1:8Gow4rR9CAaspGIxEde8ebPBeTFIpPWL6JBXGrhwNoE=
-github.com/hiddify/hiddify-sing-box v1.8.9-0.20240727194612-aeb0c78d6aa5/go.mod h1:pofRpPI4a3k/I79KeTVTTD5BeXmnx86TnJM2qQ8+yWg=
-github.com/hiddify/ray2sing v0.0.0-20240730060227-b5fbdcfdfd10 h1:WEm54+llEuM+dtFkHERsTGzB6kwruwcqfhsh3fbNuVk=
-github.com/hiddify/ray2sing v0.0.0-20240730060227-b5fbdcfdfd10/go.mod h1:Qp3mFdKsJZ5TwBYLREgWp8n2O6dgmNt3aAoX+xpvnsM=
+github.com/hiddify/hiddify-sing-box v1.8.9-0.20240730113116-288c87c38412 h1:T8WKw0zuGM+UfhSwsl4ymxPFW5EUShUwH7IcZY60SJU=
+github.com/hiddify/hiddify-sing-box v1.8.9-0.20240730113116-288c87c38412/go.mod h1:pofRpPI4a3k/I79KeTVTTD5BeXmnx86TnJM2qQ8+yWg=
+github.com/hiddify/ray2sing v0.0.0-20240730095124-9b9d265d61dd h1:m7KGZx/o3HfGKtrGNajaA/Lj/Ri4Wy+R+hWQj5HaZQ8=
+github.com/hiddify/ray2sing v0.0.0-20240730095124-9b9d265d61dd/go.mod h1:Qp3mFdKsJZ5TwBYLREgWp8n2O6dgmNt3aAoX+xpvnsM=
 github.com/hiddify/warp-plus v0.0.0-20240717223357-4f3122e0d11d h1:vRGKh9ou+/vQGfVYa8MczhbIVjHxlP52OWwrDWO77RA=
 github.com/hiddify/warp-plus v0.0.0-20240717223357-4f3122e0d11d/go.mod h1:uSRUbr1CcvFrEV69FTvuJFwpzEmwO8N4knb6+Zq3Ys4=
 github.com/hiddify/wireguard-go v0.0.0-20240727191222-383c1da14ff1 h1:xdbHlZtzs+jijAxy85qal835GglwmjohA/srHT8gm9s=
@@ -146,8 +146,6 @@ github.com/libdns/libdns v0.2.2/go.mod h1:4Bj9+5CQiNMVGf87wjX4CY3HQJypUHRuLvlsfs
 github.com/logrusorgru/aurora v2.0.3+incompatible h1:tOpm7WcpBTn4fjmVfgpQq0EfczGlG91VSDkswnjF5A8=
 github.com/logrusorgru/aurora v2.0.3+incompatible/go.mod h1:7rIyQOR62GCctdiQpZ/zOJlFyk6y+94wXzv6RNZgaR4=
 github.com/lunixbochs/vtclean v1.0.0/go.mod h1:pHhQNgMf3btfWnGBVipUOjRYhoOsdGqdm/+2c2E2WMI=
-github.com/macronut/godivert v0.0.0-20220121081532-78e5dd672daf h1:dBleIe0eYiqh4QxsuEwXheUKljUDD8xio4ndLImrHv4=
-github.com/macronut/godivert v0.0.0-20220121081532-78e5dd672daf/go.mod h1:WBXFEDDmnnVWR14TQAvMxdaHrW7Ewbt7pNerMHiyNzY=
 github.com/mailru/easyjson v0.0.0-20190312143242-1de009706dbe/go.mod h1:C1wdFJiN94OJF2b5HbByQZoLdCWB1Yqtg26g4irojpc=
 github.com/matttproud/golang_protobuf_extensions v1.0.1/go.mod h1:D8He9yQNgCq6Z5Ld7szi9bcBfOoFv/3dc6xSMkL2PC0=
 github.com/mholt/acmez v1.2.0 h1:1hhLxSgY5FvH5HCnGUuwbKY2VQVo8IU7rxXKSnZ7F30=
@@ -304,8 +302,6 @@ github.com/viant/assertly v0.4.8/go.mod h1:aGifi++jvCrUaklKEKT0BU95igDNaqkvz+49u
 github.com/viant/toolbox v0.24.0/go.mod h1:OxMCG57V0PXuIP2HNQrtJf2CjqdmbrOx5EkMILuUhzM=
 github.com/vishvananda/netns v0.0.4 h1:Oeaw1EM2JMxD51g9uhtC0D7erkIjgmj8+JZc26m1YX8=
 github.com/vishvananda/netns v0.0.4/go.mod h1:SpkAiCQRtJ6TvvxPnOSyH3BMl6unz3xZlaprSwhNNJM=
-github.com/williamfhe/godivert v0.0.0-20181229124620-a48c5b872c73 h1:uTcyLPxotESVvsf6sWcw+6MyDAsuuI7Q2TJn+pWyt/c=
-github.com/williamfhe/godivert v0.0.0-20181229124620-a48c5b872c73/go.mod h1:2A+pcb3S0puG6gpwq2d8+7HGgCWXyCBwnsv/n3abx4U=
 github.com/xmdhs/clash2singbox v0.0.2 h1:/gxaFm8fmv+UcUZzK508Z0yR01wg1LHrrq872Qibk1I=
 github.com/xmdhs/clash2singbox v0.0.2/go.mod h1:B5pbJCwIHhJg6YRPCT04EXw6XXNIIOllMfL3XyJ7ob8=
 github.com/xtls/reality v0.0.0-20240712055506-48f0b2d5ed6d h1:+B97uD9uHLgAAulhigmys4BVwZZypzK7gPN3WtpgRJg=
