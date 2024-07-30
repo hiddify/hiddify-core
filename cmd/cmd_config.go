@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 
 	"github.com/hiddify/hiddify-core/config"
+	pb "github.com/hiddify/hiddify-core/hiddifyrpc"
+	v2 "github.com/hiddify/hiddify-core/v2"
 	"github.com/sagernet/sing-box/experimental/libbox"
 	"github.com/sagernet/sing-box/log"
 	"github.com/sagernet/sing-box/option"
@@ -32,6 +34,19 @@ var commandBuild = &cobra.Command{
 		}
 	},
 }
+var generateConfig = &cobra.Command{
+	Use:   "gen",
+	Short: "gen configuration",
+	Run: func(cmd *cobra.Command, args []string) {
+		conf, err := v2.GenerateConfig(&pb.GenerateConfigRequest{
+			Path: args[0],
+		})
+		if err != nil {
+			log.Fatal(err)
+		}
+		log.Debug(string(conf.ConfigContent))
+	},
+}
 
 var commandCheck = &cobra.Command{
 	Use:   "check",
@@ -49,6 +64,7 @@ func init() {
 	addHConfigFlags(commandBuild)
 
 	mainCommand.AddCommand(commandBuild)
+	mainCommand.AddCommand(generateConfig)
 
 }
 

@@ -57,6 +57,7 @@ func ParseConfigContent(contentstr string, debug bool, configOpt *ConfigOptions,
 		}
 
 		newContent, _ := json.MarshalIndent(jsonObj, "", "  ")
+
 		return patchConfig(newContent, "SingboxParser", configOpt)
 	}
 
@@ -113,6 +114,7 @@ func patchConfig(content []byte, name string, configOpt *ConfigOptions) ([]byte,
 	}
 
 	content, _ = json.MarshalIndent(options, "", "  ")
+
 	fmt.Printf("%s\n", content)
 	return validateResult(content, name)
 }

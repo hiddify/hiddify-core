@@ -229,7 +229,9 @@ func GenerateConfig(in *pb.GenerateConfigRequest) (*pb.GenerateConfigResponse, e
 		Log(pb.LogLevel_FATAL, pb.LogType_CONFIG, err.Error())
 		StopAndAlert(pb.MessageType_UNEXPECTED_ERROR, err.Error())
 	})
-
+	if configOptions == nil {
+		configOptions = config.DefaultConfigOptions()
+	}
 	config, err := generateConfigFromFile(in.Path, *configOptions)
 	if err != nil {
 		return nil, err

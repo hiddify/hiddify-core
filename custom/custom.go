@@ -56,10 +56,15 @@ func changeConfigOptions(configOptionsJson *C.char) (CErr *C.char) {
 
 //export generateConfig
 func generateConfig(path *C.char) (res *C.char) {
-	_, err := v2.GenerateConfig(&pb.GenerateConfigRequest{
+	conf, err := v2.GenerateConfig(&pb.GenerateConfigRequest{
 		Path: C.GoString(path),
 	})
-	return emptyOrErrorC(err)
+	if err != nil {
+		return emptyOrErrorC(err)
+	}
+	fmt.Printf("Config: %+v\n", conf)
+	fmt.Printf("ConfigContent: %+v\n", conf.ConfigContent)
+	return C.CString(conf.ConfigContent)
 }
 
 //export start
