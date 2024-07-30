@@ -6,10 +6,11 @@ toolchain go1.22.3
 
 require (
 	github.com/bepass-org/warp-plus v0.0.0-00010101000000-000000000000
+	github.com/go-ini/ini v1.67.0
 	github.com/golang/protobuf v1.5.4
 	github.com/hiddify/ray2sing v0.0.0-20240717205915-5b3735b9a990
 	github.com/kardianos/service v1.2.2
-	github.com/macronut/godivert v0.0.0-20220121081532-78e5dd672daf
+	github.com/refraction-networking/utls v1.6.1
 	github.com/sagernet/gomobile v0.1.3
 	github.com/sagernet/sing v0.4.1
 	github.com/sagernet/sing-box v1.8.9
@@ -17,6 +18,8 @@ require (
 	github.com/spf13/cobra v1.8.0
 	github.com/xmdhs/clash2singbox v0.0.2
 	go.jonnrb.io/speedtest v0.2.0
+	golang.org/x/crypto v0.23.0
+	golang.org/x/sync v0.7.0
 	golang.org/x/sys v0.21.0
 	google.golang.org/grpc v1.63.2
 	google.golang.org/protobuf v1.33.0
@@ -26,7 +29,6 @@ require (
 require (
 	berty.tech/go-libtor v1.0.385 // indirect
 	github.com/ajg/form v1.5.1 // indirect
-	github.com/akavel/rsrc v0.10.2 // indirect
 	github.com/andybalholm/brotli v1.0.6 // indirect
 	github.com/caddyserver/certmagic v0.20.0 // indirect
 	github.com/cloudflare/circl v1.3.7 // indirect
@@ -71,7 +73,6 @@ require (
 	github.com/quic-go/qpack v0.4.0 // indirect
 	github.com/quic-go/qtls-go1-20 v0.4.1 // indirect
 	github.com/quic-go/quic-go v0.43.1 // indirect
-	github.com/refraction-networking/utls v1.6.1 // indirect
 	github.com/sagernet/bbolt v0.0.0-20231014093535-ea5cb2fe9f0a // indirect
 	github.com/sagernet/cloudflare-tls v0.0.0-20231208171750-a4483c1b7cd1 // indirect
 	github.com/sagernet/gvisor v0.0.0-20240428053021-e691de28565f // indirect
@@ -93,16 +94,13 @@ require (
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/u-root/uio v0.0.0-20230220225925-ffce2a382923 // indirect
 	github.com/vishvananda/netns v0.0.0-20211101163701-50045581ed74 // indirect
-	github.com/williamfhe/godivert v0.0.0-20181229124620-a48c5b872c73 // indirect
 	github.com/zeebo/blake3 v0.2.3 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.27.0 // indirect
 	go4.org/netipx v0.0.0-20231129151722-fdeea329fbba // indirect
-	golang.org/x/crypto v0.23.0 // indirect
 	golang.org/x/exp v0.0.0-20240506185415-9bf2ced13842 // indirect
 	golang.org/x/mod v0.17.0 // indirect
 	golang.org/x/net v0.25.0 // indirect
-	golang.org/x/sync v0.7.0 // indirect
 	golang.org/x/text v0.15.0 // indirect
 	golang.org/x/time v0.5.0 // indirect
 	golang.org/x/tools v0.21.0 // indirect
