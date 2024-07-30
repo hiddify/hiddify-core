@@ -32,7 +32,7 @@ android: lib_install
 
 ios-full: lib_install
 	gomobile bind -v  -target ios,iossimulator,tvos,tvossimulator,macos -libname=box -tags=$(TAGS),$(IOS_ADD_TAGS) -trimpath -ldflags="-w -s" -o $(BINDIR)/Libcore.xcframework github.com/sagernet/sing-box/experimental/libbox ./mobile 
-	cp Info.plist $(BINDIR)/Libcore.xcframework/
+	cp Info-full.plist $(BINDIR)/Libcore.xcframework/Info.plist
 
 ios: lib_install
 	gomobile bind -v  -target ios -libname=box -tags=$(TAGS),$(IOS_ADD_TAGS) -trimpath -ldflags="-w -s" -o $(BINDIR)/Libcore.xcframework github.com/sagernet/sing-box/experimental/libbox ./mobile
