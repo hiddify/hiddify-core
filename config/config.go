@@ -622,6 +622,7 @@ func BuildConfig(opt ConfigOptions, input option.Options) (*option.Options, erro
 				Type: C.TypeDirect,
 				DirectOptions: option.DirectOutboundOptions{
 					DialerOptions: option.DialerOptions{
+						TCPFastOpen: false,
 						TLSFragment: &option.TLSFragmentOptions{
 							Enabled: true,
 							Size:    opt.TLSTricks.FragmentSize,

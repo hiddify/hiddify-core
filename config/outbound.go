@@ -47,7 +47,19 @@ func patchOutboundTLSTricks(base option.Outbound, configOpt ConfigOptions, obj o
 		tls = base.VMessOptions.OutboundTLSOptionsContainer.TLS
 		transport = base.VMessOptions.Transport
 	}
+	if base.Type == C.TypeXray {
+		if configOpt.TLSTricks.EnableFragment {
+			if obj["xray_fragment"] == nil || obj["xray_fragment"].(map[string]any)["packets"] == "" {
+				obj["xray_fragment"] = map[string]any{
+					"packets":  "tlshello",
+					"length":   configOpt.TLSTricks.FragmentSize,
+					"interval": configOpt.TLSTricks.FragmentSleep,
+				}
+			}
 
+		}
+
+	}
 	if base.Type == C.TypeDirect {
 		return patchOutboundFragment(base, configOpt, obj)
 	}
@@ -90,6 +102,7 @@ func patchOutboundTLSTricks(base option.Outbound, configOpt ConfigOptions, obj o
 
 func patchOutboundFragment(base option.Outbound, configOpt ConfigOptions, obj outboundMap) outboundMap {
 	if configOpt.TLSTricks.EnableFragment {
+		obj["tcp_fast_open"] = false
 		obj["tls_fragment"] = option.TLSFragmentOptions{
 			Enabled: configOpt.TLSTricks.EnableFragment,
 			Size:    configOpt.TLSTricks.FragmentSize,
