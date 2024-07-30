@@ -102,8 +102,8 @@ github.com/hashicorp/yamux v0.1.1 h1:yrQxtgseBDrq9Y652vSRDvsKCJKOUD+GzTS4Y0Y8pvE
 github.com/hashicorp/yamux v0.1.1/go.mod h1:CtWFDAQgb7dxtzFs4tWbplKIe2jSi3+5vKbgIO0SLnQ=
 github.com/hiddify/hiddify-sing-box v1.8.9-0.20240727194612-aeb0c78d6aa5 h1:8Gow4rR9CAaspGIxEde8ebPBeTFIpPWL6JBXGrhwNoE=
 github.com/hiddify/hiddify-sing-box v1.8.9-0.20240727194612-aeb0c78d6aa5/go.mod h1:pofRpPI4a3k/I79KeTVTTD5BeXmnx86TnJM2qQ8+yWg=
-github.com/hiddify/ray2sing v0.0.0-20240729073001-0dd13bbaecd3 h1:FLn6o9NDgpUzyMURYOz0B5uTppG/ils9d7pvPO8jvgE=
-github.com/hiddify/ray2sing v0.0.0-20240729073001-0dd13bbaecd3/go.mod h1:Qp3mFdKsJZ5TwBYLREgWp8n2O6dgmNt3aAoX+xpvnsM=
+github.com/hiddify/ray2sing v0.0.0-20240730060227-b5fbdcfdfd10 h1:WEm54+llEuM+dtFkHERsTGzB6kwruwcqfhsh3fbNuVk=
+github.com/hiddify/ray2sing v0.0.0-20240730060227-b5fbdcfdfd10/go.mod h1:Qp3mFdKsJZ5TwBYLREgWp8n2O6dgmNt3aAoX+xpvnsM=
 github.com/hiddify/warp-plus v0.0.0-20240717223357-4f3122e0d11d h1:vRGKh9ou+/vQGfVYa8MczhbIVjHxlP52OWwrDWO77RA=
 github.com/hiddify/warp-plus v0.0.0-20240717223357-4f3122e0d11d/go.mod h1:uSRUbr1CcvFrEV69FTvuJFwpzEmwO8N4knb6+Zq3Ys4=
 github.com/hiddify/wireguard-go v0.0.0-20240727191222-383c1da14ff1 h1:xdbHlZtzs+jijAxy85qal835GglwmjohA/srHT8gm9s=
