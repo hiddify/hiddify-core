@@ -7,7 +7,7 @@ toolchain go1.22.3
 require (
 	github.com/bepass-org/warp-plus v0.0.0-00010101000000-000000000000
 	github.com/golang/protobuf v1.5.4
-	github.com/hiddify/ray2sing v0.0.0-20240730095124-9b9d265d61dd
+	github.com/hiddify/ray2sing v0.0.0-20240730213853-fc0aab6bc5e7
 	github.com/kardianos/service v1.2.2
 	github.com/sagernet/gomobile v0.1.3
 	github.com/sagernet/sing v0.4.1
