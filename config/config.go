@@ -585,7 +585,8 @@ func BuildConfig(opt ConfigOptions, input option.Options) (*option.Options, erro
 			URL:       opt.ConnectionTestUrl,
 			Interval:  option.Duration(opt.URLTestInterval.Duration()),
 			// IdleTimeout: option.Duration(opt.URLTestIdleTimeout.Duration()),
-			IdleTimeout: option.Duration(opt.URLTestInterval.Duration().Nanoseconds() * 10),
+			Tolerance:   1,
+			IdleTimeout: option.Duration(opt.URLTestInterval.Duration().Nanoseconds() * 3),
 		},
 	}
 	defaultSelect := urlTest.Tag
