@@ -51,6 +51,8 @@ func DeactivateTunnelService() (bool, error) {
 			tunnelServiceRunning = false
 		}
 		return res, err
+	} else {
+		go stopTunnelRequest()
 	}
 
 	return true, nil
@@ -89,11 +91,12 @@ func startTunnelRequest(opt ConfigOptions, installService bool) (bool, error) {
 	c := pb.NewTunnelServiceClient(conn)
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
+	_, _ = c.Stop(ctx, &pb.Empty{})
 	res, err := c.Start(ctx, &pb.TunnelStartRequest{
 		Ipv6:                   opt.IPv6Mode == option.DomainStrategy(dns.DomainStrategyUseIPv4),
 		ServerPort:             int32(opt.InboundOptions.MixedPort),
 		StrictRoute:            opt.InboundOptions.StrictRoute,
-		EndpointIndependentNat: true,
+		EndpointIndependentNat: false,
 		Stack:                  opt.InboundOptions.TUNStack,
 	})
 	if err != nil {
@@ -117,12 +120,13 @@ func stopTunnelRequest() (bool, error) {
 	}
 	defer conn.Close()
 	c := pb.NewTunnelServiceClient(conn)
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*1)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*20)
 	defer cancel()
 
 	res, err := c.Stop(ctx, &pb.Empty{})
 	if err != nil {
 		log.Printf("did not Stopped: %v %v", res, err)
+		_, _ = c.Stop(ctx, &pb.Empty{})
 		return false, err
 	}
 

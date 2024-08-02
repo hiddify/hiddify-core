@@ -11,7 +11,7 @@ import (
 )
 
 var commandService = &cobra.Command{
-	Use:       "tunnel run/start/stop/install/uninstall",
+	Use:       "tunnel run/start/stop/install/uninstall/activate/deactivate/exit",
 	Short:     "Tunnel Service run/start/stop/install/uninstall/activate/deactivate/exit",
 	ValidArgs: []string{"run", "start", "stop", "install", "uninstall", "activate", "deactivate", "exit"},
 	Args:      cobra.MatchAll(cobra.ExactArgs(1), cobra.OnlyValidArgs),
@@ -22,7 +22,7 @@ var commandService = &cobra.Command{
 			config.ActivateTunnelService(config.ConfigOptions{
 				InboundOptions: config.InboundOptions{
 					EnableTunService: true,
-					MixedPort:        2334,
+					MixedPort:        12334,
 					TUNStack:         "gvisor",
 				},
 			})

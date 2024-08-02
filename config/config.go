@@ -266,7 +266,18 @@ func BuildConfig(opt ConfigOptions, input option.Options) (*option.Options, erro
 			},
 		},
 	}
-
+	if opt.EnableTun {
+		routeRules = append(
+			routeRules,
+			option.Rule{
+				Type: C.RuleTypeDefault,
+				DefaultOptions: option.DefaultRule{
+					ProcessName: []string{"Hiddify", "Hiddify.exe", "HiddifyCli", "HiddifyCli.exe"},
+					Outbound:    OutboundBypassTag,
+				},
+			},
+		)
+	}
 	if opt.BypassLAN {
 		routeRules = append(
 			routeRules,
@@ -367,18 +378,21 @@ func BuildConfig(opt ConfigOptions, input option.Options) (*option.Options, erro
 		options.DNS.Rules = []option.DNSRule{}
 	}
 	var dnsCPttl uint32 = 3000
-	options.DNS.Rules = append(
-		options.DNS.Rules,
-		option.DNSRule{
-			Type: C.RuleTypeDefault,
-			DefaultOptions: option.DefaultDNSRule{
-				Domain:       []string{"cp.cloudflare.com"},
-				Server:       DNSRemoteTag,
-				RewriteTTL:   &dnsCPttl,
-				DisableCache: false,
+	parsedURL, err := url.Parse(opt.ConnectionTestUrl)
+	if err == nil {
+		options.DNS.Rules = append(
+			options.DNS.Rules,
+			option.DNSRule{
+				Type: C.RuleTypeDefault,
+				DefaultOptions: option.DefaultDNSRule{
+					Domain:       []string{parsedURL.Host},
+					Server:       DNSRemoteTag,
+					RewriteTTL:   &dnsCPttl,
+					DisableCache: false,
+				},
 			},
-		},
-	)
+		)
+	}
 
 	options.Route = &option.RouteOptions{
 		Rules:               routeRules,
@@ -392,7 +406,6 @@ func BuildConfig(opt ConfigOptions, input option.Options) (*option.Options, erro
 		// 	Path: opt.GeoSitePath,
 		// },
 	}
-	fmt.Println("Region==========================", opt.Region)
 	if opt.Region != "other" {
 		options.DNS.Rules = append(
 			options.DNS.Rules,
