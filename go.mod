@@ -46,7 +46,7 @@ require (
 	github.com/google/pprof v0.0.0-20240528025155-186aa0362fba // indirect
 	github.com/gorilla/websocket v1.5.3 // indirect
 	github.com/hashicorp/yamux v0.1.1 // indirect
-	github.com/hiddify/ray2sing v0.0.0-20240731223404-61bacedf951c
+	github.com/hiddify/ray2sing v0.0.0-20240802000436-4c3258822266
 	github.com/imkira/go-observer/v2 v2.0.0-20230629064422-8e0b61f11f1b // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/insomniacslk/dhcp v0.0.0-20231206064809-8c70d406f6d2 // indirect
@@ -120,7 +120,7 @@ require (
 	lukechampine.com/blake3 v1.3.0 // indirect
 )
 
-replace github.com/sagernet/sing-box => github.com/hiddify/hiddify-sing-box v1.8.9-0.20240802051335-69667f8d58d9
+replace github.com/sagernet/sing-box => github.com/hiddify/hiddify-sing-box v1.8.9-0.20240802064124-d8fa585fd411
 
 replace github.com/xtls/xray-core => github.com/hiddify/xray-core v0.0.0-20240729110224-c3df022f042a
 
