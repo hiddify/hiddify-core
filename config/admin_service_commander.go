@@ -96,7 +96,7 @@ func startTunnelRequest(opt ConfigOptions, installService bool) (bool, error) {
 		Ipv6:                   opt.IPv6Mode == option.DomainStrategy(dns.DomainStrategyUseIPv4),
 		ServerPort:             int32(opt.InboundOptions.MixedPort),
 		StrictRoute:            opt.InboundOptions.StrictRoute,
-		EndpointIndependentNat: false,
+		EndpointIndependentNat: true,
 		Stack:                  opt.InboundOptions.TUNStack,
 	})
 	if err != nil {

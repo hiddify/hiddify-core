@@ -11,13 +11,13 @@ import (
 
 func (s *TunnelService) Start(ctx context.Context, in *pb.TunnelStartRequest) (*pb.TunnelResponse, error) {
 	if in.ServerPort == 0 {
-		in.ServerPort = 2334
+		in.ServerPort = 12334
 	}
 	useFlutterBridge = false
 	res, err := Start(&pb.StartRequest{
 		ConfigContent:          makeTunnelConfig(in.Ipv6, in.ServerPort, in.StrictRoute, in.EndpointIndependentNat, in.Stack),
 		EnableOldCommandServer: false,
-		DisableMemoryLimit:     false,
+		DisableMemoryLimit:     true,
 		EnableRawConfig:        true,
 	})
 	fmt.Printf("Start Result: %+v\n", res)
@@ -49,7 +49,6 @@ func makeTunnelConfig(Ipv6 bool, ServerPort int32, StrictRoute bool, EndpointInd
 			"interface_name": "HiddifyTunnel",
 			"inet4_address": "172.19.0.1/30",
 			` + ipv6 + `
-			"mtu": 1492,
 			"auto_route": true,
 			"strict_route": ` + fmt.Sprintf("%t", StrictRoute) + `,
 			"endpoint_independent_nat": ` + fmt.Sprintf("%t", EndpointIndependentNat) + `,
