@@ -103,9 +103,7 @@ func BuildConfig(opt ConfigOptions, input option.Options) (*option.Options, erro
 	}
 
 	options.DNS = &option.DNSOptions{
-		StaticIPs: map[string][]string{
-			"sky.rethinkdns.com": getIPs([]string{"www.speedtest.net", "sky.rethinkdns.com"}),
-		},
+		StaticIPs: map[string][]string{},
 		DNSClientOptions: option.DNSClientOptions{
 			IndependentCache: opt.IndependentDNSCache,
 		},
@@ -142,7 +140,10 @@ func BuildConfig(opt ConfigOptions, input option.Options) (*option.Options, erro
 			},
 		},
 	}
-
+	sky_rethinkdns := getIPs([]string{"www.speedtest.net", "sky.rethinkdns.com"})
+	if len(sky_rethinkdns) > 0 {
+		options.DNS.StaticIPs["sky.rethinkdns.com"] = sky_rethinkdns
+	}
 	var inboundDomainStrategy option.DomainStrategy
 	if !opt.ResolveDestination {
 		inboundDomainStrategy = option.DomainStrategy(dns.DomainStrategyAsIS)
@@ -464,8 +465,8 @@ func BuildConfig(opt ConfigOptions, input option.Options) (*option.Options, erro
 		routeRuleLocalDomain := option.Rule{
 			Type: C.RuleTypeDefault,
 			DefaultOptions: option.DefaultRule{
-				Domain:   []string{"." + opt.Region},
-				Outbound: OutboundDirectTag,
+				DomainSuffix: []string{"." + opt.Region},
+				Outbound:     OutboundDirectTag,
 			},
 		}
 		options.Route.Rules = append([]option.Rule{routeRuleLocalDomain}, options.Route.Rules...)
