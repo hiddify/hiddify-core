@@ -55,10 +55,11 @@ func Start(in *pb.StartRequest) (*pb.CoreInfoResponse, error) {
 	Log(pb.LogLevel_INFO, pb.LogType_CORE, "Starting")
 	if CoreState != pb.CoreState_STOPPED {
 		Log(pb.LogLevel_INFO, pb.LogType_CORE, "Starting0000")
-		return &pb.CoreInfoResponse{
-			CoreState:   CoreState,
-			MessageType: pb.MessageType_INSTANCE_NOT_STOPPED,
-		}, fmt.Errorf("instance not stopped")
+		Stop()
+		// return &pb.CoreInfoResponse{
+		// 	CoreState:   CoreState,
+		// 	MessageType: pb.MessageType_INSTANCE_NOT_STOPPED,
+		// }, fmt.Errorf("instance not stopped")
 	}
 	Log(pb.LogLevel_DEBUG, pb.LogType_CORE, "Starting Core")
 	SetCoreStatus(pb.CoreState_STARTING, pb.MessageType_EMPTY, "")

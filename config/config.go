@@ -68,7 +68,6 @@ func BuildConfig(opt ConfigOptions, input option.Options) (*option.Options, erro
 		options.Route = input.Route
 	}
 	directDNSDomains := make(map[string]bool)
-	dnsRules := []option.DefaultDNSRule{}
 
 	var bind string
 	if opt.AllowConnectionFromLAN {
@@ -236,313 +235,8 @@ func BuildConfig(opt ConfigOptions, input option.Options) (*option.Options, erro
 		directDNSDomains["full:"+parsedUrl.Host] = true
 		//TODO: IS it really needed
 	}
-
-	routeRules := []option.Rule{
-		{
-			Type: C.RuleTypeDefault,
-			DefaultOptions: option.DefaultRule{
-				Inbound:  []string{InboundDNSTag},
-				Outbound: OutboundDNSTag,
-			},
-		},
-		{
-			Type: C.RuleTypeDefault,
-			DefaultOptions: option.DefaultRule{
-				Port:     []uint16{53},
-				Outbound: OutboundDNSTag,
-			},
-		},
-		{
-			Type: C.RuleTypeDefault,
-			DefaultOptions: option.DefaultRule{
-				ClashMode: "Direct",
-				Outbound:  OutboundDirectTag,
-			},
-		},
-		{
-			Type: C.RuleTypeDefault,
-			DefaultOptions: option.DefaultRule{
-				ClashMode: "Global",
-				Outbound:  OutboundMainProxyTag,
-			},
-		},
-	}
-	if opt.EnableTun {
-		routeRules = append(
-			routeRules,
-			option.Rule{
-				Type: C.RuleTypeDefault,
-				DefaultOptions: option.DefaultRule{
-					ProcessName: []string{"Hiddify", "Hiddify.exe", "HiddifyCli", "HiddifyCli.exe"},
-					Outbound:    OutboundBypassTag,
-				},
-			},
-		)
-	}
-	if opt.BypassLAN {
-		routeRules = append(
-			routeRules,
-			option.Rule{
-				Type: C.RuleTypeDefault,
-				DefaultOptions: option.DefaultRule{
-					GeoIP:    []string{"private"},
-					Outbound: OutboundBypassTag,
-				},
-			},
-		)
-	}
-
-	if opt.EnableFakeDNS {
-		inet4Range := netip.MustParsePrefix("198.18.0.0/15")
-		inet6Range := netip.MustParsePrefix("fc00::/18")
-		options.DNS.FakeIP = &option.DNSFakeIPOptions{
-			Enabled:    true,
-			Inet4Range: &inet4Range,
-			Inet6Range: &inet6Range,
-		}
-		options.DNS.Servers = append(
-			options.DNS.Servers,
-			option.DNSServerOptions{
-				Tag:      DNSFakeTag,
-				Address:  "fakeip",
-				Strategy: option.DomainStrategy(dns.DomainStrategyUseIPv4),
-			},
-		)
-		options.DNS.Rules = append(
-			options.DNS.Rules,
-			option.DNSRule{
-				Type: C.RuleTypeDefault,
-				DefaultOptions: option.DefaultDNSRule{
-					Inbound:      []string{InboundTUNTag},
-					Server:       DNSFakeTag,
-					DisableCache: true,
-				},
-			},
-		)
-
-	}
-
-	for _, rule := range opt.Rules {
-		routeRule := rule.MakeRule()
-		switch rule.Outbound {
-		case "bypass":
-			routeRule.Outbound = OutboundBypassTag
-		case "block":
-			routeRule.Outbound = OutboundBlockTag
-		case "proxy":
-			routeRule.Outbound = OutboundDNSTag
-		}
-
-		if routeRule.IsValid() {
-			routeRules = append(
-				routeRules,
-				option.Rule{
-					Type:           C.RuleTypeDefault,
-					DefaultOptions: routeRule,
-				},
-			)
-		}
-
-		dnsRule := rule.MakeDNSRule()
-		switch rule.Outbound {
-		case "bypass":
-			dnsRule.Server = DNSDirectTag
-		case "block":
-			dnsRule.Server = DNSBlockTag
-			dnsRule.DisableCache = true
-		case "proxy":
-			if opt.EnableFakeDNS {
-				fakeDnsRule := dnsRule
-				fakeDnsRule.Server = DNSFakeTag
-				fakeDnsRule.Inbound = []string{InboundTUNTag}
-				dnsRules = append(dnsRules, fakeDnsRule)
-			}
-			dnsRule.Server = DNSRemoteTag
-		}
-		dnsRules = append(dnsRules, dnsRule)
-	}
-
-	if opt.EnableDNSRouting {
-		for _, dnsRule := range dnsRules {
-			if dnsRule.IsValid() {
-				options.DNS.Rules = append(
-					options.DNS.Rules,
-					option.DNSRule{
-						Type:           C.RuleTypeDefault,
-						DefaultOptions: dnsRule,
-					},
-				)
-			}
-		}
-	}
-	if options.DNS.Rules == nil {
-		options.DNS.Rules = []option.DNSRule{}
-	}
-	var dnsCPttl uint32 = 3000
-	parsedURL, err := url.Parse(opt.ConnectionTestUrl)
-	if err == nil {
-		options.DNS.Rules = append(
-			options.DNS.Rules,
-			option.DNSRule{
-				Type: C.RuleTypeDefault,
-				DefaultOptions: option.DefaultDNSRule{
-					Domain:       []string{parsedURL.Host},
-					Server:       DNSRemoteTag,
-					RewriteTTL:   &dnsCPttl,
-					DisableCache: false,
-				},
-			},
-		)
-	}
-
-	options.Route = &option.RouteOptions{
-		Rules:               routeRules,
-		AutoDetectInterface: true,
-		OverrideAndroidVPN:  true,
-		// RuleSet:             []option.RuleSet{},
-		// GeoIP: &option.GeoIPOptions{
-		// 	Path: opt.GeoIPPath,
-		// },
-		// Geosite: &option.GeositeOptions{
-		// 	Path: opt.GeoSitePath,
-		// },
-	}
-	if opt.Region != "other" {
-		options.DNS.Rules = append(
-			options.DNS.Rules,
-			option.DNSRule{
-				Type: C.RuleTypeDefault,
-				DefaultOptions: option.DefaultDNSRule{
-					RuleSet: []string{
-						"geoip-" + opt.Region,
-						"geosite-" + opt.Region,
-					},
-					Server: DNSDirectTag,
-				},
-			},
-		)
-		options.DNS.Rules = append(
-			options.DNS.Rules,
-			option.DNSRule{
-				Type: C.RuleTypeDefault,
-				DefaultOptions: option.DefaultDNSRule{
-					DomainSuffix: []string{"." + opt.Region},
-					Server:       DNSDirectTag,
-				},
-			},
-		)
-		options.Route.RuleSet = append(options.Route.RuleSet, option.RuleSet{
-			Type:   C.RuleSetTypeRemote,
-			Tag:    "geoip-" + opt.Region,
-			Format: C.RuleSetFormatBinary,
-			RemoteOptions: option.RemoteRuleSet{
-				URL: "https://raw.githubusercontent.com/hiddify/hiddify-geo/rule-set/country/geoip-" + opt.Region + ".srs",
-
-				UpdateInterval: option.Duration(5 * time.Hour * 24),
-			},
-		})
-		options.Route.RuleSet = append(options.Route.RuleSet, option.RuleSet{
-			Type:   C.RuleSetTypeRemote,
-			Tag:    "geosite-" + opt.Region,
-			Format: C.RuleSetFormatBinary,
-			RemoteOptions: option.RemoteRuleSet{
-				URL:            "https://raw.githubusercontent.com/hiddify/hiddify-geo/rule-set/country/geosite-" + opt.Region + ".srs",
-				UpdateInterval: option.Duration(5 * time.Hour * 24),
-			},
-		})
-
-		routeRuleIp := option.Rule{
-			Type: C.RuleTypeDefault,
-			DefaultOptions: option.DefaultRule{
-				RuleSet: []string{
-					"geoip-" + opt.Region,
-					"geosite-" + opt.Region,
-				},
-				Outbound: OutboundDirectTag,
-			},
-		}
-		options.Route.Rules = append([]option.Rule{routeRuleIp}, options.Route.Rules...)
-		routeRuleLocalDomain := option.Rule{
-			Type: C.RuleTypeDefault,
-			DefaultOptions: option.DefaultRule{
-				DomainSuffix: []string{"." + opt.Region},
-				Outbound:     OutboundDirectTag,
-			},
-		}
-		options.Route.Rules = append([]option.Rule{routeRuleLocalDomain}, options.Route.Rules...)
-	}
-	if opt.BlockAds {
-		options.Route.RuleSet = append(options.Route.RuleSet, option.RuleSet{
-			Type:   C.RuleSetTypeRemote,
-			Tag:    "geosite-ads",
-			Format: C.RuleSetFormatBinary,
-			RemoteOptions: option.RemoteRuleSet{
-				URL:            "https://raw.githubusercontent.com/hiddify/hiddify-geo/rule-set/block/geosite-category-ads-all.srs",
-				UpdateInterval: option.Duration(5 * time.Hour * 24),
-			},
-		})
-		options.Route.RuleSet = append(options.Route.RuleSet, option.RuleSet{
-			Type:   C.RuleSetTypeRemote,
-			Tag:    "geosite-malware",
-			Format: C.RuleSetFormatBinary,
-			RemoteOptions: option.RemoteRuleSet{
-				URL:            "https://raw.githubusercontent.com/hiddify/hiddify-geo/rule-set/block/geosite-malware.srs",
-				UpdateInterval: option.Duration(5 * time.Hour * 24),
-			},
-		})
-		options.Route.RuleSet = append(options.Route.RuleSet, option.RuleSet{
-			Type:   C.RuleSetTypeRemote,
-			Tag:    "geosite-phishing",
-			Format: C.RuleSetFormatBinary,
-			RemoteOptions: option.RemoteRuleSet{
-				URL:            "https://raw.githubusercontent.com/hiddify/hiddify-geo/rule-set/block/geosite-phishing.srs",
-				UpdateInterval: option.Duration(5 * time.Hour * 24),
-			},
-		})
-		options.Route.RuleSet = append(options.Route.RuleSet, option.RuleSet{
-			Type:   C.RuleSetTypeRemote,
-			Tag:    "geosite-cryptominers",
-			Format: C.RuleSetFormatBinary,
-			RemoteOptions: option.RemoteRuleSet{
-				URL:            "https://raw.githubusercontent.com/hiddify/hiddify-geo/rule-set/block/geosite-cryptominers.srs",
-				UpdateInterval: option.Duration(5 * time.Hour * 24),
-			},
-		})
-		options.Route.RuleSet = append(options.Route.RuleSet, option.RuleSet{
-			Type:   C.RuleSetTypeRemote,
-			Tag:    "geoip-phishing",
-			Format: C.RuleSetFormatBinary,
-			RemoteOptions: option.RemoteRuleSet{
-				URL:            "https://raw.githubusercontent.com/hiddify/hiddify-geo/rule-set/block/geoip-phishing.srs",
-				UpdateInterval: option.Duration(5 * time.Hour * 24),
-			},
-		})
-		options.Route.RuleSet = append(options.Route.RuleSet, option.RuleSet{
-			Type:   C.RuleSetTypeRemote,
-			Tag:    "geoip-malware",
-			Format: C.RuleSetFormatBinary,
-			RemoteOptions: option.RemoteRuleSet{
-				URL:            "https://raw.githubusercontent.com/hiddify/hiddify-geo/rule-set/block/geoip-malware.srs",
-				UpdateInterval: option.Duration(5 * time.Hour * 24),
-			},
-		})
-
-		routeRule := option.Rule{
-			Type: C.RuleTypeDefault,
-			DefaultOptions: option.DefaultRule{
-				RuleSet: []string{
-					"geosite-ads",
-					"geosite-malware",
-					"geosite-phishing",
-					"geosite-cryptominers",
-					"geoip-malware",
-					"geoip-phishing",
-				},
-				Outbound: OutboundBlockTag,
-			},
-		}
-		options.Route.Rules = append([]option.Rule{routeRule}, options.Route.Rules...)
-	}
+	setRoutingOptions(&options, &opt)
+	setFakeDns(&options, &opt)
 	var outbounds []option.Outbound
 	var tags []string
 	OutboundMainProxyTag = OutboundSelectTag
@@ -708,6 +402,301 @@ func BuildConfig(opt ConfigOptions, input option.Options) (*option.Options, erro
 	}
 	options.Route.Final = OutboundMainProxyTag
 	return &options, nil
+}
+
+func setFakeDns(options *option.Options, opt *ConfigOptions) {
+	if opt.EnableFakeDNS {
+		inet4Range := netip.MustParsePrefix("198.18.0.0/15")
+		inet6Range := netip.MustParsePrefix("fc00::/18")
+		options.DNS.FakeIP = &option.DNSFakeIPOptions{
+			Enabled:    true,
+			Inet4Range: &inet4Range,
+			Inet6Range: &inet6Range,
+		}
+		options.DNS.Servers = append(
+			options.DNS.Servers,
+			option.DNSServerOptions{
+				Tag:      DNSFakeTag,
+				Address:  "fakeip",
+				Strategy: option.DomainStrategy(dns.DomainStrategyUseIPv4),
+			},
+		)
+		options.DNS.Rules = append(
+			options.DNS.Rules,
+			option.DNSRule{
+				Type: C.RuleTypeDefault,
+				DefaultOptions: option.DefaultDNSRule{
+					Inbound:      []string{InboundTUNTag},
+					Server:       DNSFakeTag,
+					DisableCache: true,
+				},
+			},
+		)
+
+	}
+}
+
+func setRoutingOptions(options *option.Options, opt *ConfigOptions) {
+	dnsRules := []option.DefaultDNSRule{}
+	routeRules := []option.Rule{}
+	rulesets := []option.RuleSet{}
+	if opt.EnableTun {
+		routeRules = append(
+			routeRules,
+			option.Rule{
+				Type: C.RuleTypeDefault,
+				DefaultOptions: option.DefaultRule{
+					ProcessName: []string{"Hiddify", "Hiddify.exe", "HiddifyCli", "HiddifyCli.exe"},
+					Outbound:    OutboundBypassTag,
+				},
+			},
+		)
+	}
+	routeRules = append(routeRules, option.Rule{
+		Type: C.RuleTypeDefault,
+		DefaultOptions: option.DefaultRule{
+			Inbound:  []string{InboundDNSTag},
+			Outbound: OutboundDNSTag,
+		},
+	})
+	routeRules = append(routeRules, option.Rule{
+
+		Type: C.RuleTypeDefault,
+		DefaultOptions: option.DefaultRule{
+			Port:     []uint16{53},
+			Outbound: OutboundDNSTag,
+		},
+	})
+	// {
+	// 	Type: C.RuleTypeDefault,
+	// 	DefaultOptions: option.DefaultRule{
+	// 		ClashMode: "Direct",
+	// 		Outbound:  OutboundDirectTag,
+	// 	},
+	// },
+	// {
+	// 	Type: C.RuleTypeDefault,
+	// 	DefaultOptions: option.DefaultRule{
+	// 		ClashMode: "Global",
+	// 		Outbound:  OutboundMainProxyTag,
+	// 	},
+	// },	}
+
+	if opt.BypassLAN {
+		routeRules = append(
+			routeRules,
+			option.Rule{
+				Type: C.RuleTypeDefault,
+				DefaultOptions: option.DefaultRule{
+					// GeoIP:    []string{"private"},
+					IPIsPrivate: true,
+					Outbound:    OutboundBypassTag,
+				},
+			},
+		)
+	}
+
+	for _, rule := range opt.Rules {
+		routeRule := rule.MakeRule()
+		switch rule.Outbound {
+		case "bypass":
+			routeRule.Outbound = OutboundBypassTag
+		case "block":
+			routeRule.Outbound = OutboundBlockTag
+		case "proxy":
+			routeRule.Outbound = OutboundDNSTag
+		}
+
+		if routeRule.IsValid() {
+			routeRules = append(
+				routeRules,
+				option.Rule{
+					Type:           C.RuleTypeDefault,
+					DefaultOptions: routeRule,
+				},
+			)
+		}
+
+		dnsRule := rule.MakeDNSRule()
+		switch rule.Outbound {
+		case "bypass":
+			dnsRule.Server = DNSDirectTag
+		case "block":
+			dnsRule.Server = DNSBlockTag
+			dnsRule.DisableCache = true
+		case "proxy":
+			if opt.EnableFakeDNS {
+				fakeDnsRule := dnsRule
+				fakeDnsRule.Server = DNSFakeTag
+				fakeDnsRule.Inbound = []string{InboundTUNTag, InboundMixedTag}
+				dnsRules = append(dnsRules, fakeDnsRule)
+			}
+			dnsRule.Server = DNSRemoteTag
+		}
+		dnsRules = append(dnsRules, dnsRule)
+	}
+
+	var dnsCPttl uint32 = 3000
+	parsedURL, err := url.Parse(opt.ConnectionTestUrl)
+	if err == nil {
+		dnsRules = append(dnsRules, option.DefaultDNSRule{
+			Domain:       []string{parsedURL.Host},
+			Server:       DNSRemoteTag,
+			RewriteTTL:   &dnsCPttl,
+			DisableCache: false,
+		})
+	}
+
+	if opt.BlockAds {
+		rulesets = append(rulesets, option.RuleSet{
+			Type:   C.RuleSetTypeRemote,
+			Tag:    "geosite-ads",
+			Format: C.RuleSetFormatBinary,
+			RemoteOptions: option.RemoteRuleSet{
+				URL:            "https://raw.githubusercontent.com/hiddify/hiddify-geo/rule-set/block/geosite-category-ads-all.srs",
+				UpdateInterval: option.Duration(5 * time.Hour * 24),
+			},
+		})
+		rulesets = append(rulesets, option.RuleSet{
+			Type:   C.RuleSetTypeRemote,
+			Tag:    "geosite-malware",
+			Format: C.RuleSetFormatBinary,
+			RemoteOptions: option.RemoteRuleSet{
+				URL:            "https://raw.githubusercontent.com/hiddify/hiddify-geo/rule-set/block/geosite-malware.srs",
+				UpdateInterval: option.Duration(5 * time.Hour * 24),
+			},
+		})
+		rulesets = append(rulesets, option.RuleSet{
+			Type:   C.RuleSetTypeRemote,
+			Tag:    "geosite-phishing",
+			Format: C.RuleSetFormatBinary,
+			RemoteOptions: option.RemoteRuleSet{
+				URL:            "https://raw.githubusercontent.com/hiddify/hiddify-geo/rule-set/block/geosite-phishing.srs",
+				UpdateInterval: option.Duration(5 * time.Hour * 24),
+			},
+		})
+		rulesets = append(rulesets, option.RuleSet{
+			Type:   C.RuleSetTypeRemote,
+			Tag:    "geosite-cryptominers",
+			Format: C.RuleSetFormatBinary,
+			RemoteOptions: option.RemoteRuleSet{
+				URL:            "https://raw.githubusercontent.com/hiddify/hiddify-geo/rule-set/block/geosite-cryptominers.srs",
+				UpdateInterval: option.Duration(5 * time.Hour * 24),
+			},
+		})
+		rulesets = append(rulesets, option.RuleSet{
+			Type:   C.RuleSetTypeRemote,
+			Tag:    "geoip-phishing",
+			Format: C.RuleSetFormatBinary,
+			RemoteOptions: option.RemoteRuleSet{
+				URL:            "https://raw.githubusercontent.com/hiddify/hiddify-geo/rule-set/block/geoip-phishing.srs",
+				UpdateInterval: option.Duration(5 * time.Hour * 24),
+			},
+		})
+		rulesets = append(rulesets, option.RuleSet{
+			Type:   C.RuleSetTypeRemote,
+			Tag:    "geoip-malware",
+			Format: C.RuleSetFormatBinary,
+			RemoteOptions: option.RemoteRuleSet{
+				URL:            "https://raw.githubusercontent.com/hiddify/hiddify-geo/rule-set/block/geoip-malware.srs",
+				UpdateInterval: option.Duration(5 * time.Hour * 24),
+			},
+		})
+
+		routeRules = append(routeRules, option.Rule{
+			Type: C.RuleTypeDefault,
+			DefaultOptions: option.DefaultRule{
+				RuleSet: []string{
+					"geosite-ads",
+					"geosite-malware",
+					"geosite-phishing",
+					"geosite-cryptominers",
+					"geoip-malware",
+					"geoip-phishing",
+				},
+				Outbound: OutboundBlockTag,
+			},
+		})
+
+	}
+	if opt.Region != "other" {
+		dnsRules = append(dnsRules, option.DefaultDNSRule{
+			RuleSet: []string{
+				"geoip-" + opt.Region,
+				"geosite-" + opt.Region,
+			},
+			Server: DNSDirectTag,
+		})
+		dnsRules = append(dnsRules, option.DefaultDNSRule{
+			DomainSuffix: []string{"." + opt.Region},
+			Server:       DNSDirectTag,
+		})
+		rulesets = append(rulesets, option.RuleSet{
+			Type:   C.RuleSetTypeRemote,
+			Tag:    "geoip-" + opt.Region,
+			Format: C.RuleSetFormatBinary,
+			RemoteOptions: option.RemoteRuleSet{
+				URL:            "https://raw.githubusercontent.com/hiddify/hiddify-geo/rule-set/country/geoip-" + opt.Region + ".srs",
+				UpdateInterval: option.Duration(5 * time.Hour * 24),
+			},
+		})
+		rulesets = append(rulesets, option.RuleSet{
+			Type:   C.RuleSetTypeRemote,
+			Tag:    "geosite-" + opt.Region,
+			Format: C.RuleSetFormatBinary,
+			RemoteOptions: option.RemoteRuleSet{
+				URL:            "https://raw.githubusercontent.com/hiddify/hiddify-geo/rule-set/country/geosite-" + opt.Region + ".srs",
+				UpdateInterval: option.Duration(5 * time.Hour * 24),
+			},
+		})
+
+		routeRules = append(routeRules, option.Rule{
+			Type: C.RuleTypeDefault,
+			DefaultOptions: option.DefaultRule{
+				RuleSet: []string{
+					"geoip-" + opt.Region,
+					"geosite-" + opt.Region,
+				},
+				Outbound: OutboundDirectTag,
+			},
+		})
+
+		routeRules = append(routeRules, option.Rule{
+			Type: C.RuleTypeDefault,
+			DefaultOptions: option.DefaultRule{
+				DomainSuffix: []string{"." + opt.Region},
+				Outbound:     OutboundDirectTag,
+			},
+		})
+
+	}
+	options.Route = &option.RouteOptions{
+		Rules:               routeRules,
+		Final:               OutboundMainProxyTag,
+		AutoDetectInterface: true,
+		OverrideAndroidVPN:  true,
+		RuleSet:             rulesets,
+		// GeoIP: &option.GeoIPOptions{
+		// 	Path: opt.GeoIPPath,
+		// },
+		// Geosite: &option.GeositeOptions{
+		// 	Path: opt.GeoSitePath,
+		// },
+	}
+	if opt.EnableDNSRouting {
+		for _, dnsRule := range dnsRules {
+			if dnsRule.IsValid() {
+				options.DNS.Rules = append(
+					options.DNS.Rules,
+					option.DNSRule{
+						Type:           C.RuleTypeDefault,
+						DefaultOptions: dnsRule,
+					},
+				)
+			}
+		}
+	}
+
 }
 
 func patchHiddifyWarpFromConfig(out option.Outbound, opt ConfigOptions) option.Outbound {
