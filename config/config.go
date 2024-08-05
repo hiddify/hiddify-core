@@ -440,18 +440,7 @@ func setRoutingOptions(options *option.Options, opt *ConfigOptions) {
 	dnsRules := []option.DefaultDNSRule{}
 	routeRules := []option.Rule{}
 	rulesets := []option.RuleSet{}
-	if opt.EnableTun {
-		routeRules = append(
-			routeRules,
-			option.Rule{
-				Type: C.RuleTypeDefault,
-				DefaultOptions: option.DefaultRule{
-					ProcessName: []string{"Hiddify", "Hiddify.exe", "HiddifyCli", "HiddifyCli.exe"},
-					Outbound:    OutboundBypassTag,
-				},
-			},
-		)
-	}
+
 	routeRules = append(routeRules, option.Rule{
 		Type: C.RuleTypeDefault,
 		DefaultOptions: option.DefaultRule{
@@ -467,6 +456,18 @@ func setRoutingOptions(options *option.Options, opt *ConfigOptions) {
 			Outbound: OutboundDNSTag,
 		},
 	})
+	if opt.EnableTun {
+		routeRules = append(
+			routeRules,
+			option.Rule{
+				Type: C.RuleTypeDefault,
+				DefaultOptions: option.DefaultRule{
+					ProcessName: []string{"Hiddify", "Hiddify.exe", "HiddifyCli", "HiddifyCli.exe"},
+					Outbound:    OutboundBypassTag,
+				},
+			},
+		)
+	}
 	// {
 	// 	Type: C.RuleTypeDefault,
 	// 	DefaultOptions: option.DefaultRule{
