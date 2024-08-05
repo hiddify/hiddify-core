@@ -456,7 +456,7 @@ func setRoutingOptions(options *option.Options, opt *ConfigOptions) {
 			Outbound: OutboundDNSTag,
 		},
 	})
-	if opt.EnableTun {
+	if opt.EnableTun && false {
 		routeRules = append(
 			routeRules,
 			option.Rule{

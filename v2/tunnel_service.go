@@ -69,8 +69,6 @@ func makeTunnelConfig(Ipv6 bool, ServerPort int32, StrictRoute bool, EndpointInd
 		  }
 		],
 		"route": {
-		  "auto_detect_interface": true,
-
 		  "rules": [
 			{
 				"process_name":[
