@@ -59,7 +59,7 @@ func BuildConfigJson(configOpt ConfigOptions, input option.Options) (string, err
 
 // TODO include selectors
 func BuildConfig(opt ConfigOptions, input option.Options) (*option.Options, error) {
-	fmt.Printf("config options: %+v\n", opt)
+	fmt.Printf("config options: %++v\n", opt)
 
 	var options option.Options
 	if opt.EnableFullConfig {
@@ -67,176 +67,67 @@ func BuildConfig(opt ConfigOptions, input option.Options) (*option.Options, erro
 		options.DNS = input.DNS
 		options.Route = input.Route
 	}
-	directDNSDomains := make(map[string]bool)
 
-	var bind string
-	if opt.AllowConnectionFromLAN {
-		bind = "0.0.0.0"
-	} else {
-		bind = "127.0.0.1"
+	setClashAPI(&options, &opt)
+	setLog(&options, &opt)
+	setInbound(&options, &opt)
+	setDns(&options, &opt)
+	setRoutingOptions(&options, &opt)
+	setFakeDns(&options, &opt)
+	err := setOutbounds(&options, &input, &opt)
+	if err != nil {
+		return nil, err
 	}
 
-	if opt.EnableClashApi {
-		if opt.ClashApiSecret == "" {
-			opt.ClashApiSecret = generateRandomString(16)
-		}
-		options.Experimental = &option.ExperimentalOptions{
-			ClashAPI: &option.ClashAPIOptions{
-				ExternalController: fmt.Sprintf("%s:%d", "127.0.0.1", opt.ClashApiPort),
-				Secret:             opt.ClashApiSecret,
-			},
-
-			CacheFile: &option.CacheFileOptions{
-				Enabled: true,
-				Path:    "clash.db",
-			},
-		}
-	}
-
-	options.Log = &option.LogOptions{
-		Level:        opt.LogLevel,
-		Output:       "box.log",
-		Disabled:     false,
-		Timestamp:    true,
-		DisableColor: true,
-	}
-
-	options.DNS = &option.DNSOptions{
-		StaticIPs: map[string][]string{},
-		DNSClientOptions: option.DNSClientOptions{
-			IndependentCache: opt.IndependentDNSCache,
-		},
-		Final: DNSRemoteTag,
-		Servers: []option.DNSServerOptions{
-			{
-				Tag:             DNSRemoteTag,
-				Address:         opt.RemoteDnsAddress,
-				AddressResolver: DNSDirectTag,
-				Strategy:        opt.RemoteDnsDomainStrategy,
-			},
-			{
-				Tag:     DNSTricksDirectTag,
-				Address: "https://sky.rethinkdns.com/",
-				// AddressResolver: "dns-local",
-				Strategy: opt.DirectDnsDomainStrategy,
-				Detour:   OutboundDirectFragmentTag,
-			},
-			{
-				Tag:             DNSDirectTag,
-				Address:         opt.DirectDnsAddress,
-				AddressResolver: DNSLocalTag,
-				Strategy:        opt.DirectDnsDomainStrategy,
-				Detour:          OutboundDirectTag,
-			},
-			{
-				Tag:     DNSLocalTag,
-				Address: "local",
-				Detour:  OutboundDirectTag,
-			},
-			{
-				Tag:     DNSBlockTag,
-				Address: "rcode://success",
-			},
-		},
-	}
-	sky_rethinkdns := getIPs([]string{"www.speedtest.net", "sky.rethinkdns.com"})
-	if len(sky_rethinkdns) > 0 {
-		options.DNS.StaticIPs["sky.rethinkdns.com"] = sky_rethinkdns
-	}
-	var inboundDomainStrategy option.DomainStrategy
-	if !opt.ResolveDestination {
-		inboundDomainStrategy = option.DomainStrategy(dns.DomainStrategyAsIS)
-	} else {
-		inboundDomainStrategy = opt.IPv6Mode
-	}
-	if opt.EnableTunService {
-		ActivateTunnelService(opt)
-	} else if opt.EnableTun {
-		tunInbound := option.Inbound{
-			Type: C.TypeTun,
-			Tag:  InboundTUNTag,
-			TunOptions: option.TunInboundOptions{
-				Stack:                  opt.TUNStack,
-				MTU:                    opt.MTU,
-				AutoRoute:              true,
-				StrictRoute:            opt.StrictRoute,
-				EndpointIndependentNat: true,
-				// GSO:                    runtime.GOOS != "windows",
-				InboundOptions: option.InboundOptions{
-					SniffEnabled:             true,
-					SniffOverrideDestination: true,
-					DomainStrategy:           inboundDomainStrategy,
-				},
-			},
-		}
-		switch opt.IPv6Mode {
-		case option.DomainStrategy(dns.DomainStrategyUseIPv4):
-			tunInbound.TunOptions.Inet4Address = []netip.Prefix{
-				netip.MustParsePrefix("172.19.0.1/28"),
-			}
-		case option.DomainStrategy(dns.DomainStrategyUseIPv6):
-			tunInbound.TunOptions.Inet6Address = []netip.Prefix{
-				netip.MustParsePrefix("fdfe:dcba:9876::1/126"),
-			}
-		default:
-			tunInbound.TunOptions.Inet4Address = []netip.Prefix{
-				netip.MustParsePrefix("172.19.0.1/28"),
-			}
-			tunInbound.TunOptions.Inet6Address = []netip.Prefix{
-				netip.MustParsePrefix("fdfe:dcba:9876::1/126"),
-			}
-		}
-		options.Inbounds = append(options.Inbounds, tunInbound)
-
-	}
-
-	options.Inbounds = append(
-		options.Inbounds,
-		option.Inbound{
-			Type: C.TypeMixed,
-			Tag:  InboundMixedTag,
-			MixedOptions: option.HTTPMixedInboundOptions{
-				ListenOptions: option.ListenOptions{
-					Listen:     option.NewListenAddress(netip.MustParseAddr(bind)),
-					ListenPort: opt.MixedPort,
-					InboundOptions: option.InboundOptions{
-						SniffEnabled:             true,
-						SniffOverrideDestination: true,
-						DomainStrategy:           inboundDomainStrategy,
-					},
-				},
-				SetSystemProxy: opt.SetSystemProxy,
-			},
-		},
-	)
-
-	options.Inbounds = append(
-		options.Inbounds,
-		option.Inbound{
-			Type: C.TypeDirect,
-			Tag:  InboundDNSTag,
-			DirectOptions: option.DirectInboundOptions{
-				ListenOptions: option.ListenOptions{
-					Listen:     option.NewListenAddress(netip.MustParseAddr(bind)),
-					ListenPort: opt.LocalDnsPort,
-				},
-				// OverrideAddress: "1.1.1.1",
-				// OverridePort:    53,
-			},
-		},
-	)
-
+	return &options, nil
+}
+func addForceDirect(options *option.Options, opt *ConfigOptions, directDNSDomains map[string]bool) {
 	remoteDNSAddress := opt.RemoteDnsAddress
 	if strings.Contains(remoteDNSAddress, "://") {
 		remoteDNSAddress = strings.SplitAfter(remoteDNSAddress, "://")[1]
 	}
 	parsedUrl, err := url.Parse(fmt.Sprintf("https://%s", remoteDNSAddress))
 	if err == nil && net.ParseIP(parsedUrl.Host) == nil {
-		directDNSDomains["full:"+parsedUrl.Host] = true
-		//TODO: IS it really needed
+		directDNSDomains[parsedUrl.Host] = true
 	}
-	setRoutingOptions(&options, &opt)
-	setFakeDns(&options, &opt)
+	if len(directDNSDomains) > 0 {
+		// trickDnsDomains := []string{}
+		// directDNSDomains = removeDuplicateStr(directDNSDomains)
+		// b, _ := batch.New(context.Background(), batch.WithConcurrencyNum[bool](10))
+		// for _, d := range directDNSDomains {
+		// 	b.Go(d, func() (bool, error) {
+		// 		return isBlockedDomain(d), nil
+		// 	})
+		// }
+		// b.Wait()
+		// for domain, isBlock := range b.Result() {
+		// 	if isBlock.Value {
+		// 		trickDnsDomains = append(trickDnsDomains, domain)
+		// 	}
+		// }
+
+		// trickDomains := strings.Join(trickDnsDomains, ",")
+		// trickRule := Rule{Domains: trickDomains, Outbound: OutboundBypassTag}
+		// trickDnsRule := trickRule.MakeDNSRule()
+		// trickDnsRule.Server = DNSTricksDirectTag
+		// options.DNS.Rules = append([]option.DNSRule{{Type: C.RuleTypeDefault, DefaultOptions: trickDnsRule}}, options.DNS.Rules...)
+
+		directDNSDomainskeys := make([]string, 0, len(directDNSDomains))
+		for key := range directDNSDomains {
+			directDNSDomainskeys = append(directDNSDomainskeys, key)
+		}
+
+		domains := strings.Join(directDNSDomainskeys, ",")
+		directRule := Rule{Domains: domains, Outbound: OutboundBypassTag}
+		dnsRule := directRule.MakeDNSRule()
+		dnsRule.Server = DNSDirectTag
+		options.DNS.Rules = append([]option.DNSRule{{Type: C.RuleTypeDefault, DefaultOptions: dnsRule}}, options.DNS.Rules...)
+	}
+
+}
+
+func setOutbounds(options *option.Options, input *option.Options, opt *ConfigOptions) error {
+	directDNSDomains := make(map[string]bool)
 	var outbounds []option.Outbound
 	var tags []string
 	OutboundMainProxyTag = OutboundSelectTag
@@ -262,7 +153,7 @@ func BuildConfig(opt ConfigOptions, input option.Options) (*option.Options, erro
 	if opt.Warp.EnableWarp && (opt.Warp.Mode == "warp_over_proxy" || opt.Warp.Mode == "proxy_over_warp") {
 		out, err := GenerateWarpSingbox(opt.Warp.WireguardConfig, opt.Warp.CleanIP, opt.Warp.CleanPort, opt.Warp.FakePackets, opt.Warp.FakePacketSize, opt.Warp.FakePacketDelay, opt.Warp.FakePacketMode)
 		if err != nil {
-			return nil, fmt.Errorf("failed to generate warp config: %v", err)
+			return fmt.Errorf("failed to generate warp config: %v", err)
 		}
 		out.Tag = "Hiddify Warp ✅"
 		if opt.Warp.Mode == "warp_over_proxy" {
@@ -271,14 +162,14 @@ func BuildConfig(opt ConfigOptions, input option.Options) (*option.Options, erro
 		} else {
 			out.WireGuardOptions.Detour = OutboundDirectTag
 		}
-		patchWarp(out, &opt, true, nil)
+		patchWarp(out, opt, true, nil)
 		outbounds = append(outbounds, *out)
 		// tags = append(tags, out.Tag)
 	}
 	for _, out := range input.Outbounds {
-		outbound, serverDomain, err := patchOutbound(out, opt, options.DNS.StaticIPs)
+		outbound, serverDomain, err := patchOutbound(out, *opt, options.DNS.StaticIPs)
 		if err != nil {
-			return nil, err
+			return err
 		}
 
 		if serverDomain != "" {
@@ -297,7 +188,7 @@ func BuildConfig(opt ConfigOptions, input option.Options) (*option.Options, erro
 			if !strings.Contains(out.Tag, "§hide§") {
 				tags = append(tags, out.Tag)
 			}
-			out = patchHiddifyWarpFromConfig(out, opt)
+			out = patchHiddifyWarpFromConfig(out, *opt)
 			outbounds = append(outbounds, out)
 		}
 	}
@@ -367,41 +258,177 @@ func BuildConfig(opt ConfigOptions, input option.Options) (*option.Options, erro
 			},
 		}...,
 	)
-	if len(directDNSDomains) > 0 {
-		// trickDnsDomains := []string{}
-		// directDNSDomains = removeDuplicateStr(directDNSDomains)
-		// b, _ := batch.New(context.Background(), batch.WithConcurrencyNum[bool](10))
-		// for _, d := range directDNSDomains {
-		// 	b.Go(d, func() (bool, error) {
-		// 		return isBlockedDomain(d), nil
-		// 	})
-		// }
-		// b.Wait()
-		// for domain, isBlock := range b.Result() {
-		// 	if isBlock.Value {
-		// 		trickDnsDomains = append(trickDnsDomains, domain)
-		// 	}
-		// }
 
-		// trickDomains := strings.Join(trickDnsDomains, ",")
-		// trickRule := Rule{Domains: trickDomains, Outbound: OutboundBypassTag}
-		// trickDnsRule := trickRule.MakeDNSRule()
-		// trickDnsRule.Server = DNSTricksDirectTag
-		// options.DNS.Rules = append([]option.DNSRule{{Type: C.RuleTypeDefault, DefaultOptions: trickDnsRule}}, options.DNS.Rules...)
+	addForceDirect(options, opt, directDNSDomains)
+	return nil
+}
 
-		directDNSDomainskeys := make([]string, 0, len(directDNSDomains))
-		for key := range directDNSDomains {
-			directDNSDomainskeys = append(directDNSDomainskeys, key)
+func setClashAPI(options *option.Options, opt *ConfigOptions) {
+	if opt.EnableClashApi {
+		if opt.ClashApiSecret == "" {
+			opt.ClashApiSecret = generateRandomString(16)
 		}
+		options.Experimental = &option.ExperimentalOptions{
+			ClashAPI: &option.ClashAPIOptions{
+				ExternalController: fmt.Sprintf("%s:%d", "127.0.0.1", opt.ClashApiPort),
+				Secret:             opt.ClashApiSecret,
+			},
 
-		domains := strings.Join(directDNSDomainskeys, ",")
-		directRule := Rule{Domains: domains, Outbound: OutboundBypassTag}
-		dnsRule := directRule.MakeDNSRule()
-		dnsRule.Server = DNSDirectTag
-		options.DNS.Rules = append([]option.DNSRule{{Type: C.RuleTypeDefault, DefaultOptions: dnsRule}}, options.DNS.Rules...)
+			CacheFile: &option.CacheFileOptions{
+				Enabled: true,
+				Path:    "clash.db",
+			},
+		}
 	}
-	options.Route.Final = OutboundMainProxyTag
-	return &options, nil
+}
+
+func setLog(options *option.Options, opt *ConfigOptions) {
+	options.Log = &option.LogOptions{
+		Level:        opt.LogLevel,
+		Output:       "box.log",
+		Disabled:     false,
+		Timestamp:    true,
+		DisableColor: true,
+	}
+
+}
+
+func setInbound(options *option.Options, opt *ConfigOptions) {
+
+	var inboundDomainStrategy option.DomainStrategy
+	if !opt.ResolveDestination {
+		inboundDomainStrategy = option.DomainStrategy(dns.DomainStrategyAsIS)
+	} else {
+		inboundDomainStrategy = opt.IPv6Mode
+	}
+	if opt.EnableTunService {
+		ActivateTunnelService(*opt)
+	} else if opt.EnableTun {
+		tunInbound := option.Inbound{
+			Type: C.TypeTun,
+			Tag:  InboundTUNTag,
+			TunOptions: option.TunInboundOptions{
+				Stack:                  opt.TUNStack,
+				MTU:                    opt.MTU,
+				AutoRoute:              true,
+				StrictRoute:            opt.StrictRoute,
+				EndpointIndependentNat: true,
+				// GSO:                    runtime.GOOS != "windows",
+				InboundOptions: option.InboundOptions{
+					SniffEnabled:             true,
+					SniffOverrideDestination: true,
+					DomainStrategy:           inboundDomainStrategy,
+				},
+			},
+		}
+		switch opt.IPv6Mode {
+		case option.DomainStrategy(dns.DomainStrategyUseIPv4):
+			tunInbound.TunOptions.Inet4Address = []netip.Prefix{
+				netip.MustParsePrefix("172.19.0.1/28"),
+			}
+		case option.DomainStrategy(dns.DomainStrategyUseIPv6):
+			tunInbound.TunOptions.Inet6Address = []netip.Prefix{
+				netip.MustParsePrefix("fdfe:dcba:9876::1/126"),
+			}
+		default:
+			tunInbound.TunOptions.Inet4Address = []netip.Prefix{
+				netip.MustParsePrefix("172.19.0.1/28"),
+			}
+			tunInbound.TunOptions.Inet6Address = []netip.Prefix{
+				netip.MustParsePrefix("fdfe:dcba:9876::1/126"),
+			}
+		}
+		options.Inbounds = append(options.Inbounds, tunInbound)
+
+	}
+
+	var bind string
+	if opt.AllowConnectionFromLAN {
+		bind = "0.0.0.0"
+	} else {
+		bind = "127.0.0.1"
+	}
+
+	options.Inbounds = append(
+		options.Inbounds,
+		option.Inbound{
+			Type: C.TypeMixed,
+			Tag:  InboundMixedTag,
+			MixedOptions: option.HTTPMixedInboundOptions{
+				ListenOptions: option.ListenOptions{
+					Listen:     option.NewListenAddress(netip.MustParseAddr(bind)),
+					ListenPort: opt.MixedPort,
+					InboundOptions: option.InboundOptions{
+						SniffEnabled:             true,
+						SniffOverrideDestination: true,
+						DomainStrategy:           inboundDomainStrategy,
+					},
+				},
+				SetSystemProxy: opt.SetSystemProxy,
+			},
+		},
+	)
+
+	options.Inbounds = append(
+		options.Inbounds,
+		option.Inbound{
+			Type: C.TypeDirect,
+			Tag:  InboundDNSTag,
+			DirectOptions: option.DirectInboundOptions{
+				ListenOptions: option.ListenOptions{
+					Listen:     option.NewListenAddress(netip.MustParseAddr(bind)),
+					ListenPort: opt.LocalDnsPort,
+				},
+				// OverrideAddress: "1.1.1.1",
+				// OverridePort:    53,
+			},
+		},
+	)
+}
+
+func setDns(options *option.Options, opt *ConfigOptions) {
+	options.DNS = &option.DNSOptions{
+		StaticIPs: map[string][]string{},
+		DNSClientOptions: option.DNSClientOptions{
+			IndependentCache: opt.IndependentDNSCache,
+		},
+		Final: DNSRemoteTag,
+		Servers: []option.DNSServerOptions{
+			{
+				Tag:             DNSRemoteTag,
+				Address:         opt.RemoteDnsAddress,
+				AddressResolver: DNSDirectTag,
+				Strategy:        opt.RemoteDnsDomainStrategy,
+			},
+			{
+				Tag:     DNSTricksDirectTag,
+				Address: "https://sky.rethinkdns.com/",
+				// AddressResolver: "dns-local",
+				Strategy: opt.DirectDnsDomainStrategy,
+				Detour:   OutboundDirectFragmentTag,
+			},
+			{
+				Tag:             DNSDirectTag,
+				Address:         opt.DirectDnsAddress,
+				AddressResolver: DNSLocalTag,
+				Strategy:        opt.DirectDnsDomainStrategy,
+				Detour:          OutboundDirectTag,
+			},
+			{
+				Tag:     DNSLocalTag,
+				Address: "local",
+				Detour:  OutboundDirectTag,
+			},
+			{
+				Tag:     DNSBlockTag,
+				Address: "rcode://success",
+			},
+		},
+	}
+	sky_rethinkdns := getIPs([]string{"www.speedtest.net", "sky.rethinkdns.com"})
+	if len(sky_rethinkdns) > 0 {
+		options.DNS.StaticIPs["sky.rethinkdns.com"] = sky_rethinkdns
+	}
 }
 
 func setFakeDns(options *option.Options, opt *ConfigOptions) {
@@ -456,7 +483,7 @@ func setRoutingOptions(options *option.Options, opt *ConfigOptions) {
 			Outbound: OutboundDNSTag,
 		},
 	})
-	if opt.EnableTun && false {
+	if opt.EnableTun {
 		routeRules = append(
 			routeRules,
 			option.Rule{
@@ -537,9 +564,9 @@ func setRoutingOptions(options *option.Options, opt *ConfigOptions) {
 		dnsRules = append(dnsRules, dnsRule)
 	}
 
-	var dnsCPttl uint32 = 3000
 	parsedURL, err := url.Parse(opt.ConnectionTestUrl)
 	if err == nil {
+		var dnsCPttl uint32 = 3000
 		dnsRules = append(dnsRules, option.DefaultDNSRule{
 			Domain:       []string{parsedURL.Host},
 			Server:       DNSRemoteTag,
@@ -622,16 +649,24 @@ func setRoutingOptions(options *option.Options, opt *ConfigOptions) {
 	}
 	if opt.Region != "other" {
 		dnsRules = append(dnsRules, option.DefaultDNSRule{
+			DomainSuffix: []string{"." + opt.Region},
+			Server:       DNSDirectTag,
+		})
+		routeRules = append(routeRules, option.Rule{
+			Type: C.RuleTypeDefault,
+			DefaultOptions: option.DefaultRule{
+				DomainSuffix: []string{"." + opt.Region},
+				Outbound:     OutboundDirectTag,
+			},
+		})
+		dnsRules = append(dnsRules, option.DefaultDNSRule{
 			RuleSet: []string{
 				"geoip-" + opt.Region,
 				"geosite-" + opt.Region,
 			},
 			Server: DNSDirectTag,
 		})
-		dnsRules = append(dnsRules, option.DefaultDNSRule{
-			DomainSuffix: []string{"." + opt.Region},
-			Server:       DNSDirectTag,
-		})
+
 		rulesets = append(rulesets, option.RuleSet{
 			Type:   C.RuleSetTypeRemote,
 			Tag:    "geoip-" + opt.Region,
@@ -659,14 +694,6 @@ func setRoutingOptions(options *option.Options, opt *ConfigOptions) {
 					"geosite-" + opt.Region,
 				},
 				Outbound: OutboundDirectTag,
-			},
-		})
-
-		routeRules = append(routeRules, option.Rule{
-			Type: C.RuleTypeDefault,
-			DefaultOptions: option.DefaultRule{
-				DomainSuffix: []string{"." + opt.Region},
-				Outbound:     OutboundDirectTag,
 			},
 		})
 
