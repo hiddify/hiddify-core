@@ -67,7 +67,7 @@ var (
 )
 
 type CloudFlareOptions struct {
-	EnableCloudFlare bool `json:"enable-cloudflare"`
+	EnableCloudFlare bool `json:"enable-cloud-flare"`
 	CloudFlareIPNum  int  `json:"cloudflare-ip-num"`
 	CloudFlareIPs    []string
 }
