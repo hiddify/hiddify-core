@@ -201,8 +201,9 @@ func setOutbounds(options *option.Options, input *option.Options, opt *ConfigOpt
 			URL:       opt.ConnectionTestUrl,
 			Interval:  option.Duration(opt.URLTestInterval.Duration()),
 			// IdleTimeout: option.Duration(opt.URLTestIdleTimeout.Duration()),
-			Tolerance:   1,
-			IdleTimeout: option.Duration(opt.URLTestInterval.Duration().Nanoseconds() * 3),
+			Tolerance:                 1,
+			IdleTimeout:               option.Duration(opt.URLTestInterval.Duration().Nanoseconds() * 3),
+			InterruptExistConnections: true,
 		},
 	}
 	defaultSelect := urlTest.Tag
@@ -216,8 +217,9 @@ func setOutbounds(options *option.Options, input *option.Options, opt *ConfigOpt
 		Type: C.TypeSelector,
 		Tag:  OutboundSelectTag,
 		SelectorOptions: option.SelectorOutboundOptions{
-			Outbounds: append([]string{urlTest.Tag}, tags...),
-			Default:   defaultSelect,
+			Outbounds:                 append([]string{urlTest.Tag}, tags...),
+			Default:                   defaultSelect,
+			InterruptExistConnections: true,
 		},
 	}
 
