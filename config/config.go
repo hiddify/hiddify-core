@@ -699,11 +699,11 @@ func setRoutingOptions(options *option.Options, opt *ConfigOptions) {
 
 	}
 	options.Route = &option.RouteOptions{
-		Rules:               routeRules,
-		Final:               OutboundMainProxyTag,
-		AutoDetectInterface: true,
-		OverrideAndroidVPN:  true,
-		RuleSet:             rulesets,
+		Rules: routeRules,
+		Final: OutboundMainProxyTag,
+		// AutoDetectInterface: true,
+		// OverrideAndroidVPN:  true,
+		RuleSet: rulesets,
 		// GeoIP: &option.GeoIPOptions{
 		// 	Path: opt.GeoIPPath,
 		// },
