@@ -1,6 +1,7 @@
 package config
 
 import (
+	cf "github.com/hiddify/hiddify-core/CFScanner"
 	"github.com/sagernet/sing-box/option"
 	dns "github.com/sagernet/sing-dns"
 )
@@ -24,6 +25,7 @@ type ConfigOptions struct {
 	InboundOptions
 	URLTestOptions
 	RouteOptions
+	cf.CloudFlareOptions
 }
 
 type DNSOptions struct {

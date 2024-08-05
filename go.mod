@@ -1,8 +1,6 @@
 module github.com/hiddify/hiddify-core
 
-go 1.22.0
-
-toolchain go1.22.3
+go 1.22.5
 
 require (
 	github.com/bepass-org/warp-plus v0.0.0-00010101000000-000000000000
@@ -12,7 +10,7 @@ require (
 	github.com/sagernet/sing v0.4.1
 	github.com/sagernet/sing-box v1.8.9
 	github.com/sagernet/sing-dns v0.2.0
-	github.com/spf13/cobra v1.8.0
+	github.com/spf13/cobra v1.8.1
 	github.com/xmdhs/clash2singbox v0.0.2
 	golang.org/x/sys v0.22.0
 	google.golang.org/grpc v1.65.0
@@ -24,12 +22,15 @@ require github.com/akavel/rsrc v0.10.2 // indirect
 
 require (
 	berty.tech/go-libtor v1.0.385 // indirect
+	github.com/VividCortex/ewma v1.2.0 // indirect
 	github.com/ajg/form v1.5.1 // indirect
 	github.com/andybalholm/brotli v1.1.0 // indirect
 	github.com/caddyserver/certmagic v0.20.0 // indirect
+	github.com/cheggaaa/pb/v3 v3.1.5
 	github.com/cloudflare/circl v1.3.9 // indirect
 	github.com/cretz/bine v0.2.0 // indirect
 	github.com/dgryski/go-metro v0.0.0-20211217172704-adc40b04c140 // indirect
+	github.com/fatih/color v1.16.0 // indirect
 	github.com/francoispqt/gojay v1.2.13 // indirect
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
 	github.com/gaukas/godicttls v0.0.4 // indirect
@@ -57,6 +58,9 @@ require (
 	github.com/libdns/cloudflare v0.1.1 // indirect
 	github.com/libdns/libdns v0.2.2 // indirect
 	github.com/logrusorgru/aurora v2.0.3+incompatible // indirect
+	github.com/mattn/go-colorable v0.1.13 // indirect
+	github.com/mattn/go-isatty v0.0.20 // indirect
+	github.com/mattn/go-runewidth v0.0.15 // indirect
 	github.com/mholt/acmez v1.2.0 // indirect
 	github.com/miekg/dns v1.1.61 // indirect
 	github.com/onsi/ginkgo/v2 v2.19.0 // indirect
@@ -77,6 +81,7 @@ require (
 	github.com/quic-go/quic-go v0.45.1 // indirect
 	github.com/refraction-networking/utls v1.6.7 // indirect
 	github.com/riobard/go-bloom v0.0.0-20200614022211-cdc8013cb5b3 // indirect
+	github.com/rivo/uniseg v0.2.0 // indirect
 	github.com/sagernet/bbolt v0.0.0-20231014093535-ea5cb2fe9f0a // indirect
 	github.com/sagernet/cloudflare-tls v0.0.0-20231208171750-a4483c1b7cd1 // indirect
 	github.com/sagernet/gvisor v0.0.0-20240428053021-e691de28565f // indirect
