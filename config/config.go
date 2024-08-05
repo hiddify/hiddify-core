@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	cf "github.com/hiddify/hiddify-core/CFScanner"
 	C "github.com/sagernet/sing-box/constant"
 	"github.com/sagernet/sing-box/option"
 	dns "github.com/sagernet/sing-dns"
@@ -274,6 +275,10 @@ func BuildConfig(opt ConfigOptions, input option.Options) (*option.Options, erro
 		patchWarp(out, &opt, true, nil)
 		outbounds = append(outbounds, *out)
 		// tags = append(tags, out.Tag)
+	}
+	if opt.CloudFlareOptions.EnableCloudFlare {
+		opt.CloudFlareOptions = cf.Run(opt.CloudFlareOptions)
+		// fmt.Println(opt.CloudFlareOptions)
 	}
 	for _, out := range input.Outbounds {
 		outbound, serverDomain, err := patchOutbound(out, opt, options.DNS.StaticIPs)

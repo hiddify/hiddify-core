@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net"
 
+	cf "github.com/hiddify/hiddify-core/CFScanner"
 	C "github.com/sagernet/sing-box/constant"
 	"github.com/sagernet/sing-box/option"
 )
@@ -145,7 +146,7 @@ func patchOutbound(base option.Outbound, configOpt ConfigOptions, staticIpsDns m
 	if err != nil {
 		return nil, "", formatErr(err)
 	}
-
+	// fmt.Println(string(jsonData))
 	var obj outboundMap
 	err = json.Unmarshal(jsonData, &obj)
 	if err != nil {
@@ -155,6 +156,9 @@ func patchOutbound(base option.Outbound, configOpt ConfigOptions, staticIpsDns m
 	if server, ok := obj["server"].(string); ok {
 		if server != "" && net.ParseIP(server) == nil {
 			serverDomain = fmt.Sprintf("full:%s", server)
+		}
+		if configOpt.CloudFlareOptions.EnableCloudFlare && cf.IsIPInCloudflareRanges(server) && len(configOpt.CloudFlareOptions.CloudFlareIPs) > 0 {
+			obj["server"] = cf.RandomSelect(configOpt.CloudFlareOptions.CloudFlareIPs, 1)[0]
 		}
 	}
 

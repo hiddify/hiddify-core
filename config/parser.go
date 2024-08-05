@@ -115,7 +115,7 @@ func patchConfig(content []byte, name string, configOpt *ConfigOptions) ([]byte,
 
 	content, _ = json.MarshalIndent(options, "", "  ")
 
-	fmt.Printf("%s\n", content)
+	// fmt.Printf("%s\n", content)
 	return validateResult(content, name)
 }
 
