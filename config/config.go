@@ -309,7 +309,9 @@ func setInbound(options *option.Options, opt *ConfigOptions) {
 		tunInbound := option.Inbound{
 			Type: C.TypeTun,
 			Tag:  InboundTUNTag,
+
 			TunOptions: option.TunInboundOptions{
+
 				Stack:                  opt.TUNStack,
 				MTU:                    opt.MTU,
 				AutoRoute:              true,
@@ -318,7 +320,7 @@ func setInbound(options *option.Options, opt *ConfigOptions) {
 				// GSO:                    runtime.GOOS != "windows",
 				InboundOptions: option.InboundOptions{
 					SniffEnabled:             true,
-					SniffOverrideDestination: true,
+					SniffOverrideDestination: false,
 					DomainStrategy:           inboundDomainStrategy,
 				},
 			},
@@ -496,6 +498,16 @@ func setRoutingOptions(options *option.Options, opt *ConfigOptions) {
 				},
 			},
 		)
+		routeRules = append(
+			routeRules,
+			option.Rule{
+				Type: C.RuleTypeDefault,
+				DefaultOptions: option.DefaultRule{
+					PackageName: []string{"app.hiddify.com"},
+					Outbound:    OutboundBypassTag,
+				},
+			},
+		)
 	}
 	// {
 	// 	Type: C.RuleTypeDefault,
@@ -534,7 +546,7 @@ func setRoutingOptions(options *option.Options, opt *ConfigOptions) {
 		case "block":
 			routeRule.Outbound = OutboundBlockTag
 		case "proxy":
-			routeRule.Outbound = OutboundDNSTag
+			routeRule.Outbound = OutboundMainProxyTag
 		}
 
 		if routeRule.IsValid() {
@@ -646,6 +658,16 @@ func setRoutingOptions(options *option.Options, opt *ConfigOptions) {
 				},
 				Outbound: OutboundBlockTag,
 			},
+		})
+		dnsRules = append(dnsRules, option.DefaultDNSRule{
+			RuleSet: []string{"geosite-ads",
+				"geosite-malware",
+				"geosite-phishing",
+				"geosite-cryptominers",
+				"geoip-malware",
+				"geoip-phishing"},
+			Server: DNSBlockTag,
+			//		DisableCache: true,
 		})
 
 	}
