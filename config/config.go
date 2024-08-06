@@ -9,6 +9,7 @@ import (
 	"net"
 	"net/netip"
 	"net/url"
+	"runtime"
 	"strings"
 	"time"
 
@@ -472,6 +473,30 @@ func setRoutingOptions(options *option.Options, opt *ConfigOptions) {
 	routeRules := []option.Rule{}
 	rulesets := []option.RuleSet{}
 
+	if opt.EnableTun && runtime.GOOS == "android" {
+		routeRules = append(
+			routeRules,
+			option.Rule{
+				Type: C.RuleTypeDefault,
+
+				DefaultOptions: option.DefaultRule{
+					Inbound:     []string{InboundTUNTag},
+					PackageName: []string{"app.hiddify.com"},
+					Outbound:    OutboundBypassTag,
+				},
+			},
+		)
+		// routeRules = append(
+		// 	routeRules,
+		// 	option.Rule{
+		// 		Type: C.RuleTypeDefault,
+		// 		DefaultOptions: option.DefaultRule{
+		// 			ProcessName: []string{"Hiddify", "Hiddify.exe", "HiddifyCli", "HiddifyCli.exe"},
+		// 			Outbound:    OutboundBypassTag,
+		// 		},
+		// 	},
+		// )
+	}
 	routeRules = append(routeRules, option.Rule{
 		Type: C.RuleTypeDefault,
 		DefaultOptions: option.DefaultRule{
@@ -487,28 +512,7 @@ func setRoutingOptions(options *option.Options, opt *ConfigOptions) {
 			Outbound: OutboundDNSTag,
 		},
 	})
-	if opt.EnableTun {
-		routeRules = append(
-			routeRules,
-			option.Rule{
-				Type: C.RuleTypeDefault,
-				DefaultOptions: option.DefaultRule{
-					ProcessName: []string{"Hiddify", "Hiddify.exe", "HiddifyCli", "HiddifyCli.exe"},
-					Outbound:    OutboundBypassTag,
-				},
-			},
-		)
-		routeRules = append(
-			routeRules,
-			option.Rule{
-				Type: C.RuleTypeDefault,
-				DefaultOptions: option.DefaultRule{
-					PackageName: []string{"app.hiddify.com"},
-					Outbound:    OutboundBypassTag,
-				},
-			},
-		)
-	}
+
 	// {
 	// 	Type: C.RuleTypeDefault,
 	// 	DefaultOptions: option.DefaultRule{
