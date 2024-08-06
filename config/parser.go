@@ -32,6 +32,9 @@ func ParseConfig(path string, debug bool) ([]byte, error) {
 	return ParseConfigContent(string(content), debug, nil, false)
 }
 func ParseConfigContent(contentstr string, debug bool, configOpt *ConfigOptions, fullConfig bool) ([]byte, error) {
+	if configOpt == nil {
+		configOpt = DefaultConfigOptions()
+	}
 	content := []byte(contentstr)
 	var jsonObj map[string]interface{} = make(map[string]interface{})
 
