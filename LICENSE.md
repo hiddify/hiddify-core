@@ -1,7 +1,8 @@
 
-# GNU GENERAL PUBLIC LICENSE Extended
+# GNU GENERAL PUBLIC LICENSE v3
 
 ## Summary:
+Additional Permissions and Restrictions Under GNU GPL Version 3 Section 7
 - If you use extends this code, you should directly fork it from github.
 
 - The forks of the app are not allowed to be listed on F-Droid or other app stores under the original name or original design.
