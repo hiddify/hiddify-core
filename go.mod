@@ -20,8 +20,6 @@ require (
 	gopkg.in/yaml.v3 v3.0.1
 )
 
-require github.com/akavel/rsrc v0.10.2 // indirect
-
 require (
 	berty.tech/go-libtor v1.0.385 // indirect
 	github.com/ajg/form v1.5.1 // indirect
@@ -128,4 +126,4 @@ replace github.com/sagernet/wireguard-go => github.com/hiddify/wireguard-go v0.0
 
 replace github.com/bepass-org/warp-plus => github.com/hiddify/warp-plus v0.0.0-20240717223357-4f3122e0d11d
 
-replace github.com/hiddify/ray2sing => github.com/hiddify/ray2sing v0.0.0-20240806191321-60866735d9ec
+replace github.com/hiddify/ray2sing => github.com/hiddify/ray2sing v0.0.0-20240807031953-a9df25615108
