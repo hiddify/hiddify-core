@@ -146,5 +146,6 @@ func DefaultConfigOptions() *ConfigOptions {
 			EnablePadding:  false,
 			PaddingSize:    "1200-1500",
 		},
+		UseXrayCoreWhenPossible: false,
 	}
 }

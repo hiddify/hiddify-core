@@ -87,7 +87,7 @@ func StartService(in *pb.StartRequest) (*pb.CoreInfoResponse, error) {
 	}
 	Log(pb.LogLevel_DEBUG, pb.LogType_CORE, "Parsing Config")
 
-	parsedContent, err := parseConfig(content)
+	parsedContent, err := readOptions(content)
 	Log(pb.LogLevel_DEBUG, pb.LogType_CORE, "Parsed")
 
 	if err != nil {
@@ -247,7 +247,7 @@ func generateConfigFromFile(path string, configOpt config.ConfigOptions) (string
 	if err != nil {
 		return "", err
 	}
-	options, err := parseConfig(string(content))
+	options, err := readOptions(string(content))
 	if err != nil {
 		return "", err
 	}

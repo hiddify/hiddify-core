@@ -159,7 +159,7 @@ func patchWarp(base *option.Outbound, configOpt *ConfigOptions, final bool, stat
 			var warpConfig *T.Outbound
 			var err error
 
-			if configOpt == nil && (key == "p1" || key == "p2") {
+			if (configOpt == nil || !final) && (key == "p1" || key == "p2") {
 				warpConfig = base
 				return nil
 			} else if key == "p1" {

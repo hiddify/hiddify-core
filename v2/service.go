@@ -81,7 +81,7 @@ func NewService(options option.Options) (*libbox.BoxService, error) {
 	return &service, nil
 }
 
-func parseConfig(configContent string) (option.Options, error) {
+func readOptions(configContent string) (option.Options, error) {
 	var options option.Options
 	err := options.UnmarshalJSON([]byte(configContent))
 	if err != nil {
