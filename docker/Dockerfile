@@ -15,7 +15,6 @@ RUN apk add  curl tar gzip libc6-compat # iptables ip6tables
         tar -xzf hiddify-cli.tar.gz && rm hiddify-cli.tar.gz
 COPY hiddify.sh .
 RUN chmod +x hiddify.sh
-COPY hiddify.json ./data/
 
 EXPOSE 2334
 EXPOSE 2335

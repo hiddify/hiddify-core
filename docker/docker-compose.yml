@@ -10,5 +10,5 @@ services:
     environment:
       CONFIG: "https://raw.githubusercontent.com/ircfspace/warpsub/main/export/warp#WARP%20(IRCF)"
     volumes:
-      - ./data/:/hiddify/data/
+      - ./hiddify.json:/hiddify/hiddify.json
     command: ["/opt/hiddify.sh"]
