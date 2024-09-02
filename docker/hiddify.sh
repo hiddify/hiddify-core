@@ -31,8 +31,8 @@
 # iptables -t mangle -A PREROUTING -j hiddify
 
 
-if [ -f "/hiddify/data/hiddify.json" ]; then
-    /hiddify/HiddifyCli run --config "$CONFIG" -h /hiddify/data/hiddify.json
+if [ -f "/hiddify/hiddify.json" ]; then
+    /hiddify/HiddifyCli run --config "$CONFIG" -d /hiddify/hiddify.json
 else
     /hiddify/HiddifyCli run --config "$CONFIG"
 fi
