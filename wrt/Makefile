@@ -1,12 +1,12 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=hiddify-core
-PKG_VERSION:=1.2.0
+PKG_VERSION:=2.3.0
 PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=https://codeload.github.com/hiddify/hiddify-core/tar.gz/v$(PKG_VERSION)?
-PKG_HASH:=481098a29b0b08d225598e5e74eddfe4cbdd4560b7ac74d210dcc923792a3e24
+PKG_HASH:=45500fcc59f7f8601eb8d5922692a24991b1c494ac753ce54f8216595f8101d4
 
 PKG_LICENSE:=https://github.com/hiddify/hiddify-next/edit/main/LICENSE.md
 PKG_LICENSE_FILES:=LICENSE
@@ -48,16 +48,18 @@ endef
 define Package/hiddify-core/install
 
 	$(INSTALL_DIR) $(1)/usr/bin/
-	$(INSTALL_BIN) $(GO_PKG_BUILD_BIN_DIR)/HiddifyCli $(1)/usr/bin/hiddify-cli
-	$(INSTALL_BIN) $(GO_PKG_BUILD_BIN_DIR)/HiddifyCli $(1)/usr/bin/HiddifyCli
+	$(INSTALL_BIN) $(GO_PKG_BUILD_BIN_DIR)/cli $(1)/usr/bin/hiddify-cli
 
-	$(INSTALL_DIR) $(1)/etc/hiddify-core
-	$(INSTALL_DATA) $(PKG_BUILD_DIR)/release/config/config.json $(1)/etc/hiddify-core
+	$(INSTALL_DIR) $(1)/etc/hiddify
+	$(INSTALL_DATA) ./files/hiddify.json $(1)/etc/hiddify/appconfig.json
 
 	$(INSTALL_DIR) $(1)/etc/config/
-	$(INSTALL_CONF) ./files/hiddify.conf $(1)/etc/config/hiddify-core
+	$(INSTALL_CONF) ./files/hiddify.conf $(1)/etc/config/hiddify
+
 	$(INSTALL_DIR) $(1)/etc/init.d/
-	$(INSTALL_BIN) ./files/hiddify.init $(1)/etc/init.d/hiddify-core
+	$(INSTALL_BIN) ./files/hiddify.init $(1)/etc/init.d/hiddify
+
+	$(CP) ./files/webui $(1)/usr/bin/
 endef
 
 $(eval $(call BuildPackage,hiddify-core))
