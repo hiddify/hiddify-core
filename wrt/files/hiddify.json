@@ -26,7 +26,7 @@
 	"local-dns-port": 6450,
 	"tun-implementation": "gvisor",
 	"mtu": 9000,
-	"strict-route": true,
+	"strict-route": false,
 	"connection-test-url": "http://cp.cloudflare.com/",
 	"url-test-interval": 600,
 	"enable-clash-api": true,
