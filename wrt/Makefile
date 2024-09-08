@@ -41,8 +41,8 @@ endef
 GO_PKG_TAGS:=with_gvisor,with_quic,with_wireguard,with_ech,with_utls,with_clash_api,with_grpc,with_low_memory,with_conntrack
 
 define Package/hiddify-core/conffiles
-/etc/config/hiddify-core
-/etc/hiddify-core/
+/etc/config/hiddify
+/etc/hiddify/
 endef
 
 define Package/hiddify-core/install
