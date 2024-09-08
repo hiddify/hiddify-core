@@ -30,7 +30,7 @@ define Package/hiddify-core
   CATEGORY:=Network
   URL:=https://hiddify.com/
   DEPENDS:=$(GO_ARCH_DEPENDS) +ca-bundle +kmod-inet-diag +kmod-tun
-  USERID:=hiddify-core=5566:hiddify-core=5566
+  USERID:=hiddify=15566:hiddify=15566
 endef
 
 define Package/hiddify-core/description
