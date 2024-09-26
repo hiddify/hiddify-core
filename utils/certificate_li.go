@@ -16,7 +16,19 @@ import (
 	"time"
 )
 
-func GenerateCertificate(certPath, keyPath string, isServer bool) {
+func fileExists(path string) bool {
+	_, err := os.Stat(path)
+	return !os.IsNotExist(err) // returns true if the file exists
+}
+
+func GenerateCertificate(certPath, keyPath string, isServer bool, skipIfExist bool) {
+	if skipIfExist && fileExists(certPath) && fileExists(keyPath) {
+		return
+	}
+	err := os.MkdirAll("cert", 0o744)
+	if err != nil {
+		panic(err)
+	}
 	priv, err := ecdsa.GenerateKey(elliptic.P384(), rand.Reader)
 	if err != nil {
 		panic(err)
@@ -56,7 +68,7 @@ func GenerateCertificate(certPath, keyPath string, isServer bool) {
 		panic(err)
 	}
 	defer certFile.Close()
-	certFile.Chmod(0644)
+	certFile.Chmod(0o644)
 	pem.Encode(certFile, &pem.Block{Type: "CERTIFICATE", Bytes: certDER})
 
 	keyFile, err := os.Create(keyPath)
@@ -68,16 +80,12 @@ func GenerateCertificate(certPath, keyPath string, isServer bool) {
 	if err != nil {
 		panic(err)
 	}
-	keyFile.Chmod(0644)
+	keyFile.Chmod(0o644)
 	pem.Encode(keyFile, &pem.Block{Type: "EC PRIVATE KEY", Bytes: privBytes})
 }
 
-func LoadCertificate(certPath, keyPath string) tls.Certificate {
-	cert, err := tls.LoadX509KeyPair(certPath, keyPath)
-	if err != nil {
-		panic(err)
-	}
-	return cert
+func LoadCertificate(certPath, keyPath string) (tls.Certificate, error) {
+	return tls.LoadX509KeyPair(certPath, keyPath)
 }
 
 func LoadClientCA(certPath string) *x509.CertPool {

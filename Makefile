@@ -18,11 +18,15 @@ GOBUILDSRV=CGO_ENABLED=1 go build -ldflags "-s -w" -trimpath -tags $(TAGS)
 
 .PHONY: protos
 protos:
-	protoc --go_out=config --go-grpc_out=config --proto_path=protos protos/*.proto
+	protoc --go_out=./ --go-grpc_out=./ --proto_path=hiddifyrpc hiddifyrpc/*.proto
+	protoc --js_out=import_style=commonjs,binary:./extension/html/rpc/ --grpc-web_out=import_style=commonjs,mode=grpcwebtext:./extension/html/rpc/ --proto_path=hiddifyrpc hiddifyrpc/*.proto
+	npx browserify extension/html/rpc/extension.js >extension/html/rpc.js
+
 
 lib_install:
 	go install -v github.com/sagernet/gomobile/cmd/gomobile@v0.1.1
 	go install -v github.com/sagernet/gomobile/cmd/gobind@v0.1.1
+	npm install
 
 headers:
 	go build -buildmode=c-archive -o $(BINDIR)/$(LIBNAME).h ./custom
@@ -93,8 +97,6 @@ macos-universal: macos-amd64 macos-arm64
 clean:
 	rm $(BINDIR)/*
 
-build_protobuf:
-	protoc --go_out=. --go-grpc_out=. hiddifyrpc/hiddify.proto 
 
 
 

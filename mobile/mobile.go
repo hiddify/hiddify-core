@@ -6,12 +6,13 @@ import (
 	"path/filepath"
 
 	"github.com/hiddify/hiddify-core/config"
+
 	_ "github.com/sagernet/gomobile"
 	"github.com/sagernet/sing-box/option"
 )
 
 func Setup() error {
-	// return config.StartGRPCServer(7078)
+	// return v2.Start(17078)
 	return nil
 }
 

@@ -6,7 +6,7 @@ toolchain go1.22.3
 
 require (
 	github.com/bepass-org/warp-plus v0.0.0-00010101000000-000000000000
-	github.com/golang/protobuf v1.5.4
+	github.com/improbable-eng/grpc-web v0.15.0
 	github.com/kardianos/service v1.2.2
 	github.com/sagernet/gomobile v0.1.3
 	github.com/sagernet/sing v0.4.2
@@ -18,6 +18,13 @@ require (
 	google.golang.org/grpc v1.66.0
 	google.golang.org/protobuf v1.34.2
 	gopkg.in/yaml.v3 v3.0.1
+)
+
+require (
+	github.com/cenkalti/backoff/v4 v4.1.1 // indirect
+	github.com/desertbit/timer v0.0.0-20180107155436-c41aec40b27f // indirect
+	github.com/rs/cors v1.7.0 // indirect
+	nhooyr.io/websocket v1.8.6 // indirect
 )
 
 require (
@@ -118,7 +125,7 @@ require (
 	lukechampine.com/blake3 v1.3.0 // indirect
 )
 
-replace github.com/sagernet/sing-box => github.com/hiddify/hiddify-sing-box v1.8.9-0.20240902030441-17127b0535df
+replace github.com/sagernet/sing-box => github.com/hiddify/hiddify-sing-box v1.8.9-0.20240908122006-6f1809b87260
 
 replace github.com/xtls/xray-core => github.com/hiddify/xray-core v0.0.0-20240902024714-0fcb0895bb4b
 

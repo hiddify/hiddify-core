@@ -1,13 +1,9 @@
 syntax = "proto3";
-
+import "base.proto";
 package hiddifyrpc;
 
 option go_package = "./hiddifyrpc";
 
-enum ResponseCode {
-  OK = 0;
-  FAILED = 1;
-}
 
 enum CoreState {
   STOPPED = 0;
@@ -59,17 +55,6 @@ message Response {
   string message = 2;
 }
 
-
-message HelloRequest {
-  string name = 1;
-}
-
-message HelloResponse {
-  string message = 1;
-}
-
-message Empty {
-}
 
 message SystemInfo {
   int64 memory = 1;

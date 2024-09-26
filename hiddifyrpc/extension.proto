@@ -1,0 +1,61 @@
+syntax = "proto3";
+
+import "base.proto";
+
+package hiddifyrpc;
+
+option go_package = "./hiddifyrpc";
+
+service ExtensionHostService {
+  rpc ListExtensions (Empty) returns (ExtensionList) {}
+  rpc Connect (ExtensionRequest) returns (stream ExtensionResponse) {}
+  rpc EditExtension (EditExtensionRequest) returns (ExtensionActionResult) {}
+  rpc SubmitForm (ExtensionRequest) returns (ExtensionActionResult) {}
+  rpc Cancel (ExtensionRequest) returns (ExtensionActionResult) {}
+  rpc Stop (ExtensionRequest) returns (ExtensionActionResult) {}
+
+  rpc GetUI (ExtensionRequest) returns (ExtensionActionResult) {}
+}
+
+message ExtensionActionResult {
+  string extension_id = 1;
+  ResponseCode code = 2;
+  string message = 3;
+}
+
+message ExtensionList {
+  repeated Extension extensions = 1;
+}
+
+message EditExtensionRequest {
+  string extension_id = 1;
+  bool enable = 2;
+}
+
+message Extension {
+  string id = 1;
+  string title = 2;
+  string description = 3;
+  bool enable = 4;
+}
+
+message ExtensionRequest {
+  string extension_id = 1;
+  map<string, string> data = 2;
+}
+
+message ExtensionResponse {
+  ExtensionResponseType type = 1;
+  string extension_id = 2;
+  string json_ui = 3;
+}
+
+
+enum ExtensionResponseType {
+  NOTHING = 0;
+  UPDATE_UI = 1;
+  SHOW_DIALOG = 2;
+  END=3;
+}
+
+
