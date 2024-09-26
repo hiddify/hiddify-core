@@ -1212,16 +1212,16 @@ func (x *ParseResponse) GetMessage() string {
 	return ""
 }
 
-type ChangeConfigOptionsRequest struct {
+type ChangeHiddifyOptionsRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	ConfigOptionsJson string `protobuf:"bytes,1,opt,name=config_options_json,json=configOptionsJson,proto3" json:"config_options_json,omitempty"`
+	HiddifyOptionsJson string `protobuf:"bytes,1,opt,name=config_options_json,json=HiddifyOptionsJson,proto3" json:"config_options_json,omitempty"`
 }
 
-func (x *ChangeConfigOptionsRequest) Reset() {
-	*x = ChangeConfigOptionsRequest{}
+func (x *ChangeHiddifyOptionsRequest) Reset() {
+	*x = ChangeHiddifyOptionsRequest{}
 	if protoimpl.UnsafeEnabled {
 		mi := &file_hiddify_proto_msgTypes[14]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -1229,13 +1229,13 @@ func (x *ChangeConfigOptionsRequest) Reset() {
 	}
 }
 
-func (x *ChangeConfigOptionsRequest) String() string {
+func (x *ChangeHiddifyOptionsRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*ChangeConfigOptionsRequest) ProtoMessage() {}
+func (*ChangeHiddifyOptionsRequest) ProtoMessage() {}
 
-func (x *ChangeConfigOptionsRequest) ProtoReflect() protoreflect.Message {
+func (x *ChangeHiddifyOptionsRequest) ProtoReflect() protoreflect.Message {
 	mi := &file_hiddify_proto_msgTypes[14]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -1247,14 +1247,14 @@ func (x *ChangeConfigOptionsRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use ChangeConfigOptionsRequest.ProtoReflect.Descriptor instead.
-func (*ChangeConfigOptionsRequest) Descriptor() ([]byte, []int) {
+// Deprecated: Use ChangeHiddifyOptionsRequest.ProtoReflect.Descriptor instead.
+func (*ChangeHiddifyOptionsRequest) Descriptor() ([]byte, []int) {
 	return file_hiddify_proto_rawDescGZIP(), []int{14}
 }
 
-func (x *ChangeConfigOptionsRequest) GetConfigOptionsJson() string {
+func (x *ChangeHiddifyOptionsRequest) GetHiddifyOptionsJson() string {
 	if x != nil {
-		return x.ConfigOptionsJson
+		return x.HiddifyOptionsJson
 	}
 	return ""
 }
@@ -2176,7 +2176,7 @@ var file_hiddify_proto_goTypes = []any{
 	(*SystemProxyStatus)(nil),            // 15: hiddifyrpc.SystemProxyStatus
 	(*ParseRequest)(nil),                 // 16: hiddifyrpc.ParseRequest
 	(*ParseResponse)(nil),                // 17: hiddifyrpc.ParseResponse
-	(*ChangeConfigOptionsRequest)(nil),   // 18: hiddifyrpc.ChangeConfigOptionsRequest
+	(*ChangeHiddifyOptionsRequest)(nil),   // 18: hiddifyrpc.ChangeHiddifyOptionsRequest
 	(*GenerateConfigRequest)(nil),        // 19: hiddifyrpc.GenerateConfigRequest
 	(*GenerateConfigResponse)(nil),       // 20: hiddifyrpc.GenerateConfigResponse
 	(*SelectOutboundRequest)(nil),        // 21: hiddifyrpc.SelectOutboundRequest
@@ -2212,7 +2212,7 @@ var file_hiddify_proto_depIdxs = []int32{
 	26, // 16: hiddifyrpc.Core.GetSystemInfo:input_type -> hiddifyrpc.StopRequest
 	6,  // 17: hiddifyrpc.Core.Setup:input_type -> hiddifyrpc.SetupRequest
 	16, // 18: hiddifyrpc.Core.Parse:input_type -> hiddifyrpc.ParseRequest
-	18, // 19: hiddifyrpc.Core.ChangeConfigOptions:input_type -> hiddifyrpc.ChangeConfigOptionsRequest
+	18, // 19: hiddifyrpc.Core.ChangeHiddifyOptions:input_type -> hiddifyrpc.ChangeHiddifyOptionsRequest
 	5,  // 20: hiddifyrpc.Core.StartService:input_type -> hiddifyrpc.StartRequest
 	31, // 21: hiddifyrpc.Core.Stop:input_type -> hiddifyrpc.Empty
 	5,  // 22: hiddifyrpc.Core.Restart:input_type -> hiddifyrpc.StartRequest
@@ -2235,7 +2235,7 @@ var file_hiddify_proto_depIdxs = []int32{
 	8,  // 39: hiddifyrpc.Core.GetSystemInfo:output_type -> hiddifyrpc.SystemInfo
 	7,  // 40: hiddifyrpc.Core.Setup:output_type -> hiddifyrpc.Response
 	17, // 41: hiddifyrpc.Core.Parse:output_type -> hiddifyrpc.ParseResponse
-	4,  // 42: hiddifyrpc.Core.ChangeConfigOptions:output_type -> hiddifyrpc.CoreInfoResponse
+	4,  // 42: hiddifyrpc.Core.ChangeHiddifyOptions:output_type -> hiddifyrpc.CoreInfoResponse
 	4,  // 43: hiddifyrpc.Core.StartService:output_type -> hiddifyrpc.CoreInfoResponse
 	4,  // 44: hiddifyrpc.Core.Stop:output_type -> hiddifyrpc.CoreInfoResponse
 	4,  // 45: hiddifyrpc.Core.Restart:output_type -> hiddifyrpc.CoreInfoResponse
@@ -2432,7 +2432,7 @@ func file_hiddify_proto_init() {
 			}
 		}
 		file_hiddify_proto_msgTypes[14].Exporter = func(v any, i int) any {
-			switch v := v.(*ChangeConfigOptionsRequest); i {
+			switch v := v.(*ChangeHiddifyOptionsRequest); i {
 			case 0:
 				return &v.state
 			case 1:

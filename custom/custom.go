@@ -4,6 +4,7 @@ package main
 #include "stdint.h"
 */
 import "C"
+
 import (
 	"encoding/json"
 	"fmt"
@@ -41,15 +42,14 @@ func parse(path *C.char, tempPath *C.char, debug bool) (CErr *C.char) {
 		return C.CString(err.Error())
 	}
 
-	err = os.WriteFile(C.GoString(path), []byte(res.Content), 0644)
+	err = os.WriteFile(C.GoString(path), []byte(res.Content), 0o644)
 	return emptyOrErrorC(err)
 }
 
-//export changeConfigOptions
-func changeConfigOptions(configOptionsJson *C.char) (CErr *C.char) {
-
-	_, err := v2.ChangeConfigOptions(&pb.ChangeConfigOptionsRequest{
-		ConfigOptionsJson: C.GoString(configOptionsJson),
+//export changeHiddifyOptions
+func changeHiddifyOptions(HiddifyOptionsJson *C.char) (CErr *C.char) {
+	_, err := v2.ChangeHiddifyOptions(&pb.ChangeHiddifyOptionsRequest{
+		HiddifyOptionsJson: C.GoString(HiddifyOptionsJson),
 	})
 	return emptyOrErrorC(err)
 }
@@ -69,7 +69,6 @@ func generateConfig(path *C.char) (res *C.char) {
 
 //export start
 func start(configPath *C.char, disableMemoryLimit bool) (CErr *C.char) {
-
 	_, err := v2.Start(&pb.StartRequest{
 		ConfigPath:             C.GoString(configPath),
 		EnableOldCommandServer: true,
@@ -80,14 +79,12 @@ func start(configPath *C.char, disableMemoryLimit bool) (CErr *C.char) {
 
 //export stop
 func stop() (CErr *C.char) {
-
 	_, err := v2.Stop()
 	return emptyOrErrorC(err)
 }
 
 //export restart
 func restart(configPath *C.char, disableMemoryLimit bool) (CErr *C.char) {
-
 	_, err := v2.Restart(&pb.StartRequest{
 		ConfigPath:             C.GoString(configPath),
 		EnableOldCommandServer: true,
@@ -110,7 +107,6 @@ func stopCommandClient(command C.int) *C.char {
 
 //export selectOutbound
 func selectOutbound(groupTag *C.char, outboundTag *C.char) (CErr *C.char) {
-
 	_, err := v2.SelectOutbound(&pb.SelectOutboundRequest{
 		GroupTag:    C.GoString(groupTag),
 		OutboundTag: C.GoString(outboundTag),
@@ -143,7 +139,6 @@ func generateWarpConfig(licenseKey *C.char, accountId *C.char, accessToken *C.ch
 		AccountId:   C.GoString(accountId),
 		AccessToken: C.GoString(accessToken),
 	})
-
 	if err != nil {
 		return C.CString(fmt.Sprint("error: ", err.Error()))
 	}
@@ -170,7 +165,6 @@ func generateWarpConfig(licenseKey *C.char, accountId *C.char, accessToken *C.ch
 		return C.CString("")
 	}
 	return C.CString(string(responseJson))
-
 }
 
 func main() {}

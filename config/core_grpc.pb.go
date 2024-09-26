@@ -19,8 +19,8 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	CoreService_ParseConfig_FullMethodName        = "/ConfigOptions.CoreService/ParseConfig"
-	CoreService_GenerateFullConfig_FullMethodName = "/ConfigOptions.CoreService/GenerateFullConfig"
+	CoreService_ParseConfig_FullMethodName        = "/HiddifyOptions.CoreService/ParseConfig"
+	CoreService_GenerateFullConfig_FullMethodName = "/HiddifyOptions.CoreService/GenerateFullConfig"
 )
 
 // CoreServiceClient is the client API for CoreService service.
@@ -129,7 +129,7 @@ func _CoreService_GenerateFullConfig_Handler(srv interface{}, ctx context.Contex
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var CoreService_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "ConfigOptions.CoreService",
+	ServiceName: "HiddifyOptions.CoreService",
 	HandlerType: (*CoreServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{

@@ -21,10 +21,10 @@ func Parse(path string, tempPath string, debug bool) error {
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(path, config, 0644)
+	return os.WriteFile(path, config, 0o644)
 }
 
-func BuildConfig(path string, configOptionsJson string) (string, error) {
+func BuildConfig(path string, HiddifyOptionsJson string) (string, error) {
 	os.Chdir(filepath.Dir(path))
 	fileContent, err := os.ReadFile(path)
 	if err != nil {
@@ -35,26 +35,26 @@ func BuildConfig(path string, configOptionsJson string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	configOptions := &config.ConfigOptions{}
-	err = json.Unmarshal([]byte(configOptionsJson), configOptions)
+	HiddifyOptions := &config.HiddifyOptions{}
+	err = json.Unmarshal([]byte(HiddifyOptionsJson), HiddifyOptions)
 	if err != nil {
 		return "", nil
 	}
-	if configOptions.Warp.WireguardConfigStr != "" {
-		err := json.Unmarshal([]byte(configOptions.Warp.WireguardConfigStr), &configOptions.Warp.WireguardConfig)
+	if HiddifyOptions.Warp.WireguardConfigStr != "" {
+		err := json.Unmarshal([]byte(HiddifyOptions.Warp.WireguardConfigStr), &HiddifyOptions.Warp.WireguardConfig)
 		if err != nil {
 			return "", err
 		}
 	}
 
-	if configOptions.Warp2.WireguardConfigStr != "" {
-		err := json.Unmarshal([]byte(configOptions.Warp2.WireguardConfigStr), &configOptions.Warp2.WireguardConfig)
+	if HiddifyOptions.Warp2.WireguardConfigStr != "" {
+		err := json.Unmarshal([]byte(HiddifyOptions.Warp2.WireguardConfigStr), &HiddifyOptions.Warp2.WireguardConfig)
 		if err != nil {
 			return "", err
 		}
 	}
 
-	return config.BuildConfigJson(*configOptions, options)
+	return config.BuildConfigJson(*HiddifyOptions, options)
 }
 
 func GenerateWarpConfig(licenseKey string, accountId string, accessToken string) (string, error) {

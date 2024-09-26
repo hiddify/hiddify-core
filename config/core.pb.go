@@ -294,16 +294,16 @@ func file_core_proto_rawDescGZIP() []byte {
 
 var file_core_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
 var file_core_proto_goTypes = []interface{}{
-	(*ParseConfigRequest)(nil),     // 0: ConfigOptions.ParseConfigRequest
-	(*ParseConfigResponse)(nil),    // 1: ConfigOptions.ParseConfigResponse
-	(*GenerateConfigRequest)(nil),  // 2: ConfigOptions.GenerateConfigRequest
-	(*GenerateConfigResponse)(nil), // 3: ConfigOptions.GenerateConfigResponse
+	(*ParseConfigRequest)(nil),     // 0: HiddifyOptions.ParseConfigRequest
+	(*ParseConfigResponse)(nil),    // 1: HiddifyOptions.ParseConfigResponse
+	(*GenerateConfigRequest)(nil),  // 2: HiddifyOptions.GenerateConfigRequest
+	(*GenerateConfigResponse)(nil), // 3: HiddifyOptions.GenerateConfigResponse
 }
 var file_core_proto_depIdxs = []int32{
-	0, // 0: ConfigOptions.CoreService.ParseConfig:input_type -> ConfigOptions.ParseConfigRequest
-	2, // 1: ConfigOptions.CoreService.GenerateFullConfig:input_type -> ConfigOptions.GenerateConfigRequest
-	1, // 2: ConfigOptions.CoreService.ParseConfig:output_type -> ConfigOptions.ParseConfigResponse
-	3, // 3: ConfigOptions.CoreService.GenerateFullConfig:output_type -> ConfigOptions.GenerateConfigResponse
+	0, // 0: HiddifyOptions.CoreService.ParseConfig:input_type -> HiddifyOptions.ParseConfigRequest
+	2, // 1: HiddifyOptions.CoreService.GenerateFullConfig:input_type -> HiddifyOptions.GenerateConfigRequest
+	1, // 2: HiddifyOptions.CoreService.ParseConfig:output_type -> HiddifyOptions.ParseConfigResponse
+	3, // 3: HiddifyOptions.CoreService.GenerateFullConfig:output_type -> HiddifyOptions.GenerateConfigResponse
 	2, // [2:4] is the sub-list for method output_type
 	0, // [0:2] is the sub-list for method input_type
 	0, // [0:0] is the sub-list for extension type_name

@@ -27,7 +27,8 @@ var tunnelServiceRunning = false
 func isSupportedOS() bool {
 	return runtime.GOOS == "windows" || runtime.GOOS == "linux"
 }
-func ActivateTunnelService(opt ConfigOptions) (bool, error) {
+
+func ActivateTunnelService(opt HiddifyOptions) (bool, error) {
 	tunnelServiceRunning = true
 	// if !isSupportedOS() {
 	// 	return false, E.New("Unsupported OS: " + runtime.GOOS)
@@ -36,11 +37,12 @@ func ActivateTunnelService(opt ConfigOptions) (bool, error) {
 	go startTunnelRequestWithFailover(opt, true)
 	return true, nil
 }
+
 func DeactivateTunnelServiceForce() (bool, error) {
 	return stopTunnelRequest()
 }
-func DeactivateTunnelService() (bool, error) {
 
+func DeactivateTunnelService() (bool, error) {
 	// if !isSupportedOS() {
 	// 	return true, nil
 	// }
@@ -58,16 +60,15 @@ func DeactivateTunnelService() (bool, error) {
 	return true, nil
 }
 
-func startTunnelRequestWithFailover(opt ConfigOptions, installService bool) {
+func startTunnelRequestWithFailover(opt HiddifyOptions, installService bool) {
 	res, err := startTunnelRequest(opt, installService)
 	fmt.Printf("Start Tunnel Result: %v\n", res)
 	if err != nil {
-
 		fmt.Printf("Start Tunnel Failed! Stopping core... err=%v\n", err)
 		// StopAndAlert(pb.MessageType.MessageType_UNEXPECTED_ERROR, "Start Tunnel Failed! Stopping...")
-
 	}
 }
+
 func isPortInUse(port string) bool {
 	listener, err := net.Listen("tcp", "127.0.0.1:"+port)
 	if err != nil {
@@ -76,7 +77,8 @@ func isPortInUse(port string) bool {
 	defer listener.Close()
 	return false // Port is available
 }
-func startTunnelRequest(opt ConfigOptions, installService bool) (bool, error) {
+
+func startTunnelRequest(opt HiddifyOptions, installService bool) (bool, error) {
 	if !isPortInUse("18020") {
 		if installService {
 			return runTunnelService(opt)
@@ -153,7 +155,7 @@ func ExitTunnelService() (bool, error) {
 	return true, nil
 }
 
-func runTunnelService(opt ConfigOptions) (bool, error) {
+func runTunnelService(opt HiddifyOptions) (bool, error) {
 	executablePath := getTunnelServicePath()
 	fmt.Printf("Executable path is %s", executablePath)
 	out, err := ExecuteCmd(executablePath, false, "tunnel", "install")
@@ -163,7 +165,7 @@ func runTunnelService(opt ConfigOptions) (bool, error) {
 		fmt.Println("Shell command executed without flag:", out, err)
 	}
 	if err == nil {
-		<-time.After(1 * time.Second) //wait until service loaded completely
+		<-time.After(1 * time.Second) // wait until service loaded completely
 	}
 	return startTunnelRequest(opt, false)
 }

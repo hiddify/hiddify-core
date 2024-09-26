@@ -161,7 +161,7 @@ const (
 	Core_GetSystemInfo_FullMethodName         = "/hiddifyrpc.Core/GetSystemInfo"
 	Core_Setup_FullMethodName                 = "/hiddifyrpc.Core/Setup"
 	Core_Parse_FullMethodName                 = "/hiddifyrpc.Core/Parse"
-	Core_ChangeConfigOptions_FullMethodName   = "/hiddifyrpc.Core/ChangeConfigOptions"
+	Core_ChangeHiddifyOptions_FullMethodName   = "/hiddifyrpc.Core/ChangeHiddifyOptions"
 	Core_StartService_FullMethodName          = "/hiddifyrpc.Core/StartService"
 	Core_Stop_FullMethodName                  = "/hiddifyrpc.Core/Stop"
 	Core_Restart_FullMethodName               = "/hiddifyrpc.Core/Restart"
@@ -184,7 +184,7 @@ type CoreClient interface {
 	GetSystemInfo(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[StopRequest, SystemInfo], error)
 	Setup(ctx context.Context, in *SetupRequest, opts ...grpc.CallOption) (*Response, error)
 	Parse(ctx context.Context, in *ParseRequest, opts ...grpc.CallOption) (*ParseResponse, error)
-	ChangeConfigOptions(ctx context.Context, in *ChangeConfigOptionsRequest, opts ...grpc.CallOption) (*CoreInfoResponse, error)
+	ChangeHiddifyOptions(ctx context.Context, in *ChangeHiddifyOptionsRequest, opts ...grpc.CallOption) (*CoreInfoResponse, error)
 	//rpc GenerateConfig (GenerateConfigRequest) returns (GenerateConfigResponse);
 	StartService(ctx context.Context, in *StartRequest, opts ...grpc.CallOption) (*CoreInfoResponse, error)
 	Stop(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*CoreInfoResponse, error)
@@ -287,10 +287,10 @@ func (c *coreClient) Parse(ctx context.Context, in *ParseRequest, opts ...grpc.C
 	return out, nil
 }
 
-func (c *coreClient) ChangeConfigOptions(ctx context.Context, in *ChangeConfigOptionsRequest, opts ...grpc.CallOption) (*CoreInfoResponse, error) {
+func (c *coreClient) ChangeHiddifyOptions(ctx context.Context, in *ChangeHiddifyOptionsRequest, opts ...grpc.CallOption) (*CoreInfoResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(CoreInfoResponse)
-	err := c.cc.Invoke(ctx, Core_ChangeConfigOptions_FullMethodName, in, out, cOpts...)
+	err := c.cc.Invoke(ctx, Core_ChangeHiddifyOptions_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -401,7 +401,7 @@ type CoreServer interface {
 	GetSystemInfo(grpc.BidiStreamingServer[StopRequest, SystemInfo]) error
 	Setup(context.Context, *SetupRequest) (*Response, error)
 	Parse(context.Context, *ParseRequest) (*ParseResponse, error)
-	ChangeConfigOptions(context.Context, *ChangeConfigOptionsRequest) (*CoreInfoResponse, error)
+	ChangeHiddifyOptions(context.Context, *ChangeHiddifyOptionsRequest) (*CoreInfoResponse, error)
 	//rpc GenerateConfig (GenerateConfigRequest) returns (GenerateConfigResponse);
 	StartService(context.Context, *StartRequest) (*CoreInfoResponse, error)
 	Stop(context.Context, *Empty) (*CoreInfoResponse, error)
@@ -443,8 +443,8 @@ func (UnimplementedCoreServer) Setup(context.Context, *SetupRequest) (*Response,
 func (UnimplementedCoreServer) Parse(context.Context, *ParseRequest) (*ParseResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Parse not implemented")
 }
-func (UnimplementedCoreServer) ChangeConfigOptions(context.Context, *ChangeConfigOptionsRequest) (*CoreInfoResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ChangeConfigOptions not implemented")
+func (UnimplementedCoreServer) ChangeHiddifyOptions(context.Context, *ChangeHiddifyOptionsRequest) (*CoreInfoResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ChangeHiddifyOptions not implemented")
 }
 func (UnimplementedCoreServer) StartService(context.Context, *StartRequest) (*CoreInfoResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method StartService not implemented")
@@ -576,20 +576,20 @@ func _Core_Parse_Handler(srv interface{}, ctx context.Context, dec func(interfac
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Core_ChangeConfigOptions_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ChangeConfigOptionsRequest)
+func _Core_ChangeHiddifyOptions_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ChangeHiddifyOptionsRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(CoreServer).ChangeConfigOptions(ctx, in)
+		return srv.(CoreServer).ChangeHiddifyOptions(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: Core_ChangeConfigOptions_FullMethodName,
+		FullMethod: Core_ChangeHiddifyOptions_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(CoreServer).ChangeConfigOptions(ctx, req.(*ChangeConfigOptionsRequest))
+		return srv.(CoreServer).ChangeHiddifyOptions(ctx, req.(*ChangeHiddifyOptionsRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -765,8 +765,8 @@ var Core_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _Core_Parse_Handler,
 		},
 		{
-			MethodName: "ChangeConfigOptions",
-			Handler:    _Core_ChangeConfigOptions_Handler,
+			MethodName: "ChangeHiddifyOptions",
+			Handler:    _Core_ChangeHiddifyOptions_Handler,
 		},
 		{
 			MethodName: "StartService",

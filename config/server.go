@@ -22,11 +22,10 @@ func String(s string) *string {
 
 func (s *server) ParseConfig(ctx context.Context, in *ParseConfigRequest) (*ParseConfigResponse, error) {
 	config, err := ParseConfig(in.TempPath, in.Debug)
-
 	if err != nil {
 		return &ParseConfigResponse{Error: String(err.Error())}, nil
 	}
-	err = os.WriteFile(in.Path, config, 0644)
+	err = os.WriteFile(in.Path, config, 0o644)
 	if err != nil {
 		return nil, err
 	}
@@ -47,7 +46,7 @@ func (s *server) GenerateFullConfig(ctx context.Context, in *GenerateConfigReque
 	if err != nil {
 		return nil, err
 	}
-	config, err := BuildConfigJson(*DefaultConfigOptions(), options)
+	config, err := BuildConfigJson(*DefaultHiddifyOptions(), options)
 	if err != nil {
 		return nil, err
 	}

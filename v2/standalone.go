@@ -19,7 +19,7 @@ import (
 	"github.com/sagernet/sing-box/option"
 )
 
-func RunStandalone(hiddifySettingPath string, configPath string, defaultConfig config.ConfigOptions) error {
+func RunStandalone(hiddifySettingPath string, configPath string, defaultConfig config.HiddifyOptions) error {
 	fmt.Println("Running in standalone mode")
 	useFlutterBridge = false
 	current, err := readAndBuildConfig(hiddifySettingPath, configPath, &defaultConfig)
@@ -48,12 +48,12 @@ func RunStandalone(hiddifySettingPath string, configPath string, defaultConfig c
 }
 
 type ConfigResult struct {
-	Config               string
-	RefreshInterval      int
-	HiddifyConfigOptions *config.ConfigOptions
+	Config                string
+	RefreshInterval       int
+	HiddifyHiddifyOptions *config.HiddifyOptions
 }
 
-func readAndBuildConfig(hiddifySettingPath string, configPath string, defaultConfig *config.ConfigOptions) (ConfigResult, error) {
+func readAndBuildConfig(hiddifySettingPath string, configPath string, defaultConfig *config.HiddifyOptions) (ConfigResult, error) {
 	var result ConfigResult
 
 	result, err := readConfigContent(configPath)
@@ -61,21 +61,21 @@ func readAndBuildConfig(hiddifySettingPath string, configPath string, defaultCon
 		return result, err
 	}
 
-	hiddifyconfig := config.DefaultConfigOptions()
+	hiddifyconfig := config.DefaultHiddifyOptions()
 
 	if defaultConfig != nil {
 		hiddifyconfig = defaultConfig
 	}
 
 	if hiddifySettingPath != "" {
-		hiddifyconfig, err = readConfigOptionsAt(hiddifySettingPath)
+		hiddifyconfig, err = readHiddifyOptionsAt(hiddifySettingPath)
 		if err != nil {
 			return result, err
 		}
 	}
 
-	result.HiddifyConfigOptions = hiddifyconfig
-	result.Config, err = buildConfig(result.Config, *result.HiddifyConfigOptions)
+	result.HiddifyHiddifyOptions = hiddifyconfig
+	result.Config, err = buildConfig(result.Config, *result.HiddifyHiddifyOptions)
 	if err != nil {
 		return result, err
 	}
@@ -150,7 +150,8 @@ func extractRefreshInterval(header http.Header, bodyStr string) (int, error) {
 	}
 	return 0, nil
 }
-func buildConfig(configContent string, options config.ConfigOptions) (string, error) {
+
+func buildConfig(configContent string, options config.HiddifyOptions) (string, error) {
 	parsedContent, err := config.ParseConfigContent(configContent, true, &options, false)
 	if err != nil {
 		return "", fmt.Errorf("failed to parse config content: %w", err)
@@ -194,7 +195,7 @@ func updateConfigInterval(current ConfigResult, hiddifySettingPath string, confi
 
 	for {
 		<-time.After(time.Duration(current.RefreshInterval) * time.Hour)
-		new, err := readAndBuildConfig(hiddifySettingPath, configPath, current.HiddifyConfigOptions)
+		new, err := readAndBuildConfig(hiddifySettingPath, configPath, current.HiddifyHiddifyOptions)
 		if err != nil {
 			continue
 		}
@@ -210,7 +211,6 @@ func updateConfigInterval(current ConfigResult, hiddifySettingPath string, confi
 		}
 		current = new
 	}
-
 }
 
 func readConfigBytes(content []byte) (*option.Options, error) {
@@ -222,14 +222,13 @@ func readConfigBytes(content []byte) (*option.Options, error) {
 	return &options, nil
 }
 
-func readConfigOptionsAt(path string) (*config.ConfigOptions, error) {
+func readHiddifyOptionsAt(path string) (*config.HiddifyOptions, error) {
 	content, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}
-	var options config.ConfigOptions
+	var options config.HiddifyOptions
 	err = json.Unmarshal(content, &options)
-
 	if err != nil {
 		return nil, err
 	}

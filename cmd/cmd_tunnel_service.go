@@ -19,7 +19,7 @@ var commandService = &cobra.Command{
 		arg := args[0]
 		switch arg {
 		case "activate":
-			config.ActivateTunnelService(config.ConfigOptions{
+			config.ActivateTunnelService(config.HiddifyOptions{
 				InboundOptions: config.InboundOptions{
 					EnableTunService: true,
 					MixedPort:        12334,
@@ -36,6 +36,5 @@ var commandService = &cobra.Command{
 			code, out := v2.StartTunnelService(arg)
 			fmt.Printf("exitCode:%d msg=%s", code, out)
 		}
-
 	},
 }

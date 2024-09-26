@@ -5,7 +5,7 @@ import (
 	dns "github.com/sagernet/sing-dns"
 )
 
-type ConfigOptions struct {
+type HiddifyOptions struct {
 	EnableFullConfig        bool   `json:"enable-full-config"`
 	LogLevel                string `json:"log-level"`
 	EnableClashApi          bool   `json:"enable-clash-api"`
@@ -92,8 +92,8 @@ type WarpOptions struct {
 	Account            WarpAccount
 }
 
-func DefaultConfigOptions() *ConfigOptions {
-	return &ConfigOptions{
+func DefaultHiddifyOptions() *HiddifyOptions {
+	return &HiddifyOptions{
 		DNSOptions: DNSOptions{
 			RemoteDnsAddress:        "1.1.1.1",
 			RemoteDnsDomainStrategy: option.DomainStrategy(dns.DomainStrategyAsIS),

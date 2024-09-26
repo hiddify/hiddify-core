@@ -3,6 +3,7 @@ package config
 import (
 	"encoding/base64"
 	"fmt"
+	"log/slog"
 	"net/netip"
 	"os"
 	"strings"
@@ -11,7 +12,6 @@ import (
 	C "github.com/sagernet/sing-box/constant"
 
 	// "github.com/bepass-org/wireguard-go/warp"
-	"log/slog"
 
 	"github.com/sagernet/sing-box/option"
 	T "github.com/sagernet/sing-box/option"
@@ -66,7 +66,6 @@ func wireGuardToSingbox(wgConfig WarpWireguardConfig, server string, port uint16
 }
 
 func getRandomIP() string {
-
 	ipPort, err := warp.RandomWarpEndpoint(true, true)
 	if err == nil {
 		return ipPort.Addr().String()
@@ -75,7 +74,6 @@ func getRandomIP() string {
 }
 
 func generateWarp(license string, host string, port uint16, fakePackets string, fakePacketsSize string, fakePacketsDelay string, fakePacketsMode string) (*T.Outbound, error) {
-
 	_, _, wgConfig, err := GenerateWarpInfo(license, "", "")
 	if err != nil {
 		return nil, err
@@ -142,10 +140,9 @@ func GenerateWarpInfo(license string, oldAccountId string, oldAccessToken string
 	}
 
 	return &identity, res, &warpcfg, err
-
 }
 
-func patchWarp(base *option.Outbound, configOpt *ConfigOptions, final bool, staticIpsDns map[string][]string) error {
+func patchWarp(base *option.Outbound, configOpt *HiddifyOptions, final bool, staticIpsDns map[string][]string) error {
 	if base.Type == C.TypeCustom {
 		if warp, ok := base.CustomOptions["warp"].(map[string]interface{}); ok {
 			key, _ := warp["key"].(string)
@@ -180,7 +177,6 @@ func patchWarp(base *option.Outbound, configOpt *ConfigOptions, final bool, stat
 			base.WireGuardOptions = warpConfig.WireGuardOptions
 
 		}
-
 	}
 
 	if final && base.Type == C.TypeWireGuard {
@@ -202,7 +198,6 @@ func patchWarp(base *option.Outbound, configOpt *ConfigOptions, final bool, stat
 				}
 				base.WireGuardOptions.Server = rndDomain
 			}
-
 		}
 		if base.WireGuardOptions.ServerPort == 0 {
 			port := warp.RandomWarpPort()

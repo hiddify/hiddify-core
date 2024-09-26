@@ -19,7 +19,7 @@ import (
 var (
 	hiddifySettingPath     string
 	configPath             string
-	defaultConfigs         config.ConfigOptions = *config.DefaultConfigOptions()
+	defaultConfigs         config.HiddifyOptions = *config.DefaultHiddifyOptions()
 	commandBuildOutputPath string
 )
 
@@ -27,13 +27,13 @@ var commandBuild = &cobra.Command{
 	Use:   "build",
 	Short: "Build configuration",
 	Run: func(cmd *cobra.Command, args []string) {
-
 		err := build(configPath, hiddifySettingPath)
 		if err != nil {
 			log.Fatal(err)
 		}
 	},
 }
+
 var generateConfig = &cobra.Command{
 	Use:   "gen",
 	Short: "gen configuration",
@@ -65,7 +65,6 @@ func init() {
 
 	mainCommand.AddCommand(commandBuild)
 	mainCommand.AddCommand(generateConfig)
-
 }
 
 func build(path string, optionsPath string) error {
@@ -81,20 +80,20 @@ func build(path string, optionsPath string) error {
 		return err
 	}
 
-	configOptions := &defaultConfigs //config.DefaultConfigOptions()
+	HiddifyOptions := &defaultConfigs // config.DefaultHiddifyOptions()
 	if optionsPath != "" {
-		configOptions, err = readConfigOptionsAt(optionsPath)
+		HiddifyOptions, err = readHiddifyOptionsAt(optionsPath)
 		if err != nil {
 			return err
 		}
 	}
-	config, err := config.BuildConfigJson(*configOptions, *options)
+	config, err := config.BuildConfigJson(*HiddifyOptions, *options)
 	if err != nil {
 		return err
 	}
 	if commandBuildOutputPath != "" {
 		outputPath, _ := filepath.Abs(filepath.Join(workingDir, commandBuildOutputPath))
-		err = os.WriteFile(outputPath, []byte(config), 0644)
+		err = os.WriteFile(outputPath, []byte(config), 0o644)
 		if err != nil {
 			return err
 		}
@@ -137,14 +136,13 @@ func readConfigBytes(content []byte) (*option.Options, error) {
 	return &options, nil
 }
 
-func readConfigOptionsAt(path string) (*config.ConfigOptions, error) {
+func readHiddifyOptionsAt(path string) (*config.HiddifyOptions, error) {
 	content, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}
-	var options config.ConfigOptions
+	var options config.HiddifyOptions
 	err = json.Unmarshal(content, &options)
-
 	if err != nil {
 		return nil, err
 	}
@@ -165,7 +163,6 @@ func readConfigOptionsAt(path string) (*config.ConfigOptions, error) {
 }
 
 func addHConfigFlags(commandRun *cobra.Command) {
-
 	commandRun.Flags().StringVarP(&configPath, "config", "c", "", "proxy config path or url")
 	commandRun.MarkFlagRequired("config")
 	commandRun.Flags().StringVarP(&hiddifySettingPath, "hiddify", "d", "", "Hiddify Setting JSON Path")
