@@ -26,11 +26,15 @@ var commandExtension = &cobra.Command{
 	Short: "extension configuration",
 	Args:  cobra.MaximumNArgs(2),
 	Run: func(cmd *cobra.Command, args []string) {
-		grpc_server, _ := v2.StartCoreGrpcServer("127.0.0.1:12345")
-		fmt.Printf("Waiting for CTRL+C to stop\n")
-		runWebserver(grpc_server)
-		<-time.After(1 * time.Second)
+		StartExtension()
 	},
+}
+
+func StartExtension() {
+	grpc_server, _ := v2.StartCoreGrpcServer("127.0.0.1:12345")
+	fmt.Printf("Waiting for CTRL+C to stop\n")
+	runWebserver(grpc_server)
+	<-time.After(1 * time.Second)
 }
 
 func init() {
