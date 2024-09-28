@@ -242,7 +242,7 @@ func setOutbounds(options *option.Options, input *option.Options, opt *HiddifyOp
 				DirectOptions: option.DirectOutboundOptions{
 					DialerOptions: option.DialerOptions{
 						TCPFastOpen: false,
-						TLSFragment: &option.TLSFragmentOptions{
+						TLSFragment: option.TLSFragmentOptions{
 							Enabled: true,
 							Size:    opt.TLSTricks.FragmentSize,
 							Sleep:   opt.TLSTricks.FragmentSleep,

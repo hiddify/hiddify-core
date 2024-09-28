@@ -48,8 +48,8 @@ func parse(path *C.char, tempPath *C.char, debug bool) (CErr *C.char) {
 
 //export changeHiddifyOptions
 func changeHiddifyOptions(HiddifyOptionsJson *C.char) (CErr *C.char) {
-	_, err := v2.ChangeHiddifyOptions(&pb.ChangeHiddifyOptionsRequest{
-		HiddifyOptionsJson: C.GoString(HiddifyOptionsJson),
+	_, err := v2.ChangeHiddifySettings(&pb.ChangeHiddifySettingsRequest{
+		HiddifySettingsJson: C.GoString(HiddifyOptionsJson),
 	})
 	return emptyOrErrorC(err)
 }
