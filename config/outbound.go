@@ -147,9 +147,11 @@ func patchOutbound(base option.Outbound, configOpt HiddifyOptions, staticIpsDns 
 		return nil, "", formatErr(err)
 	}
 	var serverDomain string
-	if server, ok := obj["server"].(string); ok {
-		if server != "" && net.ParseIP(server) == nil {
-			serverDomain = fmt.Sprintf("full:%s", server)
+	if detour, ok := obj["detour"].(string); !ok || detour == "" {
+		if server, ok := obj["server"].(string); ok {
+			if server != "" && net.ParseIP(server) == nil {
+				serverDomain = fmt.Sprintf("full:%s", server)
+			}
 		}
 	}
 
