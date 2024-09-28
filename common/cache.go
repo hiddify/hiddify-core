@@ -62,8 +62,7 @@ func New(ctx context.Context, options option.CacheFileOptions) *CacheFile {
 
 func (c *CacheFile) start() error {
 	const fileMode = 0o666
-	options := bbolt.Options{Timeout: time.Second
-	}
+	options := bbolt.Options{Timeout: time.Second}
 	var (
 		db  *bbolt.DB
 		err error
