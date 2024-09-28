@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/bepass-org/warp-plus/warp"
+	"github.com/hiddify/hiddify-core/common"
 	C "github.com/sagernet/sing-box/constant"
 
 	// "github.com/bepass-org/wireguard-go/warp"
@@ -189,8 +190,10 @@ func patchWarp(base *option.Outbound, configOpt *HiddifyOptions, final bool, sta
 				rndDomain := strings.ToLower(generateRandomString(20))
 				staticIpsDns[rndDomain] = []string{}
 				if host != "auto4" {
-					randomIpPort, _ := warp.RandomWarpEndpoint(false, true)
-					staticIpsDns[rndDomain] = append(staticIpsDns[rndDomain], randomIpPort.Addr().String())
+					if host == "auto6" || common.CanConnectIPv6() {
+						randomIpPort, _ := warp.RandomWarpEndpoint(false, true)
+						staticIpsDns[rndDomain] = append(staticIpsDns[rndDomain], randomIpPort.Addr().String())
+					}
 				}
 				if host != "auto6" {
 					randomIpPort, _ := warp.RandomWarpEndpoint(true, false)

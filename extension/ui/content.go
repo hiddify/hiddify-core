@@ -1,4 +1,4 @@
-package ui_elements
+package ui
 
 // // ContentField represents a label with additional properties.
 // type ContentField struct {

@@ -253,6 +253,230 @@ proto.hiddifyrpc.CorePromiseClient.prototype.start =
 /**
  * @const
  * @type {!grpc.web.MethodDescriptor<
+ *   !proto.hiddifyrpc.Empty,
+ *   !proto.hiddifyrpc.CoreInfoResponse>}
+ */
+const methodDescriptor_Core_CoreInfoListener = new grpc.web.MethodDescriptor(
+  '/hiddifyrpc.Core/CoreInfoListener',
+  grpc.web.MethodType.SERVER_STREAMING,
+  base_pb.Empty,
+  proto.hiddifyrpc.CoreInfoResponse,
+  /**
+   * @param {!proto.hiddifyrpc.Empty} request
+   * @return {!Uint8Array}
+   */
+  function(request) {
+    return request.serializeBinary();
+  },
+  proto.hiddifyrpc.CoreInfoResponse.deserializeBinary
+);
+
+
+/**
+ * @param {!proto.hiddifyrpc.Empty} request The request proto
+ * @param {?Object<string, string>=} metadata User defined
+ *     call metadata
+ * @return {!grpc.web.ClientReadableStream<!proto.hiddifyrpc.CoreInfoResponse>}
+ *     The XHR Node Readable Stream
+ */
+proto.hiddifyrpc.CoreClient.prototype.coreInfoListener =
+    function(request, metadata) {
+  return this.client_.serverStreaming(this.hostname_ +
+      '/hiddifyrpc.Core/CoreInfoListener',
+      request,
+      metadata || {},
+      methodDescriptor_Core_CoreInfoListener);
+};
+
+
+/**
+ * @param {!proto.hiddifyrpc.Empty} request The request proto
+ * @param {?Object<string, string>=} metadata User defined
+ *     call metadata
+ * @return {!grpc.web.ClientReadableStream<!proto.hiddifyrpc.CoreInfoResponse>}
+ *     The XHR Node Readable Stream
+ */
+proto.hiddifyrpc.CorePromiseClient.prototype.coreInfoListener =
+    function(request, metadata) {
+  return this.client_.serverStreaming(this.hostname_ +
+      '/hiddifyrpc.Core/CoreInfoListener',
+      request,
+      metadata || {},
+      methodDescriptor_Core_CoreInfoListener);
+};
+
+
+/**
+ * @const
+ * @type {!grpc.web.MethodDescriptor<
+ *   !proto.hiddifyrpc.Empty,
+ *   !proto.hiddifyrpc.OutboundGroupList>}
+ */
+const methodDescriptor_Core_OutboundsInfo = new grpc.web.MethodDescriptor(
+  '/hiddifyrpc.Core/OutboundsInfo',
+  grpc.web.MethodType.SERVER_STREAMING,
+  base_pb.Empty,
+  proto.hiddifyrpc.OutboundGroupList,
+  /**
+   * @param {!proto.hiddifyrpc.Empty} request
+   * @return {!Uint8Array}
+   */
+  function(request) {
+    return request.serializeBinary();
+  },
+  proto.hiddifyrpc.OutboundGroupList.deserializeBinary
+);
+
+
+/**
+ * @param {!proto.hiddifyrpc.Empty} request The request proto
+ * @param {?Object<string, string>=} metadata User defined
+ *     call metadata
+ * @return {!grpc.web.ClientReadableStream<!proto.hiddifyrpc.OutboundGroupList>}
+ *     The XHR Node Readable Stream
+ */
+proto.hiddifyrpc.CoreClient.prototype.outboundsInfo =
+    function(request, metadata) {
+  return this.client_.serverStreaming(this.hostname_ +
+      '/hiddifyrpc.Core/OutboundsInfo',
+      request,
+      metadata || {},
+      methodDescriptor_Core_OutboundsInfo);
+};
+
+
+/**
+ * @param {!proto.hiddifyrpc.Empty} request The request proto
+ * @param {?Object<string, string>=} metadata User defined
+ *     call metadata
+ * @return {!grpc.web.ClientReadableStream<!proto.hiddifyrpc.OutboundGroupList>}
+ *     The XHR Node Readable Stream
+ */
+proto.hiddifyrpc.CorePromiseClient.prototype.outboundsInfo =
+    function(request, metadata) {
+  return this.client_.serverStreaming(this.hostname_ +
+      '/hiddifyrpc.Core/OutboundsInfo',
+      request,
+      metadata || {},
+      methodDescriptor_Core_OutboundsInfo);
+};
+
+
+/**
+ * @const
+ * @type {!grpc.web.MethodDescriptor<
+ *   !proto.hiddifyrpc.Empty,
+ *   !proto.hiddifyrpc.OutboundGroupList>}
+ */
+const methodDescriptor_Core_MainOutboundsInfo = new grpc.web.MethodDescriptor(
+  '/hiddifyrpc.Core/MainOutboundsInfo',
+  grpc.web.MethodType.SERVER_STREAMING,
+  base_pb.Empty,
+  proto.hiddifyrpc.OutboundGroupList,
+  /**
+   * @param {!proto.hiddifyrpc.Empty} request
+   * @return {!Uint8Array}
+   */
+  function(request) {
+    return request.serializeBinary();
+  },
+  proto.hiddifyrpc.OutboundGroupList.deserializeBinary
+);
+
+
+/**
+ * @param {!proto.hiddifyrpc.Empty} request The request proto
+ * @param {?Object<string, string>=} metadata User defined
+ *     call metadata
+ * @return {!grpc.web.ClientReadableStream<!proto.hiddifyrpc.OutboundGroupList>}
+ *     The XHR Node Readable Stream
+ */
+proto.hiddifyrpc.CoreClient.prototype.mainOutboundsInfo =
+    function(request, metadata) {
+  return this.client_.serverStreaming(this.hostname_ +
+      '/hiddifyrpc.Core/MainOutboundsInfo',
+      request,
+      metadata || {},
+      methodDescriptor_Core_MainOutboundsInfo);
+};
+
+
+/**
+ * @param {!proto.hiddifyrpc.Empty} request The request proto
+ * @param {?Object<string, string>=} metadata User defined
+ *     call metadata
+ * @return {!grpc.web.ClientReadableStream<!proto.hiddifyrpc.OutboundGroupList>}
+ *     The XHR Node Readable Stream
+ */
+proto.hiddifyrpc.CorePromiseClient.prototype.mainOutboundsInfo =
+    function(request, metadata) {
+  return this.client_.serverStreaming(this.hostname_ +
+      '/hiddifyrpc.Core/MainOutboundsInfo',
+      request,
+      metadata || {},
+      methodDescriptor_Core_MainOutboundsInfo);
+};
+
+
+/**
+ * @const
+ * @type {!grpc.web.MethodDescriptor<
+ *   !proto.hiddifyrpc.Empty,
+ *   !proto.hiddifyrpc.SystemInfo>}
+ */
+const methodDescriptor_Core_GetSystemInfo = new grpc.web.MethodDescriptor(
+  '/hiddifyrpc.Core/GetSystemInfo',
+  grpc.web.MethodType.SERVER_STREAMING,
+  base_pb.Empty,
+  proto.hiddifyrpc.SystemInfo,
+  /**
+   * @param {!proto.hiddifyrpc.Empty} request
+   * @return {!Uint8Array}
+   */
+  function(request) {
+    return request.serializeBinary();
+  },
+  proto.hiddifyrpc.SystemInfo.deserializeBinary
+);
+
+
+/**
+ * @param {!proto.hiddifyrpc.Empty} request The request proto
+ * @param {?Object<string, string>=} metadata User defined
+ *     call metadata
+ * @return {!grpc.web.ClientReadableStream<!proto.hiddifyrpc.SystemInfo>}
+ *     The XHR Node Readable Stream
+ */
+proto.hiddifyrpc.CoreClient.prototype.getSystemInfo =
+    function(request, metadata) {
+  return this.client_.serverStreaming(this.hostname_ +
+      '/hiddifyrpc.Core/GetSystemInfo',
+      request,
+      metadata || {},
+      methodDescriptor_Core_GetSystemInfo);
+};
+
+
+/**
+ * @param {!proto.hiddifyrpc.Empty} request The request proto
+ * @param {?Object<string, string>=} metadata User defined
+ *     call metadata
+ * @return {!grpc.web.ClientReadableStream<!proto.hiddifyrpc.SystemInfo>}
+ *     The XHR Node Readable Stream
+ */
+proto.hiddifyrpc.CorePromiseClient.prototype.getSystemInfo =
+    function(request, metadata) {
+  return this.client_.serverStreaming(this.hostname_ +
+      '/hiddifyrpc.Core/GetSystemInfo',
+      request,
+      metadata || {},
+      methodDescriptor_Core_GetSystemInfo);
+};
+
+
+/**
+ * @const
+ * @type {!grpc.web.MethodDescriptor<
  *   !proto.hiddifyrpc.SetupRequest,
  *   !proto.hiddifyrpc.Response>}
  */
@@ -375,16 +599,16 @@ proto.hiddifyrpc.CorePromiseClient.prototype.parse =
 /**
  * @const
  * @type {!grpc.web.MethodDescriptor<
- *   !proto.hiddifyrpc.ChangeConfigOptionsRequest,
+ *   !proto.hiddifyrpc.ChangeHiddifySettingsRequest,
  *   !proto.hiddifyrpc.CoreInfoResponse>}
  */
-const methodDescriptor_Core_ChangeConfigOptions = new grpc.web.MethodDescriptor(
-  '/hiddifyrpc.Core/ChangeConfigOptions',
+const methodDescriptor_Core_ChangeHiddifySettings = new grpc.web.MethodDescriptor(
+  '/hiddifyrpc.Core/ChangeHiddifySettings',
   grpc.web.MethodType.UNARY,
-  proto.hiddifyrpc.ChangeConfigOptionsRequest,
+  proto.hiddifyrpc.ChangeHiddifySettingsRequest,
   proto.hiddifyrpc.CoreInfoResponse,
   /**
-   * @param {!proto.hiddifyrpc.ChangeConfigOptionsRequest} request
+   * @param {!proto.hiddifyrpc.ChangeHiddifySettingsRequest} request
    * @return {!Uint8Array}
    */
   function(request) {
@@ -395,7 +619,7 @@ const methodDescriptor_Core_ChangeConfigOptions = new grpc.web.MethodDescriptor(
 
 
 /**
- * @param {!proto.hiddifyrpc.ChangeConfigOptionsRequest} request The
+ * @param {!proto.hiddifyrpc.ChangeHiddifySettingsRequest} request The
  *     request proto
  * @param {?Object<string, string>} metadata User defined
  *     call metadata
@@ -404,32 +628,32 @@ const methodDescriptor_Core_ChangeConfigOptions = new grpc.web.MethodDescriptor(
  * @return {!grpc.web.ClientReadableStream<!proto.hiddifyrpc.CoreInfoResponse>|undefined}
  *     The XHR Node Readable Stream
  */
-proto.hiddifyrpc.CoreClient.prototype.changeConfigOptions =
+proto.hiddifyrpc.CoreClient.prototype.changeHiddifySettings =
     function(request, metadata, callback) {
   return this.client_.rpcCall(this.hostname_ +
-      '/hiddifyrpc.Core/ChangeConfigOptions',
+      '/hiddifyrpc.Core/ChangeHiddifySettings',
       request,
       metadata || {},
-      methodDescriptor_Core_ChangeConfigOptions,
+      methodDescriptor_Core_ChangeHiddifySettings,
       callback);
 };
 
 
 /**
- * @param {!proto.hiddifyrpc.ChangeConfigOptionsRequest} request The
+ * @param {!proto.hiddifyrpc.ChangeHiddifySettingsRequest} request The
  *     request proto
  * @param {?Object<string, string>=} metadata User defined
  *     call metadata
  * @return {!Promise<!proto.hiddifyrpc.CoreInfoResponse>}
  *     Promise that resolves to the response
  */
-proto.hiddifyrpc.CorePromiseClient.prototype.changeConfigOptions =
+proto.hiddifyrpc.CorePromiseClient.prototype.changeHiddifySettings =
     function(request, metadata) {
   return this.client_.unaryCall(this.hostname_ +
-      '/hiddifyrpc.Core/ChangeConfigOptions',
+      '/hiddifyrpc.Core/ChangeHiddifySettings',
       request,
       metadata || {},
-      methodDescriptor_Core_ChangeConfigOptions);
+      methodDescriptor_Core_ChangeHiddifySettings);
 };
 
 
@@ -918,6 +1142,62 @@ proto.hiddifyrpc.CorePromiseClient.prototype.setSystemProxyEnabled =
       request,
       metadata || {},
       methodDescriptor_Core_SetSystemProxyEnabled);
+};
+
+
+/**
+ * @const
+ * @type {!grpc.web.MethodDescriptor<
+ *   !proto.hiddifyrpc.Empty,
+ *   !proto.hiddifyrpc.LogMessage>}
+ */
+const methodDescriptor_Core_LogListener = new grpc.web.MethodDescriptor(
+  '/hiddifyrpc.Core/LogListener',
+  grpc.web.MethodType.SERVER_STREAMING,
+  base_pb.Empty,
+  proto.hiddifyrpc.LogMessage,
+  /**
+   * @param {!proto.hiddifyrpc.Empty} request
+   * @return {!Uint8Array}
+   */
+  function(request) {
+    return request.serializeBinary();
+  },
+  proto.hiddifyrpc.LogMessage.deserializeBinary
+);
+
+
+/**
+ * @param {!proto.hiddifyrpc.Empty} request The request proto
+ * @param {?Object<string, string>=} metadata User defined
+ *     call metadata
+ * @return {!grpc.web.ClientReadableStream<!proto.hiddifyrpc.LogMessage>}
+ *     The XHR Node Readable Stream
+ */
+proto.hiddifyrpc.CoreClient.prototype.logListener =
+    function(request, metadata) {
+  return this.client_.serverStreaming(this.hostname_ +
+      '/hiddifyrpc.Core/LogListener',
+      request,
+      metadata || {},
+      methodDescriptor_Core_LogListener);
+};
+
+
+/**
+ * @param {!proto.hiddifyrpc.Empty} request The request proto
+ * @param {?Object<string, string>=} metadata User defined
+ *     call metadata
+ * @return {!grpc.web.ClientReadableStream<!proto.hiddifyrpc.LogMessage>}
+ *     The XHR Node Readable Stream
+ */
+proto.hiddifyrpc.CorePromiseClient.prototype.logListener =
+    function(request, metadata) {
+  return this.client_.serverStreaming(this.hostname_ +
+      '/hiddifyrpc.Core/LogListener',
+      request,
+      metadata || {},
+      methodDescriptor_Core_LogListener);
 };
 
 

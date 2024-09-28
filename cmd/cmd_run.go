@@ -23,6 +23,5 @@ func init() {
 }
 
 func runCommand(cmd *cobra.Command, args []string) {
-
 	v2.RunStandalone(hiddifySettingPath, configPath, defaultConfigs)
 }

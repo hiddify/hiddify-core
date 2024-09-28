@@ -1,18 +1,16 @@
 
-const { client,extension } = require('./client.js');
+const { extensionClient } = require('./client.js');
+const extension = require("./extension_grpc_web_pb.js");
 async function listExtensions() {
     $("#extension-list-container").show();
     $("#extension-page-container").hide();
+    $("#connection-page").show();
 
     try {
-        const extensionListContainer = document.getElementById('extension-list-container');
+        const extensionListContainer = document.getElementById('extension-list');
         extensionListContainer.innerHTML = ''; // Clear previous entries
-        const response = await client.listExtensions(new extension.Empty(), {});
-        const header = document.createElement('h1');
-        header.classList.add('mb-4');
-        header.textContent = "Extension List";
-        extensionListContainer.appendChild(header);
-
+        const response = await extensionClient.listExtensions(new extension.Empty(), {});
+        
         const extensionList = response.getExtensionsList();
         extensionList.forEach(ext => {
             const listItem = createExtensionListItem(ext);
@@ -38,14 +36,20 @@ function createExtensionListItem(ext) {
     descriptionElement.className = 'mb-0';
     descriptionElement.textContent = ext.getDescription();
     contentDiv.appendChild(descriptionElement);
-
+    contentDiv.style.width="100%";
     listItem.appendChild(contentDiv);
 
     const switchDiv = createSwitchElement(ext);
     listItem.appendChild(switchDiv);
     const {openExtensionPage} = require('./extensionPage.js');
 
-    listItem.addEventListener('click', () => openExtensionPage(ext.getId()));
+    contentDiv.addEventListener('click', () =>{ 
+        if (!ext.getEnable() ){
+            alert("Extension is not enabled")
+            return
+        }
+        openExtensionPage(ext.getId())
+    });
     
     return listItem;
 }
@@ -58,7 +62,10 @@ function createSwitchElement(ext) {
     switchButton.type = 'checkbox';
     switchButton.className = 'form-check-input';
     switchButton.checked = ext.getEnable();
-    switchButton.addEventListener('change', () => toggleExtension(ext.getId(), switchButton.checked));
+    switchButton.addEventListener('change', (e) => {
+        
+        toggleExtension(ext.getId(), switchButton.checked)
+    });
 
     switchDiv.appendChild(switchButton);
     return switchDiv;
@@ -70,11 +77,12 @@ async function toggleExtension(extensionId, enable) {
     request.setEnable(enable);
 
     try {
-        await client.editExtension(request, {});
+        await extensionClient.editExtension(request, {});
         console.log(`Extension ${extensionId} updated to ${enable ? 'enabled' : 'disabled'}`);
     } catch (err) {
         console.error('Error updating extension status:', err);
     }
+    listExtensions();
 }
 
 

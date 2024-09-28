@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/hiddify/hiddify-core/common"
 	pb "github.com/hiddify/hiddify-core/hiddifyrpc"
 	"google.golang.org/grpc"
 )
@@ -18,11 +19,12 @@ func (ExtensionHostService) ListExtensions(ctx context.Context, empty *pb.Empty)
 		Extensions: make([]*pb.Extension, 0),
 	}
 
-	for _, extension := range extensionsMap {
+	for _, extension := range allExtensionsMap {
 		extensionList.Extensions = append(extensionList.Extensions, &pb.Extension{
-			Id:          (*extension).getId(),
-			Title:       (*extension).GetTitle(),
-			Description: (*extension).GetDescription(),
+			Id:          extension.Id,
+			Title:       extension.Title,
+			Description: extension.Description,
+			Enable:      generalExtensionData.ExtensionStatusMap[extension.Id],
 		})
 	}
 	return extensionList, nil
@@ -30,7 +32,7 @@ func (ExtensionHostService) ListExtensions(ctx context.Context, empty *pb.Empty)
 
 func (e ExtensionHostService) Connect(req *pb.ExtensionRequest, stream grpc.ServerStreamingServer[pb.ExtensionResponse]) error {
 	// Get the extension from the map using the Extension ID
-	if extension, ok := extensionsMap[req.GetExtensionId()]; ok {
+	if extension, ok := enabledExtensionsMap[req.GetExtensionId()]; ok {
 
 		log.Printf("Connecting stream for extension %s", req.GetExtensionId())
 		log.Printf("Extension data: %+v", extension)
@@ -100,7 +102,7 @@ func (e ExtensionHostService) Connect(req *pb.ExtensionRequest, stream grpc.Serv
 }
 
 func (e ExtensionHostService) SubmitForm(ctx context.Context, req *pb.ExtensionRequest) (*pb.ExtensionActionResult, error) {
-	if extension, ok := extensionsMap[req.GetExtensionId()]; ok {
+	if extension, ok := enabledExtensionsMap[req.GetExtensionId()]; ok {
 		(*extension).SubmitData(req.GetData())
 
 		return &pb.ExtensionActionResult{
@@ -113,7 +115,7 @@ func (e ExtensionHostService) SubmitForm(ctx context.Context, req *pb.ExtensionR
 }
 
 func (e ExtensionHostService) Cancel(ctx context.Context, req *pb.ExtensionRequest) (*pb.ExtensionActionResult, error) {
-	if extension, ok := extensionsMap[req.GetExtensionId()]; ok {
+	if extension, ok := enabledExtensionsMap[req.GetExtensionId()]; ok {
 		(*extension).Cancel()
 
 		return &pb.ExtensionActionResult{
@@ -126,9 +128,9 @@ func (e ExtensionHostService) Cancel(ctx context.Context, req *pb.ExtensionReque
 }
 
 func (e ExtensionHostService) Stop(ctx context.Context, req *pb.ExtensionRequest) (*pb.ExtensionActionResult, error) {
-	if extension, ok := extensionsMap[req.GetExtensionId()]; ok {
+	if extension, ok := enabledExtensionsMap[req.GetExtensionId()]; ok {
 		(*extension).Stop()
-
+		(*extension).StoreData()
 		return &pb.ExtensionActionResult{
 			ExtensionId: req.ExtensionId,
 			Code:        pb.ResponseCode_OK,
@@ -136,4 +138,25 @@ func (e ExtensionHostService) Stop(ctx context.Context, req *pb.ExtensionRequest
 		}, nil
 	}
 	return nil, fmt.Errorf("Extension with ID %s not found", req.GetExtensionId())
+}
+
+func (e ExtensionHostService) EditExtension(ctx context.Context, req *pb.EditExtensionRequest) (*pb.ExtensionActionResult, error) {
+	generalExtensionData.ExtensionStatusMap[req.GetExtensionId()] = req.Enable
+	if !req.Enable {
+		ext := *enabledExtensionsMap[req.GetExtensionId()]
+		if ext != nil {
+			ext.Stop()
+			ext.StoreData()
+		}
+		delete(enabledExtensionsMap, req.GetExtensionId())
+	} else {
+		loadExtension(allExtensionsMap[req.GetExtensionId()])
+	}
+	common.Storage.SaveExtensionData("default", generalExtensionData)
+
+	return &pb.ExtensionActionResult{
+		ExtensionId: req.ExtensionId,
+		Code:        pb.ResponseCode_OK,
+		Message:     "Success",
+	}, nil
 }

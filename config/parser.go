@@ -31,6 +31,19 @@ func ParseConfig(path string, debug bool) ([]byte, error) {
 	return ParseConfigContent(string(content), debug, nil, false)
 }
 
+func ParseConfigContentToOptions(contentstr string, debug bool, configOpt *HiddifyOptions, fullConfig bool) (*option.Options, error) {
+	content, err := ParseConfigContent(contentstr, debug, configOpt, fullConfig)
+	if err != nil {
+		return nil, err
+	}
+	var options option.Options
+	err = json.Unmarshal(content, &options)
+	if err != nil {
+		return nil, err
+	}
+	return &options, nil
+}
+
 func ParseConfigContent(contentstr string, debug bool, configOpt *HiddifyOptions, fullConfig bool) ([]byte, error) {
 	if configOpt == nil {
 		configOpt = DefaultHiddifyOptions()

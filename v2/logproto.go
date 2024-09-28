@@ -6,10 +6,11 @@ import (
 
 	pb "github.com/hiddify/hiddify-core/hiddifyrpc"
 	"github.com/sagernet/sing/common/observable"
+	"google.golang.org/grpc"
 )
 
 func NewObserver[T any](listenerBufferSize int) *observable.Observer[T] {
-	return observable.NewObserver[T](&observable.Subscriber[T]{}, listenerBufferSize)
+	return observable.NewObserver(observable.NewSubscriber[T](listenerBufferSize), listenerBufferSize)
 }
 
 var logObserver = NewObserver[pb.LogMessage](10)
@@ -17,28 +18,23 @@ var logObserver = NewObserver[pb.LogMessage](10)
 func Log(level pb.LogLevel, typ pb.LogType, message string) {
 	if level != pb.LogLevel_DEBUG {
 		fmt.Printf("%s %s %s\n", level, typ, message)
-
 	}
 	logObserver.Emit(pb.LogMessage{
 		Level:   level,
 		Type:    typ,
 		Message: message,
 	})
-
 }
 
-func (s *CoreService) LogListener(stream pb.Core_LogListenerServer) error {
-	logSub, _, _ := logObserver.Subscribe()
+func (s *CoreService) LogListener(req *pb.Empty, stream grpc.ServerStreamingServer[pb.LogMessage]) error {
+	logSub, stopch, _ := logObserver.Subscribe()
 	defer logObserver.UnSubscribe(logSub)
 
-	stopch := make(chan int)
-	go func() {
-		stream.Recv()
-		close(stopch)
-	}()
 	for {
 		select {
 		case <-stream.Context().Done():
+			return nil
+		case <-stopch:
 			return nil
 		case info := <-logSub:
 			stream.Send(&info)

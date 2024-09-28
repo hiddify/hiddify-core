@@ -1,5 +1,9 @@
-const { client } = require('./client.js');
-const extension = require("./extension_grpc_web_pb.js");
+
+const ansi_up = new AnsiUp({
+    escape_html: false,
+
+});
+
 
 function renderForm(json, dialog, submitAction, cancelAction, stopAction) {
     const container = document.getElementById(`extension-page-container${dialog}`);
@@ -10,23 +14,36 @@ function renderForm(json, dialog, submitAction, cancelAction, stopAction) {
         existingForm.remove();
     }
     const form = document.createElement('form');
+    container.appendChild(form);
     form.id = formId;
 
     if (dialog === "dialog") {
         document.getElementById("modalLabel").textContent = json.title;
     } else {
         const titleElement = createTitleElement(json);
+        if (stopAction != undefined) {
+            const stopButton = document.createElement('button');
+            stopButton.textContent = "Back";
+            stopButton.classList.add('btn', 'btn-danger');
+            stopButton.addEventListener('click', stopAction);
+            form.appendChild(stopButton);
+        }
         form.appendChild(titleElement);
     }
     addElementsToForm(form, json);
-    const buttonGroup = createButtonGroup(json, submitAction, cancelAction, stopAction);
+    const buttonGroup = createButtonGroup(json, submitAction, cancelAction);
     if (dialog === "dialog") {
         document.getElementById("modal-footer").innerHTML = '';
         document.getElementById("modal-footer").appendChild(buttonGroup);
+        const dialog = bootstrap.Modal.getOrCreateInstance("#extension-dialog");
+        dialog.show()
+        dialog.on("hidden.bs.modal", () => {
+            cancelAction()
+        })
     } else {
         form.appendChild(buttonGroup);
     }
-    container.appendChild(form);
+
 }
 
 function addElementsToForm(form, json) {
@@ -36,12 +53,12 @@ function addElementsToForm(form, json) {
     const description = document.createElement('p');
     description.textContent = json.description;
     form.appendChild(description);
-
-    json.fields.forEach(field => {
-        const formGroup = createFormGroup(field);
-        form.appendChild(formGroup);
-    });
-
+    if (json.fields) {
+        json.fields.forEach(field => {
+            const formGroup = createFormGroup(field);
+            form.appendChild(formGroup);
+        });
+    }
 
     return form;
 }
@@ -72,6 +89,11 @@ function createInputElement(field) {
     let input;
 
     switch (field.type) {
+        case "Console":
+            input = document.createElement('pre');
+            input.innerHTML = ansi_up.ansi_to_html(field.value || field.placeholder || '');
+            input.style.maxHeight = field.lines * 20 + 'px';
+            break;
         case "TextArea":
             input = document.createElement('textarea');
             input.rows = field.lines || 3;
@@ -167,30 +189,25 @@ function createSwitchElement(field) {
     return switchWrapper;
 }
 
-function createButtonGroup(json, submitAction, cancelAction, stopAction) {
+function createButtonGroup(json, submitAction, cancelAction) {
     const buttonGroup = document.createElement('div');
     buttonGroup.classList.add('btn-group');
+    json.buttons.forEach(buttonText => {
+        const btn = document.createElement('button');
+        btn.classList.add('btn',"btn-default");
+        buttonGroup.appendChild(btn);
+        btn.textContent = buttonText
+        if (buttonText=="Cancel") {
+            btn.classList.add( 'btn-secondary');
+            btn.addEventListener('click', cancelAction);
+        }else{
+            if (buttonText=="Submit"||buttonText=="Ok")
+                btn.classList.add('btn-primary');
+            btn.addEventListener('click', submitAction);
+        }
+        
+    })
 
-    const cancelButton = document.createElement('button');
-    cancelButton.textContent = "Cancel";
-    cancelButton.classList.add('btn', 'btn-secondary');
-    cancelButton.addEventListener('click', cancelAction);
-    buttonGroup.appendChild(cancelButton);
-    if (stopAction != undefined) {
-        const stopButton = document.createElement('button');
-        stopButton.textContent = "Stop";
-        stopButton.classList.add('btn', 'btn-danger');
-        stopButton.addEventListener('click', stopAction);
-        buttonGroup.appendChild(stopButton);
-    }
-
-    if (json.buttonMode === "SubmitCancel") {
-        const submitButton = document.createElement('button');
-        submitButton.textContent = "Submit";
-        submitButton.classList.add('btn', 'btn-primary');
-        submitButton.addEventListener('click', submitAction);
-        buttonGroup.appendChild(submitButton);
-    }
 
 
     return buttonGroup;

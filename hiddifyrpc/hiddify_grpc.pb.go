@@ -161,7 +161,7 @@ const (
 	Core_GetSystemInfo_FullMethodName         = "/hiddifyrpc.Core/GetSystemInfo"
 	Core_Setup_FullMethodName                 = "/hiddifyrpc.Core/Setup"
 	Core_Parse_FullMethodName                 = "/hiddifyrpc.Core/Parse"
-	Core_ChangeHiddifyOptions_FullMethodName   = "/hiddifyrpc.Core/ChangeHiddifyOptions"
+	Core_ChangeHiddifySettings_FullMethodName = "/hiddifyrpc.Core/ChangeHiddifySettings"
 	Core_StartService_FullMethodName          = "/hiddifyrpc.Core/StartService"
 	Core_Stop_FullMethodName                  = "/hiddifyrpc.Core/Stop"
 	Core_Restart_FullMethodName               = "/hiddifyrpc.Core/Restart"
@@ -178,13 +178,13 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type CoreClient interface {
 	Start(ctx context.Context, in *StartRequest, opts ...grpc.CallOption) (*CoreInfoResponse, error)
-	CoreInfoListener(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[StopRequest, CoreInfoResponse], error)
-	OutboundsInfo(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[StopRequest, OutboundGroupList], error)
-	MainOutboundsInfo(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[StopRequest, OutboundGroupList], error)
-	GetSystemInfo(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[StopRequest, SystemInfo], error)
+	CoreInfoListener(ctx context.Context, in *Empty, opts ...grpc.CallOption) (grpc.ServerStreamingClient[CoreInfoResponse], error)
+	OutboundsInfo(ctx context.Context, in *Empty, opts ...grpc.CallOption) (grpc.ServerStreamingClient[OutboundGroupList], error)
+	MainOutboundsInfo(ctx context.Context, in *Empty, opts ...grpc.CallOption) (grpc.ServerStreamingClient[OutboundGroupList], error)
+	GetSystemInfo(ctx context.Context, in *Empty, opts ...grpc.CallOption) (grpc.ServerStreamingClient[SystemInfo], error)
 	Setup(ctx context.Context, in *SetupRequest, opts ...grpc.CallOption) (*Response, error)
 	Parse(ctx context.Context, in *ParseRequest, opts ...grpc.CallOption) (*ParseResponse, error)
-	ChangeHiddifyOptions(ctx context.Context, in *ChangeHiddifyOptionsRequest, opts ...grpc.CallOption) (*CoreInfoResponse, error)
+	ChangeHiddifySettings(ctx context.Context, in *ChangeHiddifySettingsRequest, opts ...grpc.CallOption) (*CoreInfoResponse, error)
 	//rpc GenerateConfig (GenerateConfigRequest) returns (GenerateConfigResponse);
 	StartService(ctx context.Context, in *StartRequest, opts ...grpc.CallOption) (*CoreInfoResponse, error)
 	Stop(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*CoreInfoResponse, error)
@@ -194,7 +194,7 @@ type CoreClient interface {
 	GenerateWarpConfig(ctx context.Context, in *GenerateWarpConfigRequest, opts ...grpc.CallOption) (*WarpGenerationResponse, error)
 	GetSystemProxyStatus(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*SystemProxyStatus, error)
 	SetSystemProxyEnabled(ctx context.Context, in *SetSystemProxyEnabledRequest, opts ...grpc.CallOption) (*Response, error)
-	LogListener(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[StopRequest, LogMessage], error)
+	LogListener(ctx context.Context, in *Empty, opts ...grpc.CallOption) (grpc.ServerStreamingClient[LogMessage], error)
 }
 
 type coreClient struct {
@@ -215,57 +215,81 @@ func (c *coreClient) Start(ctx context.Context, in *StartRequest, opts ...grpc.C
 	return out, nil
 }
 
-func (c *coreClient) CoreInfoListener(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[StopRequest, CoreInfoResponse], error) {
+func (c *coreClient) CoreInfoListener(ctx context.Context, in *Empty, opts ...grpc.CallOption) (grpc.ServerStreamingClient[CoreInfoResponse], error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	stream, err := c.cc.NewStream(ctx, &Core_ServiceDesc.Streams[0], Core_CoreInfoListener_FullMethodName, cOpts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &grpc.GenericClientStream[StopRequest, CoreInfoResponse]{ClientStream: stream}
+	x := &grpc.GenericClientStream[Empty, CoreInfoResponse]{ClientStream: stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
 	return x, nil
 }
 
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type Core_CoreInfoListenerClient = grpc.BidiStreamingClient[StopRequest, CoreInfoResponse]
+type Core_CoreInfoListenerClient = grpc.ServerStreamingClient[CoreInfoResponse]
 
-func (c *coreClient) OutboundsInfo(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[StopRequest, OutboundGroupList], error) {
+func (c *coreClient) OutboundsInfo(ctx context.Context, in *Empty, opts ...grpc.CallOption) (grpc.ServerStreamingClient[OutboundGroupList], error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	stream, err := c.cc.NewStream(ctx, &Core_ServiceDesc.Streams[1], Core_OutboundsInfo_FullMethodName, cOpts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &grpc.GenericClientStream[StopRequest, OutboundGroupList]{ClientStream: stream}
+	x := &grpc.GenericClientStream[Empty, OutboundGroupList]{ClientStream: stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
 	return x, nil
 }
 
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type Core_OutboundsInfoClient = grpc.BidiStreamingClient[StopRequest, OutboundGroupList]
+type Core_OutboundsInfoClient = grpc.ServerStreamingClient[OutboundGroupList]
 
-func (c *coreClient) MainOutboundsInfo(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[StopRequest, OutboundGroupList], error) {
+func (c *coreClient) MainOutboundsInfo(ctx context.Context, in *Empty, opts ...grpc.CallOption) (grpc.ServerStreamingClient[OutboundGroupList], error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	stream, err := c.cc.NewStream(ctx, &Core_ServiceDesc.Streams[2], Core_MainOutboundsInfo_FullMethodName, cOpts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &grpc.GenericClientStream[StopRequest, OutboundGroupList]{ClientStream: stream}
+	x := &grpc.GenericClientStream[Empty, OutboundGroupList]{ClientStream: stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
 	return x, nil
 }
 
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type Core_MainOutboundsInfoClient = grpc.BidiStreamingClient[StopRequest, OutboundGroupList]
+type Core_MainOutboundsInfoClient = grpc.ServerStreamingClient[OutboundGroupList]
 
-func (c *coreClient) GetSystemInfo(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[StopRequest, SystemInfo], error) {
+func (c *coreClient) GetSystemInfo(ctx context.Context, in *Empty, opts ...grpc.CallOption) (grpc.ServerStreamingClient[SystemInfo], error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	stream, err := c.cc.NewStream(ctx, &Core_ServiceDesc.Streams[3], Core_GetSystemInfo_FullMethodName, cOpts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &grpc.GenericClientStream[StopRequest, SystemInfo]{ClientStream: stream}
+	x := &grpc.GenericClientStream[Empty, SystemInfo]{ClientStream: stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
 	return x, nil
 }
 
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type Core_GetSystemInfoClient = grpc.BidiStreamingClient[StopRequest, SystemInfo]
+type Core_GetSystemInfoClient = grpc.ServerStreamingClient[SystemInfo]
 
 func (c *coreClient) Setup(ctx context.Context, in *SetupRequest, opts ...grpc.CallOption) (*Response, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
@@ -287,10 +311,10 @@ func (c *coreClient) Parse(ctx context.Context, in *ParseRequest, opts ...grpc.C
 	return out, nil
 }
 
-func (c *coreClient) ChangeHiddifyOptions(ctx context.Context, in *ChangeHiddifyOptionsRequest, opts ...grpc.CallOption) (*CoreInfoResponse, error) {
+func (c *coreClient) ChangeHiddifySettings(ctx context.Context, in *ChangeHiddifySettingsRequest, opts ...grpc.CallOption) (*CoreInfoResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(CoreInfoResponse)
-	err := c.cc.Invoke(ctx, Core_ChangeHiddifyOptions_FullMethodName, in, out, cOpts...)
+	err := c.cc.Invoke(ctx, Core_ChangeHiddifySettings_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -377,31 +401,37 @@ func (c *coreClient) SetSystemProxyEnabled(ctx context.Context, in *SetSystemPro
 	return out, nil
 }
 
-func (c *coreClient) LogListener(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[StopRequest, LogMessage], error) {
+func (c *coreClient) LogListener(ctx context.Context, in *Empty, opts ...grpc.CallOption) (grpc.ServerStreamingClient[LogMessage], error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	stream, err := c.cc.NewStream(ctx, &Core_ServiceDesc.Streams[4], Core_LogListener_FullMethodName, cOpts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &grpc.GenericClientStream[StopRequest, LogMessage]{ClientStream: stream}
+	x := &grpc.GenericClientStream[Empty, LogMessage]{ClientStream: stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
 	return x, nil
 }
 
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type Core_LogListenerClient = grpc.BidiStreamingClient[StopRequest, LogMessage]
+type Core_LogListenerClient = grpc.ServerStreamingClient[LogMessage]
 
 // CoreServer is the server API for Core service.
 // All implementations must embed UnimplementedCoreServer
 // for forward compatibility.
 type CoreServer interface {
 	Start(context.Context, *StartRequest) (*CoreInfoResponse, error)
-	CoreInfoListener(grpc.BidiStreamingServer[StopRequest, CoreInfoResponse]) error
-	OutboundsInfo(grpc.BidiStreamingServer[StopRequest, OutboundGroupList]) error
-	MainOutboundsInfo(grpc.BidiStreamingServer[StopRequest, OutboundGroupList]) error
-	GetSystemInfo(grpc.BidiStreamingServer[StopRequest, SystemInfo]) error
+	CoreInfoListener(*Empty, grpc.ServerStreamingServer[CoreInfoResponse]) error
+	OutboundsInfo(*Empty, grpc.ServerStreamingServer[OutboundGroupList]) error
+	MainOutboundsInfo(*Empty, grpc.ServerStreamingServer[OutboundGroupList]) error
+	GetSystemInfo(*Empty, grpc.ServerStreamingServer[SystemInfo]) error
 	Setup(context.Context, *SetupRequest) (*Response, error)
 	Parse(context.Context, *ParseRequest) (*ParseResponse, error)
-	ChangeHiddifyOptions(context.Context, *ChangeHiddifyOptionsRequest) (*CoreInfoResponse, error)
+	ChangeHiddifySettings(context.Context, *ChangeHiddifySettingsRequest) (*CoreInfoResponse, error)
 	//rpc GenerateConfig (GenerateConfigRequest) returns (GenerateConfigResponse);
 	StartService(context.Context, *StartRequest) (*CoreInfoResponse, error)
 	Stop(context.Context, *Empty) (*CoreInfoResponse, error)
@@ -411,7 +441,7 @@ type CoreServer interface {
 	GenerateWarpConfig(context.Context, *GenerateWarpConfigRequest) (*WarpGenerationResponse, error)
 	GetSystemProxyStatus(context.Context, *Empty) (*SystemProxyStatus, error)
 	SetSystemProxyEnabled(context.Context, *SetSystemProxyEnabledRequest) (*Response, error)
-	LogListener(grpc.BidiStreamingServer[StopRequest, LogMessage]) error
+	LogListener(*Empty, grpc.ServerStreamingServer[LogMessage]) error
 	mustEmbedUnimplementedCoreServer()
 }
 
@@ -425,16 +455,16 @@ type UnimplementedCoreServer struct{}
 func (UnimplementedCoreServer) Start(context.Context, *StartRequest) (*CoreInfoResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Start not implemented")
 }
-func (UnimplementedCoreServer) CoreInfoListener(grpc.BidiStreamingServer[StopRequest, CoreInfoResponse]) error {
+func (UnimplementedCoreServer) CoreInfoListener(*Empty, grpc.ServerStreamingServer[CoreInfoResponse]) error {
 	return status.Errorf(codes.Unimplemented, "method CoreInfoListener not implemented")
 }
-func (UnimplementedCoreServer) OutboundsInfo(grpc.BidiStreamingServer[StopRequest, OutboundGroupList]) error {
+func (UnimplementedCoreServer) OutboundsInfo(*Empty, grpc.ServerStreamingServer[OutboundGroupList]) error {
 	return status.Errorf(codes.Unimplemented, "method OutboundsInfo not implemented")
 }
-func (UnimplementedCoreServer) MainOutboundsInfo(grpc.BidiStreamingServer[StopRequest, OutboundGroupList]) error {
+func (UnimplementedCoreServer) MainOutboundsInfo(*Empty, grpc.ServerStreamingServer[OutboundGroupList]) error {
 	return status.Errorf(codes.Unimplemented, "method MainOutboundsInfo not implemented")
 }
-func (UnimplementedCoreServer) GetSystemInfo(grpc.BidiStreamingServer[StopRequest, SystemInfo]) error {
+func (UnimplementedCoreServer) GetSystemInfo(*Empty, grpc.ServerStreamingServer[SystemInfo]) error {
 	return status.Errorf(codes.Unimplemented, "method GetSystemInfo not implemented")
 }
 func (UnimplementedCoreServer) Setup(context.Context, *SetupRequest) (*Response, error) {
@@ -443,8 +473,8 @@ func (UnimplementedCoreServer) Setup(context.Context, *SetupRequest) (*Response,
 func (UnimplementedCoreServer) Parse(context.Context, *ParseRequest) (*ParseResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Parse not implemented")
 }
-func (UnimplementedCoreServer) ChangeHiddifyOptions(context.Context, *ChangeHiddifyOptionsRequest) (*CoreInfoResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ChangeHiddifyOptions not implemented")
+func (UnimplementedCoreServer) ChangeHiddifySettings(context.Context, *ChangeHiddifySettingsRequest) (*CoreInfoResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ChangeHiddifySettings not implemented")
 }
 func (UnimplementedCoreServer) StartService(context.Context, *StartRequest) (*CoreInfoResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method StartService not implemented")
@@ -470,7 +500,7 @@ func (UnimplementedCoreServer) GetSystemProxyStatus(context.Context, *Empty) (*S
 func (UnimplementedCoreServer) SetSystemProxyEnabled(context.Context, *SetSystemProxyEnabledRequest) (*Response, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SetSystemProxyEnabled not implemented")
 }
-func (UnimplementedCoreServer) LogListener(grpc.BidiStreamingServer[StopRequest, LogMessage]) error {
+func (UnimplementedCoreServer) LogListener(*Empty, grpc.ServerStreamingServer[LogMessage]) error {
 	return status.Errorf(codes.Unimplemented, "method LogListener not implemented")
 }
 func (UnimplementedCoreServer) mustEmbedUnimplementedCoreServer() {}
@@ -513,32 +543,48 @@ func _Core_Start_Handler(srv interface{}, ctx context.Context, dec func(interfac
 }
 
 func _Core_CoreInfoListener_Handler(srv interface{}, stream grpc.ServerStream) error {
-	return srv.(CoreServer).CoreInfoListener(&grpc.GenericServerStream[StopRequest, CoreInfoResponse]{ServerStream: stream})
+	m := new(Empty)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(CoreServer).CoreInfoListener(m, &grpc.GenericServerStream[Empty, CoreInfoResponse]{ServerStream: stream})
 }
 
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type Core_CoreInfoListenerServer = grpc.BidiStreamingServer[StopRequest, CoreInfoResponse]
+type Core_CoreInfoListenerServer = grpc.ServerStreamingServer[CoreInfoResponse]
 
 func _Core_OutboundsInfo_Handler(srv interface{}, stream grpc.ServerStream) error {
-	return srv.(CoreServer).OutboundsInfo(&grpc.GenericServerStream[StopRequest, OutboundGroupList]{ServerStream: stream})
+	m := new(Empty)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(CoreServer).OutboundsInfo(m, &grpc.GenericServerStream[Empty, OutboundGroupList]{ServerStream: stream})
 }
 
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type Core_OutboundsInfoServer = grpc.BidiStreamingServer[StopRequest, OutboundGroupList]
+type Core_OutboundsInfoServer = grpc.ServerStreamingServer[OutboundGroupList]
 
 func _Core_MainOutboundsInfo_Handler(srv interface{}, stream grpc.ServerStream) error {
-	return srv.(CoreServer).MainOutboundsInfo(&grpc.GenericServerStream[StopRequest, OutboundGroupList]{ServerStream: stream})
+	m := new(Empty)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(CoreServer).MainOutboundsInfo(m, &grpc.GenericServerStream[Empty, OutboundGroupList]{ServerStream: stream})
 }
 
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type Core_MainOutboundsInfoServer = grpc.BidiStreamingServer[StopRequest, OutboundGroupList]
+type Core_MainOutboundsInfoServer = grpc.ServerStreamingServer[OutboundGroupList]
 
 func _Core_GetSystemInfo_Handler(srv interface{}, stream grpc.ServerStream) error {
-	return srv.(CoreServer).GetSystemInfo(&grpc.GenericServerStream[StopRequest, SystemInfo]{ServerStream: stream})
+	m := new(Empty)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(CoreServer).GetSystemInfo(m, &grpc.GenericServerStream[Empty, SystemInfo]{ServerStream: stream})
 }
 
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type Core_GetSystemInfoServer = grpc.BidiStreamingServer[StopRequest, SystemInfo]
+type Core_GetSystemInfoServer = grpc.ServerStreamingServer[SystemInfo]
 
 func _Core_Setup_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(SetupRequest)
@@ -576,20 +622,20 @@ func _Core_Parse_Handler(srv interface{}, ctx context.Context, dec func(interfac
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Core_ChangeHiddifyOptions_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ChangeHiddifyOptionsRequest)
+func _Core_ChangeHiddifySettings_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ChangeHiddifySettingsRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(CoreServer).ChangeHiddifyOptions(ctx, in)
+		return srv.(CoreServer).ChangeHiddifySettings(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: Core_ChangeHiddifyOptions_FullMethodName,
+		FullMethod: Core_ChangeHiddifySettings_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(CoreServer).ChangeHiddifyOptions(ctx, req.(*ChangeHiddifyOptionsRequest))
+		return srv.(CoreServer).ChangeHiddifySettings(ctx, req.(*ChangeHiddifySettingsRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -739,11 +785,15 @@ func _Core_SetSystemProxyEnabled_Handler(srv interface{}, ctx context.Context, d
 }
 
 func _Core_LogListener_Handler(srv interface{}, stream grpc.ServerStream) error {
-	return srv.(CoreServer).LogListener(&grpc.GenericServerStream[StopRequest, LogMessage]{ServerStream: stream})
+	m := new(Empty)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(CoreServer).LogListener(m, &grpc.GenericServerStream[Empty, LogMessage]{ServerStream: stream})
 }
 
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type Core_LogListenerServer = grpc.BidiStreamingServer[StopRequest, LogMessage]
+type Core_LogListenerServer = grpc.ServerStreamingServer[LogMessage]
 
 // Core_ServiceDesc is the grpc.ServiceDesc for Core service.
 // It's only intended for direct use with grpc.RegisterService,
@@ -765,8 +815,8 @@ var Core_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _Core_Parse_Handler,
 		},
 		{
-			MethodName: "ChangeHiddifyOptions",
-			Handler:    _Core_ChangeHiddifyOptions_Handler,
+			MethodName: "ChangeHiddifySettings",
+			Handler:    _Core_ChangeHiddifySettings_Handler,
 		},
 		{
 			MethodName: "StartService",
@@ -806,31 +856,26 @@ var Core_ServiceDesc = grpc.ServiceDesc{
 			StreamName:    "CoreInfoListener",
 			Handler:       _Core_CoreInfoListener_Handler,
 			ServerStreams: true,
-			ClientStreams: true,
 		},
 		{
 			StreamName:    "OutboundsInfo",
 			Handler:       _Core_OutboundsInfo_Handler,
 			ServerStreams: true,
-			ClientStreams: true,
 		},
 		{
 			StreamName:    "MainOutboundsInfo",
 			Handler:       _Core_MainOutboundsInfo_Handler,
 			ServerStreams: true,
-			ClientStreams: true,
 		},
 		{
 			StreamName:    "GetSystemInfo",
 			Handler:       _Core_GetSystemInfo_Handler,
 			ServerStreams: true,
-			ClientStreams: true,
 		},
 		{
 			StreamName:    "LogListener",
 			Handler:       _Core_LogListener_Handler,
 			ServerStreams: true,
-			ClientStreams: true,
 		},
 	},
 	Metadata: "hiddify.proto",

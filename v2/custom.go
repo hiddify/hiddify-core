@@ -83,7 +83,7 @@ func StartService(in *pb.StartRequest) (*pb.CoreInfoResponse, error) {
 			Log(pb.LogLevel_FATAL, pb.LogType_CORE, err.Error())
 			resp := SetCoreStatus(pb.CoreState_STOPPED, pb.MessageType_ERROR_READING_CONFIG, err.Error())
 			StopAndAlert(pb.MessageType_UNEXPECTED_ERROR, err.Error())
-			return &resp, err
+			return resp, err
 		}
 		content = string(fileContent)
 	}
@@ -96,7 +96,7 @@ func StartService(in *pb.StartRequest) (*pb.CoreInfoResponse, error) {
 		Log(pb.LogLevel_FATAL, pb.LogType_CORE, err.Error())
 		resp := SetCoreStatus(pb.CoreState_STOPPED, pb.MessageType_ERROR_PARSING_CONFIG, err.Error())
 		StopAndAlert(pb.MessageType_UNEXPECTED_ERROR, err.Error())
-		return &resp, err
+		return resp, err
 	}
 	if !in.EnableRawConfig {
 		Log(pb.LogLevel_DEBUG, pb.LogType_CORE, "Building config")
@@ -105,7 +105,7 @@ func StartService(in *pb.StartRequest) (*pb.CoreInfoResponse, error) {
 			Log(pb.LogLevel_FATAL, pb.LogType_CORE, err.Error())
 			resp := SetCoreStatus(pb.CoreState_STOPPED, pb.MessageType_ERROR_BUILDING_CONFIG, err.Error())
 			StopAndAlert(pb.MessageType_UNEXPECTED_ERROR, err.Error())
-			return &resp, err
+			return resp, err
 		}
 		parsedContent = *parsedContent_tmp
 	}
@@ -122,7 +122,7 @@ func StartService(in *pb.StartRequest) (*pb.CoreInfoResponse, error) {
 			Log(pb.LogLevel_FATAL, pb.LogType_CORE, err.Error())
 			resp := SetCoreStatus(pb.CoreState_STOPPED, pb.MessageType_START_COMMAND_SERVER, err.Error())
 			StopAndAlert(pb.MessageType_UNEXPECTED_ERROR, err.Error())
-			return &resp, err
+			return resp, err
 		}
 	}
 
@@ -132,7 +132,7 @@ func StartService(in *pb.StartRequest) (*pb.CoreInfoResponse, error) {
 		Log(pb.LogLevel_FATAL, pb.LogType_CORE, err.Error())
 		resp := SetCoreStatus(pb.CoreState_STOPPED, pb.MessageType_CREATE_SERVICE, err.Error())
 		StopAndAlert(pb.MessageType_UNEXPECTED_ERROR, err.Error())
-		return &resp, err
+		return resp, err
 	}
 	Log(pb.LogLevel_DEBUG, pb.LogType_CORE, "Service.. started")
 	if in.DelayStart {
@@ -144,7 +144,7 @@ func StartService(in *pb.StartRequest) (*pb.CoreInfoResponse, error) {
 		Log(pb.LogLevel_FATAL, pb.LogType_CORE, err.Error())
 		resp := SetCoreStatus(pb.CoreState_STOPPED, pb.MessageType_START_SERVICE, err.Error())
 		StopAndAlert(pb.MessageType_UNEXPECTED_ERROR, err.Error())
-		return &resp, err
+		return resp, err
 	}
 	Box = instance
 	if in.EnableOldCommandServer {
@@ -152,7 +152,7 @@ func StartService(in *pb.StartRequest) (*pb.CoreInfoResponse, error) {
 	}
 
 	resp := SetCoreStatus(pb.CoreState_STARTED, pb.MessageType_EMPTY, "")
-	return &resp, nil
+	return resp, nil
 }
 
 func (s *CoreService) Parse(ctx context.Context, in *pb.ParseRequest) (*pb.ParseResponse, error) {
@@ -199,13 +199,13 @@ func Parse(in *pb.ParseRequest) (*pb.ParseResponse, error) {
 	}, err
 }
 
-func (s *CoreService) ChangeHiddifyOptions(ctx context.Context, in *pb.ChangeHiddifyOptionsRequest) (*pb.CoreInfoResponse, error) {
-	return ChangeHiddifyOptions(in)
+func (s *CoreService) ChangeHiddifySettings(ctx context.Context, in *pb.ChangeHiddifySettingsRequest) (*pb.CoreInfoResponse, error) {
+	return ChangeHiddifySettings(in)
 }
 
-func ChangeHiddifyOptions(in *pb.ChangeHiddifyOptionsRequest) (*pb.CoreInfoResponse, error) {
-	HiddifyOptions = &config.HiddifyOptions{}
-	err := json.Unmarshal([]byte(in.HiddifyOptionsJson), HiddifyOptions)
+func ChangeHiddifySettings(in *pb.ChangeHiddifySettingsRequest) (*pb.CoreInfoResponse, error) {
+	HiddifyOptions = config.DefaultHiddifyOptions()
+	err := json.Unmarshal([]byte(in.HiddifySettingsJson), HiddifyOptions)
 	if err != nil {
 		return nil, err
 	}
@@ -314,7 +314,7 @@ func Stop() (*pb.CoreInfoResponse, error) {
 		oldCommandServer = nil
 	}
 	resp := SetCoreStatus(pb.CoreState_STOPPED, pb.MessageType_EMPTY, "")
-	return &resp, nil
+	return resp, nil
 }
 
 func (s *CoreService) Restart(ctx context.Context, in *pb.StartRequest) (*pb.CoreInfoResponse, error) {

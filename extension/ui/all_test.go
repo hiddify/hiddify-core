@@ -1,4 +1,4 @@
-package ui_elements
+package ui
 
 // import (
 // 	"encoding/json"

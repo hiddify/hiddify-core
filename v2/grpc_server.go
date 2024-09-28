@@ -33,6 +33,11 @@ func StartGrpcServer(listenAddressG string, service string) (*grpc.Server, error
 	}
 	s := grpc.NewServer()
 	if service == "core" {
+
+		// Setup("./tmp/", "./tmp", "./tmp", 11111, false)
+		Setup("./tmp", "./", "./tmp", 0, false)
+
+		useFlutterBridge = false
 		pb.RegisterCoreServer(s, &CoreService{})
 		pb.RegisterExtensionHostServiceServer(s, &extension.ExtensionHostService{})
 	} else if service == "hello" {

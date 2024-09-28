@@ -1,4 +1,4 @@
-package ui_elements
+package ui
 
 import (
 	"encoding/json"
@@ -20,27 +20,27 @@ const (
 	FieldSwitch         string = "Switch"
 	FieldCheckbox       string = "Checkbox"
 	FieldRadioButton    string = "RadioButton"
+	FieldConsole        string = "Console"
 	ValidatorDigitsOnly string = "digitsOnly"
-	Button_SubmitCancel string = "SubmitCancel"
-	Button_Cancel       string = "Cancel"
+
+	Button_Ok     string = "Ok"
+	Button_Submit string = "Submit"
+	Button_Cancel string = "Cancel"
 )
 
 // FormField extends GenericField with additional common properties.
 type FormField struct {
-	Key              string       `json:"key"`
-	Type             string       `json:"type"`
-	Label            string       `json:"label,omitempty"`
-	LabelHidden      bool         `json:"labelHidden"`
-	Required         bool         `json:"required,omitempty"`
-	Placeholder      string       `json:"placeholder,omitempty"`
-	Readonly         bool         `json:"readonly,omitempty"`
-	Value            string       `json:"value"`
-	Validator        string       `json:"validator,omitempty"`
-	Items            []SelectItem `json:"items,omitempty"`
-	Lines            int          `json:"lines,omitempty"`
-	VerticalScroll   bool         `json:"verticalScroll,omitempty"`
-	HorizontalScroll bool         `json:"horizontalScroll,omitempty"`
-	Monospace        bool         `json:"monospace,omitempty"`
+	Key         string       `json:"key"`
+	Type        string       `json:"type"`
+	Label       string       `json:"label,omitempty"`
+	LabelHidden bool         `json:"labelHidden"`
+	Required    bool         `json:"required,omitempty"`
+	Placeholder string       `json:"placeholder,omitempty"`
+	Readonly    bool         `json:"readonly,omitempty"`
+	Value       string       `json:"value"`
+	Validator   string       `json:"validator,omitempty"`
+	Items       []SelectItem `json:"items,omitempty"`
+	Lines       int          `json:"lines,omitempty"`
 }
 
 // GetType returns the type of the field.
@@ -62,7 +62,7 @@ type Form struct {
 	Title       string      `json:"title"`
 	Description string      `json:"description"`
 	Fields      []FormField `json:"fields"`
-	ButtonMode  string      `json:"buttonMode"`
+	Buttons     []string    `json:"buttons"`
 }
 
 func (f *Form) ToJSON() string {

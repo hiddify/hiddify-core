@@ -8,18 +8,49 @@
     
     
     <style>
-        .monospace { font-family: monospace; }
+        pre { 
+            background-color: black !important; overflow: auto;
+            color: white!important; }
       </style>
 
     
 </head>
 <body>
     <div class="container mt-5">
-        <div id="extension-list-container">
+        <div id="connection-page" class="card p-4">
+            <div id="connection-before-connect" class="card-body">
+            <h2 class="card-title mb-4">Connection Settings</h2>
+            
+            <div class="mb-3">
+                <label for="config-content" class="form-label">Config String</label>
+                <textarea id="config-content" class="form-control" placeholder="Enter config string here..." rows="3"></textarea>
+            </div>
+            <div class="mb-3">
+                <label for="hiddify-settings" class="form-label">Hiddify Settings</label>
+                <textarea id="hiddify-settings" class="form-control" placeholder="Enter Hiddify settings here..." rows="3"></textarea>
+            </div>
+
+            <div class="d-flex justify-content-between">
+                <button id="connect-button" class="btn btn-success">Connect</button>
+            
+            </div>
+
+            </div>
+            <div id="connection-connecting" class="card-body d-none">
+                <h2 id="connection-status" class="card-title mb-4">Connecting...</h2>
+                <button id="disconnect-button" class="btn btn-danger">Disconnect</button>
+            </div>
+        </div>
+        <div id="extension-list-container" class="card p-4">
+            <h1 class="mb-4">
+                Extension List
+            </h1>
+            <div id="extension-list" class="list-group">
+            </div>  
             
         </div>
 
-        <div id="extension-page-container" style="display: none;">
+        <div id="extension-page-container"  class="card p-4">
          
             <div id="extension-page"></div>
         </div>
@@ -41,7 +72,7 @@
             </div>
         </div>
     </div>
-
+    <script src="https://unpkg.com/ansi_up@5.0.0/ansi_up.js"></script>
     <script src="https://unpkg.com/google-protobuf@3.20.1/dist/google-protobuf.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/protobufjs@7.X.X/dist/protobuf.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js" integrity="sha512-7Pi/otdlbbCR+LnW+F7PwFcSDJOuUJB3OxtEHbg4vSMvzvJjde4Po1v4BR9Gdc9aXNUNFVUY+SK51wWT8WF0Gg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>

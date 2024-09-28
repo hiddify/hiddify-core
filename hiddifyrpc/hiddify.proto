@@ -123,8 +123,8 @@ message ParseResponse {
   string message = 3;
 }
 
-message ChangeConfigOptionsRequest {
-  string config_options_json = 1;
+message ChangeHiddifySettingsRequest {
+  string hiddify_settings_json = 1;
 }
 
 message GenerateConfigRequest {
@@ -200,13 +200,13 @@ service Hello {
 }
 service Core {
   rpc Start (StartRequest) returns (CoreInfoResponse);
-  rpc CoreInfoListener (stream StopRequest) returns (stream CoreInfoResponse);
-  rpc OutboundsInfo (stream StopRequest) returns (stream OutboundGroupList);
-  rpc MainOutboundsInfo (stream StopRequest) returns (stream OutboundGroupList);
-  rpc GetSystemInfo (stream StopRequest) returns (stream SystemInfo);
+  rpc CoreInfoListener (Empty) returns (stream CoreInfoResponse);
+  rpc OutboundsInfo (Empty) returns (stream OutboundGroupList);
+  rpc MainOutboundsInfo (Empty) returns (stream OutboundGroupList);
+  rpc GetSystemInfo (Empty) returns (stream SystemInfo);
   rpc Setup (SetupRequest) returns (Response);
   rpc Parse (ParseRequest) returns (ParseResponse);
-  rpc ChangeConfigOptions (ChangeConfigOptionsRequest) returns (CoreInfoResponse);
+  rpc ChangeHiddifySettings (ChangeHiddifySettingsRequest) returns (CoreInfoResponse);
   //rpc GenerateConfig (GenerateConfigRequest) returns (GenerateConfigResponse);
   rpc StartService (StartRequest) returns (CoreInfoResponse);
   rpc Stop (Empty) returns (CoreInfoResponse);
@@ -216,7 +216,7 @@ service Core {
   rpc GenerateWarpConfig (GenerateWarpConfigRequest) returns (WarpGenerationResponse);
   rpc GetSystemProxyStatus (Empty) returns (SystemProxyStatus);
   rpc SetSystemProxyEnabled (SetSystemProxyEnabledRequest) returns (Response);
-  rpc LogListener (stream StopRequest) returns (stream LogMessage); 
+  rpc LogListener (Empty) returns (stream LogMessage); 
 }
 
 

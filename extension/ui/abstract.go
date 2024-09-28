@@ -1,4 +1,4 @@
-package ui_elements
+package ui
 
 // // Field is an interface that all specific field types implement.
 // type Field interface {

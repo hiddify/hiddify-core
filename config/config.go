@@ -287,7 +287,7 @@ func setClashAPI(options *option.Options, opt *HiddifyOptions) {
 func setLog(options *option.Options, opt *HiddifyOptions) {
 	options.Log = &option.LogOptions{
 		Level:        opt.LogLevel,
-		Output:       "box.log",
+		Output:       opt.LogFile,
 		Disabled:     false,
 		Timestamp:    true,
 		DisableColor: true,
