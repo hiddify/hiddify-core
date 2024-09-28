@@ -7,6 +7,8 @@ toolchain go1.22.3
 require (
 	github.com/bepass-org/warp-plus v1.2.4
 	github.com/fatih/color v1.16.0
+	github.com/hiddify/hiddify-app-example-extension v0.0.0-20240928185410-086adbcac1bb
+	github.com/hiddify/hiddify-ip-scanner-extension v0.0.0-20240928194626-7f6dde034dfe
 	github.com/improbable-eng/grpc-web v0.15.0
 	github.com/jellydator/validation v1.1.0
 	github.com/kardianos/service v1.2.2
