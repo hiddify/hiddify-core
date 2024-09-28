@@ -1,9 +1,10 @@
 {
+	"region": "ir",
 	"web-secret": "your-hidden-secret",
 	"enable-tun": true,
 	"mixed-port": 2334,
 	"tproxy-port": 2335,
-	"allow-connection-from-lan": false,
+	"allow-connection-from-lan": true,
 	"tls-tricks": {
 		"enable-fragment": false,
 		"fragment-size": "1-500",
@@ -25,7 +26,7 @@
 	"local-dns-port": 6450,
 	"tun-implementation": "gvisor",
 	"mtu": 9000,
-	"strict-route": true,
+	"strict-route": false,
 	"connection-test-url": "http://cp.cloudflare.com/",
 	"url-test-interval": 600,
 	"enable-clash-api": true,
@@ -36,8 +37,6 @@
 	"enable-fake-dns": false,
 	"enable-dns-routing": true,
 	"independent-dns-cache": true,
-	"geoip-path": "geo-assets\\sagernet-sing-geoip-geoip.db",
-	"geosite-path": "geo-assets\\sagernet-sing-geosite-geosite.db",
 	"rules": [],
 	"mux": {
 	  "enable": false,
