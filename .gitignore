@@ -8,3 +8,5 @@ cert
 
 **/*.syso
 node_modules
+*.db
+*.json
