@@ -11,7 +11,7 @@ import (
 	"syscall"
 	"time"
 
-	_ "github.com/hiddify/hiddify-core/extension_repository"
+	_ "github.com/hiddify/hiddify-core/extension/repository"
 	"github.com/hiddify/hiddify-core/utils"
 	v2 "github.com/hiddify/hiddify-core/v2"
 	"github.com/improbable-eng/grpc-web/go/grpcweb"
