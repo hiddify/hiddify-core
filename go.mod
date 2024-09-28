@@ -6,13 +6,11 @@ toolchain go1.22.3
 
 require (
 	github.com/bepass-org/warp-plus v1.2.4
-	github.com/fatih/color v1.16.0
 	github.com/hiddify/hiddify-app-example-extension v0.0.0-20240928185410-086adbcac1bb
 	github.com/hiddify/hiddify-ip-scanner-extension v0.0.0-20240928194626-7f6dde034dfe
 	github.com/improbable-eng/grpc-web v0.15.0
 	github.com/jellydator/validation v1.1.0
 	github.com/kardianos/service v1.2.2
-	github.com/rodaine/table v1.1.1
 	github.com/sagernet/gomobile v0.1.4
 	github.com/sagernet/sing v0.4.3
 	github.com/sagernet/sing-box v1.8.9
@@ -28,10 +26,12 @@ require (
 require (
 	github.com/cenkalti/backoff/v4 v4.1.1 // indirect
 	github.com/desertbit/timer v0.0.0-20180107155436-c41aec40b27f // indirect
+	github.com/fatih/color v1.16.0 // indirect
 	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/metacubex/tfo-go v0.0.0-20240821025650-e9be0afd5e7d // indirect
+	github.com/rodaine/table v1.1.1 // indirect
 	github.com/rs/cors v1.7.0 // indirect
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 	nhooyr.io/websocket v1.8.6 // indirect
@@ -142,4 +142,4 @@ replace github.com/sagernet/wireguard-go => github.com/hiddify/wireguard-go v0.0
 
 replace github.com/bepass-org/warp-plus => github.com/hiddify/warp-plus v0.0.0-20240717223357-4f3122e0d11d
 
-replace github.com/hiddify/ray2sing => github.com/hiddify/ray2sing v0.0.0-20240928214231-84f7ecbfdaa2
+replace github.com/hiddify/ray2sing => github.com/hiddify/ray2sing v0.0.0-20240928221833-190b549d5222

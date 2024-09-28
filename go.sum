@@ -243,8 +243,8 @@ github.com/hiddify/hiddify-ip-scanner-extension v0.0.0-20240928194626-7f6dde034d
 github.com/hiddify/hiddify-ip-scanner-extension v0.0.0-20240928194626-7f6dde034dfe/go.mod h1:9Fjoaxn2gbFQioxwdb06Kaz4kfFV7nxS0TJ/+IlDWvg=
 github.com/hiddify/hiddify-sing-box v1.8.9-0.20240928213625-7b79bf0c814d h1:+jTGlmOl+Kt3JEU1pt5yIItpi6nKKqUIUf76jkONHgQ=
 github.com/hiddify/hiddify-sing-box v1.8.9-0.20240928213625-7b79bf0c814d/go.mod h1:2Cozqb5uVY/y0c/HWZ57CfE6fZwjmik/J3tWynsjjDA=
-github.com/hiddify/ray2sing v0.0.0-20240928214231-84f7ecbfdaa2 h1:dHtBmUOIe71peOA5ANiExaGosIiJKX/Ysfgql7jMa/4=
-github.com/hiddify/ray2sing v0.0.0-20240928214231-84f7ecbfdaa2/go.mod h1:Qp3mFdKsJZ5TwBYLREgWp8n2O6dgmNt3aAoX+xpvnsM=
+github.com/hiddify/ray2sing v0.0.0-20240928221833-190b549d5222 h1:+MFxFxoWCA44WhqIixqL/Zkt4DwnqhQvafS0Dm4+dKM=
+github.com/hiddify/ray2sing v0.0.0-20240928221833-190b549d5222/go.mod h1:cFEg1b0eBgL9kBgIPAD71lHO1Q5g20PZL4dUGhQpAO8=
 github.com/hiddify/warp-plus v0.0.0-20240717223357-4f3122e0d11d h1:vRGKh9ou+/vQGfVYa8MczhbIVjHxlP52OWwrDWO77RA=
 github.com/hiddify/warp-plus v0.0.0-20240717223357-4f3122e0d11d/go.mod h1:uSRUbr1CcvFrEV69FTvuJFwpzEmwO8N4knb6+Zq3Ys4=
 github.com/hiddify/wireguard-go v0.0.0-20240727191222-383c1da14ff1 h1:xdbHlZtzs+jijAxy85qal835GglwmjohA/srHT8gm9s=
