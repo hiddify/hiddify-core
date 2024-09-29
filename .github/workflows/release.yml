@@ -15,6 +15,22 @@ env:
       REGISTRY_IMAGE: ghcr.io/hiddify/hiddify-core
 
 jobs:
+  update_wrt_hash:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - run: |
+          curl -L -o hiddify-core.tar.gz https://codeload.github.com/hiddify/hiddify-core/tar.gz/${{ github.ref_name }}
+          HIDDIFY_CORE_WRT_HASH=$(sha256sum hiddify-core.tar.gz | cut -d' ' -f1)"
+          github_ref_name="${{github.ref_name}}"
+          IFS="." read -r -a VERSION_ARRAY <<< "${github_ref_name#v}"
+          VERSION_STR="${VERSION_ARRAY[0]}.${VERSION_ARRAY[1]}.${VERSION_ARRAY[2]}"
+          sed -i "s|PKG_VERSION:=.*|PKG_VERSION:=${VERSION_STR}|g" wrt/Makefile
+          sed -i "s|PKG_HASH:=.*|PKG_HASH:=${HIDDIFY_CORE_WRT_HASH}|g" wrt/Makefile 
+      - uses: stefanzweifel/git-auto-commit-action@v4
+        with:
+            commit_message: "Update WRT package HASH."
+            push_options: --force
   build:
     permissions: write-all
     strategy:
