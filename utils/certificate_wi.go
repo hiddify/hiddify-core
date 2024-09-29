@@ -16,7 +16,16 @@ import (
 	"time"
 )
 
-func GenerateCertificate(certPath, keyPath string, isServer bool) {
+func fileExists(path string) bool {
+	_, err := os.Stat(path)
+	return !os.IsNotExist(err) // returns true if the file exists
+}
+
+func GenerateCertificate(certPath, keyPath string, isServer bool, skipIfExist bool) {
+	if skipIfExist && fileExists(certPath) && fileExists(keyPath) {
+		return
+	}
+
 	priv, err := ecdsa.GenerateKey(elliptic.P384(), rand.Reader)
 	if err != nil {
 		panic(err)
