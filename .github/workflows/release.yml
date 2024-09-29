@@ -23,7 +23,7 @@ jobs:
       - uses: actions/checkout@v3
       - run: |
           curl -L -o hiddify-core.tar.gz https://codeload.github.com/hiddify/hiddify-core/tar.gz/${{ github.ref_name }}
-          HIDDIFY_CORE_WRT_HASH=$(sha256sum hiddify-core.tar.gz | cut -d' ' -f1)"
+          HIDDIFY_CORE_WRT_HASH=$(sha256sum hiddify-core.tar.gz | cut -d' ' -f1)
           github_ref_name="${{github.ref_name}}"
           IFS="." read -r -a VERSION_ARRAY <<< "${github_ref_name#v}"
           VERSION_STR="${VERSION_ARRAY[0]}.${VERSION_ARRAY[1]}.${VERSION_ARRAY[2]}"
