@@ -1,6 +1,17 @@
 # hiddify-next-core
 
 
+## Docker
+To Run our docker image
+```
+git clone https://github.com/hiddify/hiddify-core
+cd hiddify-core/docker
+docker-compose up
+```
+
+## WRT
+...
+
 ## Extension
 
 An extension is something that can be added to hiddify application by a third party. It will add capability to modify configs, do some extra action, show and receive data from users.
