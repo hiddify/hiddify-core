@@ -18,6 +18,7 @@ func Register(service adapter.Service) {
 }
 
 func StartServices() error {
+	CloseServices()
 	for _, service := range preservices {
 		if err := service.Start(); err != nil {
 			return err

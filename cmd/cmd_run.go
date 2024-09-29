@@ -23,5 +23,6 @@ func init() {
 }
 
 func runCommand(cmd *cobra.Command, args []string) {
+	v2.Setup("./tmp", "./", "./tmp", 0, false)
 	v2.RunStandalone(hiddifySettingPath, configPath, defaultConfigs)
 }

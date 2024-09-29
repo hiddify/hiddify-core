@@ -40,7 +40,9 @@ func (s *StorageService) Start() error {
 }
 
 func (s *StorageService) Close() error {
-	Storage.DB.Close()
+	if Storage.DB != nil {
+		Storage.DB.Close()
+	}
 	return nil
 }
 
