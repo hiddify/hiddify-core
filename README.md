@@ -1,4 +1,4 @@
-# hiddify-next-core
+# hiddify-core
 
 
 ## Docker
