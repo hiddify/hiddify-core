@@ -16,7 +16,9 @@ env:
 
 jobs:
   update_wrt_hash:
+    permissions: write-all
     runs-on: ubuntu-latest
+    if: ${{ github.ref_type=='tag' }}
     steps:
       - uses: actions/checkout@v3
       - run: |
