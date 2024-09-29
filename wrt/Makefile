@@ -6,7 +6,7 @@ PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=https://codeload.github.com/hiddify/hiddify-core/tar.gz/v$(PKG_VERSION)?
-PKG_HASH:=2c0160b4f6ff008c80b6b3c7ec4ad41e7d96aec3c3ec27ca4e4a6cb116134df5
+PKG_HASH:=87875c12bb399a90f9baa259b3bffeba7aedd8c99fb5693330dcdab1731d5e77
 
 PKG_LICENSE:=https://github.com/hiddify/hiddify-next/edit/main/LICENSE.md
 PKG_LICENSE_FILES:=LICENSE
