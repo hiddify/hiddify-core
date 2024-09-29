@@ -22,8 +22,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.head_ref }}
+          ref: "HEAD"
       - run: |
+          git checkout HEAD
           curl -L -o hiddify-core.tar.gz https://codeload.github.com/hiddify/hiddify-core/tar.gz/${{ github.ref_name }}
           HIDDIFY_CORE_WRT_HASH=$(sha256sum hiddify-core.tar.gz | cut -d' ' -f1)
           github_ref_name="${{github.ref_name}}"
