@@ -201,6 +201,10 @@ jobs:
           # - linux/riscv64
           - linux/s390x
     steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
       - name: Prepare
         run: |
           platform=${{ matrix.platform }}
