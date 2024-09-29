@@ -20,11 +20,8 @@ jobs:
     runs-on: ubuntu-latest
     if: ${{ github.ref_type=='tag' }}
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
         with:
-          # by default, it uses a depth of 1
-          # this fetches all history so that we can read each commit
-          fetch-depth: 0
           ref: ${{ github.head_ref }}
       - run: |
           curl -L -o hiddify-core.tar.gz https://codeload.github.com/hiddify/hiddify-core/tar.gz/${{ github.ref_name }}
@@ -34,7 +31,7 @@ jobs:
           VERSION_STR="${VERSION_ARRAY[0]}.${VERSION_ARRAY[1]}.${VERSION_ARRAY[2]}"
           sed -i "s|PKG_VERSION:=.*|PKG_VERSION:=${VERSION_STR}|g" wrt/Makefile
           sed -i "s|PKG_HASH:=.*|PKG_HASH:=${HIDDIFY_CORE_WRT_HASH}|g" wrt/Makefile 
-      - uses: stefanzweifel/git-auto-commit-action@v4
+      - uses: stefanzweifel/git-auto-commit-action@v5
         with:
             commit_message: "Update WRT package HASH."
             push_options: --force
