@@ -2,7 +2,14 @@
 
 
 ## Docker
-To Run our docker image
+To Run our docker image see https://github.com/hiddify/hiddify-core/pkgs/container/hiddify-core
+
+Docker
+```
+docker pull ghcr.io/hiddify/hiddify-core:latest
+```
+
+Docker Compose
 ```
 git clone https://github.com/hiddify/hiddify-core
 cd hiddify-core/docker
