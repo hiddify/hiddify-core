@@ -4,16 +4,18 @@ ENV VERSION=v3.1.0
 WORKDIR /hiddify
 RUN apk add  curl tar gzip libc6-compat # iptables ip6tables
 
-    RUN case "$(apk --print-arch)" in \
+RUN echo "architecture: $(apk --print-arch)" && \    
+    case "$(apk --print-arch)" in \
             x86_64) ARCH=amd64 ;; \
-            i386) ARCH=386 ;; \
+            i386|x86) ARCH=386 ;; \
             aarch64) ARCH=arm64 ;; \
             armv7) ARCH=armv7 ;; \
-            armv6) ARCH=armv6 ;; \
+            armv6|armhf) ARCH=armv6 ;; \
             armv5) ARCH=armv5 ;; \
             s390x) ARCH=s390x ;; \
             *) echo "Unsupported architecture: $(apk --print-arch) $(uname -m)" && exit 1 ;; \
         esac && \
+        echo "Downloading https://github.com/hiddify/hiddify-core/releases/download/${VERSION}/hiddify-cli-linux-$ARCH.tar.gz" && \
         curl -L -o hiddify-cli.tar.gz https://github.com/hiddify/hiddify-core/releases/download/${VERSION}/hiddify-cli-linux-$ARCH.tar.gz && \
         tar -xzf hiddify-cli.tar.gz && rm hiddify-cli.tar.gz
 COPY hiddify.sh .
