@@ -8,6 +8,8 @@ import (
 	runtimeDebug "runtime/debug"
 	"time"
 
+	"github.com/hiddify/hiddify-core/v2/service_manager"
+
 	B "github.com/sagernet/sing-box"
 	"github.com/sagernet/sing-box/common/urltest"
 	"github.com/sagernet/sing-box/experimental/libbox"
@@ -27,9 +29,13 @@ var (
 	statusPropagationPort int64
 )
 
+func InitHiddifyService() error {
+	return service_manager.StartServices()
+}
+
 func Setup(basePath string, workingPath string, tempPath string, statusPort int64, debug bool) error {
 	statusPropagationPort = int64(statusPort)
-	tcpConn := runtime.GOOS == "windows" //TODO add TVOS
+	tcpConn := runtime.GOOS == "windows" // TODO add TVOS
 	libbox.Setup(basePath, workingPath, tempPath, tcpConn)
 	sWorkingPath = workingPath
 	os.Chdir(sWorkingPath)
@@ -53,7 +59,11 @@ func Setup(basePath string, workingPath string, tempPath string, statusPort int6
 			// },
 		})
 	coreLogFactory = factory
-	return err
+
+	if err != nil {
+		return E.Cause(err, "create logger")
+	}
+	return InitHiddifyService()
 }
 
 func NewService(options option.Options) (*libbox.BoxService, error) {

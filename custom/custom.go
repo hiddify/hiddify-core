@@ -27,7 +27,6 @@ func setupOnce(api unsafe.Pointer) {
 //export setup
 func setup(baseDir *C.char, workingDir *C.char, tempDir *C.char, statusPort C.longlong, debug bool) (CErr *C.char) {
 	err := v2.Setup(C.GoString(baseDir), C.GoString(workingDir), C.GoString(tempDir), int64(statusPort), debug)
-
 	return emptyOrErrorC(err)
 }
 

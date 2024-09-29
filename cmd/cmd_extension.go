@@ -31,6 +31,7 @@ var commandExtension = &cobra.Command{
 }
 
 func StartExtension() {
+	v2.Setup("./tmp", "./", "./tmp", 0, false)
 	grpc_server, _ := v2.StartCoreGrpcServer("127.0.0.1:12345")
 	fmt.Printf("Waiting for CTRL+C to stop\n")
 	runWebserver(grpc_server)

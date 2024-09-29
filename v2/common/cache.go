@@ -8,6 +8,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/hiddify/hiddify-core/v2/service_manager"
 	"github.com/sagernet/sing-box/option"
 
 	"github.com/sagernet/bbolt"
@@ -19,7 +20,7 @@ import (
 )
 
 var (
-	Storage         = New(context.Background(), option.CacheFileOptions{})
+	Storage         CacheFile
 	bucketExtension = []byte("extension")
 	bucketHiddify   = []byte("hiddify")
 
@@ -29,6 +30,24 @@ var (
 	}
 )
 
+type StorageService struct {
+	// Storage *CacheFile
+}
+
+func (s *StorageService) Start() error {
+	Storage = *NewStorage(context.Background(), option.CacheFileOptions{})
+	return nil
+}
+
+func (s *StorageService) Close() error {
+	Storage.DB.Close()
+	return nil
+}
+
+func init() {
+	service_manager.RegisterPreservice(&StorageService{})
+}
+
 type CacheFile struct {
 	ctx     context.Context
 	path    string
@@ -37,7 +56,7 @@ type CacheFile struct {
 	DB *bbolt.DB
 }
 
-func New(ctx context.Context, options option.CacheFileOptions) *CacheFile {
+func NewStorage(ctx context.Context, options option.CacheFileOptions) *CacheFile {
 	var path string
 	if options.Path != "" {
 		path = options.Path

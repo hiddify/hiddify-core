@@ -9,7 +9,7 @@ import (
 	"strings"
 
 	"github.com/bepass-org/warp-plus/warp"
-	"github.com/hiddify/hiddify-core/common"
+	"github.com/hiddify/hiddify-core/v2/common"
 	C "github.com/sagernet/sing-box/constant"
 
 	// "github.com/bepass-org/wireguard-go/warp"

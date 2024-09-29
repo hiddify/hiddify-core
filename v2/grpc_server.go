@@ -35,7 +35,6 @@ func StartGrpcServer(listenAddressG string, service string) (*grpc.Server, error
 	if service == "core" {
 
 		// Setup("./tmp/", "./tmp", "./tmp", 11111, false)
-		Setup("./tmp", "./", "./tmp", 0, false)
 
 		useFlutterBridge = false
 		pb.RegisterCoreServer(s, &CoreService{})

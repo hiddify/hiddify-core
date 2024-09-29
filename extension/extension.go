@@ -1,10 +1,10 @@
 package extension
 
 import (
-	"github.com/hiddify/hiddify-core/common"
 	"github.com/hiddify/hiddify-core/config"
 	"github.com/hiddify/hiddify-core/extension/ui"
 	pb "github.com/hiddify/hiddify-core/hiddifyrpc"
+	"github.com/hiddify/hiddify-core/v2/common"
 	"github.com/jellydator/validation"
 	"github.com/sagernet/sing-box/log"
 	"github.com/sagernet/sing-box/option"

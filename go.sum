@@ -239,8 +239,8 @@ github.com/hashicorp/yamux v0.1.1 h1:yrQxtgseBDrq9Y652vSRDvsKCJKOUD+GzTS4Y0Y8pvE
 github.com/hashicorp/yamux v0.1.1/go.mod h1:CtWFDAQgb7dxtzFs4tWbplKIe2jSi3+5vKbgIO0SLnQ=
 github.com/hiddify/hiddify-app-demo-extension v0.0.0-20240929132536-e158b83e958c h1:DHMeFSoah61yZQKWhQGK6V8ve6KzoiPn1tdK/kpY5Wc=
 github.com/hiddify/hiddify-app-demo-extension v0.0.0-20240929132536-e158b83e958c/go.mod h1:a/gJxWYZWt5ii9sDObSERSmxVEUVtsR8ZMnbgN8tLCM=
-github.com/hiddify/hiddify-ip-scanner-extension v0.0.0-20240928194626-7f6dde034dfe h1:lqlc/H76XSDdOlwboI77pdDZGTwzNh6/J0MaYGOYUAc=
-github.com/hiddify/hiddify-ip-scanner-extension v0.0.0-20240928194626-7f6dde034dfe/go.mod h1:9Fjoaxn2gbFQioxwdb06Kaz4kfFV7nxS0TJ/+IlDWvg=
+github.com/hiddify/hiddify-ip-scanner-extension v0.0.0-20240929171529-e72be5930514 h1:22nmdhhrCUW5ygzSIIs6KlCndJGmNUb7+43i71M5nHg=
+github.com/hiddify/hiddify-ip-scanner-extension v0.0.0-20240929171529-e72be5930514/go.mod h1:9Fjoaxn2gbFQioxwdb06Kaz4kfFV7nxS0TJ/+IlDWvg=
 github.com/hiddify/hiddify-sing-box v1.8.9-0.20240928213625-7b79bf0c814d h1:+jTGlmOl+Kt3JEU1pt5yIItpi6nKKqUIUf76jkONHgQ=
 github.com/hiddify/hiddify-sing-box v1.8.9-0.20240928213625-7b79bf0c814d/go.mod h1:2Cozqb5uVY/y0c/HWZ57CfE6fZwjmik/J3tWynsjjDA=
 github.com/hiddify/ray2sing v0.0.0-20240928221833-190b549d5222 h1:+MFxFxoWCA44WhqIixqL/Zkt4DwnqhQvafS0Dm4+dKM=

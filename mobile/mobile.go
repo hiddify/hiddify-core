@@ -7,13 +7,15 @@ import (
 
 	"github.com/hiddify/hiddify-core/config"
 
+	"github.com/hiddify/hiddify-core/v2"
+
 	_ "github.com/sagernet/gomobile"
 	"github.com/sagernet/sing-box/option"
 )
 
-func Setup() error {
+func Setup(baseDir string, workingDir string, tempDir string, debug bool) error {
+	return v2.Setup(baseDir, workingDir, tempDir, 0, debug)
 	// return v2.Start(17078)
-	return nil
 }
 
 func Parse(path string, tempPath string, debug bool) error {

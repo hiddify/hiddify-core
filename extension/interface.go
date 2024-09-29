@@ -4,7 +4,8 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/hiddify/hiddify-core/common"
+	"github.com/hiddify/hiddify-core/v2/common"
+	"github.com/hiddify/hiddify-core/v2/service_manager"
 )
 
 var (
@@ -26,11 +27,7 @@ func RegisterExtension(factory ExtensionFactory) error {
 		return err
 	}
 	allExtensionsMap[factory.Id] = factory
-	common.Storage.GetExtensionData("default", &generalExtensionData)
 
-	if val, ok := generalExtensionData.ExtensionStatusMap[factory.Id]; ok && val {
-		loadExtension(factory)
-	}
 	return nil
 }
 
@@ -42,4 +39,32 @@ func loadExtension(factory ExtensionFactory) error {
 	enabledExtensionsMap[factory.Id] = &extension
 
 	return nil
+}
+
+type extensionService struct {
+	// Storage *CacheFile
+}
+
+func (s *extensionService) Start() error {
+	common.Storage.GetExtensionData("default", &generalExtensionData)
+
+	for id, factory := range allExtensionsMap {
+		if val, ok := generalExtensionData.ExtensionStatusMap[id]; ok && val {
+			loadExtension(factory)
+		}
+	}
+	return nil
+}
+
+func (s *extensionService) Close() error {
+	for _, extension := range enabledExtensionsMap {
+		if err := (*extension).Stop(); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func init() {
+	service_manager.Register(&extensionService{})
 }
