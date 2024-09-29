@@ -22,7 +22,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: |
-          git checkout HEAD
+          git checkout -b main
           curl -L -o hiddify-core.tar.gz https://codeload.github.com/hiddify/hiddify-core/tar.gz/${{ github.ref_name }}
           HIDDIFY_CORE_WRT_HASH=$(sha256sum hiddify-core.tar.gz | cut -d' ' -f1)
           github_ref_name="${{github.ref_name}}"
@@ -33,7 +33,8 @@ jobs:
       - uses: stefanzweifel/git-auto-commit-action@v5
         with:
             commit_message: "Update WRT package HASH."
-            push_options: --force
+            branch: main
+            # push_options: --force
   build:
     permissions: write-all
     strategy:
