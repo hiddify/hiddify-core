@@ -143,6 +143,36 @@ func GenerateWarpInfo(license string, oldAccountId string, oldAccessToken string
 	return &identity, res, &warpcfg, err
 }
 
+func getOrGenerateWarpLocallyIfNeeded(key string, warpOptions *WarpOptions) WarpWireguardConfig {
+	if warpOptions == nil {
+		warpOptions = &WarpOptions{}
+	}
+	if warpOptions.WireguardConfig.PrivateKey != "" {
+		return warpOptions.WireguardConfig
+	}
+	common.Storage.GetExtensionData("hiddify.warp."+key, &warpOptions)
+	if warpOptions.WireguardConfig.PrivateKey != "" {
+		return warpOptions.WireguardConfig
+	}
+	license := ""
+	if len(key) > 28 && key[2] == '_' { // warp key is 26 characters long
+		license = key[3:]
+	}
+	accountidentity, _, wireguardConfig, err := GenerateWarpInfo(license, warpOptions.Account.AccountID, warpOptions.Account.AccessToken)
+	if err != nil {
+		return WarpWireguardConfig{}
+	}
+	newoption := WarpOptions{
+		WireguardConfig: *wireguardConfig,
+		Account: WarpAccount{
+			AccountID:   accountidentity.ID,
+			AccessToken: accountidentity.Token,
+		},
+	}
+	common.Storage.SaveExtensionData("hiddify.warp."+key, &newoption)
+	return newoption.WireguardConfig
+}
+
 func patchWarp(base *option.Outbound, configOpt *HiddifyOptions, final bool, staticIpsDns map[string][]string) error {
 	if base.Type == C.TypeCustom {
 		if warp, ok := base.CustomOptions["warp"].(map[string]interface{}); ok {
@@ -154,29 +184,38 @@ func patchWarp(base *option.Outbound, configOpt *HiddifyOptions, final bool, sta
 			fakePacketsSize, _ := warp["fake_packets_size"].(string)
 			fakePacketsDelay, _ := warp["fake_packets_delay"].(string)
 			fakePacketsMode, _ := warp["fake_packets_mode"].(string)
-			var warpConfig *T.Outbound
+			var warpOutbound *T.Outbound
 			var err error
 
-			if (configOpt == nil || !final) && (key == "p1" || key == "p2") {
-				warpConfig = base
+			is_saved_key := len(key) > 1 && key[0] == 'p'
+
+			if (configOpt == nil || !final) && is_saved_key {
 				return nil
-			} else if key == "p1" {
-				warpConfig, err = GenerateWarpSingbox(configOpt.Warp.WireguardConfig, host, port, fakePackets, fakePacketsSize, fakePacketsDelay, fakePacketsMode)
-			} else if key == "p2" {
-				warpConfig, err = GenerateWarpSingbox(configOpt.Warp2.WireguardConfig, host, port, fakePackets, fakePacketsSize, fakePacketsDelay, fakePacketsMode)
-			} else {
-				warpConfig, err = generateWarp(key, host, uint16(port), fakePackets, fakePacketsSize, fakePacketsDelay, fakePacketsMode)
 			}
+			var wireguardConfig WarpWireguardConfig
+			if is_saved_key {
+				var warpOpt *WarpOptions
+				if key == "p1" {
+					warpOpt = &configOpt.Warp
+				} else if key == "p2" {
+					warpOpt = &configOpt.Warp2
+				}
+				wireguardConfig = getOrGenerateWarpLocallyIfNeeded(key, warpOpt)
+			} else {
+				_, _, wgConfig, err := GenerateWarpInfo(key, "", "")
+				if err != nil {
+					return err
+				}
+				wireguardConfig = *wgConfig
+			}
+			warpOutbound, err = GenerateWarpSingbox(wireguardConfig, host, port, fakePackets, fakePacketsSize, fakePacketsDelay, fakePacketsMode)
 			if err != nil {
 				fmt.Printf("Error generating warp config: %v", err)
 				return err
 			}
-			warpConfig.WireGuardOptions.Detour = detour
-
+			warpOutbound.WireGuardOptions.Detour = detour
 			base.Type = C.TypeWireGuard
-
-			base.WireGuardOptions = warpConfig.WireGuardOptions
-
+			base.WireGuardOptions = warpOutbound.WireGuardOptions
 		}
 	}
 
@@ -184,23 +223,23 @@ func patchWarp(base *option.Outbound, configOpt *HiddifyOptions, final bool, sta
 		host := base.WireGuardOptions.Server
 
 		if host == "default" || host == "random" || host == "auto" || host == "auto4" || host == "auto6" || isBlockedDomain(host) {
-			if base.WireGuardOptions.Detour != "" {
-				base.WireGuardOptions.Server = "162.159.192.1"
-			} else {
-				rndDomain := strings.ToLower(generateRandomString(20))
-				staticIpsDns[rndDomain] = []string{}
-				if host != "auto4" {
-					if host == "auto6" || common.CanConnectIPv6() {
-						randomIpPort, _ := warp.RandomWarpEndpoint(false, true)
-						staticIpsDns[rndDomain] = append(staticIpsDns[rndDomain], randomIpPort.Addr().String())
-					}
-				}
-				if host != "auto6" {
-					randomIpPort, _ := warp.RandomWarpEndpoint(true, false)
+			// if base.WireGuardOptions.Detour != "" {
+			// 	base.WireGuardOptions.Server = "162.159.192.1"
+			// } else {
+			rndDomain := strings.ToLower(generateRandomString(20))
+			staticIpsDns[rndDomain] = []string{}
+			if host != "auto4" {
+				if host == "auto6" || common.CanConnectIPv6() {
+					randomIpPort, _ := warp.RandomWarpEndpoint(false, true)
 					staticIpsDns[rndDomain] = append(staticIpsDns[rndDomain], randomIpPort.Addr().String())
 				}
-				base.WireGuardOptions.Server = rndDomain
 			}
+			if host != "auto6" {
+				randomIpPort, _ := warp.RandomWarpEndpoint(true, false)
+				staticIpsDns[rndDomain] = append(staticIpsDns[rndDomain], randomIpPort.Addr().String())
+			}
+			base.WireGuardOptions.Server = rndDomain
+			// }
 		}
 		if base.WireGuardOptions.ServerPort == 0 {
 			port := warp.RandomWarpPort()
@@ -208,8 +247,8 @@ func patchWarp(base *option.Outbound, configOpt *HiddifyOptions, final bool, sta
 		}
 
 		if base.WireGuardOptions.Detour != "" {
-			if base.WireGuardOptions.MTU > 1000 {
-				base.WireGuardOptions.MTU -= 50
+			if base.WireGuardOptions.MTU < 100 {
+				base.WireGuardOptions.MTU = 1280
 			}
 			base.WireGuardOptions.FakePackets = ""
 			base.WireGuardOptions.FakePacketsDelay = ""
