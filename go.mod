@@ -6,7 +6,7 @@ toolchain go1.22.3
 
 require (
 	github.com/bepass-org/warp-plus v1.2.4
-	github.com/hiddify/hiddify-app-example-extension v0.0.0-20240928185410-086adbcac1bb
+	github.com/fatih/color v1.16.0 // indirect
 	github.com/hiddify/hiddify-ip-scanner-extension v0.0.0-20240928194626-7f6dde034dfe
 	github.com/improbable-eng/grpc-web v0.15.0
 	github.com/jellydator/validation v1.1.0
@@ -23,10 +23,11 @@ require (
 	gopkg.in/yaml.v3 v3.0.1
 )
 
+require github.com/hiddify/hiddify-app-demo-extension v0.0.0-20240929132536-e158b83e958c
+
 require (
 	github.com/cenkalti/backoff/v4 v4.1.1 // indirect
 	github.com/desertbit/timer v0.0.0-20180107155436-c41aec40b27f // indirect
-	github.com/fatih/color v1.16.0 // indirect
 	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
