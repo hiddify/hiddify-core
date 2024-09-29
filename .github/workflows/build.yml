@@ -1,0 +1,303 @@
+name: Build
+on:
+  workflow_call:
+    inputs:
+      upload-artifact:
+        type: boolean
+        default: true
+      tag-name:
+        type: string
+        default: "draft"
+      channel:
+        type: string
+        default: "dev"
+env:
+    REGISTRY_IMAGE: ghcr.io/hiddify/hiddify-core
+
+
+jobs:
+  update_wrt_hash:
+    permissions: write-all
+    runs-on: ubuntu-latest
+    if: ${{ inputs.channel=='prod' }}
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          git checkout -b main
+          curl -L -o hiddify-core.tar.gz https://codeload.github.com/hiddify/hiddify-core/tar.gz/${{ inputs.tag-name  }}
+          HIDDIFY_CORE_WRT_HASH=$(sha256sum hiddify-core.tar.gz | cut -d' ' -f1)
+          github_ref_name="${{ inputs.tag-name }}"
+          IFS="." read -r -a VERSION_ARRAY <<< "${github_ref_name#v}"
+          VERSION_STR="${VERSION_ARRAY[0]}.${VERSION_ARRAY[1]}.${VERSION_ARRAY[2]}"
+          sed -i "s|PKG_VERSION:=.*|PKG_VERSION:=${VERSION_STR}|g" wrt/Makefile
+          sed -i "s|PKG_HASH:=.*|PKG_HASH:=${HIDDIFY_CORE_WRT_HASH}|g" wrt/Makefile 
+      - uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+            commit_message: "Update WRT package HASH."
+            branch: main
+            # push_options: --force
+  build:
+    permissions: write-all
+    strategy:
+      fail-fast: false
+      matrix:
+        job:
+          - { name: 'hiddify-core-android', os: 'ubuntu-latest', target: 'android' }
+          - { name: 'hiddify-core-linux-amd64', os: 'ubuntu-20.04', target: 'linux-amd64' }
+          - { name: "hiddify-core-windows-amd64", os: 'ubuntu-latest', target: 'windows-amd64', aarch: 'x64' }
+          - { name: "hiddify-core-macos-universal", os: 'macos-12', target: 'macos-universal' }
+          - { name: "hiddify-core-ios", os: "macos-12", target: "ios" }
+          # linux custom
+          - {name: hiddify-cli-linux-amd64, goos: linux, goarch: amd64, goamd64: v1, target: 'linux-custom', os: 'ubuntu-20.04'}
+          - {name: hiddify-cli-linux-amd64-v3, goos: linux, goarch: amd64, goamd64: v3, target: 'linux-custom', os: 'ubuntu-20.04'}
+          - {name: hiddify-cli-linux-386, goos: linux, goarch: 386, target: 'linux-custom', os: 'ubuntu-20.04'}
+          - {name: hiddify-cli-linux-arm64, goos: linux, goarch: arm64, target: 'linux-custom', os: 'ubuntu-20.04'}
+          - {name: hiddify-cli-linux-armv5, goos: linux, goarch: arm, goarm: 5, target: 'linux-custom', os: 'ubuntu-20.04'}
+          - {name: hiddify-cli-linux-armv6, goos: linux, goarch: arm, goarm: 6, target: 'linux-custom', os: 'ubuntu-20.04'}
+          - {name: hiddify-cli-linux-armv7, goos: linux, goarch: arm, goarm: 7, target: 'linux-custom', os: 'ubuntu-20.04'}
+          - {name: hiddify-cli-linux-mips-softfloat, goos: linux, goarch: mips, gomips: softfloat, target: 'linux-custom', os: 'ubuntu-20.04'}
+          - {name: hiddify-cli-linux-mips-hardfloat, goos: linux, goarch: mips, gomips: hardfloat, target: 'linux-custom', os: 'ubuntu-20.04'}
+          - {name: hiddify-cli-linux-mipsel-softfloat, goos: linux, goarch: mipsle, gomips: softfloat, target: 'linux-custom', os: 'ubuntu-20.04'}
+          - {name: hiddify-cli-linux-mipsel-hardfloat, goos: linux, goarch: mipsle, gomips: hardfloat, target: 'linux-custom', os: 'ubuntu-20.04'}
+          - {name: hiddify-cli-linux-mips64, goos: linux, goarch: mips64, target: 'linux-custom', os: 'ubuntu-20.04'}
+          - {name: hiddify-cli-linux-mips64el, goos: linux, goarch: mips64le, target: 'linux-custom', os: 'ubuntu-20.04'}
+          - {name: hiddify-cli-linux-s390x, goos: linux, goarch: s390x, target: 'linux-custom', os: 'ubuntu-20.04'}
+    
+    runs-on: ${{ matrix.job.os }}
+    env:
+      GOOS: ${{ matrix.job.goos }}
+      GOARCH: ${{ matrix.job.goarch }}
+      GOAMD64: ${{ matrix.job.goamd64 }}
+      GOARM: ${{ matrix.job.goarm }}
+      GOMIPS: ${{ matrix.job.gomips }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: 'go.mod'
+          check-latest: false
+
+      - name: Setup Java
+        if: startsWith(matrix.job.target,'android')
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Setup NDK
+        if: startsWith(matrix.job.target,'android')
+        uses: nttld/setup-ndk@v1.4.0
+        id: setup-ndk
+        with:
+          ndk-version: r26b
+          add-to-path: true
+          local-cache: false
+          link-to-sdk: true
+
+      - name: Setup MinGW
+        if: startsWith(matrix.job.target,'windows')
+        uses: egor-tensin/setup-mingw@v2
+        with:
+          platform: ${{ matrix.job.aarch }}
+      - name: Setup macos
+        if: startsWith(matrix.job.target,'macos') ||  startsWith(matrix.job.target,'ios')
+        run: |
+          brew install create-dmg tree coreutils
+
+      - name: Build
+        run: |
+          make -j$(($(nproc) + 1)) ${{ matrix.job.target }}
+
+      - name: zip
+        run: |
+          tree 
+          rm -f /*.h */*.h
+          rm ./hiddify-libcore*sources* ||echo "no source"
+          rm ./hiddify-libcore-macos-a*.dylib || echo "no macos arm and amd"
+          files=$(ls | grep -E '^(libcore\.(dll|so|dylib|aar)|webui|Libcore.xcframework|lib|HiddifyCli(\.exe)?)$')
+          echo tar -czvf ${{ matrix.job.name }}.tar.gz  $files
+          tar -czvf ${{ matrix.job.name }}.tar.gz  $files
+          
+        working-directory: bin
+      - uses: actions/upload-artifact@v4
+        if: ${{ success() }}
+        with:
+          name: ${{ matrix.job.name }}
+          path: bin/*.tar.gz
+          retention-days: 1
+
+
+  upload-prerelease:
+    permissions: write-all
+    if: ${{ inputs.upload-artifact }}
+    needs: [build]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          merge-multiple: true
+          pattern: hiddify-*
+          path: bin/
+
+      - name: Display Files Structure
+        run: tree
+        working-directory: bin
+
+      - name: Delete Current Release Assets
+        uses: 8Mi-Tech/delete-release-assets-action@main
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          tag: 'draft'
+          deleteOnlyFromDrafts: false
+
+      - name: Create or Update Draft Release
+        uses: softprops/action-gh-release@v1
+        if: ${{ success() }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          files: ./bin/*.tar.gz
+          name: 'draft'
+          tag_name: 'draft'
+          prerelease: true
+
+  upload-release:
+    permissions: write-all
+    if: ${{ inputs.channel=='prod' }}
+    needs: [build]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          merge-multiple: true
+          pattern: hiddify-*
+          path: bin/
+
+      - name: Display Files Structure
+        run: ls -R
+        working-directory: bin
+
+      - name: Upload Release
+        uses: softprops/action-gh-release@v1
+        if: ${{ success() }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ inputs.tag-name  }}
+
+          files: bin/*.tar.gz
+
+
+
+
+
+
+
+
+
+
+
+  make-upload-docker:
+    permissions: write-all
+    if: ${{ inputs.channel=='prod' }}
+    needs: [upload-release]
+    
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: true
+      matrix:
+        platform:
+          - linux/amd64
+          # - linux/arm/v5
+          - linux/arm/v6
+          - linux/arm/v7
+          - linux/arm64
+          - linux/386
+          # - linux/ppc64le
+          # - linux/riscv64
+          - linux/s390x
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: Prepare
+        run: |
+          platform=${{ matrix.platform }}
+          echo "PLATFORM_PAIR=${platform//\//-}" >> $GITHUB_ENV
+      - name: Setup QEMU
+        uses: docker/setup-qemu-action@v3
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY_IMAGE }}
+      - name: Build and push by digest
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          platforms: ${{ matrix.platform }}
+          context: ./docker/
+          build-args: |
+            BUILDKIT_CONTEXT_KEEP_GIT_DIR=1
+          labels: ${{ steps.meta.outputs.labels }}
+          outputs: type=image,name=${{ env.REGISTRY_IMAGE }},push-by-digest=true,name-canonical=true,push=true
+      - name: Export digest
+        run: |
+          mkdir -p /tmp/digests
+          digest="${{ steps.build.outputs.digest }}"
+          touch "/tmp/digests/${digest#sha256:}"
+      - name: Upload digest
+        uses: actions/upload-artifact@v4
+        with:
+          name: digests-${{ env.PLATFORM_PAIR }}
+          path: /tmp/digests/*
+          if-no-files-found: error
+          retention-days: 1
+  merge:
+    permissions: write-all
+    runs-on: ubuntu-latest
+    needs:
+      - make-upload-docker
+    env:
+      LATEST: ${{ endsWith(inputs.tag-name , 'dev') && 'beta' ||'latest'}}
+    steps:
+      - name: Download digests
+        uses: actions/download-artifact@v4
+        with:
+          path: /tmp/digests
+          pattern: digests-*
+          merge-multiple: true
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Create manifest list and push
+        working-directory: /tmp/digests
+        run: |
+          docker buildx imagetools create \
+            -t "${{ env.REGISTRY_IMAGE }}:${{ env.LATEST }}" \
+            -t "${{ env.REGISTRY_IMAGE }}:${{ inputs.tag-name   }}" \
+            $(printf '${{ env.REGISTRY_IMAGE }}@sha256:%s ' *)
+      - name: Inspect image
+        
+        run: |
+          docker buildx imagetools inspect ${{ env.REGISTRY_IMAGE }}:${{ env.LATEST }}
+          docker buildx imagetools inspect ${{ env.REGISTRY_IMAGE }}:${{ inputs.tag-name  }}
