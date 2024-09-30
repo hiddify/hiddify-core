@@ -4,7 +4,8 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/hiddify/hiddify-core/v2/common"
+	"github.com/hiddify/hiddify-core/v2/db"
+
 	"github.com/hiddify/hiddify-core/v2/service_manager"
 )
 
@@ -26,12 +27,29 @@ func RegisterExtension(factory ExtensionFactory) error {
 		log.Fatal(err)
 		return err
 	}
+	table := db.GetTable[extensionData]()
+	_, err := table.FirstOrInsert(func(data extensionData) bool { return data.Id == factory.Id }, func() extensionData { return extensionData{Id: factory.Id, Enable: false} })
+	if err != nil {
+		return err
+	}
 	allExtensionsMap[factory.Id] = factory
 
 	return nil
 }
 
+func isEnable(id string) bool {
+	table := db.GetTable[extensionData]()
+	extdata, err := table.First(func(data extensionData) bool { return data.Id == id })
+	if err != nil {
+		return false
+	}
+	return extdata.Enable
+}
+
 func loadExtension(factory ExtensionFactory) error {
+	if !isEnable(factory.Id) {
+		return fmt.Errorf("Extension with ID %s is not enabled", factory.Id)
+	}
 	extension := factory.Builder()
 	extension.init(factory.Id)
 
@@ -46,11 +64,18 @@ type extensionService struct {
 }
 
 func (s *extensionService) Start() error {
-	common.Storage.GetExtensionData("default", &generalExtensionData)
-
-	for id, factory := range allExtensionsMap {
-		if val, ok := generalExtensionData.ExtensionStatusMap[id]; ok && val {
-			loadExtension(factory)
+	table := db.GetTable[extensionData]()
+	extdata, err := table.Select(func(data extensionData) bool { return data.Enable })
+	if err != nil {
+		return fmt.Errorf("failed to select enabled extensions: %w", err)
+	}
+	for _, data := range extdata {
+		if factory, ok := allExtensionsMap[data.Id]; ok {
+			if err := loadExtension(factory); err != nil {
+				return fmt.Errorf("failed to load extension %s: %w", data.Id, err)
+			}
+		} else {
+			return fmt.Errorf("extension %s is enabled but not found", data.Id)
 		}
 	}
 	return nil

@@ -708,7 +708,7 @@ function connect() {
             if(response.getType()== proto.hiddifyrpc.ExtensionResponseType.SHOW_DIALOG) {
                 renderForm(ui, "dialog",handleSubmitButtonClick,handleCancelButtonClick,undefined);
             }else{
-                renderForm(ui, "",handleSubmitButtonClick,handleCancelButtonClick);
+                renderForm(ui, "",handleSubmitButtonClick,handleCancelButtonClick,handleStopButtonClick);
             }
 
             
@@ -2576,11 +2576,16 @@ function renderForm(json, dialog, submitAction, cancelAction, stopAction) {
     if (dialog === "dialog") {
         document.getElementById("modal-footer").innerHTML = '';
         document.getElementById("modal-footer").appendChild(buttonGroup);
-        const dialog = bootstrap.Modal.getOrCreateInstance("#extension-dialog");
-        dialog.show()
-        dialog.on("hidden.bs.modal", () => {
-            cancelAction()
-        })
+        const extensionDialog = document.getElementById("extension-dialog");
+        const dialog = bootstrap.Modal.getOrCreateInstance(extensionDialog);
+        dialog.show();
+
+        extensionDialog.addEventListener("hidden.bs.modal", cancelAction);
+        // const dialog = bootstrap.Modal.getOrCreateInstance("#extension-dialog");
+        // dialog.show()
+        // dialog.on("hidden.bs.modal", () => {
+        //     cancelAction()
+        // })
     } else {
         form.appendChild(buttonGroup);
     }

@@ -35,11 +35,16 @@ function renderForm(json, dialog, submitAction, cancelAction, stopAction) {
     if (dialog === "dialog") {
         document.getElementById("modal-footer").innerHTML = '';
         document.getElementById("modal-footer").appendChild(buttonGroup);
-        const dialog = bootstrap.Modal.getOrCreateInstance("#extension-dialog");
-        dialog.show()
-        dialog.on("hidden.bs.modal", () => {
-            cancelAction()
-        })
+        const extensionDialog = document.getElementById("extension-dialog");
+        const dialog = bootstrap.Modal.getOrCreateInstance(extensionDialog);
+        dialog.show();
+
+        extensionDialog.addEventListener("hidden.bs.modal", cancelAction);
+        // const dialog = bootstrap.Modal.getOrCreateInstance("#extension-dialog");
+        // dialog.show()
+        // dialog.on("hidden.bs.modal", () => {
+        //     cancelAction()
+        // })
     } else {
         form.appendChild(buttonGroup);
     }

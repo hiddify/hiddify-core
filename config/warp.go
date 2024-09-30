@@ -13,6 +13,7 @@ import (
 	C "github.com/sagernet/sing-box/constant"
 
 	// "github.com/bepass-org/wireguard-go/warp"
+	"github.com/hiddify/hiddify-core/v2/db"
 
 	"github.com/sagernet/sing-box/option"
 	T "github.com/sagernet/sing-box/option"
@@ -143,34 +144,31 @@ func GenerateWarpInfo(license string, oldAccountId string, oldAccessToken string
 	return &identity, res, &warpcfg, err
 }
 
-func getOrGenerateWarpLocallyIfNeeded(key string, warpOptions *WarpOptions) WarpWireguardConfig {
-	if warpOptions == nil {
-		warpOptions = &WarpOptions{}
-	}
+func getOrGenerateWarpLocallyIfNeeded(warpOptions *WarpOptions) WarpWireguardConfig {
 	if warpOptions.WireguardConfig.PrivateKey != "" {
 		return warpOptions.WireguardConfig
 	}
-	common.Storage.GetExtensionData("hiddify.warp."+key, &warpOptions)
-	if warpOptions.WireguardConfig.PrivateKey != "" {
+	table := db.GetTable[WarpOptions]()
+	dbWarpOptions, err := table.First(func(data WarpOptions) bool { return data.UniqueId == warpOptions.UniqueId })
+	if err == nil && dbWarpOptions.WireguardConfig.PrivateKey != "" {
 		return warpOptions.WireguardConfig
 	}
 	license := ""
-	if len(key) > 28 && key[2] == '_' { // warp key is 26 characters long
-		license = key[3:]
+	if len(warpOptions.UniqueId) > 28 && warpOptions.UniqueId[2] == '_' { // warp key is 26 characters long
+		license = warpOptions.UniqueId[3:]
 	}
 	accountidentity, _, wireguardConfig, err := GenerateWarpInfo(license, warpOptions.Account.AccountID, warpOptions.Account.AccessToken)
 	if err != nil {
 		return WarpWireguardConfig{}
 	}
-	newoption := WarpOptions{
-		WireguardConfig: *wireguardConfig,
-		Account: WarpAccount{
-			AccountID:   accountidentity.ID,
-			AccessToken: accountidentity.Token,
-		},
+	warpOptions.Account = WarpAccount{
+		AccountID:   accountidentity.ID,
+		AccessToken: accountidentity.Token,
 	}
-	common.Storage.SaveExtensionData("hiddify.warp."+key, &newoption)
-	return newoption.WireguardConfig
+	warpOptions.WireguardConfig = *wireguardConfig
+	table.ReplaceOrInsert(func(data WarpOptions) bool { return data.UniqueId == warpOptions.UniqueId }, *warpOptions)
+
+	return *wireguardConfig
 }
 
 func patchWarp(base *option.Outbound, configOpt *HiddifyOptions, final bool, staticIpsDns map[string][]string) error {
@@ -199,8 +197,13 @@ func patchWarp(base *option.Outbound, configOpt *HiddifyOptions, final bool, sta
 					warpOpt = &configOpt.Warp
 				} else if key == "p2" {
 					warpOpt = &configOpt.Warp2
+				} else {
+					warpOpt = &WarpOptions{
+						UniqueId: key,
+					}
 				}
-				wireguardConfig = getOrGenerateWarpLocallyIfNeeded(key, warpOpt)
+				warpOpt.UniqueId = key
+				wireguardConfig = getOrGenerateWarpLocallyIfNeeded(warpOpt)
 			} else {
 				_, _, wgConfig, err := GenerateWarpInfo(key, "", "")
 				if err != nil {

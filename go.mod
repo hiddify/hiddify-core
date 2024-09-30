@@ -23,7 +23,10 @@ require (
 	gopkg.in/yaml.v3 v3.0.1
 )
 
-require github.com/hiddify/hiddify-app-demo-extension v0.0.0-20240929132536-e158b83e958c
+require (
+	github.com/Yiwen-Chan/tinydb v0.0.0-20230129042445-3321642f0674
+	github.com/hiddify/hiddify-app-demo-extension v0.0.0-20240929132536-e158b83e958c
+)
 
 require (
 	github.com/cenkalti/backoff/v4 v4.1.1 // indirect
