@@ -7,7 +7,8 @@ toolchain go1.22.3
 require (
 	github.com/bepass-org/warp-plus v1.2.4
 	github.com/fatih/color v1.16.0 // indirect
-	github.com/hiddify/hiddify-ip-scanner-extension v0.0.0-20240929171529-e72be5930514
+	github.com/hiddify/hiddify-app-demo-extension v0.0.0-20240930200652-1318416c3eca
+	github.com/hiddify/hiddify-ip-scanner-extension v0.0.0-20240930194434-fd0f97403b8a
 	github.com/improbable-eng/grpc-web v0.15.0
 	github.com/jellydator/validation v1.1.0
 	github.com/kardianos/service v1.2.2
@@ -23,10 +24,7 @@ require (
 	gopkg.in/yaml.v3 v3.0.1
 )
 
-require (
-	github.com/Yiwen-Chan/tinydb v0.0.0-20230129042445-3321642f0674
-	github.com/hiddify/hiddify-app-demo-extension v0.0.0-20240929132536-e158b83e958c
-)
+require github.com/Yiwen-Chan/tinydb v0.0.0-20230129042445-3321642f0674
 
 require (
 	github.com/cenkalti/backoff/v4 v4.1.1 // indirect
@@ -96,7 +94,7 @@ require (
 	github.com/quic-go/quic-go v0.46.0 // indirect
 	github.com/refraction-networking/utls v1.6.7 // indirect
 	github.com/riobard/go-bloom v0.0.0-20200614022211-cdc8013cb5b3 // indirect
-	github.com/sagernet/bbolt v0.0.0-20231014093535-ea5cb2fe9f0a
+	github.com/sagernet/bbolt v0.0.0-20231014093535-ea5cb2fe9f0a // indirect
 	github.com/sagernet/cloudflare-tls v0.0.0-20231208171750-a4483c1b7cd1 // indirect
 	github.com/sagernet/gvisor v0.0.0-20240428053021-e691de28565f // indirect
 	github.com/sagernet/netlink v0.0.0-20240523065131-45e60152f9ba // indirect
