@@ -686,12 +686,12 @@ const extension = require("./extension_grpc_web_pb.js");
 
 const { renderForm } = require('./formRenderer.js');
 const { listExtensions } = require('./extensionList.js');
-var currentExtensionId=undefined;
+var currentExtensionId = undefined;
 function openExtensionPage(extensionId) {
-    currentExtensionId=extensionId;
-        $("#extension-list-container").hide();
-        $("#extension-page-container").show();
-        $("#connection-page").hide();
+    currentExtensionId = extensionId;
+    $("#extension-list-container").hide();
+    $("#extension-page-container").show();
+    $("#connection-page").hide();
     connect()
 }
 
@@ -700,42 +700,45 @@ function connect() {
     request.setExtensionId(currentExtensionId);
 
     const stream = extensionClient.connect(request, {});
-    
+
     stream.on('data', (response) => {
-        console.log('Receving ',response);
+        console.log('Receving ', response);
         if (response.getExtensionId() === currentExtensionId) {
-            ui=JSON.parse(response.getJsonUi())
-            if(response.getType()== proto.hiddifyrpc.ExtensionResponseType.SHOW_DIALOG) {
-                renderForm(ui, "dialog",handleSubmitButtonClick,handleCancelButtonClick,undefined);
-            }else{
-                renderForm(ui, "",handleSubmitButtonClick,handleCancelButtonClick,handleStopButtonClick);
+            ui = JSON.parse(response.getJsonUi())
+            if (response.getType() == proto.hiddifyrpc.ExtensionResponseType.SHOW_DIALOG) {
+                renderForm(ui, "dialog", handleSubmitButtonClick, undefined);
+            } else {
+                renderForm(ui, "", handleSubmitButtonClick, handleStopButtonClick);
             }
 
-            
+
         }
     });
-    
+
     stream.on('error', (err) => {
         console.error('Error opening extension page:', err);
         // openExtensionPage(extensionId);
     });
-    
+
     stream.on('end', () => {
         console.log('Stream ended');
         setTimeout(connect, 1000);
-        
+
     });
 }
 
-async function handleSubmitButtonClick(event) {
+async function handleSubmitButtonClick(event, button) {
     event.preventDefault();
     bootstrap.Modal.getOrCreateInstance("#extension-dialog").hide();
-    const formData = new FormData(event.target.closest('form'));
-    const request = new extension.ExtensionRequest();
-    const datamap=request.getDataMap()
-    formData.forEach((value, key) => {
-        datamap.set(key,value);
-    });
+    const request = new extension.SendExtensionDataRequest();
+    request.setButton(button);
+    if (event.type != 'hidden.bs.modal') {
+        const formData = new FormData(event.target.closest('form'));
+        const datamap = request.getDataMap()
+        formData.forEach((value, key) => {
+            datamap.set(key, value);
+        });
+    }
     request.setExtensionId(currentExtensionId);
 
     try {
@@ -746,26 +749,12 @@ async function handleSubmitButtonClick(event) {
     }
 }
 
-async function handleCancelButtonClick(event) {
-    event.preventDefault();
-    const request = new extension.ExtensionRequest();
-    request.setExtensionId(currentExtensionId);
-
-    try {
-        bootstrap.Modal.getOrCreateInstance("#extension-dialog").hide();
-            
-        await extensionClient.cancel(request, {});
-        console.log('Extension cancelled successfully.');
-    } catch (err) {
-        console.error('Error cancelling extension:', err);
-    }
-}
 
 async function handleStopButtonClick(event) {
     event.preventDefault();
     const request = new extension.ExtensionRequest();
     request.setExtensionId(currentExtensionId);
-
+    bootstrap.Modal.getOrCreateInstance("#extension-dialog").hide();
     try {
         await extensionClient.stop(request, {});
         console.log('Extension stopped successfully.');
@@ -2762,7 +2751,7 @@ const ansi_up = new AnsiUp({
 });
 
 
-function renderForm(json, dialog, submitAction, cancelAction, stopAction) {
+function renderForm(json, dialog, submitAction, stopAction) {
     const container = document.getElementById(`extension-page-container${dialog}`);
     const formId = `dynamicForm${json.id}${dialog}`;
 
@@ -2778,37 +2767,26 @@ function renderForm(json, dialog, submitAction, cancelAction, stopAction) {
         document.getElementById("modalLabel").textContent = json.title;
     } else {
         const titleElement = createTitleElement(json);
-        if (stopAction != undefined) {
-            const stopButton = document.createElement('button');
-            stopButton.textContent = "Back";
-            stopButton.classList.add('btn', 'btn-danger');
-            stopButton.addEventListener('click', stopAction);
-            form.appendChild(stopButton);
-        }
         form.appendChild(titleElement);
     }
-    addElementsToForm(form, json);
-    const buttonGroup = createButtonGroup(json, submitAction, cancelAction);
+    addElementsToForm(form, json,submitAction);
+
     if (dialog === "dialog") {
         document.getElementById("modal-footer").innerHTML = '';
-        document.getElementById("modal-footer").appendChild(buttonGroup);
+        // if ($(form.lastChild).find("button").length > 0) {
+            
+        //     document.getElementById("modal-footer").appendChild(form.lastChild);
+            
+        // }
         const extensionDialog = document.getElementById("extension-dialog");
         const dialog = bootstrap.Modal.getOrCreateInstance(extensionDialog);
         dialog.show();
-
-        extensionDialog.addEventListener("hidden.bs.modal", cancelAction);
-        // const dialog = bootstrap.Modal.getOrCreateInstance("#extension-dialog");
-        // dialog.show()
-        // dialog.on("hidden.bs.modal", () => {
-        //     cancelAction()
-        // })
-    } else {
-        form.appendChild(buttonGroup);
+        extensionDialog.addEventListener("hidden.bs.modal", (e)=>submitAction(e,"CloseDialog"));
     }
 
 }
 
-function addElementsToForm(form, json) {
+function addElementsToForm(form, json,submitAction) {
 
 
 
@@ -2817,8 +2795,14 @@ function addElementsToForm(form, json) {
     form.appendChild(description);
     if (json.fields) {
         json.fields.forEach(field => {
-            const formGroup = createFormGroup(field);
-            form.appendChild(formGroup);
+            div=document.createElement("div")
+            div.classList.add("row")
+            form.appendChild(div)
+            for (let i = 0; i < field.length; i++) {
+                const formGroup = createFormGroup(field[i], submitAction);
+                formGroup.classList.add("col")
+                div.appendChild(formGroup);
+            }
         });
     }
 
@@ -2831,19 +2815,35 @@ function createTitleElement(json) {
     return title;
 }
 
-function createFormGroup(field) {
+function createFormGroup(field, submitAction) {
     const formGroup = document.createElement('div');
     formGroup.classList.add('mb-3');
+    if (field.type == "Button") {
+        const button = document.createElement('button');
+        button.textContent = field.label;
+        button.name=field.key
+        button.classList.add('btn');
+        if (field.key == "Submit") {
+            button.classList.add('btn-primary');
+        } else if (field.key == "Cancel") {
+            button.classList.add('btn-secondary');
+        }else{
+            button.classList.add('btn', 'btn-outline-secondary');
+        }
+        
+        button.addEventListener('click', (e) => submitAction(e,field.key));
+        formGroup.appendChild(button);
+    } else {
+        if (field.label && !field.labelHidden) {
+            const label = document.createElement('label');
+            label.textContent = field.label;
+            label.setAttribute('for', field.key);
+            formGroup.appendChild(label);
+        }
 
-    if (field.label && !field.labelHidden) {
-        const label = document.createElement('label');
-        label.textContent = field.label;
-        label.setAttribute('for', field.key);
-        formGroup.appendChild(label);
+        const input = createInputElement(field);
+        formGroup.appendChild(input);
     }
-
-    const input = createInputElement(field);
-    formGroup.appendChild(input);
     return formGroup;
 }
 
@@ -2956,18 +2956,18 @@ function createButtonGroup(json, submitAction, cancelAction) {
     buttonGroup.classList.add('btn-group');
     json.buttons.forEach(buttonText => {
         const btn = document.createElement('button');
-        btn.classList.add('btn',"btn-default");
+        btn.classList.add('btn', "btn-default");
         buttonGroup.appendChild(btn);
         btn.textContent = buttonText
-        if (buttonText=="Cancel") {
-            btn.classList.add( 'btn-secondary');
+        if (buttonText == "Cancel") {
+            btn.classList.add('btn-secondary');
             btn.addEventListener('click', cancelAction);
-        }else{
-            if (buttonText=="Submit"||buttonText=="Ok")
+        } else {
+            if (buttonText == "Submit" || buttonText == "Ok")
                 btn.classList.add('btn-primary');
             btn.addEventListener('click', submitAction);
         }
-        
+
     })
 
 
