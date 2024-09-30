@@ -35,7 +35,7 @@ type ExtensionHostServiceClient interface {
 	ListExtensions(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*ExtensionList, error)
 	Connect(ctx context.Context, in *ExtensionRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[ExtensionResponse], error)
 	EditExtension(ctx context.Context, in *EditExtensionRequest, opts ...grpc.CallOption) (*ExtensionActionResult, error)
-	SubmitForm(ctx context.Context, in *ExtensionRequest, opts ...grpc.CallOption) (*ExtensionActionResult, error)
+	SubmitForm(ctx context.Context, in *SendExtensionDataRequest, opts ...grpc.CallOption) (*ExtensionActionResult, error)
 	Cancel(ctx context.Context, in *ExtensionRequest, opts ...grpc.CallOption) (*ExtensionActionResult, error)
 	Stop(ctx context.Context, in *ExtensionRequest, opts ...grpc.CallOption) (*ExtensionActionResult, error)
 	GetUI(ctx context.Context, in *ExtensionRequest, opts ...grpc.CallOption) (*ExtensionActionResult, error)
@@ -88,7 +88,7 @@ func (c *extensionHostServiceClient) EditExtension(ctx context.Context, in *Edit
 	return out, nil
 }
 
-func (c *extensionHostServiceClient) SubmitForm(ctx context.Context, in *ExtensionRequest, opts ...grpc.CallOption) (*ExtensionActionResult, error) {
+func (c *extensionHostServiceClient) SubmitForm(ctx context.Context, in *SendExtensionDataRequest, opts ...grpc.CallOption) (*ExtensionActionResult, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ExtensionActionResult)
 	err := c.cc.Invoke(ctx, ExtensionHostService_SubmitForm_FullMethodName, in, out, cOpts...)
@@ -135,7 +135,7 @@ type ExtensionHostServiceServer interface {
 	ListExtensions(context.Context, *Empty) (*ExtensionList, error)
 	Connect(*ExtensionRequest, grpc.ServerStreamingServer[ExtensionResponse]) error
 	EditExtension(context.Context, *EditExtensionRequest) (*ExtensionActionResult, error)
-	SubmitForm(context.Context, *ExtensionRequest) (*ExtensionActionResult, error)
+	SubmitForm(context.Context, *SendExtensionDataRequest) (*ExtensionActionResult, error)
 	Cancel(context.Context, *ExtensionRequest) (*ExtensionActionResult, error)
 	Stop(context.Context, *ExtensionRequest) (*ExtensionActionResult, error)
 	GetUI(context.Context, *ExtensionRequest) (*ExtensionActionResult, error)
@@ -158,7 +158,7 @@ func (UnimplementedExtensionHostServiceServer) Connect(*ExtensionRequest, grpc.S
 func (UnimplementedExtensionHostServiceServer) EditExtension(context.Context, *EditExtensionRequest) (*ExtensionActionResult, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method EditExtension not implemented")
 }
-func (UnimplementedExtensionHostServiceServer) SubmitForm(context.Context, *ExtensionRequest) (*ExtensionActionResult, error) {
+func (UnimplementedExtensionHostServiceServer) SubmitForm(context.Context, *SendExtensionDataRequest) (*ExtensionActionResult, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SubmitForm not implemented")
 }
 func (UnimplementedExtensionHostServiceServer) Cancel(context.Context, *ExtensionRequest) (*ExtensionActionResult, error) {
@@ -239,7 +239,7 @@ func _ExtensionHostService_EditExtension_Handler(srv interface{}, ctx context.Co
 }
 
 func _ExtensionHostService_SubmitForm_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ExtensionRequest)
+	in := new(SendExtensionDataRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -251,7 +251,7 @@ func _ExtensionHostService_SubmitForm_Handler(srv interface{}, ctx context.Conte
 		FullMethod: ExtensionHostService_SubmitForm_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ExtensionHostServiceServer).SubmitForm(ctx, req.(*ExtensionRequest))
+		return srv.(ExtensionHostServiceServer).SubmitForm(ctx, req.(*SendExtensionDataRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }

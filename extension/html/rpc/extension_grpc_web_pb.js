@@ -257,16 +257,16 @@ proto.hiddifyrpc.ExtensionHostServicePromiseClient.prototype.editExtension =
 /**
  * @const
  * @type {!grpc.web.MethodDescriptor<
- *   !proto.hiddifyrpc.ExtensionRequest,
+ *   !proto.hiddifyrpc.SendExtensionDataRequest,
  *   !proto.hiddifyrpc.ExtensionActionResult>}
  */
 const methodDescriptor_ExtensionHostService_SubmitForm = new grpc.web.MethodDescriptor(
   '/hiddifyrpc.ExtensionHostService/SubmitForm',
   grpc.web.MethodType.UNARY,
-  proto.hiddifyrpc.ExtensionRequest,
+  proto.hiddifyrpc.SendExtensionDataRequest,
   proto.hiddifyrpc.ExtensionActionResult,
   /**
-   * @param {!proto.hiddifyrpc.ExtensionRequest} request
+   * @param {!proto.hiddifyrpc.SendExtensionDataRequest} request
    * @return {!Uint8Array}
    */
   function(request) {
@@ -277,7 +277,7 @@ const methodDescriptor_ExtensionHostService_SubmitForm = new grpc.web.MethodDesc
 
 
 /**
- * @param {!proto.hiddifyrpc.ExtensionRequest} request The
+ * @param {!proto.hiddifyrpc.SendExtensionDataRequest} request The
  *     request proto
  * @param {?Object<string, string>} metadata User defined
  *     call metadata
@@ -298,7 +298,7 @@ proto.hiddifyrpc.ExtensionHostServiceClient.prototype.submitForm =
 
 
 /**
- * @param {!proto.hiddifyrpc.ExtensionRequest} request The
+ * @param {!proto.hiddifyrpc.SendExtensionDataRequest} request The
  *     request proto
  * @param {?Object<string, string>=} metadata User defined
  *     call metadata

@@ -72,7 +72,7 @@ func (e ExtensionHostService) Connect(req *pb.ExtensionRequest, stream grpc.Serv
 	}
 }
 
-func (e ExtensionHostService) SubmitForm(ctx context.Context, req *pb.ExtensionRequest) (*pb.ExtensionActionResult, error) {
+func (e ExtensionHostService) SubmitForm(ctx context.Context, req *pb.SendExtensionDataRequest) (*pb.ExtensionActionResult, error) {
 	extension, err := getExtension(req.GetExtensionId())
 	if err != nil {
 		log.Println(err)
@@ -82,7 +82,7 @@ func (e ExtensionHostService) SubmitForm(ctx context.Context, req *pb.ExtensionR
 			Message:     err.Error(),
 		}, err
 	}
-	(*extension).SubmitData(req.GetData())
+	(*extension).SubmitData(req.Button, req.GetData())
 
 	return &pb.ExtensionActionResult{
 		ExtensionId: req.ExtensionId,

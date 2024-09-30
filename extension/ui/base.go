@@ -24,8 +24,8 @@ const (
 	FieldButton         string = "Button"
 	ValidatorDigitsOnly string = "digitsOnly"
 
-	Button_Ok     string = "Ok"
 	Button_Submit string = "Submit"
+	Button_Ok     string = "Ok"
 	Button_Cancel string = "Cancel"
 )
 
@@ -63,7 +63,7 @@ type Form struct {
 	Title       string        `json:"title"`
 	Description string        `json:"description"`
 	Fields      [][]FormField `json:"fields"`
-	Buttons     []string      `json:"buttons"`
+	// Buttons     []string      `json:"buttons"`
 }
 
 func (f *Form) ToJSON() string {

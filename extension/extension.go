@@ -88,7 +88,14 @@ func (e *Base[T]) ShowMessage(title string, msg string) error {
 	return e.ShowDialog(ui.Form{
 		Title:       title,
 		Description: msg,
-		Buttons:     []string{ui.Button_Ok},
+		Fields: [][]ui.FormField{
+			{{
+				Type:  ui.FieldButton,
+				Key:   ui.Button_Ok,
+				Label: "Ok",
+			}},
+		},
+		// Buttons:     []string{ui.Button_Ok},
 	})
 }
 
