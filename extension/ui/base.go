@@ -24,9 +24,11 @@ const (
 	FieldButton         string = "Button"
 	ValidatorDigitsOnly string = "digitsOnly"
 
-	Button_Submit string = "Submit"
-	Button_Ok     string = "Ok"
-	Button_Cancel string = "Cancel"
+	ButtonSubmit string = "Submit"
+	ButtonCancel string = "Cancel"
+
+	ButtonDialogClose string = "CloseDialog"
+	ButtonDialogOk    string = "OkDialog"
 )
 
 // FormField extends GenericField with additional common properties.
