@@ -11,8 +11,7 @@ service ExtensionHostService {
   rpc Connect (ExtensionRequest) returns (stream ExtensionResponse) {}
   rpc EditExtension (EditExtensionRequest) returns (ExtensionActionResult) {}
   rpc SubmitForm (SendExtensionDataRequest) returns (ExtensionActionResult) {}
-  rpc Cancel (ExtensionRequest) returns (ExtensionActionResult) {}
-  rpc Stop (ExtensionRequest) returns (ExtensionActionResult) {}
+  rpc Close (ExtensionRequest) returns (ExtensionActionResult) {}
 
   rpc GetUI (ExtensionRequest) returns (ExtensionActionResult) {}
 }

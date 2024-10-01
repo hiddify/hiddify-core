@@ -83,7 +83,7 @@ func (s *extensionService) Start() error {
 
 func (s *extensionService) Close() error {
 	for _, extension := range enabledExtensionsMap {
-		if err := (*extension).Stop(); err != nil {
+		if err := (*extension).Close(); err != nil {
 			return err
 		}
 	}

@@ -91,7 +91,7 @@ func (e ExtensionHostService) SubmitForm(ctx context.Context, req *pb.SendExtens
 	}, nil
 }
 
-func (e ExtensionHostService) Cancel(ctx context.Context, req *pb.ExtensionRequest) (*pb.ExtensionActionResult, error) {
+func (e ExtensionHostService) Close(ctx context.Context, req *pb.ExtensionRequest) (*pb.ExtensionActionResult, error) {
 	extension, err := getExtension(req.GetExtensionId())
 	if err != nil {
 		log.Println(err)
@@ -101,26 +101,7 @@ func (e ExtensionHostService) Cancel(ctx context.Context, req *pb.ExtensionReque
 			Message:     err.Error(),
 		}, err
 	}
-	(*extension).Cancel()
-
-	return &pb.ExtensionActionResult{
-		ExtensionId: req.ExtensionId,
-		Code:        pb.ResponseCode_OK,
-		Message:     "Success",
-	}, nil
-}
-
-func (e ExtensionHostService) Stop(ctx context.Context, req *pb.ExtensionRequest) (*pb.ExtensionActionResult, error) {
-	extension, err := getExtension(req.GetExtensionId())
-	if err != nil {
-		log.Println(err)
-		return &pb.ExtensionActionResult{
-			ExtensionId: req.ExtensionId,
-			Code:        pb.ResponseCode_FAILED,
-			Message:     err.Error(),
-		}, err
-	}
-	(*extension).Stop()
+	(*extension).Close()
 	(*extension).StoreData()
 	return &pb.ExtensionActionResult{
 		ExtensionId: req.ExtensionId,
@@ -133,7 +114,7 @@ func (e ExtensionHostService) EditExtension(ctx context.Context, req *pb.EditExt
 	if !req.Enable {
 		extension, _ := getExtension(req.GetExtensionId())
 		if extension != nil {
-			(*extension).Stop()
+			(*extension).Close()
 			(*extension).StoreData()
 		}
 		delete(enabledExtensionsMap, req.GetExtensionId())
