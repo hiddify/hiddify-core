@@ -23,13 +23,14 @@ func (ExtensionHostService) ListExtensions(ctx context.Context, empty *pb.Empty)
 		return nil, err
 	}
 	for _, dbext := range allext {
-		ext := allExtensionsMap[dbext.Id]
-		extensionList.Extensions = append(extensionList.Extensions, &pb.Extension{
-			Id:          ext.Id,
-			Title:       ext.Title,
-			Description: ext.Description,
-			Enable:      dbext.Enable,
-		})
+		if ext, ok := allExtensionsMap[dbext.Id]; ok {
+			extensionList.Extensions = append(extensionList.Extensions, &pb.Extension{
+				Id:          ext.Id,
+				Title:       ext.Title,
+				Description: ext.Description,
+				Enable:      dbext.Enable,
+			})
+		}
 	}
 
 	return extensionList, nil
