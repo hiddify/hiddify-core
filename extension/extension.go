@@ -15,8 +15,7 @@ import (
 type Extension interface {
 	GetUI() ui.Form
 	SubmitData(button string, data map[string]string) error
-	Cancel() error
-	Stop() error
+	Close() error
 	UpdateUI(form ui.Form) error
 
 	BeforeAppConnect(hiddifySettings *config.HiddifyOptions, singconfig *option.Options) error
@@ -91,7 +90,7 @@ func (e *Base[T]) ShowMessage(title string, msg string) error {
 		Fields: [][]ui.FormField{
 			{{
 				Type:  ui.FieldButton,
-				Key:   ui.Button_Ok,
+				Key:   ui.ButtonDialogOk,
 				Label: "Ok",
 			}},
 		},
