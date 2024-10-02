@@ -6,12 +6,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var extension_id string
-
 var commandExtension = &cobra.Command{
 	Use:   "extension",
 	Short: "extension configuration",
-	Args:  cobra.MaximumNArgs(2),
+	Args:  cobra.MaximumNArgs(0),
 	Run: func(cmd *cobra.Command, args []string) {
 		server.StartTestExtensionServer()
 	},

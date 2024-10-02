@@ -149,14 +149,17 @@ func getOrGenerateWarpLocallyIfNeeded(warpOptions *WarpOptions) WarpWireguardCon
 		return warpOptions.WireguardConfig
 	}
 	table := db.GetTable[WarpOptions]()
-	dbWarpOptions, err := table.First(func(data WarpOptions) bool { return data.UniqueId == warpOptions.UniqueId })
+	dbWarpOptions, err := table.Get(warpOptions.Id)
 	if err == nil && dbWarpOptions.WireguardConfig.PrivateKey != "" {
 		return warpOptions.WireguardConfig
 	}
 	license := ""
-	if len(warpOptions.UniqueId) > 28 && warpOptions.UniqueId[2] == '_' { // warp key is 26 characters long
-		license = warpOptions.UniqueId[3:]
+	if len(warpOptions.Id) == 26 { // warp key is 26 characters long
+		license = warpOptions.Id
+	} else if len(warpOptions.Id) > 28 && warpOptions.Id[2] == '_' { // warp key is 26 characters long
+		license = warpOptions.Id[3:]
 	}
+
 	accountidentity, _, wireguardConfig, err := GenerateWarpInfo(license, warpOptions.Account.AccountID, warpOptions.Account.AccessToken)
 	if err != nil {
 		return WarpWireguardConfig{}
@@ -166,7 +169,7 @@ func getOrGenerateWarpLocallyIfNeeded(warpOptions *WarpOptions) WarpWireguardCon
 		AccessToken: accountidentity.Token,
 	}
 	warpOptions.WireguardConfig = *wireguardConfig
-	table.ReplaceOrInsert(func(data WarpOptions) bool { return data.UniqueId == warpOptions.UniqueId }, *warpOptions)
+	table.UpdateInsert(warpOptions)
 
 	return *wireguardConfig
 }
@@ -199,10 +202,11 @@ func patchWarp(base *option.Outbound, configOpt *HiddifyOptions, final bool, sta
 					warpOpt = &configOpt.Warp2
 				} else {
 					warpOpt = &WarpOptions{
-						UniqueId: key,
+						Id: key,
 					}
 				}
-				warpOpt.UniqueId = key
+				warpOpt.Id = key
+
 				wireguardConfig = getOrGenerateWarpLocallyIfNeeded(warpOpt)
 			} else {
 				_, _, wgConfig, err := GenerateWarpInfo(key, "", "")

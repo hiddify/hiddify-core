@@ -2,9 +2,9 @@ package extension
 
 import (
 	"fmt"
-	"log"
 
 	"github.com/hiddify/hiddify-core/v2/db"
+	"github.com/sagernet/sing-box/log"
 
 	"github.com/hiddify/hiddify-core/v2/service_manager"
 )
@@ -12,26 +12,26 @@ import (
 var (
 	allExtensionsMap     = make(map[string]ExtensionFactory)
 	enabledExtensionsMap = make(map[string]*Extension)
-	generalExtensionData = mustSaveExtensionData{
-		ExtensionStatusMap: make(map[string]bool),
-	}
 )
-
-type mustSaveExtensionData struct {
-	ExtensionStatusMap map[string]bool `json:"extensionStatusMap"`
-}
 
 func RegisterExtension(factory ExtensionFactory) error {
 	if _, ok := allExtensionsMap[factory.Id]; ok {
 		err := fmt.Errorf("Extension with ID %s already exists", factory.Id)
-		log.Fatal(err)
+		log.Warn(err)
 		return err
 	}
+
 	table := db.GetTable[extensionData]()
-	_, err := table.FirstOrInsert(func(data extensionData) bool { return data.Id == factory.Id }, func() extensionData { return extensionData{Id: factory.Id, Enable: false} })
-	if err != nil {
-		return err
+	data, err := table.Get(factory.Id)
+	if data == nil || err != nil {
+		log.Warn("Data of Extension ", factory.Id, " not found, creating new one")
+		data = &extensionData{Id: factory.Id, Enable: false}
+		if err := table.UpdateInsert(data); err != nil {
+			log.Warn("Failed to create new extension data: ", err, " ", factory.Id)
+			return err
+		}
 	}
+
 	allExtensionsMap[factory.Id] = factory
 
 	return nil
@@ -39,7 +39,7 @@ func RegisterExtension(factory ExtensionFactory) error {
 
 func isEnable(id string) bool {
 	table := db.GetTable[extensionData]()
-	extdata, err := table.First(func(data extensionData) bool { return data.Id == id })
+	extdata, err := table.Get(id)
 	if err != nil {
 		return false
 	}
@@ -65,11 +65,14 @@ type extensionService struct {
 
 func (s *extensionService) Start() error {
 	table := db.GetTable[extensionData]()
-	extdata, err := table.Select(func(data extensionData) bool { return data.Enable })
+	extdata, err := table.All()
 	if err != nil {
 		return fmt.Errorf("failed to select enabled extensions: %w", err)
 	}
 	for _, data := range extdata {
+		if !data.Enable {
+			continue
+		}
 		if factory, ok := allExtensionsMap[data.Id]; ok {
 			if err := loadExtension(factory); err != nil {
 				return fmt.Errorf("failed to load extension %s: %w", data.Id, err)

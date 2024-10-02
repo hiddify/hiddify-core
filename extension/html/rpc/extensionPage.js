@@ -19,7 +19,7 @@ function connect() {
     const stream = extensionClient.connect(request, {});
 
     stream.on('data', (response) => {
-        console.log('Receving ', response);
+        console.log('Receiving ', response);
         if (response.getExtensionId() === currentExtensionId) {
             ui = JSON.parse(response.getJsonUi())
             if (response.getType() == proto.hiddifyrpc.ExtensionResponseType.SHOW_DIALOG) {
@@ -73,7 +73,7 @@ async function handleStopButtonClick(event) {
     request.setExtensionId(currentExtensionId);
     bootstrap.Modal.getOrCreateInstance("#extension-dialog").hide();
     try {
-        await extensionClient.stop(request, {});
+        await extensionClient.close(request, {});
         console.log('Extension stopped successfully.');
         currentExtensionId = undefined;
         listExtensions(); // Return to the extension list

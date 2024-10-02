@@ -121,12 +121,12 @@ func (e ExtensionHostService) EditExtension(ctx context.Context, req *pb.EditExt
 		delete(enabledExtensionsMap, req.GetExtensionId())
 	}
 	table := db.GetTable[extensionData]()
-	table.Update(func(s extensionData) extensionData {
-		s.Enable = req.Enable
-		return s
-	}, func(data extensionData) bool {
-		return data.Id == req.GetExtensionId()
-	})
+	data, err := table.Get(req.GetExtensionId())
+	if err != nil {
+		return nil, err
+	}
+	data.Enable = req.Enable
+	table.UpdateInsert(data)
 
 	if req.Enable {
 		loadExtension(allExtensionsMap[req.GetExtensionId()])
@@ -140,7 +140,7 @@ func (e ExtensionHostService) EditExtension(ctx context.Context, req *pb.EditExt
 }
 
 type extensionData struct {
-	Id     string `json:"id"`
-	Enable bool   `json:"enable"`
-	Data   any    `json:"data"`
+	Id       string `json:"id"`
+	Enable   bool   `json:"enable"`
+	JsonData []byte
 }

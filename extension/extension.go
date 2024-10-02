@@ -1,7 +1,7 @@
 package extension
 
 import (
-	"reflect"
+	"encoding/json"
 
 	"github.com/hiddify/hiddify-core/config"
 	"github.com/hiddify/hiddify-core/extension/ui"
@@ -43,19 +43,25 @@ func (b *Base[T]) BeforeAppConnect(hiddifySettings *config.HiddifyOptions, singc
 
 func (b *Base[T]) StoreData() {
 	table := db.GetTable[extensionData]()
-	table.Update(func(s extensionData) extensionData {
-		s.Data = b.Data
-		return s
-	}, func(data extensionData) bool {
-		return data.Id == b.getId()
-	})
+	ed, err := table.Get(b.id)
+	if err != nil {
+		log.Warn("error: ", err)
+		return
+	}
+	res, err := json.Marshal(b.Data)
+	if err != nil {
+		log.Warn("error: ", err)
+		return
+	}
+	ed.JsonData = (res)
+	table.UpdateInsert(ed)
 }
 
 func (b *Base[T]) init(id string) {
 	b.id = id
 	b.queue = make(chan *pb.ExtensionResponse, 1)
 	table := db.GetTable[extensionData]()
-	extdata, err := table.First(func(data extensionData) bool { return data.Id == b.id })
+	extdata, err := table.Get(b.id)
 	if err != nil {
 		log.Warn("error: ", err)
 		return
@@ -64,13 +70,12 @@ func (b *Base[T]) init(id string) {
 		log.Warn("extension data not found ", id)
 		return
 	}
-	if extdata.Data != nil {
-		if data, ok := extdata.Data.(*T); ok {
-			b.Data = *data
+	if extdata.JsonData != nil {
+		var t T
+		if err := json.Unmarshal(extdata.JsonData, &t); err != nil {
+			log.Warn("error loading data of ", id, " : ", err)
 		} else {
-			var t T
-			name := reflect.TypeOf(t).Name()
-			log.Warn("current extension data of ,", id, " is not of type ", name)
+			b.Data = t
 		}
 	}
 }

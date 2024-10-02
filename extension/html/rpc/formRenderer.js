@@ -21,6 +21,12 @@ function renderForm(json, dialog, submitAction, stopAction) {
         document.getElementById("modalLabel").textContent = json.title;
     } else {
         const titleElement = createTitleElement(json);
+        const stopBtn = document.createElement('button');
+        stopBtn.type = 'button';
+        stopBtn.className = 'btn btn-danger';
+        stopBtn.textContent = 'Close';
+        stopBtn.addEventListener('click', stopAction);
+        form.appendChild(stopBtn);
         form.appendChild(titleElement);
     }
     addElementsToForm(form, json,submitAction);
