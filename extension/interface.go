@@ -21,17 +21,6 @@ func RegisterExtension(factory ExtensionFactory) error {
 		return err
 	}
 
-	table := db.GetTable[extensionData]()
-	data, err := table.Get(factory.Id)
-	if data == nil || err != nil {
-		log.Warn("Data of Extension ", factory.Id, " not found, creating new one")
-		data = &extensionData{Id: factory.Id, Enable: false}
-		if err := table.UpdateInsert(data); err != nil {
-			log.Warn("Failed to create new extension data: ", err, " ", factory.Id)
-			return err
-		}
-	}
-
 	allExtensionsMap[factory.Id] = factory
 
 	return nil
@@ -65,22 +54,26 @@ type extensionService struct {
 
 func (s *extensionService) Start() error {
 	table := db.GetTable[extensionData]()
-	extdata, err := table.All()
-	if err != nil {
-		return fmt.Errorf("failed to select enabled extensions: %w", err)
-	}
-	for _, data := range extdata {
-		if !data.Enable {
-			continue
+
+	for _, factory := range allExtensionsMap {
+		data, err := table.Get(factory.Id)
+
+		if data == nil || err != nil {
+			log.Warn("Data of Extension ", factory.Id, " not found, creating new one")
+			data = &extensionData{Id: factory.Id, Enable: false}
+			if err := table.UpdateInsert(data); err != nil {
+				log.Warn("Failed to create new extension data: ", err, " ", factory.Id)
+				return err
+			}
 		}
-		if factory, ok := allExtensionsMap[data.Id]; ok {
+
+		if data.Enable {
 			if err := loadExtension(factory); err != nil {
 				return fmt.Errorf("failed to load extension %s: %w", data.Id, err)
 			}
-		} else {
-			return fmt.Errorf("extension %s is enabled but not found", data.Id)
 		}
 	}
+
 	return nil
 }
 

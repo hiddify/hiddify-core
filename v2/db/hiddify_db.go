@@ -5,6 +5,7 @@ import (
 	"encoding/gob"
 	"fmt"
 	"log"
+	"os"
 	"reflect"
 	"time"
 
@@ -13,19 +14,33 @@ import (
 )
 
 // getDB initializes the database with retry logic. If it fails after 100 attempts, it returns nil.
-func getDB(name string, readOnly bool) tmdb.DB {
+func getDB(name string, readOnly bool) (tmdb.DB, error) {
+	// Check if the database file exists; if not, set to readOnly
+	dbPath := "data/" + name + ".db"
+	if _, err := os.Stat(dbPath); os.IsNotExist(err) {
+		readOnly = false
+	}
+
 	const retryAttempts = 100
 	const retryDelay = 100 * time.Microsecond
 
+	var db tmdb.DB
+	var err error
+
 	for i := 0; i < retryAttempts; i++ {
-		db, err := tmdb.NewGoLevelDBWithOpts(name, "./data", &opt.Options{ReadOnly: readOnly})
+		// Set readOnly to true for the first 80 attempts
+		opts := &opt.Options{ReadOnly: readOnly && i < 80}
+
+		db, err = tmdb.NewGoLevelDBWithOpts(name, "./data", opts)
 		if err == nil {
-			return db
+			return db, nil
 		}
+
 		log.Printf("Failed attempt %d to initialize the database: %v", i, err)
 		time.Sleep(retryDelay)
 	}
-	return nil
+
+	return nil, err
 }
 
 // GetTable returns a new Table instance for the generic type T, ensuring the struct has an "Id" field.
@@ -100,9 +115,9 @@ type Table[T any] struct {
 
 // All retrieves all entries from the database and unmarshals them into a slice of T.
 func (tbl *Table[T]) All() ([]*T, error) {
-	db := getDB(tbl.name, true)
+	db, err := getDB(tbl.name, true)
 	if db == nil {
-		return nil, fmt.Errorf("failed to open database %s", tbl.name)
+		return nil, fmt.Errorf("failed to open database %s, error: %w", tbl.name, err)
 	}
 	defer db.Close()
 
@@ -152,9 +167,9 @@ func Deserialize[T any](data []byte) (*T, error) {
 
 // UpdateInsert inserts or updates multiple items in the database.
 func (tbl *Table[T]) UpdateInsert(items ...*T) error {
-	db := getDB(tbl.name, false)
+	db, err := getDB(tbl.name, false)
 	if db == nil {
-		return fmt.Errorf("failed to open database %s", tbl.name)
+		return fmt.Errorf("failed to open database %s, error: %w", tbl.name, err)
 	}
 	defer db.Close()
 
@@ -173,9 +188,9 @@ func (tbl *Table[T]) UpdateInsert(items ...*T) error {
 
 // Delete removes entries by their IDs.
 func (tbl *Table[T]) Delete(ids ...any) error {
-	db := getDB(tbl.name, false)
+	db, err := getDB(tbl.name, true)
 	if db == nil {
-		return fmt.Errorf("failed to open database %s", tbl.name)
+		return fmt.Errorf("failed to open database %s, error: %w", tbl.name, err)
 	}
 	defer db.Close()
 
@@ -189,9 +204,9 @@ func (tbl *Table[T]) Delete(ids ...any) error {
 
 // Get retrieves a single item by its ID.
 func (tbl *Table[T]) Get(id any) (*T, error) {
-	db := getDB(tbl.name, true)
+	db, err := getDB(tbl.name, true)
 	if db == nil {
-		return nil, fmt.Errorf("failed to open database %s", tbl.name)
+		return nil, fmt.Errorf("failed to open database %s, error: %w", tbl.name, err)
 	}
 	defer db.Close()
 
