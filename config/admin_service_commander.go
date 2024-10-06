@@ -64,7 +64,7 @@ func startTunnelRequestWithFailover(opt HiddifyOptions, installService bool) {
 	res, err := startTunnelRequest(opt, installService)
 	fmt.Printf("Start Tunnel Result: %v\n", res)
 	if err != nil {
-		fmt.Printf("Start Tunnel Failed! Stopping core... err=%v\n", err)
+		fmt.Printf("Start Tunnel Failed! Stopping hcore... err=%v\n", err)
 		// StopAndAlert(pb.MessageType.MessageType_UNEXPECTED_ERROR, "Start Tunnel Failed! Stopping...")
 	}
 }

@@ -1,8 +1,7 @@
 package cmd
 
 import (
-	v2 "github.com/hiddify/hiddify-core/v2"
-
+	hcore "github.com/hiddify/hiddify-core/v2/hcore"
 	"github.com/spf13/cobra"
 )
 
@@ -23,6 +22,6 @@ func init() {
 }
 
 func runCommand(cmd *cobra.Command, args []string) {
-	v2.Setup("./tmp", "./", "./tmp", 0, false)
-	v2.RunStandalone(hiddifySettingPath, configPath, defaultConfigs)
+	hcore.Setup("./tmp", "./", "./tmp", 0, false)
+	hcore.RunStandalone(hiddifySettingPath, configPath, defaultConfigs)
 }

@@ -2,7 +2,7 @@
 // versions:
 // 	protoc-gen-go v1.33.0
 // 	protoc        v4.25.3
-// source: core.proto
+// source: hcore.proto
 
 package config
 

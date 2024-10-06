@@ -6,16 +6,15 @@ import (
 	"path/filepath"
 
 	"github.com/hiddify/hiddify-core/config"
-
-	"github.com/hiddify/hiddify-core/v2"
+	hcore "github.com/hiddify/hiddify-core/v2/hcore"
 
 	_ "github.com/sagernet/gomobile"
 	"github.com/sagernet/sing-box/option"
 )
 
 func Setup(baseDir string, workingDir string, tempDir string, debug bool) error {
-	return v2.Setup(baseDir, workingDir, tempDir, 0, debug)
-	// return v2.Start(17078)
+	return hcore.Setup(baseDir, workingDir, tempDir, 0, debug)
+	// return hcore.Start(17078)
 }
 
 func Parse(path string, tempPath string, debug bool) error {

@@ -188,7 +188,7 @@ func (tbl *Table[T]) UpdateInsert(items ...*T) error {
 
 // Delete removes entries by their IDs.
 func (tbl *Table[T]) Delete(ids ...any) error {
-	db, err := getDB(tbl.name, true)
+	db, err := getDB(tbl.name, false)
 	if db == nil {
 		return fmt.Errorf("failed to open database %s, error: %w", tbl.name, err)
 	}

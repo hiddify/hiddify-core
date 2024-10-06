@@ -201,7 +201,7 @@ func buildIOS() {
 	args = append(args, "-tags")
 	args = append(args, strings.Join(tags, ","))
 
-	output := filepath.Join("bin", "Libcore.xcframework")
+	output := filepath.Join("bin", "Libhcore.xcframework")
 	args = append(args, "-o", output, "github.com/sagernet/sing-box/experimental/libbox", "./mobile")
 
 	command := exec.Command(build_shared.GoBinPath+"/gomobile", args...)

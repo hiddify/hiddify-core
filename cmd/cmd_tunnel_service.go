@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/hiddify/hiddify-core/config"
-	v2 "github.com/hiddify/hiddify-core/v2"
+	"github.com/hiddify/hiddify-core/v2/hcore/tunnelservice"
 
 	"github.com/spf13/cobra"
 )
@@ -33,7 +33,7 @@ var commandService = &cobra.Command{
 		case "exit":
 			config.ExitTunnelService()
 		default:
-			code, out := v2.StartTunnelService(arg)
+			code, out := tunnelservice.StartTunnelService(arg)
 			fmt.Printf("exitCode:%d msg=%s", code, out)
 		}
 	},

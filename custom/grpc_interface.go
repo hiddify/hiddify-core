@@ -1,10 +1,10 @@
 package main
 
 import "C"
-import v2 "github.com/hiddify/hiddify-core/v2"
+import hcore "github.com/hiddify/hiddify-core/v2/hcore"
 
 //export StartCoreGrpcServer
 func StartCoreGrpcServer(listenAddress *C.char) (CErr *C.char) {
-	_, err := v2.StartCoreGrpcServer(C.GoString(listenAddress))
+	_, err := hcore.StartCoreGrpcServer(C.GoString(listenAddress))
 	return emptyOrErrorC(err)
 }

@@ -8,12 +8,12 @@ import (
 	"strings"
 
 	"github.com/hiddify/hiddify-core/config"
-	v2 "github.com/hiddify/hiddify-core/v2"
+	hcore "github.com/hiddify/hiddify-core/v2/hcore"
 	"github.com/sagernet/sing-box/option"
 )
 
-func RunInstance(hiddifySettings *config.HiddifyOptions, singconfig *option.Options) (*v2.HiddifyService, error) {
-	return v2.RunInstance(hiddifySettings, singconfig)
+func RunInstance(hiddifySettings *config.HiddifyOptions, singconfig *option.Options) (*hcore.HiddifyService, error) {
+	return hcore.RunInstance(hiddifySettings, singconfig)
 }
 
 func ParseConfig(hiddifySettings *config.HiddifyOptions, configStr string) (*option.Options, error) {

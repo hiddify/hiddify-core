@@ -14,7 +14,7 @@ import (
 	"github.com/hiddify/hiddify-core/bridge"
 	"github.com/hiddify/hiddify-core/config"
 	pb "github.com/hiddify/hiddify-core/hiddifyrpc"
-	v2 "github.com/hiddify/hiddify-core/v2"
+	hcore "github.com/hiddify/hiddify-core/v2/hcore"
 
 	"github.com/sagernet/sing-box/log"
 )
@@ -26,13 +26,13 @@ func setupOnce(api unsafe.Pointer) {
 
 //export setup
 func setup(baseDir *C.char, workingDir *C.char, tempDir *C.char, statusPort C.longlong, debug bool) (CErr *C.char) {
-	err := v2.Setup(C.GoString(baseDir), C.GoString(workingDir), C.GoString(tempDir), int64(statusPort), debug)
+	err := hcore.Setup(C.GoString(baseDir), C.GoString(workingDir), C.GoString(tempDir), int64(statusPort), debug)
 	return emptyOrErrorC(err)
 }
 
 //export parse
 func parse(path *C.char, tempPath *C.char, debug bool) (CErr *C.char) {
-	res, err := v2.Parse(&pb.ParseRequest{
+	res, err := hcore.Parse(&pb.ParseRequest{
 		ConfigPath: C.GoString(path),
 		TempPath:   C.GoString(tempPath),
 	})
@@ -47,7 +47,7 @@ func parse(path *C.char, tempPath *C.char, debug bool) (CErr *C.char) {
 
 //export changeHiddifyOptions
 func changeHiddifyOptions(HiddifyOptionsJson *C.char) (CErr *C.char) {
-	_, err := v2.ChangeHiddifySettings(&pb.ChangeHiddifySettingsRequest{
+	_, err := hcore.ChangeHiddifySettings(&pb.ChangeHiddifySettingsRequest{
 		HiddifySettingsJson: C.GoString(HiddifyOptionsJson),
 	})
 	return emptyOrErrorC(err)
@@ -55,7 +55,7 @@ func changeHiddifyOptions(HiddifyOptionsJson *C.char) (CErr *C.char) {
 
 //export generateConfig
 func generateConfig(path *C.char) (res *C.char) {
-	conf, err := v2.GenerateConfig(&pb.GenerateConfigRequest{
+	conf, err := hcore.GenerateConfig(&pb.GenerateConfigRequest{
 		Path: C.GoString(path),
 	})
 	if err != nil {
@@ -68,7 +68,7 @@ func generateConfig(path *C.char) (res *C.char) {
 
 //export start
 func start(configPath *C.char, disableMemoryLimit bool) (CErr *C.char) {
-	_, err := v2.Start(&pb.StartRequest{
+	_, err := hcore.Start(&pb.StartRequest{
 		ConfigPath:             C.GoString(configPath),
 		EnableOldCommandServer: true,
 		DisableMemoryLimit:     disableMemoryLimit,
@@ -78,13 +78,13 @@ func start(configPath *C.char, disableMemoryLimit bool) (CErr *C.char) {
 
 //export stop
 func stop() (CErr *C.char) {
-	_, err := v2.Stop()
+	_, err := hcore.Stop()
 	return emptyOrErrorC(err)
 }
 
 //export restart
 func restart(configPath *C.char, disableMemoryLimit bool) (CErr *C.char) {
-	_, err := v2.Restart(&pb.StartRequest{
+	_, err := hcore.Restart(&pb.StartRequest{
 		ConfigPath:             C.GoString(configPath),
 		EnableOldCommandServer: true,
 		DisableMemoryLimit:     disableMemoryLimit,
@@ -94,19 +94,19 @@ func restart(configPath *C.char, disableMemoryLimit bool) (CErr *C.char) {
 
 //export startCommandClient
 func startCommandClient(command C.int, port C.longlong) *C.char {
-	err := v2.StartCommand(int32(command), int64(port))
+	err := hcore.StartCommand(int32(command), int64(port))
 	return emptyOrErrorC(err)
 }
 
 //export stopCommandClient
 func stopCommandClient(command C.int) *C.char {
-	err := v2.StopCommand(int32(command))
+	err := hcore.StopCommand(int32(command))
 	return emptyOrErrorC(err)
 }
 
 //export selectOutbound
 func selectOutbound(groupTag *C.char, outboundTag *C.char) (CErr *C.char) {
-	_, err := v2.SelectOutbound(&pb.SelectOutboundRequest{
+	_, err := hcore.SelectOutbound(&pb.SelectOutboundRequest{
 		GroupTag:    C.GoString(groupTag),
 		OutboundTag: C.GoString(outboundTag),
 	})
@@ -116,7 +116,7 @@ func selectOutbound(groupTag *C.char, outboundTag *C.char) (CErr *C.char) {
 
 //export urlTest
 func urlTest(groupTag *C.char) (CErr *C.char) {
-	_, err := v2.UrlTest(&pb.UrlTestRequest{
+	_, err := hcore.UrlTest(&pb.UrlTestRequest{
 		GroupTag: C.GoString(groupTag),
 	})
 
@@ -133,7 +133,7 @@ func emptyOrErrorC(err error) *C.char {
 
 //export generateWarpConfig
 func generateWarpConfig(licenseKey *C.char, accountId *C.char, accessToken *C.char) (CResp *C.char) {
-	res, err := v2.GenerateWarpConfig(&pb.GenerateWarpConfigRequest{
+	res, err := hcore.GenerateWarpConfig(&pb.GenerateWarpConfigRequest{
 		LicenseKey:  C.GoString(licenseKey),
 		AccountId:   C.GoString(accountId),
 		AccessToken: C.GoString(accessToken),

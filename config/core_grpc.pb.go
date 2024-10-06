@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.3.0
 // - protoc             v4.25.3
-// source: core.proto
+// source: hcore.proto
 
 package config
 
@@ -142,5 +142,5 @@ var CoreService_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "core.proto",
+	Metadata: "hcore.proto",
 }

@@ -10,20 +10,19 @@ import (
 	"sync"
 	"syscall"
 
-	v2 "github.com/hiddify/hiddify-core/v2"
-
 	"github.com/hiddify/hiddify-core/utils"
+	hcore "github.com/hiddify/hiddify-core/v2/hcore"
 	"github.com/improbable-eng/grpc-web/go/grpcweb"
 	"google.golang.org/grpc"
 )
 
 func StartTestExtensionServer() {
-	v2.Setup("./tmp", "./", "./tmp", 0, false)
+	hcore.Setup("./tmp", "./", "./tmp", 0, false)
 	StartExtensionServer()
 }
 
 func StartExtensionServer() {
-	grpc_server, _ := v2.StartCoreGrpcServer("127.0.0.1:12345")
+	grpc_server, _ := hcore.StartCoreGrpcServer("127.0.0.1:12345")
 	fmt.Printf("Waiting for CTRL+C to stop\n")
 	runWebserver(grpc_server)
 }
