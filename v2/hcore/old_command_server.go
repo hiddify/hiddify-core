@@ -23,7 +23,7 @@ func (csh *CommandServerHandler) ServiceReload() error {
 		Box.Close()
 		Box = nil
 	}
-	_, err := StartService(&StartRequest{
+	_, err := Start(&StartRequest{
 		EnableOldCommandServer: true,
 		DelayStart:             true,
 	})

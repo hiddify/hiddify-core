@@ -13,7 +13,7 @@ import (
 
 	"github.com/hiddify/hiddify-core/bridge"
 	"github.com/hiddify/hiddify-core/config"
-	pb "github.com/hiddify/hiddify-core/hiddifyrpc"
+
 	hcore "github.com/hiddify/hiddify-core/v2/hcore"
 
 	"github.com/sagernet/sing-box/log"
@@ -25,14 +25,24 @@ func setupOnce(api unsafe.Pointer) {
 }
 
 //export setup
-func setup(baseDir *C.char, workingDir *C.char, tempDir *C.char, statusPort C.longlong, debug bool) (CErr *C.char) {
-	err := hcore.Setup(C.GoString(baseDir), C.GoString(workingDir), C.GoString(tempDir), int64(statusPort), debug)
+func setup(baseDir *C.char, workingDir *C.char, tempDir *C.char, mode C.int, listen *C.char, secret *C.char, statusPort C.longlong, debug bool) (CErr *C.char) {
+	// err := hcore.Setup(C.GoString(baseDir), C.GoString(workingDir), C.GoString(tempDir), int64(statusPort), debug)
+	err := hcore.Setup(hcore.SetupParameters{
+		BasePath:          C.GoString(baseDir),
+		WorkingDir:        C.GoString(workingDir),
+		TempDir:           C.GoString(tempDir),
+		FlutterStatusPort: int64(statusPort),
+		Debug:             debug,
+		Mode:              hcore.SetupMode(mode),
+		Listen:            C.GoString(listen),
+		Secret:            C.GoString(secret),
+	})
 	return emptyOrErrorC(err)
 }
 
 //export parse
 func parse(path *C.char, tempPath *C.char, debug bool) (CErr *C.char) {
-	res, err := hcore.Parse(&pb.ParseRequest{
+	res, err := hcore.Parse(&hcore.ParseRequest{
 		ConfigPath: C.GoString(path),
 		TempPath:   C.GoString(tempPath),
 	})
@@ -47,7 +57,7 @@ func parse(path *C.char, tempPath *C.char, debug bool) (CErr *C.char) {
 
 //export changeHiddifyOptions
 func changeHiddifyOptions(HiddifyOptionsJson *C.char) (CErr *C.char) {
-	_, err := hcore.ChangeHiddifySettings(&pb.ChangeHiddifySettingsRequest{
+	_, err := hcore.ChangeHiddifySettings(&hcore.ChangeHiddifySettingsRequest{
 		HiddifySettingsJson: C.GoString(HiddifyOptionsJson),
 	})
 	return emptyOrErrorC(err)
@@ -55,7 +65,7 @@ func changeHiddifyOptions(HiddifyOptionsJson *C.char) (CErr *C.char) {
 
 //export generateConfig
 func generateConfig(path *C.char) (res *C.char) {
-	conf, err := hcore.GenerateConfig(&pb.GenerateConfigRequest{
+	conf, err := hcore.GenerateConfig(&hcore.GenerateConfigRequest{
 		Path: C.GoString(path),
 	})
 	if err != nil {
@@ -68,7 +78,7 @@ func generateConfig(path *C.char) (res *C.char) {
 
 //export start
 func start(configPath *C.char, disableMemoryLimit bool) (CErr *C.char) {
-	_, err := hcore.Start(&pb.StartRequest{
+	_, err := hcore.Start(&hcore.StartRequest{
 		ConfigPath:             C.GoString(configPath),
 		EnableOldCommandServer: true,
 		DisableMemoryLimit:     disableMemoryLimit,
@@ -84,7 +94,7 @@ func stop() (CErr *C.char) {
 
 //export restart
 func restart(configPath *C.char, disableMemoryLimit bool) (CErr *C.char) {
-	_, err := hcore.Restart(&pb.StartRequest{
+	_, err := hcore.Restart(&hcore.StartRequest{
 		ConfigPath:             C.GoString(configPath),
 		EnableOldCommandServer: true,
 		DisableMemoryLimit:     disableMemoryLimit,
@@ -106,7 +116,7 @@ func stopCommandClient(command C.int) *C.char {
 
 //export selectOutbound
 func selectOutbound(groupTag *C.char, outboundTag *C.char) (CErr *C.char) {
-	_, err := hcore.SelectOutbound(&pb.SelectOutboundRequest{
+	_, err := hcore.SelectOutbound(&hcore.SelectOutboundRequest{
 		GroupTag:    C.GoString(groupTag),
 		OutboundTag: C.GoString(outboundTag),
 	})
@@ -116,7 +126,7 @@ func selectOutbound(groupTag *C.char, outboundTag *C.char) (CErr *C.char) {
 
 //export urlTest
 func urlTest(groupTag *C.char) (CErr *C.char) {
-	_, err := hcore.UrlTest(&pb.UrlTestRequest{
+	_, err := hcore.UrlTest(&hcore.UrlTestRequest{
 		GroupTag: C.GoString(groupTag),
 	})
 
@@ -133,7 +143,7 @@ func emptyOrErrorC(err error) *C.char {
 
 //export generateWarpConfig
 func generateWarpConfig(licenseKey *C.char, accountId *C.char, accessToken *C.char) (CResp *C.char) {
-	res, err := hcore.GenerateWarpConfig(&pb.GenerateWarpConfigRequest{
+	res, err := hcore.GenerateWarpConfig(&hcore.GenerateWarpConfigRequest{
 		LicenseKey:  C.GoString(licenseKey),
 		AccountId:   C.GoString(accountId),
 		AccessToken: C.GoString(accessToken),
@@ -167,3 +177,18 @@ func generateWarpConfig(licenseKey *C.char, accountId *C.char, accessToken *C.ch
 }
 
 func main() {}
+
+//export GetServerPublicKey
+func GetServerPublicKey() []byte {
+	return hcore.GetGrpcServerPublicKey()
+}
+
+//export AddGrpcClientPublicKey
+func AddGrpcClientPublicKey(clientPublicKey []byte) error {
+	return hcore.AddGrpcClientPublicKey(clientPublicKey)
+}
+
+//export close
+func close() {
+	hcore.Close()
+}

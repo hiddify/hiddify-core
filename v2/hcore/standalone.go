@@ -175,7 +175,14 @@ func buildConfig(configContent string, options config.HiddifyOptions) (string, e
 
 	fmt.Printf("Open http://localhost:6756/ui/?secret=%s in your browser\n", finalconfig.Experimental.ClashAPI.Secret)
 
-	if err := Setup("./", "./", "./tmp", 0, false); err != nil {
+	if err := Setup(
+		SetupParameters{
+			BasePath:          "./",
+			WorkingDir:        "./",
+			TempDir:           "./tmp",
+			FlutterStatusPort: 0,
+			Debug:             false,
+		}); err != nil {
 		return "", fmt.Errorf("failed to set up global configuration: %w", err)
 	}
 

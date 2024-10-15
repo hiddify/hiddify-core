@@ -17,7 +17,19 @@ import (
 )
 
 func StartTestExtensionServer() {
-	hcore.Setup("./tmp", "./", "./tmp", 0, false)
+	hcore.Setup(
+		hcore.SetupParameters{
+			BasePath:          "./tmp",
+			WorkingDir:        "./",
+			TempDir:           "./tmp",
+			FlutterStatusPort: 0,
+			Listen:            "",
+			Secret:            "",
+			Debug:             false,
+			Mode:              hcore.OLD,
+		},
+	)
+	// "./tmp", "./", "./tmp", 0, false)
 	StartExtensionServer()
 }
 

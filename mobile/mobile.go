@@ -1,63 +1,63 @@
 package mobile
 
 import (
-	"encoding/json"
-	"os"
-	"path/filepath"
-
-	"github.com/hiddify/hiddify-core/config"
 	hcore "github.com/hiddify/hiddify-core/v2/hcore"
 
 	_ "github.com/sagernet/gomobile"
-	"github.com/sagernet/sing-box/option"
+
+	"github.com/sagernet/sing-box/experimental/libbox"
 )
 
-func Setup(baseDir string, workingDir string, tempDir string, debug bool) error {
-	return hcore.Setup(baseDir, workingDir, tempDir, 0, debug)
+func Setup(baseDir string, workingDir string, tempDir string, mode int, listen string, secret string, debug bool) error {
+	return hcore.Setup(hcore.SetupParameters{
+		BasePath:          baseDir,
+		WorkingDir:        workingDir,
+		TempDir:           tempDir,
+		FlutterStatusPort: 0,
+		Listen:            listen,
+		Debug:             debug,
+		Mode:              hcore.SetupMode(mode),
+		Secret:            secret,
+	})
+
 	// return hcore.Start(17078)
 }
 
-func Parse(path string, tempPath string, debug bool) error {
-	config, err := config.ParseConfig(tempPath, debug)
-	if err != nil {
-		return err
-	}
-	return os.WriteFile(path, config, 0o644)
+func BuildConfig(configPath string) (string, error) {
+	return hcore.BuildConfigJson(&hcore.StartRequest{
+		ConfigPath: configPath,
+	})
 }
 
-func BuildConfig(path string, HiddifyOptionsJson string) (string, error) {
-	os.Chdir(filepath.Dir(path))
-	fileContent, err := os.ReadFile(path)
-	if err != nil {
-		return "", err
-	}
-	var options option.Options
-	err = options.UnmarshalJSON(fileContent)
-	if err != nil {
-		return "", err
-	}
-	HiddifyOptions := &config.HiddifyOptions{}
-	err = json.Unmarshal([]byte(HiddifyOptionsJson), HiddifyOptions)
-	if err != nil {
-		return "", nil
-	}
-	if HiddifyOptions.Warp.WireguardConfigStr != "" {
-		err := json.Unmarshal([]byte(HiddifyOptions.Warp.WireguardConfigStr), &HiddifyOptions.Warp.WireguardConfig)
-		if err != nil {
-			return "", err
-		}
-	}
+// func Start(configPath string, configContent string, platformInterface libbox.PlatformInterface) (*hcore.CoreInfoResponse, error) {
+// 	state, err := hcore.StartWithPlatformInterface(&hcore.StartRequest{
+// 		ConfigContent: configContent,
+// 		ConfigPath:    configPath,
+// 	}, platformInterface)
+// 	return state, err
+// }
 
-	if HiddifyOptions.Warp2.WireguardConfigStr != "" {
-		err := json.Unmarshal([]byte(HiddifyOptions.Warp2.WireguardConfigStr), &HiddifyOptions.Warp2.WireguardConfig)
-		if err != nil {
-			return "", err
-		}
-	}
-
-	return config.BuildConfigJson(*HiddifyOptions, options)
+func Start(configPath string, platformInterface libbox.PlatformInterface) error {
+	_, err := hcore.StartWithPlatformInterface(&hcore.StartRequest{
+		ConfigPath: configPath,
+	}, platformInterface)
+	return err
 }
 
-func GenerateWarpConfig(licenseKey string, accountId string, accessToken string) (string, error) {
-	return config.GenerateWarpAccount(licenseKey, accountId, accessToken)
+func Stop() error {
+	_, err := hcore.Stop()
+
+	return err
+}
+
+func GetServerPublicKey() []byte {
+	return hcore.GetGrpcServerPublicKey()
+}
+
+func AddGrpcClientPublicKey(clientPublicKey []byte) error {
+	return hcore.AddGrpcClientPublicKey(clientPublicKey)
+}
+
+func Close() {
+	hcore.Close()
 }

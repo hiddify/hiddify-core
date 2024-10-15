@@ -10,9 +10,9 @@ import (
 )
 
 var (
-	systemInfoObserver        = NewObserver[SystemInfo](10)
-	outboundsInfoObserver     = NewObserver[OutboundGroupList](10)
-	mainOutboundsInfoObserver = NewObserver[OutboundGroupList](10)
+	systemInfoObserver        = NewObserver[*SystemInfo](10)
+	outboundsInfoObserver     = NewObserver[*OutboundGroupList](10)
+	mainOutboundsInfoObserver = NewObserver[*OutboundGroupList](10)
 )
 
 var (
@@ -47,7 +47,7 @@ func (s *CoreService) GetSystemInfo(req *common.Empty, stream grpc.ServerStreami
 		case <-done:
 			return nil
 		case info := <-sub:
-			stream.Send(&info)
+			stream.Send(info)
 		case <-time.After(1000 * time.Millisecond):
 		}
 	}
@@ -79,7 +79,7 @@ func (s *CoreService) OutboundsInfo(req *common.Empty, stream grpc.ServerStreami
 		case <-done:
 			return nil
 		case info := <-sub:
-			stream.Send(&info)
+			stream.Send(info)
 		case <-time.After(500 * time.Millisecond):
 		}
 	}
@@ -111,7 +111,7 @@ func (s *CoreService) MainOutboundsInfo(req *common.Empty, stream grpc.ServerStr
 		case <-stopch:
 			return nil
 		case info := <-sub:
-			stream.Send(&info)
+			stream.Send(info)
 		case <-time.After(500 * time.Millisecond):
 		}
 	}

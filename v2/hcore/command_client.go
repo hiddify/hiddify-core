@@ -27,7 +27,7 @@ func (cch *CommandClientHandler) WriteLog(message string) {
 }
 
 func (cch *CommandClientHandler) WriteStatus(message *libbox.StatusMessage) {
-	systemInfoObserver.Emit(SystemInfo{
+	systemInfoObserver.Emit(&SystemInfo{
 		ConnectionsIn:  message.ConnectionsIn,
 		ConnectionsOut: message.ConnectionsOut,
 		Uplink:         message.Uplink,
@@ -62,8 +62,8 @@ func (cch *CommandClientHandler) WriteGroups(message libbox.OutboundGroupIterato
 		}
 		groups.Items = append(groups.Items, &OutboundGroup{Tag: group.Tag, Type: group.Type, Selected: group.Selected, Items: groupItems})
 	}
-	outboundsInfoObserver.Emit(groups)
-	mainOutboundsInfoObserver.Emit(groups)
+	outboundsInfoObserver.Emit(&groups)
+	mainOutboundsInfoObserver.Emit(&groups)
 }
 
 func (cch *CommandClientHandler) InitializeClashMode(modeList libbox.StringIterator, currentMode string) {

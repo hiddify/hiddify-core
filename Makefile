@@ -32,15 +32,15 @@ protos:
 
 
 lib_install:
-	go install -v github.com/sagernet/gomobile/cmd/gomobile@v0.1.1
-	go install -v github.com/sagernet/gomobile/cmd/gobind@v0.1.1
+	go install -v github.com/sagernet/gomobile/cmd/gomobile@v0.1.4
+	go install -v github.com/sagernet/gomobile/cmd/gobind@v0.1.4
 	npm install
 
 headers:
 	go build -buildmode=c-archive -o $(BINDIR)/$(LIBNAME).h ./custom
 
 android: lib_install
-	gomobile bind -v -androidapi=21 -javapkg=io.nekohasekai -libname=box -tags=$(TAGS) -trimpath -target=android -o $(BINDIR)/$(LIBNAME).aar github.com/sagernet/sing-box/experimental/libbox ./mobile
+	gomobile bind -v -androidapi=21 -javapkg=com.hiddify.core -libname=box -tags=$(TAGS) -trimpath -target=android -o $(BINDIR)/$(LIBNAME).aar github.com/sagernet/sing-box/experimental/libbox ./mobile
 
 ios-full: lib_install
 	gomobile bind -v  -target ios,iossimulator,tvos,tvossimulator,macos -libname=box -tags=$(TAGS),$(IOS_ADD_TAGS) -trimpath -ldflags="-w -s" -o $(BINDIR)/$(PRODUCT_NAME).xcframework github.com/sagernet/sing-box/experimental/libbox ./mobile 

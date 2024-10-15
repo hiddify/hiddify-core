@@ -8,7 +8,7 @@ import (
 )
 
 func TestAddByContent(t *testing.T) {
-	entity, err := profile.AddByUrl("https://raw.githubusercontent.com/hiddify/hiddify-next/refs/heads/main/test.configs/warp", false)
+	entity, err := profile.AddByUrl("https://raw.githubusercontent.com/hiddify/hiddify-next/refs/heads/main/test.configs/warp", "", false)
 	if err != nil {
 		t.Fatalf("expected no error, but got: %v", err)
 	}

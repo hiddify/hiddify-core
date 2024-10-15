@@ -87,11 +87,11 @@ message WarpAccount {
 }
 
 message WarpWireguardConfig {
-  string private_key = 1;
-  string local_address_ipv4 = 2;
-  string local_address_ipv6 = 3;
-  string peer_public_key = 4;
-  string client_id=5;
+  string private_key = 1 [json_name = "private-key"];
+  string local_address_ipv4 = 2 [json_name = "local-address-ipv4"];
+  string local_address_ipv6 = 3 [json_name = "local-address-ipv6"];
+  string peer_public_key = 4 [json_name = "peer-public-key"];
+  string client_id=5 [json_name = "client-id"];
 }
 
 message WarpGenerationResponse {

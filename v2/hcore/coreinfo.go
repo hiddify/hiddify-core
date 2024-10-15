@@ -10,7 +10,7 @@ import (
 )
 
 var (
-	coreInfoObserver = *NewObserver[*CoreInfoResponse](1)
+	coreInfoObserver = NewObserver[*CoreInfoResponse](1)
 	CoreState        = CoreStates_STOPPED
 )
 

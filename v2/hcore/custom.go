@@ -11,14 +11,16 @@ import (
 	"github.com/hiddify/hiddify-core/bridge"
 	"github.com/hiddify/hiddify-core/config"
 	common "github.com/hiddify/hiddify-core/v2/common"
+	"github.com/hiddify/hiddify-core/v2/db"
 	"github.com/sagernet/sing-box/experimental/libbox"
 	"github.com/sagernet/sing-box/log"
+	"github.com/sagernet/sing-box/option"
 )
 
 var (
-	Box              *libbox.BoxService
-	HiddifyOptions   *config.HiddifyOptions
-	activeConfigPath string
+	Box            *libbox.BoxService
+	HiddifyOptions *config.HiddifyOptions
+	// activeConfigPath string
 	coreLogFactory   log.Factory
 	useFlutterBridge bool = true
 )
@@ -72,13 +74,101 @@ func (s *CoreService) StartService(ctx context.Context, in *StartRequest) (*Core
 	return StartService(in)
 }
 
+func errorWrapper(state MessageType, err error) (*CoreInfoResponse, error) {
+	Log(LogLevel_FATAL, LogType_CORE, err.Error())
+	StopAndAlert(MessageType_UNEXPECTED_ERROR, err.Error())
+	return SetCoreStatus(CoreStates_STOPPED, state, err.Error()), err
+}
+
+func StartWithPlatformInterface(in *StartRequest, platformInterface libbox.PlatformInterface) (coreResponse *CoreInfoResponse, err error) {
+	defer config.DeferPanicToError("start", func(recovered_err error) {
+		coreResponse, err = errorWrapper(MessageType_UNEXPECTED_ERROR, recovered_err)
+		<-time.After(5 * time.Second)
+	})
+
+	Log(LogLevel_DEBUG, LogType_CORE, "Starting Core Service")
+	json, err := BuildConfigJson(in)
+	if err != nil {
+		return errorWrapper(MessageType_ERROR_BUILDING_CONFIG, err)
+	}
+	Log(LogLevel_DEBUG, LogType_CORE, "Saving config")
+	// currentBuildConfigPath := filepath.Join(sWorkingPath, "current-config.json")
+	// config.SaveCurrentConfig(currentBuildConfigPath, *parsedContent)
+	// activeConfigPath = currentBuildConfigPath
+
+	Log(LogLevel_DEBUG, LogType_CORE, fmt.Sprintf("Starting Service json %++v, platformInterface %++v", json, platformInterface))
+	instance, err := libbox.NewService(json, &HiddifyPlatformInterface{
+		platform: platformInterface,
+	})
+	if err != nil {
+		return errorWrapper(MessageType_CREATE_SERVICE, err)
+	}
+
+	Log(LogLevel_DEBUG, LogType_CORE, "Stating Service with delay ?", in.DelayStart)
+	if in.DelayStart {
+		<-time.After(250 * time.Millisecond)
+	}
+
+	err = instance.Start()
+	if err != nil {
+		return errorWrapper(MessageType_START_SERVICE, err)
+	}
+	Box = instance
+	if in.EnableOldCommandServer {
+		Log(LogLevel_DEBUG, LogType_CORE, "Starting Command Server")
+		if err := startCommandServer(); err != nil {
+			return errorWrapper(MessageType_START_COMMAND_SERVER, err)
+		}
+		oldCommandServer.SetService(Box)
+	}
+
+	return SetCoreStatus(CoreStates_STARTED, MessageType_EMPTY, ""), nil
+}
+
+func BuildConfigJson(in *StartRequest) (string, error) {
+	Log(LogLevel_DEBUG, LogType_CORE, "Stating Service ")
+
+	parsedContent, err := BuildConfig(in)
+	if err != nil {
+		return "", err
+	}
+	return config.ToJson(*parsedContent)
+}
+
+func BuildConfig(in *StartRequest) (*option.Options, error) {
+	content := in.ConfigContent
+	if content == "" {
+		fileContent, err := os.ReadFile(in.ConfigPath)
+		if err != nil {
+			return nil, err
+		}
+		content = string(fileContent)
+	}
+
+	Log(LogLevel_DEBUG, LogType_CORE, "Parsing Config")
+
+	parsedContent, err := readOptions(content)
+	Log(LogLevel_DEBUG, LogType_CORE, "Parsed")
+
+	if err != nil {
+		return nil, err
+	}
+
+	if !in.EnableRawConfig {
+		Log(LogLevel_DEBUG, LogType_CORE, "Building config "+fmt.Sprintf("%++v", HiddifyOptions))
+		return config.BuildConfig(*HiddifyOptions, parsedContent)
+
+	}
+
+	return &parsedContent, nil
+}
+
 func StartService(in *StartRequest) (*CoreInfoResponse, error) {
 	Log(LogLevel_DEBUG, LogType_CORE, "Starting Core Service")
 	content := in.ConfigContent
 	if content == "" {
 
-		activeConfigPath = in.ConfigPath
-		fileContent, err := os.ReadFile(activeConfigPath)
+		fileContent, err := os.ReadFile(in.ConfigPath)
 		if err != nil {
 			Log(LogLevel_FATAL, LogType_CORE, err.Error())
 			resp := SetCoreStatus(CoreStates_STOPPED, MessageType_ERROR_READING_CONFIG, err.Error())
@@ -112,9 +202,9 @@ func StartService(in *StartRequest) (*CoreInfoResponse, error) {
 	Log(LogLevel_DEBUG, LogType_CORE, "Saving config")
 	currentBuildConfigPath := filepath.Join(sWorkingPath, "current-config.json")
 	config.SaveCurrentConfig(currentBuildConfigPath, parsedContent)
-	if activeConfigPath == "" {
-		activeConfigPath = currentBuildConfigPath
-	}
+	// if activeConfigPath == "" {
+	// 	activeConfigPath = currentBuildConfigPath
+	// }
 	if in.EnableOldCommandServer {
 		Log(LogLevel_DEBUG, LogType_CORE, "Starting Command Server")
 		err = startCommandServer()
@@ -205,6 +295,14 @@ func (s *CoreService) ChangeHiddifySettings(ctx context.Context, in *ChangeHiddi
 
 func ChangeHiddifySettings(in *ChangeHiddifySettingsRequest) (*CoreInfoResponse, error) {
 	HiddifyOptions = config.DefaultHiddifyOptions()
+	if in.HiddifySettingsJson == "" {
+		return &CoreInfoResponse{}, nil
+	}
+	settings := db.GetTable[common.AppSettings]()
+	settings.UpdateInsert(&common.AppSettings{
+		Id:    "HiddifySettingsJson",
+		Value: in.HiddifySettingsJson,
+	})
 	err := json.Unmarshal([]byte(in.HiddifySettingsJson), HiddifyOptions)
 	if err != nil {
 		return nil, err
@@ -299,7 +397,7 @@ func Stop() (*CoreInfoResponse, error) {
 			CoreState:   CoreState,
 			MessageType: MessageType_UNEXPECTED_ERROR,
 			Message:     "Error while stopping the service.",
-		}, fmt.Errorf("Error while stopping the service.")
+		}, fmt.Errorf("error while stopping the service")
 	}
 	Box = nil
 	if oldCommandServer != nil {
@@ -309,7 +407,7 @@ func Stop() (*CoreInfoResponse, error) {
 				CoreState:   CoreState,
 				MessageType: MessageType_UNEXPECTED_ERROR,
 				Message:     "Error while Closing the comand server.",
-			}, fmt.Errorf("error while Closing the comand server.")
+			}, fmt.Errorf("error while Closing the comand server")
 		}
 		oldCommandServer = nil
 	}
@@ -354,6 +452,21 @@ func Restart(in *StartRequest) (*CoreInfoResponse, error) {
 	libbox.SetMemoryLimit(!in.DisableMemoryLimit)
 	resp, gErr := StartService(in)
 	return resp, gErr
+}
+
+func Close() error {
+	defer config.DeferPanicToError("close", func(err error) {
+		Log(LogLevel_FATAL, LogType_CORE, err.Error())
+		StopAndAlert(MessageType_UNEXPECTED_ERROR, err.Error())
+	})
+	log.Debug("[Service] Closing")
+
+	_, err := Stop()
+	CloseGrpcServer()
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 // func (s *CoreService) Status(ctx context.Context, empty *common.Empty) (*CoreInfoResponse, error) {
