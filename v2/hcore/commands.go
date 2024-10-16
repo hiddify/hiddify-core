@@ -24,7 +24,10 @@ var (
 func (s *CoreService) GetSystemInfo(req *common.Empty, stream grpc.ServerStreamingServer[SystemInfo]) error {
 	if statusClient == nil {
 		statusClient = libbox.NewCommandClient(
-			&CommandClientHandler{},
+			&CommandClientHandler{
+				logger: coreLogFactory.NewLogger("[SystemInfo Command Client]"),
+				// port:   s.port,
+			},
 			&libbox.CommandClientOptions{
 				Command:        libbox.CommandStatus,
 				StatusInterval: 1000000000, // 1000ms debounce
@@ -56,7 +59,10 @@ func (s *CoreService) GetSystemInfo(req *common.Empty, stream grpc.ServerStreami
 func (s *CoreService) OutboundsInfo(req *common.Empty, stream grpc.ServerStreamingServer[OutboundGroupList]) error {
 	if groupClient == nil {
 		groupClient = libbox.NewCommandClient(
-			&CommandClientHandler{},
+			&CommandClientHandler{
+				logger: coreLogFactory.NewLogger("[OutboundsInfo Command Client]"),
+				// port:   s.port,
+			},
 			&libbox.CommandClientOptions{
 				Command:        libbox.CommandGroup,
 				StatusInterval: 500000000, // 500ms debounce
@@ -88,7 +94,10 @@ func (s *CoreService) OutboundsInfo(req *common.Empty, stream grpc.ServerStreami
 func (s *CoreService) MainOutboundsInfo(req *common.Empty, stream grpc.ServerStreamingServer[OutboundGroupList]) error {
 	if groupInfoOnlyClient == nil {
 		groupInfoOnlyClient = libbox.NewCommandClient(
-			&CommandClientHandler{},
+			&CommandClientHandler{
+				logger: coreLogFactory.NewLogger("[MainOutboundsInfo Command Client]"),
+				// port:   s.port,
+			},
 			&libbox.CommandClientOptions{
 				Command:        libbox.CommandGroupInfoOnly,
 				StatusInterval: 500000000, // 500ms debounce
