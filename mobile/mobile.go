@@ -57,6 +57,6 @@ func AddGrpcClientPublicKey(clientPublicKey []byte) error {
 	return hcore.AddGrpcClientPublicKey(clientPublicKey)
 }
 
-func Close(mode hcore.SetupMode) {
-	hcore.Close(mode)
+func Close(mode int) {
+	hcore.Close(hcore.SetupMode(mode))
 }
