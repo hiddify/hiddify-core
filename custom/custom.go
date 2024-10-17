@@ -189,6 +189,6 @@ func AddGrpcClientPublicKey(clientPublicKey []byte) error {
 }
 
 //export close
-func close() {
-	hcore.Close()
+func close(mode SetupMode) {
+	hcore.Close(mode)
 }

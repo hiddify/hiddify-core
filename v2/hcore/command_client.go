@@ -5,8 +5,9 @@ import (
 	"github.com/sagernet/sing-box/log"
 )
 
+var _ libbox.CommandClientHandler = (*CommandClientHandler)(nil)
+
 type CommandClientHandler struct {
-	port   int64
 	logger log.Logger
 }
 

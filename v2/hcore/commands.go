@@ -2,7 +2,6 @@ package hcore
 
 import (
 	"context"
-	"time"
 
 	common "github.com/hiddify/hiddify-core/v2/common"
 	"github.com/sagernet/sing-box/experimental/libbox"
@@ -10,9 +9,9 @@ import (
 )
 
 var (
-	systemInfoObserver        = NewObserver[*SystemInfo](10)
-	outboundsInfoObserver     = NewObserver[*OutboundGroupList](10)
-	mainOutboundsInfoObserver = NewObserver[*OutboundGroupList](10)
+	systemInfoObserver        = NewObserver[*SystemInfo](1)
+	outboundsInfoObserver     = NewObserver[*OutboundGroupList](1)
+	mainOutboundsInfoObserver = NewObserver[*OutboundGroupList](1)
 )
 
 var (
@@ -51,7 +50,7 @@ func (s *CoreService) GetSystemInfo(req *common.Empty, stream grpc.ServerStreami
 			return nil
 		case info := <-sub:
 			stream.Send(info)
-		case <-time.After(1000 * time.Millisecond):
+			// case <-time.After(1000 * time.Millisecond):
 		}
 	}
 }
@@ -73,6 +72,7 @@ func (s *CoreService) OutboundsInfo(req *common.Empty, stream grpc.ServerStreami
 			groupClient.Disconnect()
 			groupClient = nil
 		}()
+
 		groupClient.Connect()
 	}
 
@@ -86,7 +86,7 @@ func (s *CoreService) OutboundsInfo(req *common.Empty, stream grpc.ServerStreami
 			return nil
 		case info := <-sub:
 			stream.Send(info)
-		case <-time.After(500 * time.Millisecond):
+			// case <-time.After(500 * time.Millisecond):
 		}
 	}
 }
@@ -121,7 +121,7 @@ func (s *CoreService) MainOutboundsInfo(req *common.Empty, stream grpc.ServerStr
 			return nil
 		case info := <-sub:
 			stream.Send(info)
-		case <-time.After(500 * time.Millisecond):
+			// case <-time.After(500 * time.Millisecond):
 		}
 	}
 }

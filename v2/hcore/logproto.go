@@ -12,7 +12,7 @@ func NewObserver[T any](listenerBufferSize int) *observable.Observer[T] {
 	return observable.NewObserver(observable.NewSubscriber[T](listenerBufferSize), listenerBufferSize)
 }
 
-var logObserver = NewObserver[*LogMessage](10)
+var logObserver = NewObserver[*LogMessage](1)
 
 func Log(level LogLevel, typ LogType, message ...any) {
 	if level != LogLevel_DEBUG {

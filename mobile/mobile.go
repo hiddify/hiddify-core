@@ -46,7 +46,6 @@ func Start(configPath string, platformInterface libbox.PlatformInterface) error 
 
 func Stop() error {
 	_, err := hcore.Stop()
-
 	return err
 }
 
@@ -58,6 +57,6 @@ func AddGrpcClientPublicKey(clientPublicKey []byte) error {
 	return hcore.AddGrpcClientPublicKey(clientPublicKey)
 }
 
-func Close() {
-	hcore.Close()
+func Close(mode hcore.SetupMode) {
+	hcore.Close(mode)
 }

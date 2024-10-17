@@ -454,7 +454,7 @@ func Restart(in *StartRequest) (*CoreInfoResponse, error) {
 	return resp, gErr
 }
 
-func Close() error {
+func Close(mode SetupMode) error {
 	defer config.DeferPanicToError("close", func(err error) {
 		Log(LogLevel_FATAL, LogType_CORE, err.Error())
 		StopAndAlert(MessageType_UNEXPECTED_ERROR, err.Error())
@@ -462,11 +462,9 @@ func Close() error {
 	log.Debug("[Service] Closing")
 
 	_, err := Stop()
-	CloseGrpcServer()
-	if err != nil {
-		return err
-	}
-	return nil
+	CloseGrpcServer(mode)
+
+	return err
 }
 
 // func (s *CoreService) Status(ctx context.Context, empty *common.Empty) (*CoreInfoResponse, error) {

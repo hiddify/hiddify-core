@@ -169,9 +169,9 @@ func AddGrpcClientPublicKey(clientPublicKey []byte) error {
 	return nil
 }
 
-func CloseGrpcServer() {
-	for mode := range grpcServer {
-		grpcServer[mode].Stop()
-		grpcServer[mode] = nil
+func CloseGrpcServer(mode SetupMode) {
+	if server, ok := grpcServer[mode]; ok && server != nil {
+		server.Stop()
+		delete(grpcServer, mode)
 	}
 }
