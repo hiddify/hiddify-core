@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/hiddify/hiddify-core/v2/config"
 	"github.com/hiddify/hiddify-core/v2/hcore/tunnelservice"
 
 	"github.com/spf13/cobra"
@@ -19,19 +18,18 @@ var commandService = &cobra.Command{
 		arg := args[0]
 		switch arg {
 		case "activate":
-			config.ActivateTunnelService(config.HiddifyOptions{
-				InboundOptions: config.InboundOptions{
-					EnableTunService: true,
-					MixedPort:        12334,
-					TUNStack:         "gvisor",
-				},
+			tunnelservice.ActivateTunnelService(&tunnelservice.TunnelStartRequest{
+				Ipv6:       true,
+				ServerPort: 12334,
+				Stack:      "gvisor",
 			})
+
 			<-time.After(1 * time.Second)
 
 		case "deactivate":
-			config.DeactivateTunnelServiceForce()
+			tunnelservice.DeactivateTunnelServiceForce()
 		case "exit":
-			config.ExitTunnelService()
+			tunnelservice.ExitTunnelService()
 		default:
 			code, out := tunnelservice.StartTunnelService(arg)
 			fmt.Printf("exitCode:%d msg=%s", code, out)

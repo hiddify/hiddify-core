@@ -66,3 +66,7 @@ func ExecuteCmd(executablePath string, background bool, args ...string) (string,
 
 	return "", fmt.Errorf("Error executing run as root shell command")
 }
+
+func Chmod(path string, mode os.FileMode) error {
+	return os.Chmod(path, mode)
+}

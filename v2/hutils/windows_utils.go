@@ -7,6 +7,8 @@ import (
 	"strings"
 	"syscall"
 
+	acl "github.com/hectane/go-acl"
+
 	"golang.org/x/sys/windows"
 )
 
@@ -44,4 +46,8 @@ func ExecuteCmd(exe string, background bool, args ...string) (string, error) {
 		return "", err
 	}
 	return "", nil
+}
+
+func chmod(path string, mode os.FileMode) error {
+	return acl.Chmod(path, mode)
 }

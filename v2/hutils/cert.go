@@ -1,4 +1,4 @@
-package utils
+package hutils
 
 import (
 	"crypto/rand"
@@ -8,6 +8,7 @@ import (
 	"encoding/pem"
 	"fmt"
 	"math/big"
+	"os"
 	"time"
 )
 
@@ -58,4 +59,36 @@ func GenerateCertificatePair() (*CertificatePair, error) {
 		Certificate: certPEM,
 		PrivateKey:  keyPEM,
 	}, nil
+}
+
+func fileExists(path string) bool {
+	_, err := os.Stat(path)
+	return !os.IsNotExist(err) // returns true if the file exists
+}
+
+func GenerateCertificateFile(certPath, keyPath string, isServer bool, skipIfExist bool) error {
+	if skipIfExist && fileExists(certPath) && fileExists(keyPath) {
+		return nil
+	}
+	err := os.MkdirAll("data/cert", 0o744)
+	if err != nil {
+		return err
+	}
+	cers, err := GenerateCertificatePair()
+	if err != nil {
+		return err
+	}
+	err = os.WriteFile(certPath, cers.Certificate, 0o644)
+	if err != nil {
+		return err
+	}
+	err = os.WriteFile(keyPath, cers.PrivateKey, 0o600)
+	if err != nil {
+		return err
+	}
+	err = os.Chmod(keyPath, 0o600)
+	if err != nil {
+		return err
+	}
+	return nil
 }
