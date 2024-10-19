@@ -24,7 +24,7 @@ func (s *CoreService) GetSystemInfo(req *common.Empty, stream grpc.ServerStreami
 	if statusClient == nil {
 		statusClient = libbox.NewCommandClient(
 			&CommandClientHandler{
-				logger: coreLogFactory.NewLogger("[SystemInfo Command Client]"),
+
 				// port:   s.port,
 			},
 			&libbox.CommandClientOptions{
@@ -59,7 +59,6 @@ func (s *CoreService) OutboundsInfo(req *common.Empty, stream grpc.ServerStreami
 	if groupClient == nil {
 		groupClient = libbox.NewCommandClient(
 			&CommandClientHandler{
-				logger: coreLogFactory.NewLogger("[OutboundsInfo Command Client]"),
 				// port:   s.port,
 			},
 			&libbox.CommandClientOptions{
@@ -95,7 +94,6 @@ func (s *CoreService) MainOutboundsInfo(req *common.Empty, stream grpc.ServerStr
 	if groupInfoOnlyClient == nil {
 		groupInfoOnlyClient = libbox.NewCommandClient(
 			&CommandClientHandler{
-				logger: coreLogFactory.NewLogger("[MainOutboundsInfo Command Client]"),
 				// port:   s.port,
 			},
 			&libbox.CommandClientOptions{

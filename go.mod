@@ -162,8 +162,6 @@ toolchain go1.22.3
 
 require (
 	github.com/bepass-org/warp-plus v1.2.4
-	github.com/fatih/color v1.16.0
-	github.com/hiddify/hiddify-app-demo-extension v0.0.0-20241001070003-26039f960ad6
 	github.com/improbable-eng/grpc-web v0.15.0
 	github.com/jellydator/validation v1.1.0
 	github.com/kardianos/service v1.2.2
@@ -181,6 +179,7 @@ require (
 
 require (
 	github.com/google/uuid v1.6.0
+	github.com/hectane/go-acl v0.0.0-20230122075934-ca0b05cb1adb
 	github.com/syndtr/goleveldb v1.0.1-0.20200815110645-5c35d600f0ca
 	github.com/tendermint/tm-db v0.6.7
 )
@@ -198,8 +197,7 @@ require (
 	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/golang/snappy v0.0.1 // indirect
 	github.com/jmhodges/levigo v1.0.0 // indirect
-	github.com/mattn/go-colorable v0.1.13 // indirect
-	github.com/mattn/go-isatty v0.0.20 // indirect
+	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/metacubex/tfo-go v0.0.0-20240821025650-e9be0afd5e7d // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/rs/cors v1.7.0 // indirect

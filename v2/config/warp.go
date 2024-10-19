@@ -150,7 +150,7 @@ func getOrGenerateWarpLocallyIfNeeded(warpOptions *WarpOptions) WarpWireguardCon
 	table := db.GetTable[WarpOptions]()
 	dbWarpOptions, err := table.Get(warpOptions.Id)
 	if err == nil && dbWarpOptions.WireguardConfig.PrivateKey != "" {
-		return warpOptions.WireguardConfig
+		return dbWarpOptions.WireguardConfig
 	}
 	license := ""
 	if len(warpOptions.Id) == 26 { // warp key is 26 characters long

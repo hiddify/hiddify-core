@@ -59,8 +59,6 @@ func BuildConfigJson(configOpt HiddifyOptions, input option.Options) (string, er
 
 // TODO include selectors
 func BuildConfig(opt HiddifyOptions, input option.Options) (*option.Options, error) {
-	fmt.Printf("config options: %++v\n", opt)
-
 	var options option.Options
 	if opt.EnableFullConfig {
 		options.Inbounds = input.Inbounds

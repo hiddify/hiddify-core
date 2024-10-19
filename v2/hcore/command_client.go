@@ -2,29 +2,26 @@ package hcore
 
 import (
 	"github.com/sagernet/sing-box/experimental/libbox"
-	"github.com/sagernet/sing-box/log"
 )
 
 var _ libbox.CommandClientHandler = (*CommandClientHandler)(nil)
 
-type CommandClientHandler struct {
-	logger log.Logger
-}
+type CommandClientHandler struct{}
 
 func (cch *CommandClientHandler) Connected() {
-	cch.logger.Debug("CONNECTED")
+	Log(LogLevel_DEBUG, LogType_CORE, "CONNECTED")
 }
 
 func (cch *CommandClientHandler) Disconnected(message string) {
-	cch.logger.Debug("DISCONNECTED: ", message)
+	Log(LogLevel_DEBUG, LogType_CORE, "DISCONNECTED: ", message)
 }
 
 func (cch *CommandClientHandler) ClearLog() {
-	cch.logger.Debug("clear log")
+	Log(LogLevel_DEBUG, LogType_CORE, "clear log")
 }
 
 func (cch *CommandClientHandler) WriteLog(message string) {
-	cch.logger.Debug("log: ", message)
+	Log(LogLevel_DEBUG, LogType_CORE, "log: ", message)
 }
 
 func (cch *CommandClientHandler) WriteStatus(message *libbox.StatusMessage) {
@@ -38,7 +35,7 @@ func (cch *CommandClientHandler) WriteStatus(message *libbox.StatusMessage) {
 		Memory:         message.Memory,
 		Goroutines:     message.Goroutines,
 	})
-	cch.logger.Debug("Memory: ", libbox.FormatBytes(message.Memory), ", Goroutines: ", message.Goroutines)
+	Log(LogLevel_DEBUG, LogType_CORE, "Memory: ", libbox.FormatBytes(message.Memory), ", Goroutines: ", message.Goroutines)
 }
 
 func (cch *CommandClientHandler) WriteGroups(message libbox.OutboundGroupIterator) {
@@ -68,9 +65,9 @@ func (cch *CommandClientHandler) WriteGroups(message libbox.OutboundGroupIterato
 }
 
 func (cch *CommandClientHandler) InitializeClashMode(modeList libbox.StringIterator, currentMode string) {
-	cch.logger.Debug("initial clash mode: ", currentMode)
+	Log(LogLevel_DEBUG, LogType_CORE, "initial clash mode: ", currentMode)
 }
 
 func (cch *CommandClientHandler) UpdateClashMode(newMode string) {
-	cch.logger.Debug("update clash mode: ", newMode)
+	Log(LogLevel_DEBUG, LogType_CORE, "update clash mode: ", newMode)
 }

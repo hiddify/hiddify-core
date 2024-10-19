@@ -65,8 +65,12 @@ func StartService(in *StartRequest, platformInterface libbox.PlatformInterface) 
 	}
 
 	instance.GetInstance().AddPostService("hiddifyMainServiceManager", &hiddifyMainServiceManager{})
-	err = instance.Start()
-	if err != nil {
+
+	if err := startCommandServer(instance); err != nil {
+		return errorWrapper(MessageType_START_COMMAND_SERVER, err)
+	}
+
+	if err := instance.Start(); err != nil {
 		return errorWrapper(MessageType_START_SERVICE, err)
 	}
 	Box = instance

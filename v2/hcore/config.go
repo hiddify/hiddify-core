@@ -3,7 +3,6 @@ package hcore
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"os"
 	"path/filepath"
 
@@ -45,7 +44,12 @@ func BuildConfig(in *StartRequest) (*option.Options, error) {
 	}
 
 	if !in.EnableRawConfig {
-		Log(LogLevel_DEBUG, LogType_CORE, "Building config "+fmt.Sprintf("%++v", HiddifyOptions))
+		hcontent, err := json.MarshalIndent(HiddifyOptions, "", " ")
+		if err != nil {
+			return nil, err
+		}
+
+		Log(LogLevel_DEBUG, LogType_CORE, "Building config ", string(hcontent))
 		return config.BuildConfig(*HiddifyOptions, parsedContent)
 
 	}
