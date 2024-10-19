@@ -45,7 +45,7 @@ jobs:
           - { name: 'hiddify-core-android', os: 'ubuntu-latest', target: 'android' }
           - { name: 'hiddify-core-linux-amd64', os: 'ubuntu-20.04', target: 'linux-amd64' }
           - { name: "hiddify-core-windows-amd64", os: 'ubuntu-latest', target: 'windows-amd64', aarch: 'x64' }
-          - { name: "hiddify-core-macos-universal", os: 'macos-12', target: 'macos-universal' }
+          - { name: "hiddify-core-macos", os: 'macos-12', target: 'macos' }
           - { name: "hiddify-core-ios", os: "macos-12", target: "ios" }
           # linux custom
           - {name: hiddify-cli-linux-amd64, goos: linux, goarch: amd64, goamd64: v1, target: 'linux-custom', os: 'ubuntu-20.04'}
@@ -117,9 +117,9 @@ jobs:
         run: |
           tree 
           rm -f /*.h */*.h
-          rm ./hiddify-libcore*sources* ||echo "no source"
-          rm ./hiddify-libcore-macos-a*.dylib || echo "no macos arm and amd"
-          files=$(ls | grep -E '^(libcore\.(dll|so|dylib|aar)|webui|Libcore.xcframework|lib|HiddifyCli(\.exe)?)$')
+
+          rm ./hiddify-core-* || echo "no other files to zip"
+          files=$(ls | grep -E '^(hiddify-core\.(dll|so|dylib|aar)|webui|HiddifyCore.xcframework|HiddifyCli(\.exe)?)$')
           echo tar -czvf ${{ matrix.job.name }}.tar.gz  $files
           tar -czvf ${{ matrix.job.name }}.tar.gz  $files
           

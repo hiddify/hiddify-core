@@ -7,7 +7,7 @@ package main
 // Import the function from the DLL
 char* parseCli(int argc, char** argv);
 */
-import "../../cli/bydll/C"
+import "C"
 
 import (
 	"fmt"

@@ -18,6 +18,7 @@ func SaveCurrentConfig(path string, options option.Options) error {
 		return err
 	}
 	p, err := filepath.Abs(path)
+	os.MkdirAll(filepath.Dir(p), 0o755)
 	fmt.Printf("Saving config to %v %+v\n", p, err)
 	if err != nil {
 		return err

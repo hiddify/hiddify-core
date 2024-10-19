@@ -38,7 +38,7 @@ func StartService(in *StartRequest, platformInterface libbox.PlatformInterface) 
 		return errorWrapper(MessageType_EXTENSION, err)
 	}
 	Log(LogLevel_DEBUG, LogType_CORE, "Saving config")
-	currentBuildConfigPath := filepath.Join(sWorkingPath, "current-config.json")
+	currentBuildConfigPath := filepath.Join(sWorkingPath, "data/current-config.json")
 	config.SaveCurrentConfig(currentBuildConfigPath, *options)
 
 	Log(LogLevel_DEBUG, LogType_CORE, fmt.Sprintf("Starting Service json %++v, platformInterface %v", options, platformInterface))
