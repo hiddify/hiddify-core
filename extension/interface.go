@@ -5,6 +5,7 @@ import (
 
 	"github.com/hiddify/hiddify-core/v2/db"
 	"github.com/sagernet/sing-box/log"
+	"github.com/sagernet/sing-box/option"
 
 	"github.com/hiddify/hiddify-core/v2/service_manager"
 )
@@ -48,11 +49,14 @@ func loadExtension(factory ExtensionFactory) error {
 	return nil
 }
 
+var _ service_manager.HService = &extensionService{}
+
 type extensionService struct {
 	// Storage *CacheFile
 }
 
-func (s *extensionService) Start() error {
+// Init implements service_manager.HService.
+func (s *extensionService) Init() error {
 	table := db.GetTable[extensionData]()
 
 	for _, factory := range allExtensionsMap {
@@ -77,10 +81,41 @@ func (s *extensionService) Start() error {
 	return nil
 }
 
-func (s *extensionService) Close() error {
+// Dispose implements service_manager.HService.
+func (s *extensionService) Dispose() error {
 	for _, extension := range enabledExtensionsMap {
-		if err := (*extension).Close(); err != nil {
+		if err := (*extension).OnUIClose(); err != nil {
 			return err
+		}
+	}
+	return nil
+}
+
+// OnMainServicePreStart implements service_manager.HService.
+func (s *extensionService) OnMainServicePreStart(singconfig *option.Options) error {
+	for _, extension := range enabledExtensionsMap {
+		if err := (*extension).OnMainServicePreStart(singconfig); err != nil {
+			return fmt.Errorf("failed to prestart extension %s: %w", (*extension).getId(), err)
+		}
+	}
+	return nil
+}
+
+// OnMainServiceStart implements service_manager.HService.
+func (s *extensionService) OnMainServiceStart() error {
+	for _, extension := range enabledExtensionsMap {
+		if err := (*extension).OnMainServiceStart(); err != nil {
+			return fmt.Errorf("failed to start extension %s: %w", (*extension).getId(), err)
+		}
+	}
+	return nil
+}
+
+// OnMainServiceClose implements service_manager.HService.
+func (s *extensionService) OnMainServiceClose() error {
+	for _, extension := range enabledExtensionsMap {
+		if err := (*extension).OnMainServiceClose(); err != nil {
+			return fmt.Errorf("failed to close extension %s: %w", (*extension).getId(), err)
 		}
 	}
 	return nil

@@ -56,7 +56,7 @@ func (e ExtensionHostService) Connect(req *pb.ExtensionRequest, stream grpc.Serv
 	log.Printf("Connecting stream for extension %s", req.GetExtensionId())
 	log.Printf("Extension data: %+v", extension)
 
-	if err := (*extension).UpdateUI((*extension).GetUI()); err != nil {
+	if err := (*extension).DoUpdateUI((*extension).OnUIOpen()); err != nil {
 		log.Printf("Error updating UI for extension %s: %v", req.GetExtensionId(), err)
 	}
 
@@ -83,7 +83,7 @@ func (e ExtensionHostService) SubmitForm(ctx context.Context, req *pb.SendExtens
 			Message:     err.Error(),
 		}, err
 	}
-	(*extension).SubmitData(req.Button, req.GetData())
+	(*extension).OnDataSubmit(req.Button, req.GetData())
 
 	return &pb.ExtensionActionResult{
 		ExtensionId: req.ExtensionId,
@@ -102,8 +102,8 @@ func (e ExtensionHostService) Close(ctx context.Context, req *pb.ExtensionReques
 			Message:     err.Error(),
 		}, err
 	}
-	(*extension).Close()
-	(*extension).StoreData()
+	(*extension).OnUIClose()
+	(*extension).(*Base[any]).doStoreData()
 	return &pb.ExtensionActionResult{
 		ExtensionId: req.ExtensionId,
 		Code:        pb.ResponseCode_OK,
@@ -115,8 +115,8 @@ func (e ExtensionHostService) EditExtension(ctx context.Context, req *pb.EditExt
 	if !req.Enable {
 		extension, _ := getExtension(req.GetExtensionId())
 		if extension != nil {
-			(*extension).Close()
-			(*extension).StoreData()
+			(*extension).OnUIClose()
+			(*extension).(*Base[any]).doStoreData()
 		}
 		delete(enabledExtensionsMap, req.GetExtensionId())
 	}

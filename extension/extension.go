@@ -3,7 +3,6 @@ package extension
 import (
 	"encoding/json"
 
-	"github.com/hiddify/hiddify-core/config"
 	"github.com/hiddify/hiddify-core/extension/ui"
 	pb "github.com/hiddify/hiddify-core/hiddifyrpc"
 	"github.com/hiddify/hiddify-core/v2/db"
@@ -13,35 +12,59 @@ import (
 )
 
 type Extension interface {
-	GetUI() ui.Form
-	SubmitData(button string, data map[string]string) error
-	Close() error
-	UpdateUI(form ui.Form) error
+	OnUIOpen() *ui.Form
+	OnUIClose() error
+	OnDataSubmit(button string, data map[string]string) error
 
-	BeforeAppConnect(hiddifySettings *config.HiddifyOptions, singconfig *option.Options) error
+	DoUpdateUI(form *ui.Form) error
+	DoStoreData()
 
-	StoreData()
+	OnMainServicePreStart(singconfig *option.Options) error
+	OnMainServiceStart() error
+	OnMainServiceClose() error
 
 	init(id string)
 	getQueue() chan *pb.ExtensionResponse
 	getId() string
 }
 
+var _ Extension = (*Base[any])(nil)
+
 type Base[T any] struct {
-	id string
-	// responseStream grpc.ServerStreamingServer[pb.ExtensionResponse]
+	id    string
 	queue chan *pb.ExtensionResponse
 	Data  T
 }
 
-// func (b *Base) mustEmbdedBaseExtension() {
-// }
-
-func (b *Base[T]) BeforeAppConnect(hiddifySettings *config.HiddifyOptions, singconfig *option.Options) error {
+func (b *Base[T]) OnUIClose() error {
 	return nil
 }
 
-func (b *Base[T]) StoreData() {
+func (b *Base[T]) OnMainServicePreStart(singconfig *option.Options) error {
+	return nil
+}
+
+func (b *Base[T]) OnMainServiceStart() error {
+	return nil
+}
+
+func (b *Base[T]) OnMainServiceClose() error {
+	return nil
+}
+
+func (b *Base[T]) OnUIOpen() *ui.Form {
+	return nil
+}
+
+func (b *Base[T]) OnDataSubmit(button string, data map[string]string) error {
+	return nil
+}
+
+func (b *Base[T]) DoStoreData() {
+	b.doStoreData()
+}
+
+func (b *Base[T]) doStoreData() {
 	table := db.GetTable[extensionData]()
 	ed, err := table.Get(b.id)
 	if err != nil {
@@ -89,7 +112,7 @@ func (b *Base[T]) getId() string {
 }
 
 func (e *Base[T]) ShowMessage(title string, msg string) error {
-	return e.ShowDialog(ui.Form{
+	return e.ShowDialog(&ui.Form{
 		Title:       title,
 		Description: msg,
 		Fields: [][]ui.FormField{
@@ -103,7 +126,7 @@ func (e *Base[T]) ShowMessage(title string, msg string) error {
 	})
 }
 
-func (p *Base[T]) UpdateUI(form ui.Form) error {
+func (p *Base[T]) DoUpdateUI(form *ui.Form) error {
 	p.queue <- &pb.ExtensionResponse{
 		ExtensionId: p.id,
 		Type:        pb.ExtensionResponseType_UPDATE_UI,
@@ -112,7 +135,7 @@ func (p *Base[T]) UpdateUI(form ui.Form) error {
 	return nil
 }
 
-func (p *Base[T]) ShowDialog(form ui.Form) error {
+func (p *Base[T]) ShowDialog(form *ui.Form) error {
 	p.queue <- &pb.ExtensionResponse{
 		ExtensionId: p.id,
 		Type:        pb.ExtensionResponseType_SHOW_DIALOG,
