@@ -38,7 +38,7 @@ func BuildConfig(configPath string) (string, error) {
 // }
 
 func Start(configPath string, platformInterface libbox.PlatformInterface) error {
-	_, err := hcore.StartWithPlatformInterface(&hcore.StartRequest{
+	_, err := hcore.StartService(&hcore.StartRequest{
 		ConfigPath: configPath,
 	}, platformInterface)
 	return err
