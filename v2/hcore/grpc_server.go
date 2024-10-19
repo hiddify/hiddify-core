@@ -13,11 +13,11 @@ import (
 	"net"
 
 	"github.com/hiddify/hiddify-core/v2/hello"
+	hutils "github.com/hiddify/hiddify-core/v2/hutils"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 
 	"github.com/hiddify/hiddify-core/v2/common"
-	"github.com/hiddify/hiddify-core/v2/common/utils"
 
 	"github.com/hiddify/hiddify-core/v2/db"
 )
@@ -35,7 +35,6 @@ func StartGrpcServer(listenAddressG string, service string) (*grpc.Server, error
 	s := grpc.NewServer()
 	if service == "core" {
 		// Setup("./tmp/", "./tmp", "./tmp", 11111, false)
-		useFlutterBridge = false
 		RegisterCoreServer(s, &CoreService{})
 		// pb.RegisterExtensionHostServiceServer(s, &extension.ExtensionHostService{})
 	} else if service == "hello" {
@@ -63,7 +62,7 @@ func StartHelloGrpcServer(listenAddressG string) (*grpc.Server, error) {
 }
 
 var (
-	certpair   *utils.CertificatePair
+	certpair   *hutils.CertificatePair
 	grpcServer map[SetupMode]*grpc.Server = make(map[SetupMode]*grpc.Server)
 	caCertPool                            = x509.NewCertPool()
 )
@@ -80,7 +79,7 @@ func StartGrpcServerByMode(listenAddressG string, mode SetupMode) (*grpc.Server,
 	grpcServerPublicKey, err2 := table.Get("grpc_server_public_key")
 	if err != nil || err2 != nil {
 		Log(LogLevel_DEBUG, LogType_CORE, fmt.Sprintf("failed to get grpc_server_private_key and grpc_server_public_key from database: %v %v\n", err, err2))
-		certpair, err = utils.GenerateCertificatePair()
+		certpair, err = hutils.GenerateCertificatePair()
 		if err != nil {
 			Log(LogLevel_ERROR, LogType_CORE, fmt.Sprintf("failed to generate certificate pair: %v", err))
 
@@ -91,7 +90,7 @@ func StartGrpcServerByMode(listenAddressG string, mode SetupMode) (*grpc.Server,
 			&common.AppSettings{Id: "grpc_server_private_key", Value: certpair.PrivateKey},
 		)
 	} else {
-		certpair = &utils.CertificatePair{
+		certpair = &hutils.CertificatePair{
 			Certificate: grpcServerPublicKey.Value.([]byte),
 			PrivateKey:  grpcServerPrivateKey.Value.([]byte),
 		}

@@ -9,8 +9,8 @@ import (
 	runtimeDebug "runtime/debug"
 	"time"
 
-	"github.com/hiddify/hiddify-core/config"
 	common "github.com/hiddify/hiddify-core/v2/common"
+	"github.com/hiddify/hiddify-core/v2/config"
 	"github.com/hiddify/hiddify-core/v2/db"
 	"github.com/hiddify/hiddify-core/v2/service_manager"
 
@@ -99,8 +99,6 @@ func Setup(params SetupParameters) error {
 		statusPropagationPort = int64(params.FlutterStatusPort)
 	default:
 		_, err := StartGrpcServerByMode(params.Listen, params.Mode)
-
-		useFlutterBridge = false
 		if err != nil {
 			return err
 		}
@@ -129,8 +127,9 @@ func NewService(options option.Options) (*libbox.BoxService, error) {
 	urlTestHistoryStorage := urltest.NewHistoryStorage()
 	ctx = service.ContextWithPtr(ctx, urlTestHistoryStorage)
 	instance, err := B.New(B.Options{
-		Context: ctx,
-		Options: options,
+		Context:           ctx,
+		Options:           options,
+		PlatformLogWriter: &LogInterface{},
 	})
 	if err != nil {
 		cancel()

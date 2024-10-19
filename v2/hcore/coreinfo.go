@@ -1,10 +1,8 @@
 package hcore
 
 import (
-	"encoding/json"
 	"fmt"
 
-	"github.com/hiddify/hiddify-core/bridge"
 	common "github.com/hiddify/hiddify-core/v2/common"
 	"google.golang.org/grpc"
 )
@@ -27,10 +25,7 @@ func SetCoreStatus(state CoreStates, msgType MessageType, message string) *CoreI
 		Message:     message,
 	}
 	coreInfoObserver.Emit(&info)
-	if useFlutterBridge {
-		msg, _ := json.Marshal(StatusMessage{Status: convert2OldState(CoreState)})
-		bridge.SendStringToPort(statusPropagationPort, string(msg))
-	}
+
 	return &info
 }
 

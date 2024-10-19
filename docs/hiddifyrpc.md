@@ -628,6 +628,8 @@
 | ----- | ---- | ----- | ----------- |
 | ipv6 | [bool](#bool) |  |  |
 | server_port | [int32](#int32) |  |  |
+| server_username | [string](#string) |  |  |
+| server_password | [string](#string) |  |  |
 | strict_route | [bool](#bool) |  |  |
 | endpoint_independent_nat | [bool](#bool) |  |  |
 | stack | [string](#string) |  |  |

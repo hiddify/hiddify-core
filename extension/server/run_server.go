@@ -10,8 +10,8 @@ import (
 	"sync"
 	"syscall"
 
-	"github.com/hiddify/hiddify-core/utils"
 	hcore "github.com/hiddify/hiddify-core/v2/hcore"
+	"github.com/hiddify/hiddify-core/v2/hutils"
 	"github.com/improbable-eng/grpc-web/go/grpcweb"
 	"google.golang.org/grpc"
 )
@@ -92,8 +92,8 @@ func runWebserver(grpcServer *grpc.Server) {
 
 	go func() {
 		defer wg.Done()
-		utils.GenerateCertificate("cert/server-cert.pem", "cert/server-key.pem", true, true)
-		if err := rpcWebServer.ListenAndServeTLS("cert/server-cert.pem", "cert/server-key.pem"); err != nil && err != http.ErrServerClosed {
+		hutils.GenerateCertificateFile("data/cert/server-cert.pem", "data/cert/server-key.pem", true, true)
+		if err := rpcWebServer.ListenAndServeTLS("data/cert/server-cert.pem", "data/cert/server-key.pem"); err != nil && err != http.ErrServerClosed {
 			// if err := rpcWebServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			fmt.Printf("Web server (gRPC-web) shutdown with error: %s", err)
 		}

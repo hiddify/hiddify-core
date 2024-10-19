@@ -13,14 +13,13 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/hiddify/hiddify-core/config"
+	"github.com/hiddify/hiddify-core/v2/config"
 
 	"github.com/sagernet/sing-box/option"
 )
 
 func RunStandalone(hiddifySettingPath string, configPath string, defaultConfig config.HiddifyOptions) error {
 	fmt.Println("Running in standalone mode")
-	useFlutterBridge = false
 	current, err := readAndBuildConfig(hiddifySettingPath, configPath, &defaultConfig)
 	if err != nil {
 		fmt.Printf("Error in read and build config %v", err)
@@ -32,7 +31,7 @@ func RunStandalone(hiddifySettingPath string, configPath string, defaultConfig c
 		EnableOldCommandServer: false,
 		DelayStart:             false,
 		EnableRawConfig:        true,
-	})
+	}, nil)
 	go updateConfigInterval(current, hiddifySettingPath, configPath)
 
 	sigChan := make(chan os.Signal, 1)
@@ -213,7 +212,7 @@ func updateConfigInterval(current ConfigResult, hiddifySettingPath string, confi
 				EnableOldCommandServer: false,
 				DisableMemoryLimit:     false,
 				EnableRawConfig:        true,
-			})
+			}, nil)
 		}
 		current = new
 	}

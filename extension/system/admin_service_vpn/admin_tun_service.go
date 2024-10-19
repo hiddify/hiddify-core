@@ -3,8 +3,8 @@ package admin_service_vpn
 import (
 	"github.com/sagernet/sing-box/option"
 
-	"github.com/hiddify/hiddify-core/config"
 	ex "github.com/hiddify/hiddify-core/extension"
+	"github.com/hiddify/hiddify-core/v2/config"
 	tunnelservice "github.com/hiddify/hiddify-core/v2/hcore/tunnelservice"
 	hutils "github.com/hiddify/hiddify-core/v2/hutils"
 	C "github.com/sagernet/sing-box/constant"

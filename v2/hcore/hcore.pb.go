@@ -90,6 +90,7 @@ const (
 	MessageType_ERROR_BUILDING_CONFIG MessageType = 11
 	MessageType_ERROR_PARSING_CONFIG  MessageType = 12
 	MessageType_ERROR_READING_CONFIG  MessageType = 13
+	MessageType_EXTENSION  MessageType = 13
 )
 
 // Enum value maps for MessageType.
