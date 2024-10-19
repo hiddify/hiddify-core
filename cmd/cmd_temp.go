@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/hiddify/hiddify-core/config"
+	"github.com/hiddify/hiddify-core/v2/config"
 
 	// "github.com/hiddify/hiddify-core/extension_repository/cleanip_scanner"
 	"github.com/spf13/cobra"
