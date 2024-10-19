@@ -2,7 +2,7 @@ package hcore
 
 import (
 	"context"
-	"fmt"
+	"encoding/json"
 	"path/filepath"
 	"time"
 
@@ -35,13 +35,17 @@ func StartService(in *StartRequest, platformInterface libbox.PlatformInterface) 
 		return errorWrapper(MessageType_ERROR_BUILDING_CONFIG, err)
 	}
 	if err := service_manager.OnMainServicePreStart(options); err != nil {
-		return errorWrapper(MessageType_EXTENSION, err)
+		return errorWrapper(MessageType_ERROR_EXTENSION, err)
 	}
 	Log(LogLevel_DEBUG, LogType_CORE, "Saving config")
 	currentBuildConfigPath := filepath.Join(sWorkingPath, "data/current-config.json")
-	config.SaveCurrentConfig(currentBuildConfigPath, *options)
 
-	Log(LogLevel_DEBUG, LogType_CORE, fmt.Sprintf("Starting Service json %++v, platformInterface %v", options, platformInterface))
+	config.SaveCurrentConfig(currentBuildConfigPath, *options)
+	pout, err := json.MarshalIndent(options, "", "  ")
+	if err != nil {
+		return errorWrapper(MessageType_ERROR_BUILDING_CONFIG, err)
+	}
+	Log(LogLevel_DEBUG, LogType_CORE, string(pout))
 
 	bopts := box.Options{
 		Options:           *options,

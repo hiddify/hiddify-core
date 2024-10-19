@@ -203,6 +203,7 @@
 | level | [LogLevel](#hcore-LogLevel) |  |  |
 | type | [LogType](#hcore-LogType) |  |  |
 | message | [string](#string) |  |  |
+| time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 
 
 
@@ -544,6 +545,7 @@
 | ERROR_BUILDING_CONFIG | 11 |  |
 | ERROR_PARSING_CONFIG | 12 |  |
 | ERROR_READING_CONFIG | 13 |  |
+| ERROR_EXTENSION | 14 |  |
 
 
  

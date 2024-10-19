@@ -2,10 +2,12 @@ package hcore
 
 import (
 	"fmt"
+	"time"
 
 	common "github.com/hiddify/hiddify-core/v2/common"
 	"github.com/sagernet/sing/common/observable"
 	"google.golang.org/grpc"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 func NewObserver[T any](listenerBufferSize int) *observable.Observer[T] {
@@ -21,6 +23,7 @@ func Log(level LogLevel, typ LogType, message ...any) {
 	logObserver.Emit(&LogMessage{
 		Level:   level,
 		Type:    typ,
+		Time:    timestamppb.New(time.Now()),
 		Message: fmt.Sprint(message...),
 	})
 }

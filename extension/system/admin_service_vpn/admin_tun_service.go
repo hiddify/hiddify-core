@@ -4,7 +4,6 @@ import (
 	"github.com/sagernet/sing-box/option"
 
 	ex "github.com/hiddify/hiddify-core/extension"
-	"github.com/hiddify/hiddify-core/v2/config"
 	tunnelservice "github.com/hiddify/hiddify-core/v2/hcore/tunnelservice"
 	hutils "github.com/hiddify/hiddify-core/v2/hutils"
 	C "github.com/sagernet/sing-box/constant"
@@ -23,7 +22,7 @@ type AdminServiceExtension struct {
 	socksOptions      *option.SocksInboundOptions
 }
 
-func (b *AdminServiceExtension) OnMainServicePreStart(hiddifySettings *config.HiddifyOptions, singconfig *option.Options) error {
+func (b *AdminServiceExtension) OnMainServicePreStart(singconfig *option.Options) error {
 	if hutils.TunAllowed() {
 		return nil
 	}

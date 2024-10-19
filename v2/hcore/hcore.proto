@@ -1,7 +1,8 @@
 syntax = "proto3";
 import "v2/common/common.proto";
-package hcore;
+import "google/protobuf/timestamp.proto";
 
+package hcore;
 option go_package = "github.com/hiddify/hiddify-core/v2/hcore";
 
 
@@ -27,7 +28,7 @@ enum MessageType {
   ERROR_BUILDING_CONFIG = 11;
   ERROR_PARSING_CONFIG = 12;
   ERROR_READING_CONFIG = 13;
-  ERROR_EXTENSION = 13;
+  ERROR_EXTENSION = 14;
 }
 
 message CoreInfoResponse {
@@ -170,6 +171,7 @@ message LogMessage {
   LogLevel level = 1;
   LogType type = 2;
   string message = 3;
+  google.protobuf.Timestamp time = 4;
 }
 
 message StopRequest{

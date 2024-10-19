@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 
 	"github.com/hiddify/hiddify-core/extension/ui"
-	pb "github.com/hiddify/hiddify-core/hiddifyrpc"
 	"github.com/hiddify/hiddify-core/v2/db"
 	"github.com/jellydator/validation"
 	"github.com/sagernet/sing-box/log"
@@ -24,7 +23,7 @@ type Extension interface {
 	OnMainServiceClose() error
 
 	init(id string)
-	getQueue() chan *pb.ExtensionResponse
+	getQueue() chan *ExtensionResponse
 	getId() string
 }
 
@@ -32,7 +31,7 @@ var _ Extension = (*Base[any])(nil)
 
 type Base[T any] struct {
 	id    string
-	queue chan *pb.ExtensionResponse
+	queue chan *ExtensionResponse
 	Data  T
 }
 
@@ -82,7 +81,7 @@ func (b *Base[T]) doStoreData() {
 
 func (b *Base[T]) init(id string) {
 	b.id = id
-	b.queue = make(chan *pb.ExtensionResponse, 1)
+	b.queue = make(chan *ExtensionResponse, 1)
 	table := db.GetTable[extensionData]()
 	extdata, err := table.Get(b.id)
 	if err != nil {
@@ -103,7 +102,7 @@ func (b *Base[T]) init(id string) {
 	}
 }
 
-func (b *Base[T]) getQueue() chan *pb.ExtensionResponse {
+func (b *Base[T]) getQueue() chan *ExtensionResponse {
 	return b.queue
 }
 
@@ -127,18 +126,18 @@ func (e *Base[T]) ShowMessage(title string, msg string) error {
 }
 
 func (p *Base[T]) DoUpdateUI(form *ui.Form) error {
-	p.queue <- &pb.ExtensionResponse{
+	p.queue <- &ExtensionResponse{
 		ExtensionId: p.id,
-		Type:        pb.ExtensionResponseType_UPDATE_UI,
+		Type:        ExtensionResponseType_UPDATE_UI,
 		JsonUi:      form.ToJSON(),
 	}
 	return nil
 }
 
 func (p *Base[T]) ShowDialog(form *ui.Form) error {
-	p.queue <- &pb.ExtensionResponse{
+	p.queue <- &ExtensionResponse{
 		ExtensionId: p.id,
-		Type:        pb.ExtensionResponseType_SHOW_DIALOG,
+		Type:        ExtensionResponseType_SHOW_DIALOG,
 		JsonUi:      form.ToJSON(),
 	}
 	// log.Printf("Updated UI for extension %s: %s", err, p.id)
