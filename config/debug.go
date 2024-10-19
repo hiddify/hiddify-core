@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime/debug"
+	"time"
 
 	"github.com/sagernet/sing-box/option"
 )
@@ -21,7 +22,7 @@ func SaveCurrentConfig(path string, options option.Options) error {
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(p, []byte(json), 0644)
+	return os.WriteFile(p, []byte(json), 0o644)
 }
 
 func ToJson(options option.Options) (string, error) {
@@ -41,5 +42,6 @@ func DeferPanicToError(name string, err func(error)) {
 	if r := recover(); r != nil {
 		s := fmt.Errorf("%s panic: %s\n%s", name, r, string(debug.Stack()))
 		err(s)
+		<-time.After(5 * time.Second)
 	}
 }
