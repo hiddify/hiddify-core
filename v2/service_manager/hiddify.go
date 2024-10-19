@@ -1,45 +1,87 @@
 package service_manager
 
 import (
-	"github.com/sagernet/sing-box/adapter"
+	"github.com/sagernet/sing-box/option"
 )
 
 var (
-	services    = []adapter.Service{}
-	preservices = []adapter.Service{}
+	services    = []HService{}
+	preservices = []HService{}
 )
 
-func RegisterPreservice(service adapter.Service) {
+func RegisterPreService(service HService) {
 	preservices = append(services, service)
 }
 
-func Register(service adapter.Service) {
+func Register(service HService) {
 	services = append(services, service)
 }
 
 func StartServices() error {
-	CloseServices()
+	DisposeServices()
 	for _, service := range preservices {
-		if err := service.Start(); err != nil {
+		if err := service.Init(); err != nil {
 			return err
 		}
 	}
 	for _, service := range services {
-		if err := service.Start(); err != nil {
+		if err := service.Init(); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func CloseServices() error {
+func DisposeServices() error {
 	for _, service := range services {
-		if err := service.Close(); err != nil {
+		if err := service.Dispose(); err != nil {
 			return err
 		}
 	}
 	for _, service := range preservices {
-		if err := service.Close(); err != nil {
+		if err := service.Dispose(); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func OnMainServicePreStart(singconfig *option.Options) error {
+	for _, service := range preservices {
+		if err := service.OnMainServicePreStart(singconfig); err != nil {
+			return err
+		}
+	}
+	for _, service := range services {
+		if err := service.OnMainServicePreStart(singconfig); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func OnMainServiceStart() error {
+	for _, service := range preservices {
+		if err := service.OnMainServiceStart(); err != nil {
+			return err
+		}
+	}
+	for _, service := range services {
+		if err := service.OnMainServiceStart(); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func OnMainServiceClose() error {
+	for _, service := range preservices {
+		if err := service.OnMainServiceClose(); err != nil {
+			return err
+		}
+	}
+	for _, service := range services {
+		if err := service.OnMainServiceClose(); err != nil {
 			return err
 		}
 	}
