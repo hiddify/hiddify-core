@@ -2,11 +2,11 @@ package tunnelservice
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
+	"net/netip"
 	"os"
 	"time"
 
+	C "github.com/sagernet/sing-box/constant"
 	"github.com/sagernet/sing-box/experimental/libbox"
 	"github.com/sagernet/sing-box/option"
 
@@ -23,13 +23,8 @@ func (s *TunnelService) Start(ctx context.Context, in *TunnelStartRequest) (*Tun
 	if in.ServerPort == 0 {
 		in.ServerPort = 12334
 	}
-	option := option.Options{}
-	err := json.Unmarshal([]byte(makeTunnelConfig(in.Ipv6, in.ServerPort, in.StrictRoute, in.EndpointIndependentNat, in.Stack)), &option)
-	if err != nil {
-		return &TunnelResponse{
-			Message: err.Error(),
-		}, err
-	}
+	option := makeTunnelConfig(in)
+
 	instance, err := hcore.NewService(option)
 	if err != nil {
 		return &TunnelResponse{
@@ -48,59 +43,64 @@ func (s *TunnelService) Start(ctx context.Context, in *TunnelStartRequest) (*Tun
 	}, err
 }
 
-func makeTunnelConfig(Ipv6 bool, ServerPort int32, StrictRoute bool, EndpointIndependentNat bool, Stack string) string {
-	var ipv6 string
-	if Ipv6 {
-		ipv6 = `      "inet6_address": "fdfe:dcba:9876::1/126",`
-	} else {
-		ipv6 = ""
+func makeTunnelConfig(in *TunnelStartRequest) option.Options {
+	ipv6 := make([]netip.Prefix, 0)
+	if in.Ipv6 {
+		ipv6 = append(ipv6, netip.MustParsePrefix("fdfe:dcba:9876::1/126"))
 	}
-	base := `{
-		"log":{
-			"level": "warn"
-		},
-		"inbounds": [
-		  {
-			"type": "tun",
-			"tag": "tun-in",
-			"interface_name": "HiddifyTunnel",
-			"inet4_address": "172.19.0.1/30",
-			` + ipv6 + `
-			"auto_route": true,
-			"strict_route": ` + fmt.Sprintf("%t", StrictRoute) + `,
-			"endpoint_independent_nat": ` + fmt.Sprintf("%t", EndpointIndependentNat) + `,
-			"stack": "` + Stack + `"
-		  }
-		],
-		"outbounds": [
-		  {
-			"type": "socks",
-			"tag": "socks-out",
-			"server": "127.0.0.1",
-			"server_port": ` + fmt.Sprintf("%d", ServerPort) + `,
-			"version": "5"
-		  },
-		  {
-			"type": "direct",
-			"tag": "direct-out"
-		  }
-		],
-		"route": {
-		  "rules": [
+	return option.Options{
+		Log: &option.LogOptions{Level: "warn"},
+		Inbounds: []option.Inbound{
 			{
-				"process_name":[
-					"Hiddify.exe",
-					"Hiddify",
-					"HiddifyCli",
-					"HiddifyCli.exe"
-					],
-				"outbound": "direct-out"
-			}
-		  ]
-		}
-	  }`
-
-	return base
+				Type: C.TypeTun,
+				Tag:  "tun-in",
+				TunOptions: option.TunInboundOptions{
+					EndpointIndependentNat: in.EndpointIndependentNat,
+					StrictRoute:            in.StrictRoute,
+					AutoRoute:              true,
+					Inet4Address:           []netip.Prefix{netip.MustParsePrefix("172.20.0.1/30")},
+					Inet6Address:           ipv6,
+					InterfaceName:          "HiddifyTunnel",
+					Stack:                  in.Stack,
+				},
+			},
+		},
+		Outbounds: []option.Outbound{
+			{
+				Type: C.TypeSOCKS,
+				Tag:  "socks-out",
+				SocksOptions: option.SocksOutboundOptions{
+					ServerOptions: option.ServerOptions{
+						Server:     "127.0.0.1",
+						ServerPort: uint16(in.ServerPort),
+					},
+					Username: in.ServerUsername,
+					Password: in.ServerPassword,
+					Version:  "5",
+				},
+			},
+			{
+				Type: C.TypeDirect,
+				Tag:  "direct-out",
+			},
+		},
+		Route: &option.RouteOptions{
+			Final: "socks-out",
+			Rules: []option.Rule{
+				{
+					DefaultOptions: option.DefaultRule{
+						ProcessName: []string{
+							"Hiddify.exe",
+							"Hiddify",
+							"HiddifyCli",
+							"HiddifyCli.exe",
+						},
+						Outbound: "direct-out",
+					},
+				},
+			},
+		},
+	}
 }
 
 func (s *TunnelService) Stop(ctx context.Context, _ *common.Empty) (*TunnelResponse, error) {
