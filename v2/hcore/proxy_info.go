@@ -22,6 +22,19 @@ func GetProxyInfo(detour adapter.Outbound) *OutboundInfo {
 	if url_test_history != nil {
 		out.UrlTestTime = timestamppb.New(url_test_history.Time)
 		out.UrlTestDelay = int32(url_test_history.Delay)
+		if url_test_history.IpInfo != nil {
+			out.Ipinfo = &IpInfo{
+				Ip:          url_test_history.IpInfo.IP,
+				CountryCode: url_test_history.IpInfo.CountryCode,
+				Region:      url_test_history.IpInfo.Region,
+				City:        url_test_history.IpInfo.City,
+				Asn:         int32(url_test_history.IpInfo.ASN),
+				Org:         url_test_history.IpInfo.Org,
+				Latitude:    url_test_history.IpInfo.Latitude,
+				Longitude:   url_test_history.IpInfo.Longitude,
+				PostalCode:  url_test_history.IpInfo.PostalCode,
+			}
+		}
 	}
 
 	return out
@@ -87,6 +100,7 @@ func AllProxiesInfoStream(stream grpc.ServerStreamingServer[OutboundGroupList], 
 	if err != nil {
 		return err
 	}
+	stream.Send(GetAllProxiesInfo(onlyMain))
 	for {
 		select {
 		case <-stream.Context().Done():

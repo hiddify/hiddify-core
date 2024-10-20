@@ -9,6 +9,7 @@
     - [GenerateConfigRequest](#hcore-GenerateConfigRequest)
     - [GenerateConfigResponse](#hcore-GenerateConfigResponse)
     - [GenerateWarpConfigRequest](#hcore-GenerateWarpConfigRequest)
+    - [IpInfo](#hcore-IpInfo)
     - [LogMessage](#hcore-LogMessage)
     - [OutboundGroup](#hcore-OutboundGroup)
     - [OutboundGroupList](#hcore-OutboundGroupList)
@@ -192,6 +193,29 @@
 
 
 
+<a name="hcore-IpInfo"></a>
+
+### IpInfo
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| ip | [string](#string) |  | The IP address. |
+| country_code | [string](#string) |  | The country code. |
+| region | [string](#string) |  | The region (optional). |
+| city | [string](#string) |  | The city (optional). |
+| asn | [int32](#int32) |  | The Autonomous System Number (optional). |
+| org | [string](#string) |  | The organization (optional). |
+| latitude | [double](#double) |  | The latitude (optional). |
+| longitude | [double](#double) |  | The longitude (optional). |
+| postal_code | [string](#string) |  | The postal code (optional). |
+
+
+
+
+
+
 <a name="hcore-LogMessage"></a>
 
 ### LogMessage
@@ -257,6 +281,7 @@
 | type | [string](#string) |  |  |
 | url_test_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 | url_test_delay | [int32](#int32) |  |  |
+| ipinfo | [IpInfo](#hcore-IpInfo) |  |  |
 
 
 

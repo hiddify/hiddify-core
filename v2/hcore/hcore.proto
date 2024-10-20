@@ -70,8 +70,20 @@ message OutboundInfo {
   string type = 2;
   google.protobuf.Timestamp url_test_time = 3;
   int32 url_test_delay = 4;
+  IpInfo ipinfo = 5;
 }
 
+message IpInfo {
+    string ip = 1 [json_name = "ip"];                        // The IP address.
+    string country_code = 2 [json_name = "country_code"];    // The country code.
+    string region = 3 [json_name = "region"];                // The region (optional).
+    string city = 4 [json_name = "city"];                    // The city (optional).
+    int32 asn = 5 [json_name = "asn"];                       // The Autonomous System Number (optional).
+    string org = 6 [json_name = "org"];                      // The organization (optional).
+    double latitude = 7 [json_name = "latitude"];            // The latitude (optional).
+    double longitude = 8 [json_name = "longitude"];          // The longitude (optional).
+    string postal_code = 9 [json_name = "postal_code"];      // The postal code (optional).
+}
 message OutboundGroup {
   string tag = 1;
   string type = 2;
