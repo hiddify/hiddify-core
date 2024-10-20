@@ -8,7 +8,7 @@ package profile
 
 import (
 	context "context"
-	common "github.com/hiddify/hiddify-core/v2/common"
+	hcommon "github.com/hiddify/hiddify-core/v2/hcommon"
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
@@ -44,19 +44,19 @@ type ProfileServiceClient interface {
 	UpdateProfile(ctx context.Context, in *ProfileEntity, opts ...grpc.CallOption) (*ProfileResponse, error)
 	// *
 	// GetAllProfiles fetches all profiles.
-	GetAllProfiles(ctx context.Context, in *common.Empty, opts ...grpc.CallOption) (*MultiProfilesResponse, error)
+	GetAllProfiles(ctx context.Context, in *hcommon.Empty, opts ...grpc.CallOption) (*MultiProfilesResponse, error)
 	// *
 	// GetActiveProfile retrieves the currently active profile.
-	GetActiveProfile(ctx context.Context, in *common.Empty, opts ...grpc.CallOption) (*ProfileResponse, error)
+	GetActiveProfile(ctx context.Context, in *hcommon.Empty, opts ...grpc.CallOption) (*ProfileResponse, error)
 	// *
 	// SetActiveProfile sets a profile as active, identified by ID, name, or URL.
-	SetActiveProfile(ctx context.Context, in *ProfileRequest, opts ...grpc.CallOption) (*common.Response, error)
+	SetActiveProfile(ctx context.Context, in *ProfileRequest, opts ...grpc.CallOption) (*hcommon.Response, error)
 	// *
 	// AddProfile adds a new profile using either a URL or the raw profile content.
 	AddProfile(ctx context.Context, in *AddProfileRequest, opts ...grpc.CallOption) (*ProfileResponse, error)
 	// *
 	// DeleteProfile deletes a profile identified by ID, name, or URL.
-	DeleteProfile(ctx context.Context, in *ProfileRequest, opts ...grpc.CallOption) (*common.Response, error)
+	DeleteProfile(ctx context.Context, in *ProfileRequest, opts ...grpc.CallOption) (*hcommon.Response, error)
 }
 
 type profileServiceClient struct {
@@ -87,7 +87,7 @@ func (c *profileServiceClient) UpdateProfile(ctx context.Context, in *ProfileEnt
 	return out, nil
 }
 
-func (c *profileServiceClient) GetAllProfiles(ctx context.Context, in *common.Empty, opts ...grpc.CallOption) (*MultiProfilesResponse, error) {
+func (c *profileServiceClient) GetAllProfiles(ctx context.Context, in *hcommon.Empty, opts ...grpc.CallOption) (*MultiProfilesResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(MultiProfilesResponse)
 	err := c.cc.Invoke(ctx, ProfileService_GetAllProfiles_FullMethodName, in, out, cOpts...)
@@ -97,7 +97,7 @@ func (c *profileServiceClient) GetAllProfiles(ctx context.Context, in *common.Em
 	return out, nil
 }
 
-func (c *profileServiceClient) GetActiveProfile(ctx context.Context, in *common.Empty, opts ...grpc.CallOption) (*ProfileResponse, error) {
+func (c *profileServiceClient) GetActiveProfile(ctx context.Context, in *hcommon.Empty, opts ...grpc.CallOption) (*ProfileResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ProfileResponse)
 	err := c.cc.Invoke(ctx, ProfileService_GetActiveProfile_FullMethodName, in, out, cOpts...)
@@ -107,9 +107,9 @@ func (c *profileServiceClient) GetActiveProfile(ctx context.Context, in *common.
 	return out, nil
 }
 
-func (c *profileServiceClient) SetActiveProfile(ctx context.Context, in *ProfileRequest, opts ...grpc.CallOption) (*common.Response, error) {
+func (c *profileServiceClient) SetActiveProfile(ctx context.Context, in *ProfileRequest, opts ...grpc.CallOption) (*hcommon.Response, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(common.Response)
+	out := new(hcommon.Response)
 	err := c.cc.Invoke(ctx, ProfileService_SetActiveProfile_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
@@ -127,9 +127,9 @@ func (c *profileServiceClient) AddProfile(ctx context.Context, in *AddProfileReq
 	return out, nil
 }
 
-func (c *profileServiceClient) DeleteProfile(ctx context.Context, in *ProfileRequest, opts ...grpc.CallOption) (*common.Response, error) {
+func (c *profileServiceClient) DeleteProfile(ctx context.Context, in *ProfileRequest, opts ...grpc.CallOption) (*hcommon.Response, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(common.Response)
+	out := new(hcommon.Response)
 	err := c.cc.Invoke(ctx, ProfileService_DeleteProfile_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
@@ -152,19 +152,19 @@ type ProfileServiceServer interface {
 	UpdateProfile(context.Context, *ProfileEntity) (*ProfileResponse, error)
 	// *
 	// GetAllProfiles fetches all profiles.
-	GetAllProfiles(context.Context, *common.Empty) (*MultiProfilesResponse, error)
+	GetAllProfiles(context.Context, *hcommon.Empty) (*MultiProfilesResponse, error)
 	// *
 	// GetActiveProfile retrieves the currently active profile.
-	GetActiveProfile(context.Context, *common.Empty) (*ProfileResponse, error)
+	GetActiveProfile(context.Context, *hcommon.Empty) (*ProfileResponse, error)
 	// *
 	// SetActiveProfile sets a profile as active, identified by ID, name, or URL.
-	SetActiveProfile(context.Context, *ProfileRequest) (*common.Response, error)
+	SetActiveProfile(context.Context, *ProfileRequest) (*hcommon.Response, error)
 	// *
 	// AddProfile adds a new profile using either a URL or the raw profile content.
 	AddProfile(context.Context, *AddProfileRequest) (*ProfileResponse, error)
 	// *
 	// DeleteProfile deletes a profile identified by ID, name, or URL.
-	DeleteProfile(context.Context, *ProfileRequest) (*common.Response, error)
+	DeleteProfile(context.Context, *ProfileRequest) (*hcommon.Response, error)
 	mustEmbedUnimplementedProfileServiceServer()
 }
 
@@ -181,19 +181,19 @@ func (UnimplementedProfileServiceServer) GetProfile(context.Context, *ProfileReq
 func (UnimplementedProfileServiceServer) UpdateProfile(context.Context, *ProfileEntity) (*ProfileResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateProfile not implemented")
 }
-func (UnimplementedProfileServiceServer) GetAllProfiles(context.Context, *common.Empty) (*MultiProfilesResponse, error) {
+func (UnimplementedProfileServiceServer) GetAllProfiles(context.Context, *hcommon.Empty) (*MultiProfilesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetAllProfiles not implemented")
 }
-func (UnimplementedProfileServiceServer) GetActiveProfile(context.Context, *common.Empty) (*ProfileResponse, error) {
+func (UnimplementedProfileServiceServer) GetActiveProfile(context.Context, *hcommon.Empty) (*ProfileResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetActiveProfile not implemented")
 }
-func (UnimplementedProfileServiceServer) SetActiveProfile(context.Context, *ProfileRequest) (*common.Response, error) {
+func (UnimplementedProfileServiceServer) SetActiveProfile(context.Context, *ProfileRequest) (*hcommon.Response, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SetActiveProfile not implemented")
 }
 func (UnimplementedProfileServiceServer) AddProfile(context.Context, *AddProfileRequest) (*ProfileResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method AddProfile not implemented")
 }
-func (UnimplementedProfileServiceServer) DeleteProfile(context.Context, *ProfileRequest) (*common.Response, error) {
+func (UnimplementedProfileServiceServer) DeleteProfile(context.Context, *ProfileRequest) (*hcommon.Response, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeleteProfile not implemented")
 }
 func (UnimplementedProfileServiceServer) mustEmbedUnimplementedProfileServiceServer() {}
@@ -254,7 +254,7 @@ func _ProfileService_UpdateProfile_Handler(srv interface{}, ctx context.Context,
 }
 
 func _ProfileService_GetAllProfiles_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(common.Empty)
+	in := new(hcommon.Empty)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -266,13 +266,13 @@ func _ProfileService_GetAllProfiles_Handler(srv interface{}, ctx context.Context
 		FullMethod: ProfileService_GetAllProfiles_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ProfileServiceServer).GetAllProfiles(ctx, req.(*common.Empty))
+		return srv.(ProfileServiceServer).GetAllProfiles(ctx, req.(*hcommon.Empty))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
 func _ProfileService_GetActiveProfile_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(common.Empty)
+	in := new(hcommon.Empty)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -284,7 +284,7 @@ func _ProfileService_GetActiveProfile_Handler(srv interface{}, ctx context.Conte
 		FullMethod: ProfileService_GetActiveProfile_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ProfileServiceServer).GetActiveProfile(ctx, req.(*common.Empty))
+		return srv.(ProfileServiceServer).GetActiveProfile(ctx, req.(*hcommon.Empty))
 	}
 	return interceptor(ctx, in, info, handler)
 }

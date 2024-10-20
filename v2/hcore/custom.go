@@ -41,6 +41,6 @@ func Close(mode SetupMode) error {
 	return err
 }
 
-// func (s *CoreService) Status(ctx context.Context, empty *common.Empty) (*CoreInfoResponse, error) {
+// func (s *CoreService) Status(ctx context.Context, empty *hcommon.Empty) (*CoreInfoResponse, error) {
 // 	return Status()
 // }

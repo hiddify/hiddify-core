@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	common "github.com/hiddify/hiddify-core/v2/common"
+	hcommon "github.com/hiddify/hiddify-core/v2/hcommon"
 	"github.com/sagernet/sing/common/observable"
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -28,7 +28,7 @@ func Log(level LogLevel, typ LogType, message ...any) {
 	})
 }
 
-func (s *CoreService) LogListener(req *common.Empty, stream grpc.ServerStreamingServer[LogMessage]) error {
+func (s *CoreService) LogListener(req *hcommon.Empty, stream grpc.ServerStreamingServer[LogMessage]) error {
 	logSub, stopch, _ := logObserver.Subscribe()
 	defer logObserver.UnSubscribe(logSub)
 

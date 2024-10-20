@@ -12,12 +12,11 @@ import (
 	"log"
 	"net"
 
+	hcommon "github.com/hiddify/hiddify-core/v2/hcommon"
 	"github.com/hiddify/hiddify-core/v2/hello"
 	hutils "github.com/hiddify/hiddify-core/v2/hutils"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
-
-	"github.com/hiddify/hiddify-core/v2/common"
 
 	"github.com/hiddify/hiddify-core/v2/db"
 )
@@ -74,7 +73,7 @@ func StartGrpcServerByMode(listenAddressG string, mode SetupMode) (*grpc.Server,
 		Log(LogLevel_WARNING, LogType_CORE, "grpcServer already started")
 		return grpcServer[mode], nil
 	}
-	table := db.GetTable[common.AppSettings]()
+	table := db.GetTable[hcommon.AppSettings]()
 	grpcServerPrivateKey, err := table.Get("grpc_server_private_key")
 	grpcServerPublicKey, err2 := table.Get("grpc_server_public_key")
 	if err != nil || err2 != nil {
@@ -86,8 +85,8 @@ func StartGrpcServerByMode(listenAddressG string, mode SetupMode) (*grpc.Server,
 			return nil, err
 		}
 		table.UpdateInsert(
-			&common.AppSettings{Id: "grpc_server_public_key", Value: certpair.Certificate},
-			&common.AppSettings{Id: "grpc_server_private_key", Value: certpair.PrivateKey},
+			&hcommon.AppSettings{Id: "grpc_server_public_key", Value: certpair.Certificate},
+			&hcommon.AppSettings{Id: "grpc_server_private_key", Value: certpair.PrivateKey},
 		)
 	} else {
 		certpair = &hutils.CertificatePair{

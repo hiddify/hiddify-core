@@ -3,7 +3,7 @@ package hcore
 import (
 	"fmt"
 
-	common "github.com/hiddify/hiddify-core/v2/common"
+	hcommon "github.com/hiddify/hiddify-core/v2/hcommon"
 	"google.golang.org/grpc"
 )
 
@@ -29,7 +29,7 @@ func SetCoreStatus(state CoreStates, msgType MessageType, message string) *CoreI
 	return &info
 }
 
-func (s *CoreService) CoreInfoListener(req *common.Empty, stream grpc.ServerStreamingServer[CoreInfoResponse]) error {
+func (s *CoreService) CoreInfoListener(req *hcommon.Empty, stream grpc.ServerStreamingServer[CoreInfoResponse]) error {
 	coreSub, done, err := coreInfoObserver.Subscribe()
 	if err != nil {
 		return err

@@ -8,7 +8,7 @@ package extension
 
 import (
 	context "context"
-	common "github.com/hiddify/hiddify-core/v2/common"
+	hcommon "github.com/hiddify/hiddify-core/v2/hcommon"
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
@@ -32,7 +32,7 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ExtensionHostServiceClient interface {
-	ListExtensions(ctx context.Context, in *common.Empty, opts ...grpc.CallOption) (*ExtensionList, error)
+	ListExtensions(ctx context.Context, in *hcommon.Empty, opts ...grpc.CallOption) (*ExtensionList, error)
 	Connect(ctx context.Context, in *ExtensionRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[ExtensionResponse], error)
 	EditExtension(ctx context.Context, in *EditExtensionRequest, opts ...grpc.CallOption) (*ExtensionActionResult, error)
 	SubmitForm(ctx context.Context, in *SendExtensionDataRequest, opts ...grpc.CallOption) (*ExtensionActionResult, error)
@@ -48,7 +48,7 @@ func NewExtensionHostServiceClient(cc grpc.ClientConnInterface) ExtensionHostSer
 	return &extensionHostServiceClient{cc}
 }
 
-func (c *extensionHostServiceClient) ListExtensions(ctx context.Context, in *common.Empty, opts ...grpc.CallOption) (*ExtensionList, error) {
+func (c *extensionHostServiceClient) ListExtensions(ctx context.Context, in *hcommon.Empty, opts ...grpc.CallOption) (*ExtensionList, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ExtensionList)
 	err := c.cc.Invoke(ctx, ExtensionHostService_ListExtensions_FullMethodName, in, out, cOpts...)
@@ -121,7 +121,7 @@ func (c *extensionHostServiceClient) GetUI(ctx context.Context, in *ExtensionReq
 // All implementations must embed UnimplementedExtensionHostServiceServer
 // for forward compatibility.
 type ExtensionHostServiceServer interface {
-	ListExtensions(context.Context, *common.Empty) (*ExtensionList, error)
+	ListExtensions(context.Context, *hcommon.Empty) (*ExtensionList, error)
 	Connect(*ExtensionRequest, grpc.ServerStreamingServer[ExtensionResponse]) error
 	EditExtension(context.Context, *EditExtensionRequest) (*ExtensionActionResult, error)
 	SubmitForm(context.Context, *SendExtensionDataRequest) (*ExtensionActionResult, error)
@@ -137,7 +137,7 @@ type ExtensionHostServiceServer interface {
 // pointer dereference when methods are called.
 type UnimplementedExtensionHostServiceServer struct{}
 
-func (UnimplementedExtensionHostServiceServer) ListExtensions(context.Context, *common.Empty) (*ExtensionList, error) {
+func (UnimplementedExtensionHostServiceServer) ListExtensions(context.Context, *hcommon.Empty) (*ExtensionList, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListExtensions not implemented")
 }
 func (UnimplementedExtensionHostServiceServer) Connect(*ExtensionRequest, grpc.ServerStreamingServer[ExtensionResponse]) error {
@@ -177,7 +177,7 @@ func RegisterExtensionHostServiceServer(s grpc.ServiceRegistrar, srv ExtensionHo
 }
 
 func _ExtensionHostService_ListExtensions_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(common.Empty)
+	in := new(hcommon.Empty)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -189,7 +189,7 @@ func _ExtensionHostService_ListExtensions_Handler(srv interface{}, ctx context.C
 		FullMethod: ExtensionHostService_ListExtensions_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ExtensionHostServiceServer).ListExtensions(ctx, req.(*common.Empty))
+		return srv.(ExtensionHostServiceServer).ListExtensions(ctx, req.(*hcommon.Empty))
 	}
 	return interceptor(ctx, in, info, handler)
 }

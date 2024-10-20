@@ -2,11 +2,18 @@ package hcore
 
 import (
 	"github.com/sagernet/sing-box/experimental/libbox"
+	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 )
 
 var _ libbox.CommandClientHandler = (*CommandClientHandler)(nil)
 
-type CommandClientHandler struct{}
+const (
+	CommandCli = "core"
+)
+
+type CommandClientHandler struct {
+	command int32
+}
 
 func (cch *CommandClientHandler) Connected() {
 	Log(LogLevel_DEBUG, LogType_CORE, "CONNECTED")
@@ -46,22 +53,25 @@ func (cch *CommandClientHandler) WriteGroups(message libbox.OutboundGroupIterato
 	for message.HasNext() {
 		group := message.Next()
 		items := group.GetItems()
-		groupItems := []*OutboundGroupItem{}
+		groupItems := []*OutboundInfo{}
 		for items.HasNext() {
 			item := items.Next()
 			groupItems = append(groupItems,
-				&OutboundGroupItem{
+				&OutboundInfo{
 					Tag:          item.Tag,
 					Type:         item.Type,
-					UrlTestTime:  item.URLTestTime,
+					UrlTestTime:  &timestamppb.Timestamp{Seconds: item.URLTestTime},
 					UrlTestDelay: item.URLTestDelay,
 				},
 			)
 		}
 		groups.Items = append(groups.Items, &OutboundGroup{Tag: group.Tag, Type: group.Type, Selected: group.Selected, Items: groupItems})
 	}
-	outboundsInfoObserver.Emit(&groups)
-	mainOutboundsInfoObserver.Emit(&groups)
+	if cch.command == libbox.CommandGroupInfoOnly {
+		mainOutboundsInfoObserver.Emit(&groups)
+	} else {
+		outboundsInfoObserver.Emit(&groups)
+	}
 }
 
 func (cch *CommandClientHandler) InitializeClashMode(modeList libbox.StringIterator, currentMode string) {

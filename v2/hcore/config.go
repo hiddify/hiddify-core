@@ -6,9 +6,9 @@ import (
 	"os"
 	"path/filepath"
 
-	common "github.com/hiddify/hiddify-core/v2/common"
 	"github.com/hiddify/hiddify-core/v2/config"
 	"github.com/hiddify/hiddify-core/v2/db"
+	hcommon "github.com/hiddify/hiddify-core/v2/hcommon"
 	hutils "github.com/hiddify/hiddify-core/v2/hutils"
 	C "github.com/sagernet/sing-box/constant"
 	"github.com/sagernet/sing-box/option"
@@ -81,7 +81,7 @@ func Parse(in *ParseRequest) (*ParseResponse, error) {
 	config, err := config.ParseConfigContent(content, true, HiddifyOptions, false)
 	if err != nil {
 		return &ParseResponse{
-			ResponseCode: common.ResponseCode_FAILED,
+			ResponseCode: hcommon.ResponseCode_FAILED,
 			Message:      err.Error(),
 		}, err
 	}
@@ -89,13 +89,13 @@ func Parse(in *ParseRequest) (*ParseResponse, error) {
 		err = os.WriteFile(in.ConfigPath, config, 0o644)
 		if err != nil {
 			return &ParseResponse{
-				ResponseCode: common.ResponseCode_FAILED,
+				ResponseCode: hcommon.ResponseCode_FAILED,
 				Message:      err.Error(),
 			}, err
 		}
 	}
 	return &ParseResponse{
-		ResponseCode: common.ResponseCode_OK,
+		ResponseCode: hcommon.ResponseCode_OK,
 		Content:      string(config),
 		Message:      "",
 	}, err
@@ -110,8 +110,8 @@ func ChangeHiddifySettings(in *ChangeHiddifySettingsRequest) (*CoreInfoResponse,
 	if in.HiddifySettingsJson == "" {
 		return &CoreInfoResponse{}, nil
 	}
-	settings := db.GetTable[common.AppSettings]()
-	settings.UpdateInsert(&common.AppSettings{
+	settings := db.GetTable[hcommon.AppSettings]()
+	settings.UpdateInsert(&hcommon.AppSettings{
 		Id:    "HiddifySettingsJson",
 		Value: in.HiddifySettingsJson,
 	})

@@ -1,32 +1,41 @@
 package cmd
 
 import (
-	"encoding/json"
-	"fmt"
+	"context"
+	"log"
+	"time"
 
-	"github.com/hiddify/hiddify-core/v2/config"
-
-	// "github.com/hiddify/hiddify-core/extension_repository/cleanip_scanner"
-	"github.com/spf13/cobra"
+	"github.com/hiddify/hiddify-core/v2/hcommon"
+	hcore "github.com/hiddify/hiddify-core/v2/hcore"
+	"google.golang.org/grpc"
 )
 
-var commandTemp = &cobra.Command{
-	Use:   "temp",
-	Short: "temp",
-	Args:  cobra.MaximumNArgs(2),
-	Run: func(cmd *cobra.Command, args []string) {
-		// fmt.Printf("Ping time: %d ms\n", Ping())
-		tmp := map[string][]string{
-			"direct-dns-address":         {"1.1.1.1"},
-			"tls-tricks.enable-fragment": {"true"},
-			"tls-tricks.fragment-size":   {"2-4"},
-		}
-		h := config.GetOverridableHiddifyOptions(tmp)
-		j, _ := json.Marshal(h)
-		fmt.Println(string(j))
-	},
-}
+const (
+	address     = "localhost:17078"
+	defaultName = "world"
+)
 
 func init() {
-	mainCommand.AddCommand(commandTemp)
+	conn, err := grpc.Dial(address, grpc.WithInsecure())
+	if err != nil {
+		log.Fatalf("did not connect: %v", err)
+	}
+	defer conn.Close()
+	c := hcore.NewCoreClient(conn)
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+	defer cancel()
+
+	// SayHello
+	stream, err := c.OutboundsInfo(ctx, &hcommon.Empty{})
+
+	for {
+		r, err := stream.Recv()
+		if err != nil {
+			log.Fatalf("could not receive: %v", err)
+		}
+		log.Printf("Received1: %s", r.String())
+
+		time.Sleep(1 * time.Second)
+	}
 }

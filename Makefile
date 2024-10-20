@@ -20,12 +20,13 @@ GOBUILDSRV=CGO_ENABLED=1 go build -ldflags "-s -w" -trimpath -tags $(TAGS)
 protos:
 	go install github.com/pseudomuto/protoc-gen-doc/cmd/protoc-gen-doc@latest
 	# protoc --go_out=./ --go-grpc_out=./ --proto_path=hiddifyrpc hiddifyrpc/*.proto
-	for f in $(shell find v2 -name "*.proto"); do \
-		protoc --go_opt=paths=source_relative --go-grpc_opt=paths=source_relative --go_out=./ --go-grpc_out=./  $$f; \
-	done
-	for f in $(shell find extension -name "*.proto"); do \
-		protoc --go_opt=paths=source_relative --go-grpc_opt=paths=source_relative --go_out=./ --go-grpc_out=./  $$f; \
-	done
+	# for f in $(shell find v2 -name "*.proto"); do \
+	# 	protoc --go_opt=paths=source_relative --go-grpc_opt=paths=source_relative --go_out=./ --go-grpc_out=./  $$f; \
+	# done
+	# for f in $(shell find extension -name "*.proto"); do \
+	# 	protoc --go_opt=paths=source_relative --go-grpc_opt=paths=source_relative --go_out=./ --go-grpc_out=./  $$f; \
+	# done
+	protoc --go_opt=paths=source_relative --go-grpc_opt=paths=source_relative --go_out=./ --go-grpc_out=./  $(shell find v2 -name "*.proto") $(shell find extension -name "*.proto")
 	protoc --doc_out=./docs  --doc_opt=markdown,hiddifyrpc.md $(shell find v2 -name "*.proto") $(shell find extension -name "*.proto")
 	# protoc --js_out=import_style=commonjs,binary:./extension/html/rpc/ --grpc-web_out=import_style=commonjs,mode=grpcwebtext:./extension/html/rpc/ $(shell find v2 -name "*.proto") $(shell find extension -name "*.proto")
 	# npx browserify extension/html/rpc/extension.js >extension/html/rpc.js
@@ -37,7 +38,7 @@ lib_install:
 	npm install
 
 headers:
-	go build -buildmode=c-archive -o $(BINDIR)/$(LIBNAME).h ./platform/desktop
+	go build -buildmode=c-archive -o $(BINDIR)/ ./platform/desktop
 
 android: lib_install
 	gomobile bind -v -androidapi=21 -javapkg=com.hiddify.core -libname=hiddify-core -tags=$(TAGS) -trimpath -target=android -o $(BINDIR)/$(LIBNAME).aar github.com/sagernet/sing-box/experimental/libbox ./platform/mobile

@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-import "v2/common/common.proto";
+import "v2/hcommon/common.proto";
 
 package extension;
 
@@ -8,7 +8,7 @@ option go_package = "github.com/hiddify/hiddify-core/extension";
 
 message ExtensionActionResult {
   string extension_id = 1;
-  common.ResponseCode code = 2;
+  hcommon.ResponseCode code = 2;
   string message = 3;
 }
 

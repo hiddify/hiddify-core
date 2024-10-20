@@ -42,7 +42,7 @@ var (
 	iosTags     []string
 )
 
-const libName = "libcore"
+const libName = "hiddify-core"
 
 func init() {
 	sharedFlags = append(sharedFlags, "-trimpath")

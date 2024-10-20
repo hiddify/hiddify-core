@@ -6,10 +6,10 @@ import (
 	"os"
 	"time"
 
-	"github.com/hiddify/hiddify-core/v2/common"
-	"github.com/hiddify/hiddify-core/v2/common/request"
 	"github.com/hiddify/hiddify-core/v2/config"
 	"github.com/hiddify/hiddify-core/v2/db"
+	"github.com/hiddify/hiddify-core/v2/hcommon"
+	"github.com/hiddify/hiddify-core/v2/hcommon/request"
 	hcore "github.com/hiddify/hiddify-core/v2/hcore"
 	"github.com/sagernet/sing-box/option"
 )
@@ -65,29 +65,29 @@ func (s *ProfileRepositoryServer) AddProfile(ctx context.Context, req *AddProfil
 	return &ProfileResponse{Profile: profile}, nil
 }
 
-func (s *ProfileRepositoryServer) DeleteProfile(ctx context.Context, req *ProfileRequest) (*common.Response, error) {
+func (s *ProfileRepositoryServer) DeleteProfile(ctx context.Context, req *ProfileRequest) (*hcommon.Response, error) {
 	var err error
 	switch {
 	case req.Id != "":
 		err = DeleteById(req.Id)
 	default:
-		profile, err := s.GetProfile(ctx, req)
+		profile, err1 := s.GetProfile(ctx, req)
 
 		if profile.Profile == nil {
-			err = fmt.Errorf("error deleting profile: %v", err)
+			err = fmt.Errorf("error deleting profile: %v", err1)
 		} else {
 			err = DeleteById(profile.Profile.Id)
 		}
 	}
 
 	if err != nil {
-		return &common.Response{Message: err.Error(), Code: common.ResponseCode_FAILED}, fmt.Errorf("error deleting profile: %v", err)
+		return &hcommon.Response{Message: err.Error(), Code: hcommon.ResponseCode_FAILED}, fmt.Errorf("error deleting profile: %v", err)
 	}
 
-	return &common.Response{Code: common.ResponseCode_OK}, nil
+	return &hcommon.Response{Code: hcommon.ResponseCode_OK}, nil
 }
 
-func (s *ProfileRepositoryServer) SetActiveProfile(ctx context.Context, req *ProfileRequest) (*common.Response, error) {
+func (s *ProfileRepositoryServer) SetActiveProfile(ctx context.Context, req *ProfileRequest) (*hcommon.Response, error) {
 	var err error
 	switch {
 	case req.Id != "":
@@ -110,26 +110,26 @@ func (s *ProfileRepositoryServer) SetActiveProfile(ctx context.Context, req *Pro
 	}
 
 	if err != nil {
-		return &common.Response{Message: err.Error(), Code: common.ResponseCode_FAILED}, fmt.Errorf("error setting profile as active: %v", err)
+		return &hcommon.Response{Message: err.Error(), Code: hcommon.ResponseCode_FAILED}, fmt.Errorf("error setting profile as active: %v", err)
 	}
 
-	return &common.Response{Code: common.ResponseCode_OK}, nil
+	return &hcommon.Response{Code: hcommon.ResponseCode_OK}, nil
 }
 
-func (s *ProfileRepositoryServer) GetProfiles(ctx context.Context, req *common.Empty) (*MultiProfilesResponse, error) {
+func (s *ProfileRepositoryServer) GetProfiles(ctx context.Context, req *hcommon.Empty) (*MultiProfilesResponse, error) {
 	profiles, err := GetAll()
 	if err != nil {
-		return &MultiProfilesResponse{ResponseCode: common.ResponseCode_FAILED, Message: err.Error()}, fmt.Errorf("error fetching profiles: %v", err)
+		return &MultiProfilesResponse{ResponseCode: hcommon.ResponseCode_FAILED, Message: err.Error()}, fmt.Errorf("error fetching profiles: %v", err)
 	}
 	return &MultiProfilesResponse{Profiles: profiles}, nil
 }
 
-func (s *ProfileRepositoryServer) UpdateProfile(ctx context.Context, req *ProfileEntity) (*common.Response, error) {
+func (s *ProfileRepositoryServer) UpdateProfile(ctx context.Context, req *ProfileEntity) (*hcommon.Response, error) {
 	err := UpdateProfile(req)
 	if err != nil {
-		return &common.Response{Message: err.Error(), Code: common.ResponseCode_FAILED}, fmt.Errorf("error updating profile: %v", err)
+		return &hcommon.Response{Message: err.Error(), Code: hcommon.ResponseCode_FAILED}, fmt.Errorf("error updating profile: %v", err)
 	}
-	return &common.Response{Code: common.ResponseCode_OK}, nil
+	return &hcommon.Response{Code: hcommon.ResponseCode_OK}, nil
 }
 
 func GetAll() ([]*ProfileEntity, error) {
@@ -138,16 +138,16 @@ func GetAll() ([]*ProfileEntity, error) {
 	return allEntities, err
 }
 
-func (s *ProfileRepositoryServer) GetActiveProfile(ctx context.Context, req *common.Empty) (*ProfileResponse, error) {
+func (s *ProfileRepositoryServer) GetActiveProfile(ctx context.Context, req *hcommon.Empty) (*ProfileResponse, error) {
 	profile, err := GetActiveProfile()
 	if err != nil {
-		return &ProfileResponse{ResponseCode: common.ResponseCode_FAILED, Message: err.Error()}, fmt.Errorf("error fetching active profile: %v", err)
+		return &ProfileResponse{ResponseCode: hcommon.ResponseCode_FAILED, Message: err.Error()}, fmt.Errorf("error fetching active profile: %v", err)
 	}
 	return &ProfileResponse{Profile: profile}, nil
 }
 
 func GetActiveProfile() (*ProfileEntity, error) {
-	table := db.GetTable[common.AppSettings]()
+	table := db.GetTable[hcommon.AppSettings]()
 	active, err := table.Get("active_profile")
 	if err != nil {
 		return nil, err
@@ -160,8 +160,8 @@ func GetActiveProfile() (*ProfileEntity, error) {
 }
 
 func SetActiveProfile(entity *ProfileEntity) error {
-	table := db.GetTable[common.AppSettings]()
-	return table.UpdateInsert(&common.AppSettings{
+	table := db.GetTable[hcommon.AppSettings]()
+	return table.UpdateInsert(&hcommon.AppSettings{
 		Id:    "active_profile",
 		Value: entity.Id,
 	})

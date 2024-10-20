@@ -1,4 +1,4 @@
-package common
+package hcommon
 
 type AppSettings struct {
 	Id    string

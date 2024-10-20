@@ -11,8 +11,8 @@
     - [GenerateWarpConfigRequest](#hcore-GenerateWarpConfigRequest)
     - [LogMessage](#hcore-LogMessage)
     - [OutboundGroup](#hcore-OutboundGroup)
-    - [OutboundGroupItem](#hcore-OutboundGroupItem)
     - [OutboundGroupList](#hcore-OutboundGroupList)
+    - [OutboundInfo](#hcore-OutboundInfo)
     - [ParseRequest](#hcore-ParseRequest)
     - [ParseResponse](#hcore-ParseResponse)
     - [SelectOutboundRequest](#hcore-SelectOutboundRequest)
@@ -58,12 +58,6 @@
   
     - [DomainStrategy](#hiddifyoptions-DomainStrategy)
   
-- [v2/common/common.proto](#v2_common_common-proto)
-    - [Empty](#common-Empty)
-    - [Response](#common-Response)
-  
-    - [ResponseCode](#common-ResponseCode)
-  
 - [v2/profile/profile_service.proto](#v2_profile_profile_service-proto)
     - [AddProfileRequest](#profile-AddProfileRequest)
     - [MultiProfilesResponse](#profile-MultiProfilesResponse)
@@ -76,6 +70,12 @@
     - [ProfileEntity](#profile-ProfileEntity)
     - [ProfileOptions](#profile-ProfileOptions)
     - [SubscriptionInfo](#profile-SubscriptionInfo)
+  
+- [v2/hcommon/common.proto](#v2_hcommon_common-proto)
+    - [Empty](#hcommon-Empty)
+    - [Response](#hcommon-Response)
+  
+    - [ResponseCode](#hcommon-ResponseCode)
   
 - [v2/hello/hello_service.proto](#v2_hello_hello_service-proto)
     - [Hello](#hello-Hello)
@@ -221,25 +221,9 @@
 | tag | [string](#string) |  |  |
 | type | [string](#string) |  |  |
 | selected | [string](#string) |  |  |
-| items | [OutboundGroupItem](#hcore-OutboundGroupItem) | repeated |  |
-
-
-
-
-
-
-<a name="hcore-OutboundGroupItem"></a>
-
-### OutboundGroupItem
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| tag | [string](#string) |  |  |
-| type | [string](#string) |  |  |
-| url_test_time | [int64](#int64) |  |  |
-| url_test_delay | [int32](#int32) |  |  |
+| selectable | [bool](#bool) |  |  |
+| Is_expand | [bool](#bool) |  |  |
+| items | [OutboundInfo](#hcore-OutboundInfo) | repeated |  |
 
 
 
@@ -255,6 +239,24 @@
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | items | [OutboundGroup](#hcore-OutboundGroup) | repeated |  |
+
+
+
+
+
+
+<a name="hcore-OutboundInfo"></a>
+
+### OutboundInfo
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| tag | [string](#string) |  |  |
+| type | [string](#string) |  |  |
+| url_test_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
+| url_test_delay | [int32](#int32) |  |  |
 
 
 
@@ -287,7 +289,7 @@
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| response_code | [common.ResponseCode](#common-ResponseCode) |  |  |
+| response_code | [hcommon.ResponseCode](#hcommon-ResponseCode) |  |  |
 | content | [string](#string) |  |  |
 | message | [string](#string) |  |  |
 
@@ -577,22 +579,22 @@
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
 | Start | [StartRequest](#hcore-StartRequest) | [CoreInfoResponse](#hcore-CoreInfoResponse) |  |
-| CoreInfoListener | [.common.Empty](#common-Empty) | [CoreInfoResponse](#hcore-CoreInfoResponse) stream |  |
-| OutboundsInfo | [.common.Empty](#common-Empty) | [OutboundGroupList](#hcore-OutboundGroupList) stream |  |
-| MainOutboundsInfo | [.common.Empty](#common-Empty) | [OutboundGroupList](#hcore-OutboundGroupList) stream |  |
-| GetSystemInfo | [.common.Empty](#common-Empty) | [SystemInfo](#hcore-SystemInfo) stream |  |
-| Setup | [SetupRequest](#hcore-SetupRequest) | [.common.Response](#common-Response) |  |
+| CoreInfoListener | [.hcommon.Empty](#hcommon-Empty) | [CoreInfoResponse](#hcore-CoreInfoResponse) stream |  |
+| OutboundsInfo | [.hcommon.Empty](#hcommon-Empty) | [OutboundGroupList](#hcore-OutboundGroupList) stream |  |
+| MainOutboundsInfo | [.hcommon.Empty](#hcommon-Empty) | [OutboundGroupList](#hcore-OutboundGroupList) stream |  |
+| GetSystemInfo | [.hcommon.Empty](#hcommon-Empty) | [SystemInfo](#hcore-SystemInfo) stream |  |
+| Setup | [SetupRequest](#hcore-SetupRequest) | [.hcommon.Response](#hcommon-Response) |  |
 | Parse | [ParseRequest](#hcore-ParseRequest) | [ParseResponse](#hcore-ParseResponse) |  |
 | ChangeHiddifySettings | [ChangeHiddifySettingsRequest](#hcore-ChangeHiddifySettingsRequest) | [CoreInfoResponse](#hcore-CoreInfoResponse) |  |
 | StartService | [StartRequest](#hcore-StartRequest) | [CoreInfoResponse](#hcore-CoreInfoResponse) | rpc GenerateConfig (GenerateConfigRequest) returns (GenerateConfigResponse); |
-| Stop | [.common.Empty](#common-Empty) | [CoreInfoResponse](#hcore-CoreInfoResponse) |  |
+| Stop | [.hcommon.Empty](#hcommon-Empty) | [CoreInfoResponse](#hcore-CoreInfoResponse) |  |
 | Restart | [StartRequest](#hcore-StartRequest) | [CoreInfoResponse](#hcore-CoreInfoResponse) |  |
-| SelectOutbound | [SelectOutboundRequest](#hcore-SelectOutboundRequest) | [.common.Response](#common-Response) |  |
-| UrlTest | [UrlTestRequest](#hcore-UrlTestRequest) | [.common.Response](#common-Response) |  |
+| SelectOutbound | [SelectOutboundRequest](#hcore-SelectOutboundRequest) | [.hcommon.Response](#hcommon-Response) |  |
+| UrlTest | [UrlTestRequest](#hcore-UrlTestRequest) | [.hcommon.Response](#hcommon-Response) |  |
 | GenerateWarpConfig | [GenerateWarpConfigRequest](#hcore-GenerateWarpConfigRequest) | [WarpGenerationResponse](#hcore-WarpGenerationResponse) |  |
-| GetSystemProxyStatus | [.common.Empty](#common-Empty) | [SystemProxyStatus](#hcore-SystemProxyStatus) |  |
-| SetSystemProxyEnabled | [SetSystemProxyEnabledRequest](#hcore-SetSystemProxyEnabledRequest) | [.common.Response](#common-Response) |  |
-| LogListener | [.common.Empty](#common-Empty) | [LogMessage](#hcore-LogMessage) stream |  |
+| GetSystemProxyStatus | [.hcommon.Empty](#hcommon-Empty) | [SystemProxyStatus](#hcore-SystemProxyStatus) |  |
+| SetSystemProxyEnabled | [SetSystemProxyEnabledRequest](#hcore-SetSystemProxyEnabledRequest) | [.hcommon.Response](#hcommon-Response) |  |
+| LogListener | [.hcommon.Empty](#hcommon-Empty) | [LogMessage](#hcore-LogMessage) stream |  |
 
  
 
@@ -671,9 +673,9 @@
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
 | Start | [TunnelStartRequest](#tunnelservice-TunnelStartRequest) | [TunnelResponse](#tunnelservice-TunnelResponse) |  |
-| Stop | [.common.Empty](#common-Empty) | [TunnelResponse](#tunnelservice-TunnelResponse) |  |
-| Status | [.common.Empty](#common-Empty) | [TunnelResponse](#tunnelservice-TunnelResponse) |  |
-| Exit | [.common.Empty](#common-Empty) | [TunnelResponse](#tunnelservice-TunnelResponse) |  |
+| Stop | [.hcommon.Empty](#hcommon-Empty) | [TunnelResponse](#tunnelservice-TunnelResponse) |  |
+| Status | [.hcommon.Empty](#hcommon-Empty) | [TunnelResponse](#tunnelservice-TunnelResponse) |  |
+| Exit | [.hcommon.Empty](#hcommon-Empty) | [TunnelResponse](#tunnelservice-TunnelResponse) |  |
 
  
 
@@ -956,61 +958,6 @@ DomainStrategy defines the strategies for IP address preference when resolving d
 
 
 
-<a name="v2_common_common-proto"></a>
-<p align="right"><a href="#top">Top</a></p>
-
-## v2/common/common.proto
-
-
-
-<a name="common-Empty"></a>
-
-### Empty
-
-
-
-
-
-
-
-<a name="common-Response"></a>
-
-### Response
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| code | [ResponseCode](#common-ResponseCode) |  |  |
-| message | [string](#string) |  |  |
-
-
-
-
-
- 
-
-
-<a name="common-ResponseCode"></a>
-
-### ResponseCode
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| OK | 0 |  |
-| FAILED | 1 |  |
-| AUTH_NEED | 2 |  |
-
-
- 
-
- 
-
- 
-
-
-
 <a name="v2_profile_profile_service-proto"></a>
 <p align="right"><a href="#top">Top</a></p>
 
@@ -1046,7 +993,7 @@ MultiProfilesResponse is the response message for fetching multi profiles.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | profiles | [ProfileEntity](#profile-ProfileEntity) | repeated | A list of profile entities. |
-| response_code | [common.ResponseCode](#common-ResponseCode) |  | The response code indicating success or failure. |
+| response_code | [hcommon.ResponseCode](#hcommon-ResponseCode) |  | The response code indicating success or failure. |
 | message | [string](#string) |  | A message indicating the result or error, if any. |
 
 
@@ -1081,7 +1028,7 @@ ProfileResponse is the response message for profile service operations.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | profile | [ProfileEntity](#profile-ProfileEntity) |  | The profile entity, populated in successful operations. |
-| response_code | [common.ResponseCode](#common-ResponseCode) |  | The response code indicating success or failure. |
+| response_code | [hcommon.ResponseCode](#hcommon-ResponseCode) |  | The response code indicating success or failure. |
 | message | [string](#string) |  | A message indicating the result or error, if any. |
 
 
@@ -1104,11 +1051,11 @@ ProfileService defines the RPC methods available for managing profiles.
 | ----------- | ------------ | ------------- | ------------|
 | GetProfile | [ProfileRequest](#profile-ProfileRequest) | [ProfileResponse](#profile-ProfileResponse) | GetProfile fetches a profile by ID, name, or URL. |
 | UpdateProfile | [ProfileEntity](#profile-ProfileEntity) | [ProfileResponse](#profile-ProfileResponse) | UpdateProfile updates an existing profile. |
-| GetAllProfiles | [.common.Empty](#common-Empty) | [MultiProfilesResponse](#profile-MultiProfilesResponse) | GetAllProfiles fetches all profiles. |
-| GetActiveProfile | [.common.Empty](#common-Empty) | [ProfileResponse](#profile-ProfileResponse) | GetActiveProfile retrieves the currently active profile. |
-| SetActiveProfile | [ProfileRequest](#profile-ProfileRequest) | [.common.Response](#common-Response) | SetActiveProfile sets a profile as active, identified by ID, name, or URL. |
+| GetAllProfiles | [.hcommon.Empty](#hcommon-Empty) | [MultiProfilesResponse](#profile-MultiProfilesResponse) | GetAllProfiles fetches all profiles. |
+| GetActiveProfile | [.hcommon.Empty](#hcommon-Empty) | [ProfileResponse](#profile-ProfileResponse) | GetActiveProfile retrieves the currently active profile. |
+| SetActiveProfile | [ProfileRequest](#profile-ProfileRequest) | [.hcommon.Response](#hcommon-Response) | SetActiveProfile sets a profile as active, identified by ID, name, or URL. |
 | AddProfile | [AddProfileRequest](#profile-AddProfileRequest) | [ProfileResponse](#profile-ProfileResponse) | AddProfile adds a new profile using either a URL or the raw profile content. |
-| DeleteProfile | [ProfileRequest](#profile-ProfileRequest) | [.common.Response](#common-Response) | DeleteProfile deletes a profile identified by ID, name, or URL. |
+| DeleteProfile | [ProfileRequest](#profile-ProfileRequest) | [.hcommon.Response](#hcommon-Response) | DeleteProfile deletes a profile identified by ID, name, or URL. |
 
  
 
@@ -1179,6 +1126,61 @@ SubscriptionInfo defines subscription-related information.
 
 
  
+
+ 
+
+ 
+
+ 
+
+
+
+<a name="v2_hcommon_common-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## v2/hcommon/common.proto
+
+
+
+<a name="hcommon-Empty"></a>
+
+### Empty
+
+
+
+
+
+
+
+<a name="hcommon-Response"></a>
+
+### Response
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| code | [ResponseCode](#hcommon-ResponseCode) |  |  |
+| message | [string](#string) |  |  |
+
+
+
+
+
+ 
+
+
+<a name="hcommon-ResponseCode"></a>
+
+### ResponseCode
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| OK | 0 |  |
+| FAILED | 1 |  |
+| AUTH_NEED | 2 |  |
+
 
  
 
@@ -1281,7 +1283,7 @@ SubscriptionInfo defines subscription-related information.
 
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
-| ListExtensions | [.common.Empty](#common-Empty) | [ExtensionList](#extension-ExtensionList) |  |
+| ListExtensions | [.hcommon.Empty](#hcommon-Empty) | [ExtensionList](#extension-ExtensionList) |  |
 | Connect | [ExtensionRequest](#extension-ExtensionRequest) | [ExtensionResponse](#extension-ExtensionResponse) stream |  |
 | EditExtension | [EditExtensionRequest](#extension-EditExtensionRequest) | [ExtensionActionResult](#extension-ExtensionActionResult) |  |
 | SubmitForm | [SendExtensionDataRequest](#extension-SendExtensionDataRequest) | [ExtensionActionResult](#extension-ExtensionActionResult) |  |
@@ -1324,7 +1326,7 @@ SubscriptionInfo defines subscription-related information.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | extension_id | [string](#string) |  |  |
-| code | [common.ResponseCode](#common-ResponseCode) |  |  |
+| code | [hcommon.ResponseCode](#hcommon-ResponseCode) |  |  |
 | message | [string](#string) |  |  |
 
 

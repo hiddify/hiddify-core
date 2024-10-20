@@ -1,8 +1,8 @@
 syntax = "proto3";
 
-package common;
+package hcommon;
 
-option go_package = "github.com/hiddify/hiddify-core/v2/common";
+option go_package = "github.com/hiddify/hiddify-core/v2/hcommon";
 
 message Empty {
 }

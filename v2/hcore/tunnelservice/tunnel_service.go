@@ -10,7 +10,7 @@ import (
 	"github.com/sagernet/sing-box/experimental/libbox"
 	"github.com/sagernet/sing-box/option"
 
-	common "github.com/hiddify/hiddify-core/v2/common"
+	hcommon "github.com/hiddify/hiddify-core/v2/hcommon"
 	"github.com/hiddify/hiddify-core/v2/hcore"
 )
 
@@ -103,7 +103,7 @@ func makeTunnelConfig(in *TunnelStartRequest) option.Options {
 	}
 }
 
-func (s *TunnelService) Stop(ctx context.Context, _ *common.Empty) (*TunnelResponse, error) {
+func (s *TunnelService) Stop(ctx context.Context, _ *hcommon.Empty) (*TunnelResponse, error) {
 	if s.box == nil {
 		return &TunnelResponse{
 			Message: "Not Started",
@@ -121,13 +121,13 @@ func (s *TunnelService) Stop(ctx context.Context, _ *common.Empty) (*TunnelRespo
 	}, err
 }
 
-func (s *TunnelService) Status(ctx context.Context, _ *common.Empty) (*TunnelResponse, error) {
+func (s *TunnelService) Status(ctx context.Context, _ *hcommon.Empty) (*TunnelResponse, error) {
 	return &TunnelResponse{
 		Message: "Not Implemented",
 	}, nil
 }
 
-func (s *TunnelService) Exit(ctx context.Context, _ *common.Empty) (*TunnelResponse, error) {
+func (s *TunnelService) Exit(ctx context.Context, _ *hcommon.Empty) (*TunnelResponse, error) {
 	if s.box != nil {
 		s.box.Close()
 	}

@@ -9,9 +9,9 @@ import (
 	runtimeDebug "runtime/debug"
 	"time"
 
-	common "github.com/hiddify/hiddify-core/v2/common"
 	"github.com/hiddify/hiddify-core/v2/config"
 	"github.com/hiddify/hiddify-core/v2/db"
+	hcommon "github.com/hiddify/hiddify-core/v2/hcommon"
 	"github.com/hiddify/hiddify-core/v2/service_manager"
 
 	B "github.com/sagernet/sing-box"
@@ -103,7 +103,7 @@ func Setup(params SetupParameters) error {
 			return err
 		}
 	}
-	settings := db.GetTable[common.AppSettings]()
+	settings := db.GetTable[hcommon.AppSettings]()
 	val, err := settings.Get("HiddifySettingsJson")
 	if val == nil || err != nil {
 		_, err := ChangeHiddifySettings(&ChangeHiddifySettingsRequest{HiddifySettingsJson: ""})

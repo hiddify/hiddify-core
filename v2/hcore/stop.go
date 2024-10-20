@@ -4,11 +4,11 @@ import (
 	"context"
 	"fmt"
 
-	common "github.com/hiddify/hiddify-core/v2/common"
 	"github.com/hiddify/hiddify-core/v2/config"
+	hcommon "github.com/hiddify/hiddify-core/v2/hcommon"
 )
 
-func (s *CoreService) Stop(ctx context.Context, empty *common.Empty) (*CoreInfoResponse, error) {
+func (s *CoreService) Stop(ctx context.Context, empty *hcommon.Empty) (*CoreInfoResponse, error) {
 	return Stop()
 }
 

@@ -8,7 +8,7 @@ package tunnelservice
 
 import (
 	context "context"
-	common "github.com/hiddify/hiddify-core/v2/common"
+	hcommon "github.com/hiddify/hiddify-core/v2/hcommon"
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
@@ -31,9 +31,9 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type TunnelServiceClient interface {
 	Start(ctx context.Context, in *TunnelStartRequest, opts ...grpc.CallOption) (*TunnelResponse, error)
-	Stop(ctx context.Context, in *common.Empty, opts ...grpc.CallOption) (*TunnelResponse, error)
-	Status(ctx context.Context, in *common.Empty, opts ...grpc.CallOption) (*TunnelResponse, error)
-	Exit(ctx context.Context, in *common.Empty, opts ...grpc.CallOption) (*TunnelResponse, error)
+	Stop(ctx context.Context, in *hcommon.Empty, opts ...grpc.CallOption) (*TunnelResponse, error)
+	Status(ctx context.Context, in *hcommon.Empty, opts ...grpc.CallOption) (*TunnelResponse, error)
+	Exit(ctx context.Context, in *hcommon.Empty, opts ...grpc.CallOption) (*TunnelResponse, error)
 }
 
 type tunnelServiceClient struct {
@@ -54,7 +54,7 @@ func (c *tunnelServiceClient) Start(ctx context.Context, in *TunnelStartRequest,
 	return out, nil
 }
 
-func (c *tunnelServiceClient) Stop(ctx context.Context, in *common.Empty, opts ...grpc.CallOption) (*TunnelResponse, error) {
+func (c *tunnelServiceClient) Stop(ctx context.Context, in *hcommon.Empty, opts ...grpc.CallOption) (*TunnelResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(TunnelResponse)
 	err := c.cc.Invoke(ctx, TunnelService_Stop_FullMethodName, in, out, cOpts...)
@@ -64,7 +64,7 @@ func (c *tunnelServiceClient) Stop(ctx context.Context, in *common.Empty, opts .
 	return out, nil
 }
 
-func (c *tunnelServiceClient) Status(ctx context.Context, in *common.Empty, opts ...grpc.CallOption) (*TunnelResponse, error) {
+func (c *tunnelServiceClient) Status(ctx context.Context, in *hcommon.Empty, opts ...grpc.CallOption) (*TunnelResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(TunnelResponse)
 	err := c.cc.Invoke(ctx, TunnelService_Status_FullMethodName, in, out, cOpts...)
@@ -74,7 +74,7 @@ func (c *tunnelServiceClient) Status(ctx context.Context, in *common.Empty, opts
 	return out, nil
 }
 
-func (c *tunnelServiceClient) Exit(ctx context.Context, in *common.Empty, opts ...grpc.CallOption) (*TunnelResponse, error) {
+func (c *tunnelServiceClient) Exit(ctx context.Context, in *hcommon.Empty, opts ...grpc.CallOption) (*TunnelResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(TunnelResponse)
 	err := c.cc.Invoke(ctx, TunnelService_Exit_FullMethodName, in, out, cOpts...)
@@ -89,9 +89,9 @@ func (c *tunnelServiceClient) Exit(ctx context.Context, in *common.Empty, opts .
 // for forward compatibility.
 type TunnelServiceServer interface {
 	Start(context.Context, *TunnelStartRequest) (*TunnelResponse, error)
-	Stop(context.Context, *common.Empty) (*TunnelResponse, error)
-	Status(context.Context, *common.Empty) (*TunnelResponse, error)
-	Exit(context.Context, *common.Empty) (*TunnelResponse, error)
+	Stop(context.Context, *hcommon.Empty) (*TunnelResponse, error)
+	Status(context.Context, *hcommon.Empty) (*TunnelResponse, error)
+	Exit(context.Context, *hcommon.Empty) (*TunnelResponse, error)
 	mustEmbedUnimplementedTunnelServiceServer()
 }
 
@@ -105,13 +105,13 @@ type UnimplementedTunnelServiceServer struct{}
 func (UnimplementedTunnelServiceServer) Start(context.Context, *TunnelStartRequest) (*TunnelResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Start not implemented")
 }
-func (UnimplementedTunnelServiceServer) Stop(context.Context, *common.Empty) (*TunnelResponse, error) {
+func (UnimplementedTunnelServiceServer) Stop(context.Context, *hcommon.Empty) (*TunnelResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Stop not implemented")
 }
-func (UnimplementedTunnelServiceServer) Status(context.Context, *common.Empty) (*TunnelResponse, error) {
+func (UnimplementedTunnelServiceServer) Status(context.Context, *hcommon.Empty) (*TunnelResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Status not implemented")
 }
-func (UnimplementedTunnelServiceServer) Exit(context.Context, *common.Empty) (*TunnelResponse, error) {
+func (UnimplementedTunnelServiceServer) Exit(context.Context, *hcommon.Empty) (*TunnelResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Exit not implemented")
 }
 func (UnimplementedTunnelServiceServer) mustEmbedUnimplementedTunnelServiceServer() {}
@@ -154,7 +154,7 @@ func _TunnelService_Start_Handler(srv interface{}, ctx context.Context, dec func
 }
 
 func _TunnelService_Stop_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(common.Empty)
+	in := new(hcommon.Empty)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -166,13 +166,13 @@ func _TunnelService_Stop_Handler(srv interface{}, ctx context.Context, dec func(
 		FullMethod: TunnelService_Stop_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(TunnelServiceServer).Stop(ctx, req.(*common.Empty))
+		return srv.(TunnelServiceServer).Stop(ctx, req.(*hcommon.Empty))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
 func _TunnelService_Status_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(common.Empty)
+	in := new(hcommon.Empty)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -184,13 +184,13 @@ func _TunnelService_Status_Handler(srv interface{}, ctx context.Context, dec fun
 		FullMethod: TunnelService_Status_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(TunnelServiceServer).Status(ctx, req.(*common.Empty))
+		return srv.(TunnelServiceServer).Status(ctx, req.(*hcommon.Empty))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
 func _TunnelService_Exit_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(common.Empty)
+	in := new(hcommon.Empty)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -202,7 +202,7 @@ func _TunnelService_Exit_Handler(srv interface{}, ctx context.Context, dec func(
 		FullMethod: TunnelService_Exit_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(TunnelServiceServer).Exit(ctx, req.(*common.Empty))
+		return srv.(TunnelServiceServer).Exit(ctx, req.(*hcommon.Empty))
 	}
 	return interceptor(ctx, in, info, handler)
 }

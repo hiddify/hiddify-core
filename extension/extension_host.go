@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"log"
 
-	common "github.com/hiddify/hiddify-core/v2/common"
 	"github.com/hiddify/hiddify-core/v2/db"
+	hcommon "github.com/hiddify/hiddify-core/v2/hcommon"
 	"google.golang.org/grpc"
 )
 
@@ -14,7 +14,7 @@ type ExtensionHostService struct {
 	UnimplementedExtensionHostServiceServer
 }
 
-func (ExtensionHostService) ListExtensions(ctx context.Context, empty *common.Empty) (*ExtensionList, error) {
+func (ExtensionHostService) ListExtensions(ctx context.Context, empty *hcommon.Empty) (*ExtensionList, error) {
 	extensionList := &ExtensionList{
 		Extensions: make([]*ExtensionMsg, 0),
 	}
@@ -79,7 +79,7 @@ func (e ExtensionHostService) SubmitForm(ctx context.Context, req *SendExtension
 		log.Println(err)
 		return &ExtensionActionResult{
 			ExtensionId: req.ExtensionId,
-			Code:        common.ResponseCode_FAILED,
+			Code:        hcommon.ResponseCode_FAILED,
 			Message:     err.Error(),
 		}, err
 	}
@@ -87,7 +87,7 @@ func (e ExtensionHostService) SubmitForm(ctx context.Context, req *SendExtension
 
 	return &ExtensionActionResult{
 		ExtensionId: req.ExtensionId,
-		Code:        common.ResponseCode_OK,
+		Code:        hcommon.ResponseCode_OK,
 		Message:     "Success",
 	}, nil
 }
@@ -98,7 +98,7 @@ func (e ExtensionHostService) Close(ctx context.Context, req *ExtensionRequest) 
 		log.Println(err)
 		return &ExtensionActionResult{
 			ExtensionId: req.ExtensionId,
-			Code:        common.ResponseCode_FAILED,
+			Code:        hcommon.ResponseCode_FAILED,
 			Message:     err.Error(),
 		}, err
 	}
@@ -106,7 +106,7 @@ func (e ExtensionHostService) Close(ctx context.Context, req *ExtensionRequest) 
 	(*extension).(*Base[any]).doStoreData()
 	return &ExtensionActionResult{
 		ExtensionId: req.ExtensionId,
-		Code:        common.ResponseCode_OK,
+		Code:        hcommon.ResponseCode_OK,
 		Message:     "Success",
 	}, nil
 }
@@ -134,7 +134,7 @@ func (e ExtensionHostService) EditExtension(ctx context.Context, req *EditExtens
 
 	return &ExtensionActionResult{
 		ExtensionId: req.ExtensionId,
-		Code:        common.ResponseCode_OK,
+		Code:        hcommon.ResponseCode_OK,
 		Message:     "Success",
 	}, nil
 }

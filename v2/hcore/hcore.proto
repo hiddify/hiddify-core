@@ -1,5 +1,5 @@
 syntax = "proto3";
-import "v2/common/common.proto";
+import "v2/hcommon/common.proto";
 import "google/protobuf/timestamp.proto";
 
 package hcore;
@@ -65,10 +65,10 @@ message SystemInfo {
   int64 downlink_total = 9;
 }
 
-message OutboundGroupItem {
+message OutboundInfo {
   string tag = 1;
   string type = 2;
-  int64 url_test_time = 3;
+  google.protobuf.Timestamp url_test_time = 3;
   int32 url_test_delay = 4;
 }
 
@@ -76,7 +76,9 @@ message OutboundGroup {
   string tag = 1;
   string type = 2;
   string selected=3;
-  repeated OutboundGroupItem items = 4;
+  bool selectable=4;
+  bool Is_expand=5;
+  repeated OutboundInfo items = 6;
   
 }
 message OutboundGroupList{
@@ -115,7 +117,7 @@ message ParseRequest {
 }
 
 message ParseResponse {
-  common. ResponseCode response_code = 1;
+  hcommon.ResponseCode response_code = 1;
   string content = 2;  
   string message = 3;
 }

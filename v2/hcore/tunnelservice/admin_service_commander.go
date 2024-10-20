@@ -9,7 +9,7 @@ import (
 	"runtime"
 	"time"
 
-	common "github.com/hiddify/hiddify-core/v2/common"
+	hcommon "github.com/hiddify/hiddify-core/v2/hcommon"
 	hutils "github.com/hiddify/hiddify-core/v2/hutils"
 	grpc "google.golang.org/grpc"
 )
@@ -71,7 +71,7 @@ func startTunnelRequest(opt *TunnelStartRequest, installService bool) (bool, err
 	c := NewTunnelServiceClient(conn)
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
-	_, _ = c.Stop(ctx, &common.Empty{})
+	_, _ = c.Stop(ctx, &hcommon.Empty{})
 	res, err := c.Start(ctx, opt)
 	if err != nil {
 		log.Printf("could not greet: %+v %+v", res, err)
@@ -97,10 +97,10 @@ func stopTunnelRequest() error {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*20)
 	defer cancel()
 
-	res, err := c.Stop(ctx, &common.Empty{})
+	res, err := c.Stop(ctx, &hcommon.Empty{})
 	if err != nil {
 		log.Printf("did not Stopped: %v %v", res, err)
-		_, _ = c.Stop(ctx, &common.Empty{})
+		_, _ = c.Stop(ctx, &hcommon.Empty{})
 		return err
 	}
 
@@ -118,7 +118,7 @@ func ExitTunnelService() (bool, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*1)
 	defer cancel()
 
-	res, err := c.Exit(ctx, &common.Empty{})
+	res, err := c.Exit(ctx, &hcommon.Empty{})
 	if res != nil {
 		log.Printf("did not exit: %v %v", res, err)
 		return false, err
