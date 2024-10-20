@@ -1,6 +1,8 @@
 package hcore
 
 import (
+	"strings"
+
 	hcommon "github.com/hiddify/hiddify-core/v2/hcommon"
 	"github.com/sagernet/sing-box/adapter"
 	"github.com/sagernet/sing-box/outbound"
@@ -59,7 +61,8 @@ func GetAllProxiesInfo(onlyGroupitems bool) *OutboundGroupList {
 		group.Tag = iGroup.Tag()
 		group.Type = iGroup.Type()
 		_, group.Selectable = iGroup.(*outbound.Selector)
-		group.Selected = iGroup.Now()
+		// group.Selected = iGroup.Now()
+		selectedTag := iGroup.Now()
 		if cacheFile != nil {
 			if isExpand, loaded := cacheFile.LoadGroupExpand(group.Tag); loaded {
 				group.IsExpand = isExpand
@@ -71,11 +74,17 @@ func GetAllProxiesInfo(onlyGroupitems bool) *OutboundGroupList {
 			if !isLoaded {
 				continue
 			}
-			if onlyGroupitems && itemTag != group.Selected {
+			if onlyGroupitems && itemTag != selectedTag {
 				continue
 			}
-
-			group.Items = append(group.Items, GetProxyInfo(itemOutbound))
+			pinfo := GetProxyInfo(itemOutbound)
+			pinfo.IsSelected = itemTag == selectedTag
+			if pinfo.IsSelected {
+				group.Selected = pinfo
+			}
+			group.Items = append(group.Items, pinfo)
+			pinfo.IsVisible = !strings.Contains(itemTag, "§hide§")
+			pinfo.TagDisplay = strings.Split(itemTag, "§")[0]
 		}
 		if len(group.Items) == 0 {
 			continue

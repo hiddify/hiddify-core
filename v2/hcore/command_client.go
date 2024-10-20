@@ -65,7 +65,7 @@ func (cch *CommandClientHandler) WriteGroups(message libbox.OutboundGroupIterato
 				},
 			)
 		}
-		groups.Items = append(groups.Items, &OutboundGroup{Tag: group.Tag, Type: group.Type, Selected: group.Selected, Items: groupItems})
+		groups.Items = append(groups.Items, &OutboundGroup{Tag: group.Tag, Type: group.Type, Selected: nil, Items: groupItems})
 	}
 	if cch.command == libbox.CommandGroupInfoOnly {
 		mainOutboundsInfoObserver.Emit(&groups)

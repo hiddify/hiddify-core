@@ -71,6 +71,13 @@ message OutboundInfo {
   google.protobuf.Timestamp url_test_time = 3;
   int32 url_test_delay = 4;
   IpInfo ipinfo = 5;
+  bool is_selected = 6;
+  bool is_group = 7;
+  bool is_secure = 8;
+  bool is_visible = 9;
+  uint32 port = 10;
+  string host = 11;
+  string tag_display = 12;
 }
 
 message IpInfo {
@@ -87,7 +94,7 @@ message IpInfo {
 message OutboundGroup {
   string tag = 1;
   string type = 2;
-  string selected=3;
+  OutboundInfo selected=3;
   bool selectable=4;
   bool Is_expand=5;
   repeated OutboundInfo items = 6;

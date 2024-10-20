@@ -244,7 +244,7 @@
 | ----- | ---- | ----- | ----------- |
 | tag | [string](#string) |  |  |
 | type | [string](#string) |  |  |
-| selected | [string](#string) |  |  |
+| selected | [OutboundInfo](#hcore-OutboundInfo) |  |  |
 | selectable | [bool](#bool) |  |  |
 | Is_expand | [bool](#bool) |  |  |
 | items | [OutboundInfo](#hcore-OutboundInfo) | repeated |  |
@@ -282,6 +282,13 @@
 | url_test_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 | url_test_delay | [int32](#int32) |  |  |
 | ipinfo | [IpInfo](#hcore-IpInfo) |  |  |
+| is_selected | [bool](#bool) |  |  |
+| is_group | [bool](#bool) |  |  |
+| is_secure | [bool](#bool) |  |  |
+| is_visible | [bool](#bool) |  |  |
+| port | [uint32](#uint32) |  |  |
+| host | [string](#string) |  |  |
+| tag_display | [string](#string) |  |  |
 
 
 
