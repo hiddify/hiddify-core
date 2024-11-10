@@ -74,7 +74,7 @@ windows-amd64:
 
 linux-amd64:
 	mkdir -p $(BINDIR)/lib
-	env GOOS=linux GOARCH=amd64 $(GOBUILDLIB) -o $(BINDIR)/lib/$(LIBNAME).so ./custom
+	env GOOS=linux GOARCH=amd64 $(GOBUILDLIB) -o $(BINDIR)/lib/$(LIBNAME).so ./platform/desktop
 	mkdir lib
 	cp $(BINDIR)/lib/$(LIBNAME).so ./lib/$(LIBNAME).so
 	env GOOS=linux GOARCH=amd64  CGO_LDFLAGS="./lib/$(LIBNAME).so" $(GOBUILDSRV) -o $(BINDIR)/$(CLINAME) ./cmd/bydll
