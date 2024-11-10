@@ -4,85 +4,59 @@ package main
 #include <stdlib.h>
 #include <signal.h>
 #include "stdint.h"
-
-static void init_signals() {
-    stack_t ss = {};
-    ss.ss_sp = malloc(SIGSTKSZ);
-    ss.ss_size = SIGSTKSZ;
-    ss.ss_flags = 0;
-    sigaltstack(&ss, NULL);
-
-    struct sigaction sa = {};
-    sa.sa_flags = SA_ONSTACK;
-    sigemptyset(&sa.sa_mask);
-
-    // Add handlers for specific signals
-    sigaction(SIGABRT, &sa, NULL);
-    sigaction(SIGSEGV, &sa, NULL);
-    sigaction(SIGBUS, &sa, NULL);
-    sigaction(SIGILL, &sa, NULL);
-    sigaction(SIGFPE, &sa, NULL);
-}
-*/
-/*
-static void cleanup_signals() {
-    stack_t ss = {};
-    ss.ss_flags = SS_DISABLE;
-    sigaltstack(&ss, NULL);
-}
 */
 import "C"
 
 import (
-	"os"
-	"os/signal"
+	// "os"
+	// "os/signal"
 	"runtime"
-	"syscall"
+	// "syscall"
 	"unsafe"
 
 	hcore "github.com/hiddify/hiddify-core/v2/hcore"
 	"github.com/sagernet/sing-box/log"
 )
 
-func init() {
-	runtime.LockOSThread()
-	C.init_signals()
-	runtime.UnlockOSThread()
+// func init() {
+// 	runtime.LockOSThread()
+// 	C.init_signals()
+// 	runtime.UnlockOSThread()
 
-	go handleSignals()
+// 	go handleSignals()
 
-	// Your other initialization code can go here
-}
+// 	// Your other initialization code can go here
+// }
 
-// Signal handling function
-func handleSignals() {
-	signalChan := make(chan os.Signal, 1)
-	signal.Notify(signalChan, syscall.SIGINT, syscall.SIGURG)
+// // Signal handling function
+// func handleSignals() {
+// 	signalChan := make(chan os.Signal, 1)
+// 	signal.Notify(signalChan, syscall.SIGINT, syscall.SIGURG)
 
-	for {
-		<-signalChan
-		// switch sig {
-		// case syscall.SIGINT, syscall.SIGTERM:
-		// 	// runtime.LockOSThread() // Lock to the current OS thread
-		// 	// defer runtime.UnlockOSThread()
-		// 	log.Info("Received signal:", sig)
+// 	for {
+// 		<-signalChan
+// 		// switch sig {
+// 		// case syscall.SIGINT, syscall.SIGTERM:
+// 		// 	// runtime.LockOSThread() // Lock to the current OS thread
+// 		// 	// defer runtime.UnlockOSThread()
+// 		// 	log.Info("Received signal:", sig)
 
-		// 	// Call stop function or perform cleanup
-		// 	if err := stop(); err != nil {
-		// 		log.Error("Error stopping the application:", err)
-		// 	}
-		// 	log.Info("Application stopped gracefully.")
-		// }
-	}
-}
+// 		// 	// Call stop function or perform cleanup
+// 		// 	if err := stop(); err != nil {
+// 		// 		log.Error("Error stopping the application:", err)
+// 		// 	}
+// 		// 	log.Info("Application stopped gracefully.")
+// 		// }
+// 	}
+// }
 
 func main() {}
 
 //export cleanup
 func cleanup() {
-	runtime.LockOSThread()
-	defer runtime.UnlockOSThread()
-	C.cleanup_signals()
+	// runtime.LockOSThread()
+	// defer runtime.UnlockOSThread()
+	// C.cleanup_signals()
 }
 
 func emptyOrErrorC(err error) *C.char {
@@ -102,11 +76,11 @@ func emptyOrErrorC(err error) *C.char {
 
 //export setup
 func setup(baseDir *C.char, workingDir *C.char, tempDir *C.char, mode C.int, listen *C.char, secret *C.char, statusPort C.longlong, debug bool) *C.char {
-	runtime.LockOSThread()
-	defer runtime.UnlockOSThread()
+	// runtime.LockOSThread()
+	// defer runtime.UnlockOSThread()
 
-	// Ensure signals are initialized
-	C.init_signals()
+	// // Ensure signals are initialized
+	// C.init_signals()
 
 	params := hcore.SetupRequest{
 		BasePath:          C.GoString(baseDir),
@@ -131,8 +105,8 @@ func freeString(str *C.char) {
 
 //export start
 func start(configPath *C.char, disableMemoryLimit bool) *C.char {
-	runtime.LockOSThread()
-	defer runtime.UnlockOSThread()
+	// runtime.LockOSThread()
+	// defer runtime.UnlockOSThread()
 
 	_, err := hcore.Start(&hcore.StartRequest{
 		ConfigPath:             C.GoString(configPath),
@@ -144,8 +118,8 @@ func start(configPath *C.char, disableMemoryLimit bool) *C.char {
 
 //export stop
 func stop() *C.char {
-	runtime.LockOSThread()
-	defer runtime.UnlockOSThread()
+	// runtime.LockOSThread()
+	// defer runtime.UnlockOSThread()
 
 	_, err := hcore.Stop()
 	return emptyOrErrorC(err)
@@ -153,8 +127,8 @@ func stop() *C.char {
 
 //export restart
 func restart(configPath *C.char, disableMemoryLimit bool) *C.char {
-	runtime.LockOSThread()
-	defer runtime.UnlockOSThread()
+	// runtime.LockOSThread()
+	// defer runtime.UnlockOSThread()
 
 	_, err := hcore.Restart(&hcore.StartRequest{
 		ConfigPath:             C.GoString(configPath),
@@ -166,8 +140,8 @@ func restart(configPath *C.char, disableMemoryLimit bool) *C.char {
 
 //export GetServerPublicKey
 func GetServerPublicKey() *C.char {
-	runtime.LockOSThread()
-	defer runtime.UnlockOSThread()
+	// runtime.LockOSThread()
+	// defer runtime.UnlockOSThread()
 
 	publicKey := hcore.GetGrpcServerPublicKey()
 	return C.CString(string(publicKey)) // Return as C string, caller must free
@@ -175,8 +149,8 @@ func GetServerPublicKey() *C.char {
 
 //export AddGrpcClientPublicKey
 func AddGrpcClientPublicKey(clientPublicKey *C.char) *C.char {
-	runtime.LockOSThread()
-	defer runtime.UnlockOSThread()
+	// runtime.LockOSThread()
+	// defer runtime.UnlockOSThread()
 
 	// Convert C string to Go byte slice
 	clientKey := C.GoBytes(unsafe.Pointer(clientPublicKey), C.int(len(C.GoString(clientPublicKey))))
@@ -186,8 +160,8 @@ func AddGrpcClientPublicKey(clientPublicKey *C.char) *C.char {
 
 //export closeGrpc
 func closeGrpc(mode C.int) {
-	runtime.LockOSThread()
-	defer runtime.UnlockOSThread()
+	// runtime.LockOSThread()
+	// defer runtime.UnlockOSThread()
 
 	hcore.Close(hcore.SetupMode(mode))
 }
