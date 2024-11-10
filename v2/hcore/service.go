@@ -11,7 +11,8 @@ import (
 
 	"github.com/hiddify/hiddify-core/v2/config"
 	"github.com/hiddify/hiddify-core/v2/db"
-	hcommon "github.com/hiddify/hiddify-core/v2/hcommon"
+	"github.com/hiddify/hiddify-core/v2/hcommon"
+	"github.com/hiddify/hiddify-core/v2/hutils"
 	"github.com/hiddify/hiddify-core/v2/service_manager"
 
 	B "github.com/sagernet/sing-box"
