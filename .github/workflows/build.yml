@@ -119,7 +119,7 @@ jobs:
           rm -f /*.h */*.h
 
           rm ./hiddify-core-* || echo "no other files to zip"
-          files=$(ls | grep -E '^(hiddify-core\.(dll|so|dylib|aar)|webui|HiddifyCore.xcframework|HiddifyCli(\.exe)?)$')
+          files=$(find . -type f \( -name "hiddify-core.dll" -o -name "hiddify-core.so" -o -name "hiddify-core.dylib" -o -name "hiddify-core.aar" -o -name "webui" -o -name "HiddifyCore.xcframework" -o -name "HiddifyCli" -o -name "HiddifyCli.exe" \))
           echo tar -czvf ${{ matrix.job.name }}.tar.gz  $files
           tar -czvf ${{ matrix.job.name }}.tar.gz  $files
           
