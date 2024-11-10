@@ -65,67 +65,36 @@ func BuildConfig(opt HiddifyOptions, input option.Options) (*option.Options, err
 		options.DNS = input.DNS
 		options.Route = input.Route
 	}
-
-	setClashAPI(&options, &opt)
+	options.DNS = &option.DNSOptions{
+		StaticIPs: map[string][]string{},
+	}
+	// setClashAPI(&options, &opt)
 	setLog(&options, &opt)
 	setInbound(&options, &opt)
 	setDns(&options, &opt)
 	setRoutingOptions(&options, &opt)
-	setFakeDns(&options, &opt)
 	err := setOutbounds(&options, &input, &opt)
 	if err != nil {
 		return nil, err
 	}
+	setFakeDns(&options, &opt)
+	addForceDirect(&options, &opt)
 
 	return &options, nil
 }
 
-func addForceDirect(options *option.Options, opt *HiddifyOptions, directDNSDomains map[string]bool) {
-	remoteDNSAddress := opt.RemoteDnsAddress
-	if strings.Contains(remoteDNSAddress, "://") {
-		remoteDNSAddress = strings.SplitAfter(remoteDNSAddress, "://")[1]
+func getHostnameIfNotIP(inp string) (string, error) {
+	if inp == "" {
+		return "", fmt.Errorf("empty hostname: %s", inp)
 	}
-	parsedUrl, err := url.Parse(fmt.Sprintf("https://%s", remoteDNSAddress))
-	if err == nil && net.ParseIP(parsedUrl.Host) == nil {
-		directDNSDomains[parsedUrl.Host] = true
+
+	if net.ParseIP(strings.Trim(inp, "[]")) == nil {
+		return inp, nil
 	}
-	if len(directDNSDomains) > 0 {
-		// trickDnsDomains := []string{}
-		// directDNSDomains = removeDuplicateStr(directDNSDomains)
-		// b, _ := batch.New(context.Background(), batch.WithConcurrencyNum[bool](10))
-		// for _, d := range directDNSDomains {
-		// 	b.Go(d, func() (bool, error) {
-		// 		return isBlockedDomain(d), nil
-		// 	})
-		// }
-		// b.Wait()
-		// for domain, isBlock := range b.Result() {
-		// 	if isBlock.Value {
-		// 		trickDnsDomains = append(trickDnsDomains, domain)
-		// 	}
-		// }
-
-		// trickDomains := strings.Join(trickDnsDomains, ",")
-		// trickRule := Rule{Domains: trickDomains, Outbound: OutboundBypassTag}
-		// trickDnsRule := trickRule.MakeDNSRule()
-		// trickDnsRule.Server = DNSTricksDirectTag
-		// options.DNS.Rules = append([]option.DNSRule{{Type: C.RuleTypeDefault, DefaultOptions: trickDnsRule}}, options.DNS.Rules...)
-
-		directDNSDomainskeys := make([]string, 0, len(directDNSDomains))
-		for key := range directDNSDomains {
-			directDNSDomainskeys = append(directDNSDomainskeys, key)
-		}
-
-		domains := strings.Join(directDNSDomainskeys, ",")
-		directRule := Rule{Domains: domains, Outbound: OutboundBypassTag}
-		dnsRule := directRule.MakeDNSRule()
-		dnsRule.Server = DNSDirectTag
-		options.DNS.Rules = append([]option.DNSRule{{Type: C.RuleTypeDefault, DefaultOptions: dnsRule}}, options.DNS.Rules...)
-	}
+	return "", fmt.Errorf("not a hostname: %s", inp)
 }
 
 func setOutbounds(options *option.Options, input *option.Options, opt *HiddifyOptions) error {
-	directDNSDomains := make(map[string]bool)
 	var outbounds []option.Outbound
 	var tags []string
 	OutboundMainProxyTag = OutboundSelectTag
@@ -165,13 +134,9 @@ func setOutbounds(options *option.Options, input *option.Options, opt *HiddifyOp
 		// tags = append(tags, out.Tag)
 	}
 	for _, out := range input.Outbounds {
-		outbound, serverDomain, err := patchOutbound(out, *opt, options.DNS.StaticIPs)
+		outbound, err := patchOutbound(out, *opt, options.DNS.StaticIPs)
 		if err != nil {
 			return err
-		}
-
-		if serverDomain != "" {
-			directDNSDomains[serverDomain] = true
 		}
 		out = *outbound
 
@@ -197,6 +162,7 @@ func setOutbounds(options *option.Options, input *option.Options, opt *HiddifyOp
 		URLTestOptions: option.URLTestOutboundOptions{
 			Outbounds: tags,
 			URL:       opt.ConnectionTestUrl,
+			URLs:      []string{"http://captive.apple.com/generate_204", "https://cp.cloudflare.com", "https://google.com/generate_204"},
 			Interval:  option.Duration(opt.URLTestInterval.Duration()),
 			// IdleTimeout: option.Duration(opt.URLTestIdleTimeout.Duration()),
 			Tolerance:                 1,
@@ -259,7 +225,6 @@ func setOutbounds(options *option.Options, input *option.Options, opt *HiddifyOp
 		}...,
 	)
 
-	addForceDirect(options, opt, directDNSDomains)
 	return nil
 }
 
@@ -422,9 +387,99 @@ func setDns(options *option.Options, opt *HiddifyOptions) {
 			},
 		},
 	}
-	sky_rethinkdns := getIPs([]string{"www.speedtest.net", "sky.rethinkdns.com"})
+	sky_rethinkdns := getIPs("www.speedtest.net", "sky.rethinkdns.com")
 	if len(sky_rethinkdns) > 0 {
 		options.DNS.StaticIPs["sky.rethinkdns.com"] = sky_rethinkdns
+	}
+	ipinfo := getIPs("ipinfo.io")
+	if len(ipinfo) > 0 {
+		options.DNS.StaticIPs["ipinfo.io"] = ipinfo
+	}
+	ipwhois := getIPs("ipwho.is")
+	if len(ipwhois) > 0 {
+		options.DNS.StaticIPs["ipwho.is"] = ipwhois
+	}
+	ipsb := sky_rethinkdns // getIPs("api.ip.sb")
+	if len(ipsb) > 0 {
+		options.DNS.StaticIPs["api.ip.sb"] = ipsb
+	}
+	ipapico := sky_rethinkdns // getIPs("ipapi.co")
+	if len(ipapico) > 0 {
+		options.DNS.StaticIPs["ipapi.co"] = ipapico
+	}
+}
+
+func addForceDirect(options *option.Options, opt *HiddifyOptions) {
+	dnsMap := make(map[string]string)
+
+	remoteDNSAddress := opt.RemoteDnsAddress
+	if strings.Contains(remoteDNSAddress, "://") {
+		remoteDNSAddress = strings.SplitAfter(remoteDNSAddress, "://")[1]
+	}
+	parsedUrl, err := url.Parse(fmt.Sprint("https://", remoteDNSAddress))
+
+	if err == nil {
+		if domain, err := getHostnameIfNotIP(parsedUrl.Host); err == nil {
+			dnsMap[domain] = DNSDirectTag
+		}
+	}
+
+	for _, outbound := range options.Outbounds {
+
+		outboundOptions, err := outbound.RawOptions()
+		if err != nil {
+			continue
+		}
+		if server, ok := outboundOptions.(option.ServerOptionsWrapper); ok {
+			serverDomain := server.TakeServerOptions().Server
+			detour := OutboundDirectTag
+			if dialer, ok := outboundOptions.(option.DialerOptionsWrapper); ok {
+				if dialer.TakeDialerOptions().Detour != "" {
+					detour = dialer.TakeDialerOptions().Detour
+				}
+			}
+			host, err := getHostnameIfNotIP(serverDomain)
+			if err == nil {
+				if _, ok := dnsMap[host]; !ok || detour == OutboundDirectTag {
+					dnsMap[host] = detour
+				}
+			}
+		}
+	}
+	if len(dnsMap) > 0 {
+		unique_dns_detours := make(map[string]bool)
+		for _, detour := range dnsMap {
+			unique_dns_detours[detour] = true
+		}
+
+		for detour := range unique_dns_detours {
+			if detour == OutboundDirectTag {
+				detour = "direct"
+			} else {
+				options.DNS.Servers = append(options.DNS.Servers, option.DNSServerOptions{
+					Tag:             "dns-" + detour,
+					Address:         opt.RemoteDnsAddress,
+					AddressResolver: DNSDirectTag,
+					Strategy:        opt.RemoteDnsDomainStrategy,
+					Detour:          detour,
+				})
+			}
+			domains := []string{}
+			for domain, d := range dnsMap {
+				if d == detour {
+					domains = append(domains, domain)
+				}
+			}
+
+			options.DNS.Rules = append(options.DNS.Rules, option.DNSRule{
+				Type: C.RuleTypeDefault,
+				DefaultOptions: option.DefaultDNSRule{
+					Server: "dns-" + detour,
+					Domain: domains,
+				},
+			})
+		}
+
 	}
 }
 
@@ -798,7 +853,7 @@ func patchHiddifyWarpFromConfig(out option.Outbound, opt HiddifyOptions) option.
 	return out
 }
 
-func getIPs(domains []string) []string {
+func getIPs(domains ...string) []string {
 	res := []string{}
 	for _, d := range domains {
 		ips, err := net.LookupHost(d)

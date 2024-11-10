@@ -3,7 +3,6 @@ package config
 import (
 	"encoding/json"
 	"fmt"
-	"net"
 
 	C "github.com/sagernet/sing-box/constant"
 	"github.com/sagernet/sing-box/option"
@@ -126,33 +125,25 @@ func isOutboundReality(base option.Outbound) bool {
 	return base.VLESSOptions.OutboundTLSOptionsContainer.TLS.Reality.Enabled
 }
 
-func patchOutbound(base option.Outbound, configOpt HiddifyOptions, staticIpsDns map[string][]string) (*option.Outbound, string, error) {
+func patchOutbound(base option.Outbound, configOpt HiddifyOptions, staticIpsDns map[string][]string) (*option.Outbound, error) {
 	formatErr := func(err error) error {
 		return fmt.Errorf("error patching outbound[%s][%s]: %w", base.Tag, base.Type, err)
 	}
 	err := patchWarp(&base, &configOpt, true, staticIpsDns)
 	if err != nil {
-		return nil, "", formatErr(err)
+		return nil, formatErr(err)
 	}
 	var outbound option.Outbound
 
 	jsonData, err := base.MarshalJSON()
 	if err != nil {
-		return nil, "", formatErr(err)
+		return nil, formatErr(err)
 	}
 
 	var obj outboundMap
 	err = json.Unmarshal(jsonData, &obj)
 	if err != nil {
-		return nil, "", formatErr(err)
-	}
-	var serverDomain string
-	if detour, ok := obj["detour"].(string); !ok || detour == "" {
-		if server, ok := obj["server"].(string); ok {
-			if server != "" && net.ParseIP(server) == nil {
-				serverDomain = fmt.Sprintf("full:%s", server)
-			}
-		}
+		return nil, formatErr(err)
 	}
 
 	obj = patchOutboundTLSTricks(base, configOpt, obj)
@@ -164,15 +155,15 @@ func patchOutbound(base option.Outbound, configOpt HiddifyOptions, staticIpsDns 
 
 	modifiedJson, err := json.Marshal(obj)
 	if err != nil {
-		return nil, "", formatErr(err)
+		return nil, formatErr(err)
 	}
 
 	err = outbound.UnmarshalJSON(modifiedJson)
 	if err != nil {
-		return nil, "", formatErr(err)
+		return nil, formatErr(err)
 	}
 
-	return &outbound, serverDomain, nil
+	return &outbound, nil
 }
 
 // func (o outboundMap) transportType() string {
