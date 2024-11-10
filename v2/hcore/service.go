@@ -59,7 +59,8 @@ func Setup(params *SetupRequest) error {
 	}
 	tcpConn := runtime.GOOS == "windows" // TODO add TVOS
 	libbox.Setup(params.BasePath, params.WorkingDir, params.TempDir, tcpConn)
-	libbox.RedirectStderr(fmt.Sprint(params.WorkingDir, "/data/stderr.log"))
+	hutils.RedirectStderr(fmt.Sprint(params.WorkingDir, "/data/stderr.log"))
+
 	Log(LogLevel_DEBUG, LogType_CORE, fmt.Sprintf("libbox.Setup success %s %s %s %v", params.BasePath, params.WorkingDir, params.TempDir, tcpConn))
 
 	sWorkingPath = params.WorkingDir
