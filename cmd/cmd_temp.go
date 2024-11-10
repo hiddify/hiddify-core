@@ -1,45 +1,34 @@
 package cmd
 
-import (
-	"context"
-	"log"
-	"os"
-	"time"
+// const (
+// 	address     = "localhost:17078"
+// 	defaultName = "world"
+// )
 
-	"github.com/hiddify/hiddify-core/v2/hcommon"
-	hcore "github.com/hiddify/hiddify-core/v2/hcore"
-	"google.golang.org/grpc"
-)
+// // func init() {
+// // 	if len(os.Args) > 1 && os.Args[1] == "test" {
+// // 		conn, err := grpc.Dial(address, grpc.WithInsecure())
+// // 		if err != nil {
+// // 			log.Fatalf("did not connect: %v", err)
+// 		// }
+// 		// defer conn.Close()
+// 		// c := hcore.NewCoreClient(conn)
 
-const (
-	address     = "localhost:17078"
-	defaultName = "world"
-)
+// 		// ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+// 		// defer cancel()
+// 		ctx := context.Background()
 
-func init() {
-	if os.Args[1] == "test" {
-		conn, err := grpc.Dial(address, grpc.WithInsecure())
-		if err != nil {
-			log.Fatalf("did not connect: %v", err)
-		}
-		defer conn.Close()
-		c := hcore.NewCoreClient(conn)
+// 		// SayHello
+// 		stream, err := c.OutboundsInfo(ctx, &hcommon.Empty{})
 
-		// ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
-		// defer cancel()
-		ctx := context.Background()
+// 		for {
+// 			r, err := stream.Recv()
+// 			if err != nil {
+// 				log.Fatalf("could not receive: %v", err)
+// 			}
+// 			log.Printf("Received1: %s", r.String())
 
-		// SayHello
-		stream, err := c.OutboundsInfo(ctx, &hcommon.Empty{})
-
-		for {
-			r, err := stream.Recv()
-			if err != nil {
-				log.Fatalf("could not receive: %v", err)
-			}
-			log.Printf("Received1: %s", r.String())
-
-			time.Sleep(1 * time.Second)
-		}
-	}
-}
+// 			time.Sleep(1 * time.Second)
+// 		}
+// 	}
+// }

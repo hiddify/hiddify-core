@@ -13,14 +13,14 @@ import (
 )
 
 func GetProxyInfo(detour adapter.Outbound) *OutboundInfo {
-	if Box == nil {
+	if static.Box == nil {
 		return nil
 	}
 	out := &OutboundInfo{
 		Tag:  detour.Tag(),
 		Type: detour.Type(),
 	}
-	url_test_history := Box.UrlTestHistory().LoadURLTestHistory(adapter.OutboundTag(detour))
+	url_test_history := static.Box.UrlTestHistory().LoadURLTestHistory(adapter.OutboundTag(detour))
 	if url_test_history != nil {
 		out.UrlTestTime = timestamppb.New(url_test_history.Time)
 		out.UrlTestDelay = int32(url_test_history.Delay)
@@ -37,32 +37,41 @@ func GetProxyInfo(detour adapter.Outbound) *OutboundInfo {
 				PostalCode:  url_test_history.IpInfo.PostalCode,
 			}
 		}
+		if _, isGroup := detour.(adapter.OutboundGroup); isGroup {
+			out.IsGroup = true
+		}
+
 	}
 
 	return out
 }
 
 func GetAllProxiesInfo(onlyGroupitems bool) *OutboundGroupList {
-	if Box == nil {
+	if static.Box == nil {
 		return nil
 	}
 
-	cacheFile := service.FromContext[adapter.CacheFile](Box.Context())
-	outbounds := Box.GetInstance().Router().Outbounds()
+	cacheFile := service.FromContext[adapter.CacheFile](static.Box.Context())
+	outbounds := static.Box.GetInstance().Router().Outbounds()
+	outbounds_converted := make(map[string]*OutboundInfo, 0)
 	var iGroups []adapter.OutboundGroup
 	for _, it := range outbounds {
 		if group, isGroup := it.(adapter.OutboundGroup); isGroup {
 			iGroups = append(iGroups, group)
 		}
+
+		outbounds_converted[it.Tag()] = GetProxyInfo(it)
 	}
+
 	var groups OutboundGroupList
 	for _, iGroup := range iGroups {
 		var group OutboundGroup
 		group.Tag = iGroup.Tag()
 		group.Type = iGroup.Type()
 		_, group.Selectable = iGroup.(*outbound.Selector)
-		// group.Selected = iGroup.Now()
 		selectedTag := iGroup.Now()
+		group.Selected = outbounds_converted[selectedTag]
+		outbounds_converted[iGroup.Tag()].GroupSelectedOutbound = group.Selected
 		if cacheFile != nil {
 			if isExpand, loaded := cacheFile.LoadGroupExpand(group.Tag); loaded {
 				group.IsExpand = isExpand
@@ -70,21 +79,15 @@ func GetAllProxiesInfo(onlyGroupitems bool) *OutboundGroupList {
 		}
 
 		for _, itemTag := range iGroup.All() {
-			itemOutbound, isLoaded := Box.GetInstance().Router().Outbound(itemTag)
-			if !isLoaded {
-				continue
-			}
 			if onlyGroupitems && itemTag != selectedTag {
 				continue
 			}
-			pinfo := GetProxyInfo(itemOutbound)
+			pinfo := outbounds_converted[itemTag]
 			pinfo.IsSelected = itemTag == selectedTag
-			if pinfo.IsSelected {
-				group.Selected = pinfo
-			}
+
 			group.Items = append(group.Items, pinfo)
 			pinfo.IsVisible = !strings.Contains(itemTag, "§hide§")
-			pinfo.TagDisplay = strings.Split(itemTag, "§")[0]
+			pinfo.TagDisplay = strings.Trim(strings.Split(itemTag, "§")[0], " ")
 		}
 		if len(group.Items) == 0 {
 			continue
@@ -104,8 +107,8 @@ func (s *CoreService) MainOutboundsInfo(req *hcommon.Empty, stream grpc.ServerSt
 }
 
 func AllProxiesInfoStream(stream grpc.ServerStreamingServer[OutboundGroupList], onlyMain bool) error {
-	urltestch, done, err := Box.UrlTestHistory().Observer().Subscribe()
-	defer Box.UrlTestHistory().Observer().UnSubscribe(urltestch)
+	urltestch, done, err := static.Box.UrlTestHistory().Observer().Subscribe()
+	defer static.Box.UrlTestHistory().Observer().UnSubscribe(urltestch)
 	if err != nil {
 		return err
 	}

@@ -24,13 +24,13 @@ func init() {
 
 func runCommand(cmd *cobra.Command, args []string) {
 	hcore.Setup(
-		hcore.SetupParameters{
+		&hcore.SetupRequest{
 			BasePath:          "./tmp",
 			WorkingDir:        "./",
 			TempDir:           "./tmp",
 			FlutterStatusPort: 0,
 			Debug:             false,
-			Mode:              hcore.GRPC_NORMAL_INSECURE,
+			Mode:              hcore.SetupMode_GRPC_NORMAL_INSECURE,
 			Listen:            "127.0.0.1:17078",
 		},
 	)

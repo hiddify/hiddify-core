@@ -5,6 +5,7 @@ import (
 	"time"
 
 	hcommon "github.com/hiddify/hiddify-core/v2/hcommon"
+	"github.com/sagernet/sing-box/log"
 	"github.com/sagernet/sing/common/observable"
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -14,13 +15,12 @@ func NewObserver[T any](listenerBufferSize int) *observable.Observer[T] {
 	return observable.NewObserver(observable.NewSubscriber[T](listenerBufferSize), listenerBufferSize)
 }
 
-var logObserver = NewObserver[*LogMessage](1)
-
 func Log(level LogLevel, typ LogType, message ...any) {
-	if level != LogLevel_DEBUG {
-		fmt.Printf("%s %s %s\n", level, typ, message)
+	if true || level != LogLevel_DEBUG {
+		log.Debug(level, typ, fmt.Sprint(message...))
+		fmt.Printf("%v %v %v\n", level, typ, fmt.Sprint(message...))
 	}
-	logObserver.Emit(&LogMessage{
+	static.logObserver.Emit(&LogMessage{
 		Level:   level,
 		Type:    typ,
 		Time:    timestamppb.New(time.Now()),
@@ -29,8 +29,8 @@ func Log(level LogLevel, typ LogType, message ...any) {
 }
 
 func (s *CoreService) LogListener(req *hcommon.Empty, stream grpc.ServerStreamingServer[LogMessage]) error {
-	logSub, stopch, _ := logObserver.Subscribe()
-	defer logObserver.UnSubscribe(logSub)
+	logSub, stopch, _ := static.logObserver.Subscribe()
+	defer static.logObserver.UnSubscribe(logSub)
 
 	for {
 		select {

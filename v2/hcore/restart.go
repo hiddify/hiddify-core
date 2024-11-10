@@ -19,10 +19,10 @@ func Restart(in *StartRequest) (coreResponse *CoreInfoResponse, err error) {
 	})
 	log.Debug("[Service] Restarting")
 
-	if CoreState != CoreStates_STARTED {
+	if static.CoreState != CoreStates_STARTED {
 		return errorWrapper(MessageType_INSTANCE_NOT_STARTED, fmt.Errorf("instance not started"))
 	}
-	if Box == nil {
+	if static.Box == nil {
 		return errorWrapper(MessageType_INSTANCE_NOT_FOUND, fmt.Errorf("instance not found"))
 	}
 

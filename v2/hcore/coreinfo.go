@@ -7,34 +7,29 @@ import (
 	"google.golang.org/grpc"
 )
 
-var (
-	coreInfoObserver = NewObserver[*CoreInfoResponse](1)
-	CoreState        = CoreStates_STOPPED
-)
-
 func SetCoreStatus(state CoreStates, msgType MessageType, message string) *CoreInfoResponse {
 	msg := fmt.Sprintf("%s: %s %s", state.String(), msgType.String(), message)
 	if msgType == MessageType_EMPTY {
 		msg = fmt.Sprintf("%s: %s", state.String(), message)
 	}
 	Log(LogLevel_INFO, LogType_CORE, msg)
-	CoreState = state
+	static.CoreState = state
 	info := CoreInfoResponse{
 		CoreState:   state,
 		MessageType: msgType,
 		Message:     message,
 	}
-	coreInfoObserver.Emit(&info)
+	static.coreInfoObserver.Emit(&info)
 
 	return &info
 }
 
 func (s *CoreService) CoreInfoListener(req *hcommon.Empty, stream grpc.ServerStreamingServer[CoreInfoResponse]) error {
-	coreSub, done, err := coreInfoObserver.Subscribe()
+	coreSub, done, err := static.coreInfoObserver.Subscribe()
 	if err != nil {
 		return err
 	}
-	defer coreInfoObserver.UnSubscribe(coreSub)
+	defer static.coreInfoObserver.UnSubscribe(coreSub)
 
 	for {
 		select {

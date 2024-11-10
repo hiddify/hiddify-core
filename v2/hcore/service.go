@@ -37,33 +37,29 @@ func InitHiddifyService() error {
 	return service_manager.StartServices()
 }
 
-type SetupMode int
-
-const (
-	OLD                      SetupMode = 0
-	GRPC_NORMAL              SetupMode = 1
-	GRPC_BACKGROUND          SetupMode = 2
-	GRPC_NORMAL_INSECURE     SetupMode = 3
-	GRPC_BACKGROUND_INSECURE SetupMode = 4
-)
-
-type SetupParameters struct {
-	BasePath          string
-	WorkingDir        string
-	TempDir           string
-	FlutterStatusPort int64
-	Listen            string
-	Secret            string
-	Debug             bool
-	Mode              SetupMode
+func (s *CoreService) Setup(ctx context.Context, req *SetupRequest) (*hcommon.Response, error) {
+	if grpcServer[req.Mode] != nil {
+		return &hcommon.Response{Code: hcommon.ResponseCode_OK, Message: ""}, nil
+	}
+	err := Setup(req)
+	code := hcommon.ResponseCode_OK
+	if err != nil {
+		code = hcommon.ResponseCode_FAILED
+	}
+	return &hcommon.Response{Code: code, Message: err.Error()}, err
 }
 
-func Setup(params SetupParameters) error {
+func Setup(params *SetupRequest) error {
 	defer config.DeferPanicToError("setup", func(err error) {
 		Log(LogLevel_FATAL, LogType_CORE, err.Error())
 	})
+	if grpcServer[params.Mode] != nil {
+		Log(LogLevel_WARNING, LogType_CORE, "grpcServer already started")
+		return nil
+	}
 	tcpConn := runtime.GOOS == "windows" // TODO add TVOS
 	libbox.Setup(params.BasePath, params.WorkingDir, params.TempDir, tcpConn)
+	libbox.RedirectStderr(fmt.Sprint(params.WorkingDir, "/data/stderr.log"))
 	Log(LogLevel_DEBUG, LogType_CORE, fmt.Sprintf("libbox.Setup success %s %s %s %v", params.BasePath, params.WorkingDir, params.TempDir, tcpConn))
 
 	sWorkingPath = params.WorkingDir
@@ -87,7 +83,7 @@ func Setup(params SetupParameters) error {
 			// 	Output:   "stdout",
 			// },
 		})
-	coreLogFactory = factory
+	static.CoreLogFactory = factory
 
 	if err != nil {
 		return E.Cause(err, "create logger")
@@ -95,7 +91,7 @@ func Setup(params SetupParameters) error {
 
 	Log(LogLevel_DEBUG, LogType_CORE, fmt.Sprintf("StartGrpcServerByMode %s %d\n", params.Listen, params.Mode))
 	switch params.Mode {
-	case OLD:
+	case SetupMode_OLD:
 		statusPropagationPort = int64(params.FlutterStatusPort)
 	default:
 		_, err := StartGrpcServerByMode(params.Listen, params.Mode)

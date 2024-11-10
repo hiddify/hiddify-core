@@ -9,7 +9,7 @@ import (
 )
 
 func Setup(baseDir string, workingDir string, tempDir string, mode int, listen string, secret string, debug bool) error {
-	return hcore.Setup(hcore.SetupParameters{
+	return hcore.Setup(&hcore.SetupRequest{
 		BasePath:          baseDir,
 		WorkingDir:        workingDir,
 		TempDir:           tempDir,

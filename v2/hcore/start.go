@@ -37,8 +37,8 @@ func StartService(in *StartRequest, platformInterface libbox.PlatformInterface) 
 	if err := service_manager.OnMainServicePreStart(options); err != nil {
 		return errorWrapper(MessageType_ERROR_EXTENSION, err)
 	}
-	Log(LogLevel_DEBUG, LogType_CORE, "Saving config")
 	currentBuildConfigPath := filepath.Join(sWorkingPath, "data/current-config.json")
+	Log(LogLevel_DEBUG, LogType_CORE, "Saving config to ", currentBuildConfigPath)
 
 	config.SaveCurrentConfig(currentBuildConfigPath, *options)
 	pout, err := json.MarshalIndent(options, "", "  ")
@@ -66,14 +66,14 @@ func StartService(in *StartRequest, platformInterface libbox.PlatformInterface) 
 
 	instance.GetInstance().AddPostService("hiddifyMainServiceManager", &hiddifyMainServiceManager{})
 
-	if err := startCommandServer(instance); err != nil {
-		return errorWrapper(MessageType_START_COMMAND_SERVER, err)
-	}
+	// if err := startCommandServer(instance); err != nil {
+	// 	return errorWrapper(MessageType_START_COMMAND_SERVER, err)
+	// }
 
 	if err := instance.Start(); err != nil {
 		return errorWrapper(MessageType_START_SERVICE, err)
 	}
-	Box = instance
+	static.Box = instance
 
 	return SetCoreStatus(CoreStates_STARTED, MessageType_EMPTY, ""), nil
 }

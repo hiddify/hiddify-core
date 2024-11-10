@@ -11,6 +11,8 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"strconv"
+	"strings"
 
 	hcommon "github.com/hiddify/hiddify-core/v2/hcommon"
 	"github.com/hiddify/hiddify-core/v2/hello"
@@ -68,6 +70,19 @@ var (
 
 // StartGrpcServerByMode starts a gRPC server on the specified address with mTLS.
 func StartGrpcServerByMode(listenAddressG string, mode SetupMode) (*grpc.Server, error) {
+	if !strings.Contains(listenAddressG, ":") {
+		return nil, fmt.Errorf("invalid listen address (no port): %s", listenAddressG)
+	}
+	// Convert the port from string to uint16
+	portStr := strings.Split(listenAddressG, ":")[1]
+	port, err := strconv.ParseUint(portStr, 10, 16)
+	if err != nil {
+		return nil, fmt.Errorf("failed to convert port %s to uint16: %v", portStr, err)
+	}
+	if hutils.IsPortInUse(uint16(port)) {
+		return nil, fmt.Errorf("port %s is already in use", portStr)
+	}
+
 	// Fetch the server private key and public key from the database
 	if grpcServer[mode] != nil {
 		Log(LogLevel_WARNING, LogType_CORE, "grpcServer already started")
@@ -112,7 +127,7 @@ func StartGrpcServerByMode(listenAddressG string, mode SetupMode) (*grpc.Server,
 
 	// Create a new gRPC server with TLS credentials
 	creds := credentials.NewTLS(tlsConfig)
-	if mode == GRPC_BACKGROUND_INSECURE || mode == GRPC_NORMAL_INSECURE {
+	if mode == SetupMode_GRPC_BACKGROUND_INSECURE || mode == SetupMode_GRPC_NORMAL_INSECURE {
 		grpcServer[mode] = grpc.NewServer()
 	} else {
 		grpcServer[mode] = grpc.NewServer(grpc.Creds(creds))

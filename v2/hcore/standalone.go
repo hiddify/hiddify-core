@@ -26,7 +26,7 @@ func RunStandalone(hiddifySettingPath string, configPath string, defaultConfig c
 		return err
 	}
 
-	go StartService(&StartRequest{
+	StartService(&StartRequest{
 		ConfigContent:          current.Config,
 		EnableOldCommandServer: false,
 		DelayStart:             false,
@@ -165,22 +165,29 @@ func buildConfig(configContent string, options config.HiddifyOptions) (string, e
 	}
 
 	finalconfig.Log.Output = ""
-	finalconfig.Experimental.ClashAPI.ExternalUI = "webui"
+	finalconfig.Experimental = &option.ExperimentalOptions{
+		ClashAPI: &option.ClashAPIOptions{
+			ExternalUI: "webui",
+		},
+	}
+	// finalconfig.Experimental.ClashAPI.ExternalUI = "webui"
 	if options.AllowConnectionFromLAN {
-		finalconfig.Experimental.ClashAPI.ExternalController = "0.0.0.0:6756"
+		finalconfig.Experimental.ClashAPI.ExternalController = "0.0.0.0:16756"
 	} else {
-		finalconfig.Experimental.ClashAPI.ExternalController = "127.0.0.1:6756"
+		finalconfig.Experimental.ClashAPI.ExternalController = "127.0.0.1:16756"
 	}
 
 	fmt.Printf("Open http://localhost:6756/ui/?secret=%s in your browser\n", finalconfig.Experimental.ClashAPI.Secret)
 
 	if err := Setup(
-		SetupParameters{
+		&SetupRequest{
 			BasePath:          "./",
 			WorkingDir:        "./",
 			TempDir:           "./tmp",
 			FlutterStatusPort: 0,
 			Debug:             false,
+			Listen:            "127.0.0.1:17078",
+			Mode:              SetupMode_GRPC_NORMAL_INSECURE,
 		}); err != nil {
 		return "", fmt.Errorf("failed to set up global configuration: %w", err)
 	}
@@ -205,8 +212,8 @@ func updateConfigInterval(current ConfigResult, hiddifySettingPath string, confi
 			continue
 		}
 		if new.Config != current.Config {
-			go Stop()
-			go StartService(&StartRequest{
+			Stop()
+			StartService(&StartRequest{
 				ConfigContent:          new.Config,
 				DelayStart:             false,
 				EnableOldCommandServer: false,

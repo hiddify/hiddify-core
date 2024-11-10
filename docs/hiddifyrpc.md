@@ -32,6 +32,7 @@
     - [LogLevel](#hcore-LogLevel)
     - [LogType](#hcore-LogType)
     - [MessageType](#hcore-MessageType)
+    - [SetupMode](#hcore-SetupMode)
   
 - [v2/hcore/hcore_service.proto](#v2_hcore_hcore_service-proto)
     - [Core](#hcore-Core)
@@ -281,9 +282,10 @@
 | type | [string](#string) |  |  |
 | url_test_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 | url_test_delay | [int32](#int32) |  |  |
-| ipinfo | [IpInfo](#hcore-IpInfo) |  |  |
+| ipinfo | [IpInfo](#hcore-IpInfo) | optional |  |
 | is_selected | [bool](#bool) |  |  |
 | is_group | [bool](#bool) |  |  |
+| group_selected_outbound | [OutboundInfo](#hcore-OutboundInfo) | optional |  |
 | is_secure | [bool](#bool) |  |  |
 | is_visible | [bool](#bool) |  |  |
 | port | [uint32](#uint32) |  |  |
@@ -364,14 +366,19 @@
 <a name="hcore-SetupRequest"></a>
 
 ### SetupRequest
-
+Define the message equivalent of SetupParameters
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | base_path | [string](#string) |  |  |
-| working_path | [string](#string) |  |  |
-| temp_path | [string](#string) |  |  |
+| working_dir | [string](#string) |  |  |
+| temp_dir | [string](#string) |  |  |
+| flutter_status_port | [int64](#int64) |  |  |
+| listen | [string](#string) |  |  |
+| secret | [string](#string) |  |  |
+| debug | [bool](#bool) |  |  |
+| mode | [SetupMode](#hcore-SetupMode) |  |  |
 
 
 
@@ -580,6 +587,21 @@
 | ERROR_PARSING_CONFIG | 12 |  |
 | ERROR_READING_CONFIG | 13 |  |
 | ERROR_EXTENSION | 14 |  |
+
+
+
+<a name="hcore-SetupMode"></a>
+
+### SetupMode
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| OLD | 0 |  |
+| GRPC_NORMAL | 1 |  |
+| GRPC_BACKGROUND | 2 |  |
+| GRPC_NORMAL_INSECURE | 3 |  |
+| GRPC_BACKGROUND_INSECURE | 4 |  |
 
 
  

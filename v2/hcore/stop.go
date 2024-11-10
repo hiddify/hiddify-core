@@ -17,18 +17,18 @@ func Stop() (coreResponse *CoreInfoResponse, err error) {
 		coreResponse, err = errorWrapper(MessageType_UNEXPECTED_ERROR, recovered_err)
 	})
 
-	if CoreState != CoreStates_STARTED {
+	if static.CoreState != CoreStates_STARTED {
 		return errorWrapper(MessageType_INSTANCE_NOT_STARTED, fmt.Errorf("instance not started"))
 	}
-	if Box == nil {
+	if static.Box == nil {
 		return errorWrapper(MessageType_INSTANCE_NOT_FOUND, fmt.Errorf("instance not found"))
 	}
 	SetCoreStatus(CoreStates_STOPPING, MessageType_EMPTY, "")
 
-	err = Box.Close()
+	err = static.Box.Close()
 	if err != nil {
 		return errorWrapper(MessageType_UNEXPECTED_ERROR, err)
 	}
-	Box = nil
+	static.Box = nil
 	return SetCoreStatus(CoreStates_STOPPED, MessageType_EMPTY, ""), nil
 }

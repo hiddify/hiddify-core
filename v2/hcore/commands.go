@@ -2,12 +2,12 @@ package hcore
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	hcommon "github.com/hiddify/hiddify-core/v2/hcommon"
 	adapter "github.com/sagernet/sing-box/adapter"
 	"github.com/sagernet/sing-box/common/urltest"
-	"github.com/sagernet/sing-box/experimental/libbox"
 	outbound "github.com/sagernet/sing-box/outbound"
 	common "github.com/sagernet/sing/common"
 	"github.com/sagernet/sing/common/batch"
@@ -15,51 +15,40 @@ import (
 	"google.golang.org/grpc"
 )
 
-var (
-	systemInfoObserver        = NewObserver[*SystemInfo](1)
-	outboundsInfoObserver     = NewObserver[*OutboundGroupList](1)
-	mainOutboundsInfoObserver = NewObserver[*OutboundGroupList](1)
-)
-
-var (
-	statusClient        *libbox.CommandClient
-	groupClient         *libbox.CommandClient
-	groupInfoOnlyClient *libbox.CommandClient
-)
-
 func (s *CoreService) GetSystemInfo(req *hcommon.Empty, stream grpc.ServerStreamingServer[SystemInfo]) error {
-	if statusClient == nil {
-		statusClient = libbox.NewCommandClient(
-			&CommandClientHandler{
-				command: libbox.CommandStatus,
-				// port:   s.port,
-			},
-			&libbox.CommandClientOptions{
-				Command:        libbox.CommandStatus,
-				StatusInterval: 1000000000, // 1000ms debounce
-			},
-		)
+	return fmt.Errorf("not implemented yet")
+	// if statusClient == nil {
+	// 	statusClient = libbox.NewCommandClient(
+	// 		&CommandClientHandler{
+	// 			command: libbox.CommandStatus,
+	// 			// port:   s.port,
+	// 		},
+	// 		&libbox.CommandClientOptions{
+	// 			Command:        libbox.CommandStatus,
+	// 			StatusInterval: 1000000000, // 1000ms debounce
+	// 		},
+	// 	)
 
-		defer func() {
-			statusClient.Disconnect()
-			statusClient = nil
-		}()
-		statusClient.Connect()
-	}
+	// 	defer func() {
+	// 		statusClient.Disconnect()
+	// 		statusClient = nil
+	// 	}()
+	// 	statusClient.Connect()
+	// }
 
-	sub, done, _ := systemInfoObserver.Subscribe()
+	// sub, done, _ := static.systemInfoObserver.Subscribe()
 
-	for {
-		select {
-		case <-stream.Context().Done():
-			return nil
-		case <-done:
-			return nil
-		case info := <-sub:
-			stream.Send(info)
-			// case <-time.After(1000 * time.Millisecond):
-		}
-	}
+	// for {
+	// 	select {
+	// 	case <-stream.Context().Done():
+	// 		return nil
+	// 	case <-done:
+	// 		return nil
+	// 	case info := <-sub:
+	// 		stream.Send(info)
+	// 		// case <-time.After(1000 * time.Millisecond):
+	// 	}
+	// }
 }
 
 // func (s *CoreService) OutboundsInfo(req *hcommon.Empty, stream grpc.ServerStreamingServer[OutboundGroupList]) error {
@@ -151,7 +140,7 @@ func SelectOutbound(in *SelectOutboundRequest) (*hcommon.Response, error) {
 	// 	Message: "",
 	// }, nil
 	Log(LogLevel_DEBUG, LogType_CORE, "select outbound: ", in.GroupTag, " -> ", in.OutboundTag)
-	outboundGroup, isLoaded := Box.GetInstance().Router().Outbound(in.GroupTag)
+	outboundGroup, isLoaded := static.Box.GetInstance().Router().Outbound(in.GroupTag)
 	if !isLoaded {
 		return &hcommon.Response{
 			Code:    hcommon.ResponseCode_FAILED,
@@ -171,8 +160,17 @@ func SelectOutbound(in *SelectOutboundRequest) (*hcommon.Response, error) {
 			Message: E.New("outbound not found in selector:: ", in.GroupTag).Error(),
 		}, E.New("outbound not found in selector: ", in.GroupTag)
 	}
-
-	Box.UrlTestHistory().Observer().Emit(2)
+	Log(LogLevel_DEBUG, LogType_CORE, "Trying to ping outbound: ", in.OutboundTag)
+	go func() {
+		for _, detour := range static.Box.GetInstance().Router().Outbounds() {
+			if urlTest, ok := detour.(*outbound.URLTest); ok {
+				if urlTest.ForceRecheckOutbound(in.OutboundTag) == nil {
+					break
+				}
+			}
+		}
+	}()
+	static.Box.UrlTestHistory().Observer().Emit(2)
 	return &hcommon.Response{
 		Code:    hcommon.ResponseCode_OK,
 		Message: "",
@@ -199,10 +197,10 @@ func UrlTest(in *UrlTestRequest) (*hcommon.Response, error) {
 
 	groupTag := in.GroupTag
 
-	if Box == nil {
+	if static.Box == nil {
 		return nil, E.New("service not ready")
 	}
-	abstractOutboundGroup, isLoaded := Box.GetInstance().Router().Outbound(groupTag)
+	abstractOutboundGroup, isLoaded := static.Box.GetInstance().Router().Outbound(groupTag)
 	if !isLoaded {
 		return &hcommon.Response{
 			Code:    hcommon.ResponseCode_FAILED,
@@ -221,9 +219,9 @@ func UrlTest(in *UrlTestRequest) (*hcommon.Response, error) {
 	if isURLTest {
 		go urlTest.CheckOutbounds()
 	} else {
-		historyStorage := Box.UrlTestHistory()
+		historyStorage := static.Box.UrlTestHistory()
 		outbounds := common.Filter(common.Map(outboundGroup.All(), func(it string) adapter.Outbound {
-			itOutbound, _ := Box.GetInstance().Router().Outbound(it)
+			itOutbound, _ := static.Box.GetInstance().Router().Outbound(it)
 			return itOutbound
 		}), func(it adapter.Outbound) bool {
 			if it == nil {
@@ -232,12 +230,12 @@ func UrlTest(in *UrlTestRequest) (*hcommon.Response, error) {
 			_, isGroup := it.(adapter.OutboundGroup)
 			return !isGroup
 		})
-		b, _ := batch.New(Box.Context(), batch.WithConcurrencyNum[any](10))
+		b, _ := batch.New(static.Box.Context(), batch.WithConcurrencyNum[any](10))
 		for _, detour := range outbounds {
 			outboundToTest := detour
 			outboundTag := outboundToTest.Tag()
 			b.Go(outboundTag, func() (any, error) {
-				t, err := urltest.URLTest(Box.Context(), "", outboundToTest)
+				t, err := urltest.URLTest(static.Box.Context(), "", outboundToTest)
 				if err != nil {
 					// historyStorage.DeleteURLTestHistory(outboundTag)
 					t = 65535

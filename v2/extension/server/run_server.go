@@ -17,7 +17,7 @@ import (
 )
 
 func StartTestExtensionServer() {
-	hcore.Setup(hcore.SetupParameters{
+	hcore.Setup(&hcore.SetupRequest{
 		BasePath:          "./tmp",
 		WorkingDir:        "./",
 		TempDir:           "./tmp",
@@ -25,7 +25,7 @@ func StartTestExtensionServer() {
 		Listen:            "",
 		Secret:            "",
 		Debug:             false,
-		Mode:              hcore.OLD,
+		Mode:              hcore.SetupMode_OLD,
 	})
 	StartExtensionServer()
 }

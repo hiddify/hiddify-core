@@ -46,12 +46,26 @@ message StartRequest {
   bool enable_raw_config = 6;
 }
 
-message SetupRequest {
-  string base_path = 1;
-  string working_path = 2;
-  string temp_path = 3;
+
+enum SetupMode {
+    OLD = 0;
+    GRPC_NORMAL = 1;
+    GRPC_BACKGROUND = 2;
+    GRPC_NORMAL_INSECURE = 3;
+    GRPC_BACKGROUND_INSECURE = 4;
 }
 
+// Define the message equivalent of SetupParameters
+message SetupRequest {
+    string base_path = 1;
+    string working_dir = 2;
+    string temp_dir = 3;
+    int64 flutter_status_port = 4;
+    string listen = 5;
+    string secret = 6;
+    bool debug = 7;
+    SetupMode mode = 8;
+}
 
 message SystemInfo {
   int64 memory = 1;
@@ -70,9 +84,10 @@ message OutboundInfo {
   string type = 2;
   google.protobuf.Timestamp url_test_time = 3;
   int32 url_test_delay = 4;
-  IpInfo ipinfo = 5;
+  optional IpInfo ipinfo = 5;
   bool is_selected = 6;
   bool is_group = 7;
+  optional OutboundInfo group_selected_outbound=13;
   bool is_secure = 8;
   bool is_visible = 9;
   uint32 port = 10;

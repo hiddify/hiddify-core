@@ -2,15 +2,7 @@ package hcore
 
 import (
 	"github.com/hiddify/hiddify-core/v2/config"
-	"github.com/sagernet/sing-box/experimental/libbox"
 	"github.com/sagernet/sing-box/log"
-)
-
-var (
-	Box            *libbox.BoxService
-	HiddifyOptions *config.HiddifyOptions
-	// activeConfigPath string
-	coreLogFactory log.Factory
 )
 
 func errorWrapper(state MessageType, err error) (*CoreInfoResponse, error) {
@@ -22,9 +14,9 @@ func errorWrapper(state MessageType, err error) (*CoreInfoResponse, error) {
 func StopAndAlert(msgType MessageType, message string) {
 	SetCoreStatus(CoreStates_STOPPED, msgType, message)
 
-	if Box != nil {
-		Box.Close()
-		Box = nil
+	if static.Box != nil {
+		static.Box.Close()
+		static.Box = nil
 	}
 }
 

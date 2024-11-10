@@ -68,7 +68,7 @@ func BuildConfig(opt HiddifyOptions, input option.Options) (*option.Options, err
 	options.DNS = &option.DNSOptions{
 		StaticIPs: map[string][]string{},
 	}
-	// setClashAPI(&options, &opt)
+	setClashAPI(&options, &opt)
 	setLog(&options, &opt)
 	setInbound(&options, &opt)
 	setDns(&options, &opt)

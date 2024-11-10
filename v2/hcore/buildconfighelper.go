@@ -44,13 +44,13 @@ func BuildConfig(in *StartRequest) (*option.Options, error) {
 	}
 
 	if !in.EnableRawConfig {
-		hcontent, err := json.MarshalIndent(HiddifyOptions, "", " ")
+		hcontent, err := json.MarshalIndent(static.HiddifyOptions, "", " ")
 		if err != nil {
 			return nil, err
 		}
 
 		Log(LogLevel_DEBUG, LogType_CORE, "Building config ", string(hcontent))
-		return config.BuildConfig(*HiddifyOptions, parsedContent)
+		return config.BuildConfig(*static.HiddifyOptions, parsedContent)
 
 	}
 
@@ -68,17 +68,21 @@ func Parse(in *ParseRequest) (*ParseResponse, error) {
 	})
 
 	content := in.Content
-	if in.TempPath != "" {
-		contentBytes, err := os.ReadFile(in.TempPath)
+	if content == "" {
+		path := in.TempPath
+		if path == "" {
+			path = in.ConfigPath
+		}
+		contentBytes, err := os.ReadFile(path)
 		content = string(contentBytes)
-		os.Chdir(filepath.Dir(in.ConfigPath))
+		// os.Chdir(filepath.Dir(in.ConfigPath))
 		if err != nil {
 			return nil, err
 		}
 
 	}
 
-	config, err := config.ParseConfigContent(content, true, HiddifyOptions, false)
+	config, err := config.ParseConfigContent(content, true, static.HiddifyOptions, false)
 	if err != nil {
 		return &ParseResponse{
 			ResponseCode: hcommon.ResponseCode_FAILED,
@@ -106,7 +110,7 @@ func (s *CoreService) ChangeHiddifySettings(ctx context.Context, in *ChangeHiddi
 }
 
 func ChangeHiddifySettings(in *ChangeHiddifySettingsRequest) (*CoreInfoResponse, error) {
-	HiddifyOptions = config.DefaultHiddifyOptions()
+	static.HiddifyOptions = config.DefaultHiddifyOptions()
 	if in.HiddifySettingsJson == "" {
 		return &CoreInfoResponse{}, nil
 	}
@@ -115,18 +119,18 @@ func ChangeHiddifySettings(in *ChangeHiddifySettingsRequest) (*CoreInfoResponse,
 		Id:    "HiddifySettingsJson",
 		Value: in.HiddifySettingsJson,
 	})
-	err := json.Unmarshal([]byte(in.HiddifySettingsJson), HiddifyOptions)
+	err := json.Unmarshal([]byte(in.HiddifySettingsJson), static.HiddifyOptions)
 	if err != nil {
 		return nil, err
 	}
-	if HiddifyOptions.Warp.WireguardConfigStr != "" {
-		err := json.Unmarshal([]byte(HiddifyOptions.Warp.WireguardConfigStr), &HiddifyOptions.Warp.WireguardConfig)
+	if static.HiddifyOptions.Warp.WireguardConfigStr != "" {
+		err := json.Unmarshal([]byte(static.HiddifyOptions.Warp.WireguardConfigStr), &static.HiddifyOptions.Warp.WireguardConfig)
 		if err != nil {
 			return nil, err
 		}
 	}
-	if HiddifyOptions.Warp2.WireguardConfigStr != "" {
-		err := json.Unmarshal([]byte(HiddifyOptions.Warp2.WireguardConfigStr), &HiddifyOptions.Warp2.WireguardConfig)
+	if static.HiddifyOptions.Warp2.WireguardConfigStr != "" {
+		err := json.Unmarshal([]byte(static.HiddifyOptions.Warp2.WireguardConfigStr), &static.HiddifyOptions.Warp2.WireguardConfig)
 		if err != nil {
 			return nil, err
 		}
@@ -143,10 +147,10 @@ func GenerateConfig(in *GenerateConfigRequest) (*GenerateConfigResponse, error) 
 		Log(LogLevel_FATAL, LogType_CONFIG, err.Error())
 		StopAndAlert(MessageType_UNEXPECTED_ERROR, err.Error())
 	})
-	if HiddifyOptions == nil {
-		HiddifyOptions = config.DefaultHiddifyOptions()
+	if static.HiddifyOptions == nil {
+		static.HiddifyOptions = config.DefaultHiddifyOptions()
 	}
-	config, err := generateConfigFromFile(in.Path, *HiddifyOptions)
+	config, err := generateConfigFromFile(in.Path, *static.HiddifyOptions)
 	if err != nil {
 		return nil, err
 	}
