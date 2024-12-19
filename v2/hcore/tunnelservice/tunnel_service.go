@@ -44,9 +44,9 @@ func (s *TunnelService) Start(ctx context.Context, in *TunnelStartRequest) (*Tun
 }
 
 func makeTunnelConfig(in *TunnelStartRequest) option.Options {
-	ipv6 := make([]netip.Prefix, 0)
+	ips := []netip.Prefix{netip.MustParsePrefix("172.20.0.1/30")}
 	if in.Ipv6 {
-		ipv6 = append(ipv6, netip.MustParsePrefix("fdfe:dcba:9876::1/126"))
+		ips = append(ips, netip.MustParsePrefix("fdfe:dcba:9876::1/126"))
 	}
 	return option.Options{
 		Log: &option.LogOptions{Level: "warn"},
@@ -58,8 +58,7 @@ func makeTunnelConfig(in *TunnelStartRequest) option.Options {
 					EndpointIndependentNat: in.EndpointIndependentNat,
 					StrictRoute:            in.StrictRoute,
 					AutoRoute:              true,
-					Inet4Address:           []netip.Prefix{netip.MustParsePrefix("172.20.0.1/30")},
-					Inet6Address:           ipv6,
+					Address:                ips,
 					InterfaceName:          "HiddifyTunnel",
 					Stack:                  in.Stack,
 				},

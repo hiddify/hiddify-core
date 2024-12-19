@@ -54,7 +54,8 @@ func (b *AdminServiceExtension) OnMainServiceStart() error {
 		password = b.socksOptions.Users[0].Password
 	}
 	tunnelservice.ActivateTunnelService(&tunnelservice.TunnelStartRequest{
-		Ipv6:                   len(b.tunInboundOptions.Inet6Address) > 0,
+		// Ipv6:                   len(b.tunInboundOptions.Inet6Address) > 0,
+		Ipv6:                   true,
 		ServerPort:             int32(b.socksOptions.ListenPort),
 		ServerUsername:         username,
 		ServerPassword:         password,

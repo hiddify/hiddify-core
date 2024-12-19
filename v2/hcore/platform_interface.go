@@ -127,3 +127,10 @@ func (h *MobilePlatformInterface) ClearDNSCache() {
 	}
 	h.platform.ClearDNSCache()
 }
+
+func (h *MobilePlatformInterface) SendNotification(notification *libbox.Notification) error {
+	if h.platform == nil {
+		return nil
+	}
+	return h.platform.SendNotification(notification)
+}

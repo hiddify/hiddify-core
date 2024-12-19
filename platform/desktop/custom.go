@@ -68,9 +68,7 @@ func emptyOrErrorC(err error) *C.char {
 	}
 	log.Error(err.Error())
 	str := C.CString(err.Error())
-	runtime.SetFinalizer(unsafe.Pointer(str), func(p unsafe.Pointer) {
-		C.free(p)
-	})
+	defer C.free(unsafe.Pointer(str))
 	return str
 }
 
