@@ -37,9 +37,10 @@ func BuildConfig(configPath string) (string, error) {
 // 	return state, err
 // }
 
-func Start(configPath string, platformInterface libbox.PlatformInterface) error {
+func Start(configPath string, configContent string, platformInterface libbox.PlatformInterface) error {
 	_, err := hcore.StartService(&hcore.StartRequest{
-		ConfigPath: configPath,
+		ConfigPath:    configPath,
+		ConfigContent: configContent,
 	}, platformInterface)
 	return err
 }
@@ -59,4 +60,8 @@ func AddGrpcClientPublicKey(clientPublicKey []byte) error {
 
 func Close(mode int) {
 	hcore.Close(hcore.SetupMode(mode))
+}
+
+func Test() string {
+	return "Hello from mobile"
 }

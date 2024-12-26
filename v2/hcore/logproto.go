@@ -2,6 +2,7 @@ package hcore
 
 import (
 	"fmt"
+	"os"
 	"time"
 
 	hcommon "github.com/hiddify/hiddify-core/v2/hcommon"
@@ -19,7 +20,9 @@ func Log(level LogLevel, typ LogType, message ...any) {
 	if true || level != LogLevel_DEBUG {
 		log.Debug(level, typ, fmt.Sprint(message...))
 		fmt.Printf("%v %v %v\n", level, typ, fmt.Sprint(message...))
+		os.Stderr.WriteString(fmt.Sprintf("%v %v %v\n", level, typ, fmt.Sprint(message...)))
 	}
+
 	static.logObserver.Emit(&LogMessage{
 		Level:   level,
 		Type:    typ,

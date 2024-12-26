@@ -6,7 +6,6 @@ import (
 	"log/slog"
 	"net/netip"
 	"os"
-	"strings"
 
 	"github.com/bepass-org/warp-plus/warp"
 	C "github.com/sagernet/sing-box/constant"
@@ -232,19 +231,21 @@ func patchWarp(base *option.Outbound, configOpt *HiddifyOptions, final bool, sta
 			// if base.WireGuardOptions.Detour != "" {
 			// 	base.WireGuardOptions.Server = "162.159.192.1"
 			// } else {
-			rndDomain := strings.ToLower(generateRandomString(20))
-			staticIpsDns[rndDomain] = []string{}
+			// rndDomain := strings.ToLower(generateRandomString(20))
+			// staticIpsDns[rndDomain] = []string{}
 			if host != "auto4" {
 				if host == "auto6" { //|| common.u.CanConnectIPv6() {
 					randomIpPort, _ := warp.RandomWarpEndpoint(false, true)
-					staticIpsDns[rndDomain] = append(staticIpsDns[rndDomain], randomIpPort.Addr().String())
+					// staticIpsDns[rndDomain] = append(staticIpsDns[rndDomain], randomIpPort.Addr().String())
+					host = randomIpPort.Addr().String()
 				}
 			}
 			if host != "auto6" {
 				randomIpPort, _ := warp.RandomWarpEndpoint(true, false)
-				staticIpsDns[rndDomain] = append(staticIpsDns[rndDomain], randomIpPort.Addr().String())
+				// staticIpsDns[rndDomain] = append(staticIpsDns[rndDomain], randomIpPort.Addr().String())
+				host = randomIpPort.Addr().String()
 			}
-			base.WireGuardOptions.Server = rndDomain
+			base.WireGuardOptions.Server = host
 			// }
 		}
 		if base.WireGuardOptions.ServerPort == 0 {

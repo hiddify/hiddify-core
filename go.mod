@@ -187,7 +187,7 @@ require (
 require (
 	github.com/DataDog/zstd v1.4.1 // indirect
 	github.com/biter777/countries v1.7.5 // indirect
-	github.com/cenkalti/backoff/v4 v4.1.1 // indirect
+	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
 	github.com/cespare/xxhash v1.1.0 // indirect
 	github.com/cosmos/gorocksdb v1.2.0 // indirect
 	github.com/desertbit/timer v0.0.0-20180107155436-c41aec40b27f // indirect
@@ -257,8 +257,8 @@ require (
 	github.com/pion/randutil v0.1.0 // indirect
 	github.com/pion/stun/v2 v2.0.0 // indirect
 	github.com/pion/transport/v2 v2.2.3 // indirect
-	github.com/pion/transport/v3 v3.0.1 // indirect
-	github.com/pion/turn/v3 v3.0.1 // indirect
+	github.com/pion/transport/v3 v3.0.2 // indirect
+	github.com/pion/turn/v3 v3.0.3 // indirect
 	github.com/pires/go-proxyproto v0.8.0 // indirect
 	github.com/quic-go/qpack v0.4.0 // indirect
 	github.com/quic-go/qtls-go1-20 v0.4.1 // indirect
@@ -276,11 +276,11 @@ require (
 	github.com/sagernet/sing-shadowsocks v0.2.7 // indirect
 	github.com/sagernet/sing-shadowsocks2 v0.2.0 // indirect
 	github.com/sagernet/sing-shadowtls v0.1.5 // indirect
-	github.com/sagernet/sing-tun v0.4.2 // indirect
+	github.com/sagernet/sing-tun v0.4.5 // indirect
 	github.com/sagernet/sing-vmess v0.1.12 // indirect
 	github.com/sagernet/smux v0.0.0-20231208180855-7041f6ea79e7 // indirect
 	github.com/sagernet/utls v1.6.7 // indirect
-	github.com/sagernet/wireguard-go v0.0.0-20231215174105-89dec3b2f3e8 // indirect
+	github.com/sagernet/wireguard-go v0.0.1-beta.5 // indirect
 	github.com/sagernet/ws v0.0.0-20231204124109-acfe8907c854 // indirect
 	github.com/seiflotfy/cuckoofilter v0.0.0-20240715131351-a2f2c23f1771 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
@@ -307,7 +307,7 @@ require (
 	lukechampine.com/blake3 v1.3.0 // indirect
 )
 
-replace github.com/sagernet/sing-box => github.com/hiddify/hiddify-sing-box v1.8.9-0.20241219215305-db3d788f9212
+replace github.com/sagernet/sing-box => github.com/hiddify/hiddify-sing-box v1.8.9-0.20241224082119-1aa6bc1919b9
 
 replace github.com/xtls/xray-core => github.com/hiddify/xray-core v0.0.0-20241219203851-cd7ad9af63bd
 
