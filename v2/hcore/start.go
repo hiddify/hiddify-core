@@ -29,7 +29,7 @@ func StartService(in *StartRequest) (coreResponse *CoreInfoResponse, err error) 
 		coreResponse, err = errorWrapper(MessageType_UNEXPECTED_ERROR, recovered_err)
 	})
 	SetCoreStatus(CoreStates_STARTING, MessageType_EMPTY, "")
-
+	previousStartRequest = in
 	options, err := BuildConfig(in)
 	if err != nil {
 		return errorWrapper(MessageType_ERROR_BUILDING_CONFIG, err)

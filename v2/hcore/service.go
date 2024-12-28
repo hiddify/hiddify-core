@@ -32,6 +32,7 @@ var (
 	sGroupID                int
 	statusPropagationPort   int64
 	globalPlatformInterface libbox.PlatformInterface
+	previousStartRequest    *StartRequest
 )
 
 func InitHiddifyService() error {
