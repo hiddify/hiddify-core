@@ -35,6 +35,6 @@ func Restart(in *StartRequest) (coreResponse *CoreInfoResponse, err error) {
 	// <-time.After(250 * time.Millisecond)
 
 	libbox.SetMemoryLimit(!in.DisableMemoryLimit)
-	resp, gErr := StartService(in, nil)
+	resp, gErr := StartService(in)
 	return resp, gErr
 }

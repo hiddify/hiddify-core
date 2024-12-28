@@ -25,7 +25,9 @@ func BuildConfigJson(in *StartRequest) (string, error) {
 }
 
 func BuildConfig(in *StartRequest) (*option.Options, error) {
+	Log(LogLevel_DEBUG, LogType_CORE, "Building Config...")
 	content := in.ConfigContent
+
 	if content == "" {
 		fileContent, err := os.ReadFile(in.ConfigPath)
 		if err != nil {
@@ -33,8 +35,7 @@ func BuildConfig(in *StartRequest) (*option.Options, error) {
 		}
 		content = string(fileContent)
 	}
-
-	Log(LogLevel_DEBUG, LogType_CORE, "Parsing Config")
+	Log(LogLevel_DEBUG, LogType_CORE, "Parsing Config... ", in.ConfigPath, " content:", content, "-")
 
 	parsedContent, err := readOptions(content)
 	Log(LogLevel_DEBUG, LogType_CORE, "Parsed")

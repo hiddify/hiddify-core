@@ -148,11 +148,15 @@ func setOutbounds(options *option.Options, input *option.Options, opt *HiddifyOp
 		case C.TypeCustom:
 			continue
 		default:
+			if opt.Warp.EnableWarp && opt.Warp.Mode == "warp_over_proxy" && out.Tag == "Hiddify Warp ✅" {
+				continue
+			}
 			if !strings.Contains(out.Tag, "§hide§") {
 				tags = append(tags, out.Tag)
 			}
 			out = patchHiddifyWarpFromConfig(out, *opt)
 			outbounds = append(outbounds, out)
+
 		}
 	}
 

@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"runtime"
 	runtimeDebug "runtime/debug"
 	"time"
 
@@ -27,11 +26,12 @@ import (
 )
 
 var (
-	sWorkingPath          string
-	sTempPath             string
-	sUserID               int
-	sGroupID              int
-	statusPropagationPort int64
+	sWorkingPath            string
+	sTempPath               string
+	sUserID                 int
+	sGroupID                int
+	statusPropagationPort   int64
+	globalPlatformInterface libbox.PlatformInterface
 )
 
 func InitHiddifyService() error {
@@ -42,7 +42,7 @@ func (s *CoreService) Setup(ctx context.Context, req *SetupRequest) (*hcommon.Re
 	if grpcServer[req.Mode] != nil {
 		return &hcommon.Response{Code: hcommon.ResponseCode_OK, Message: ""}, nil
 	}
-	err := Setup(req)
+	err := Setup(req, nil)
 	code := hcommon.ResponseCode_OK
 	if err != nil {
 		code = hcommon.ResponseCode_FAILED
@@ -50,17 +50,19 @@ func (s *CoreService) Setup(ctx context.Context, req *SetupRequest) (*hcommon.Re
 	return &hcommon.Response{Code: code, Message: err.Error()}, err
 }
 
-func Setup(params *SetupRequest) error {
+func Setup(params *SetupRequest, platformInterface libbox.PlatformInterface) error {
 	defer config.DeferPanicToError("setup", func(err error) {
 		Log(LogLevel_FATAL, LogType_CORE, err.Error())
+		<-time.After(5 * time.Second)
 	})
+	globalPlatformInterface = platformInterface
 	if grpcServer[params.Mode] != nil {
 		Log(LogLevel_WARNING, LogType_CORE, "grpcServer already started")
 		return nil
 	}
-	tcpConn := runtime.GOOS == "windows" // TODO add TVOS
+	tcpConn := true // runtime.GOOS == "windows" // TODO add TVOS
 	libbox.Setup(params.BasePath, params.WorkingDir, params.TempDir, tcpConn)
-	hutils.RedirectStderr(fmt.Sprint(params.WorkingDir, "/data/stderr.log"))
+	hutils.RedirectStderr(fmt.Sprint(params.WorkingDir, "/data/stderr", params.Mode, ".log"))
 
 	Log(LogLevel_DEBUG, LogType_CORE, fmt.Sprintf("libbox.Setup success %s %s %s %v", params.BasePath, params.WorkingDir, params.TempDir, tcpConn))
 
@@ -95,6 +97,7 @@ func Setup(params *SetupRequest) error {
 	switch params.Mode {
 	case SetupMode_OLD:
 		statusPropagationPort = int64(params.FlutterStatusPort)
+	// case SetupMode_GRPC_BACKGROUND_INSECURE:
 	default:
 		_, err := StartGrpcServerByMode(params.Listen, params.Mode)
 		if err != nil {
@@ -104,11 +107,13 @@ func Setup(params *SetupRequest) error {
 	settings := db.GetTable[hcommon.AppSettings]()
 	val, err := settings.Get("HiddifySettingsJson")
 	if val == nil || err != nil {
+		// if params.Mode == SetupMode_GRPC_BACKGROUND_INSECURE {
 		_, err := ChangeHiddifySettings(&ChangeHiddifySettingsRequest{HiddifySettingsJson: ""})
 		if err != nil {
 			Log(LogLevel_DEBUG, LogType_CORE, E.Cause(err, "ChangeHiddifySettings").Error())
 		}
 	} else {
+		// settings := db.GetTable[hcommon.AppSettings]()
 		_, err := ChangeHiddifySettings(&ChangeHiddifySettingsRequest{HiddifySettingsJson: val.Value.(string)})
 		if err != nil {
 			Log(LogLevel_DEBUG, LogType_CORE, E.Cause(err, "ChangeHiddifySettings").Error())

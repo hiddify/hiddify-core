@@ -20,13 +20,16 @@ func getDB(name string, readOnly bool) (tmdb.DB, error) {
 	if _, err := os.Stat(dbPath); os.IsNotExist(err) {
 		readOnly = false
 	}
-
 	const retryAttempts = 100
 	const retryDelay = 100 * time.Microsecond
 
 	var db tmdb.DB
 	var err error
-
+	defer func() {
+		if r := recover(); r != nil {
+			log.Printf("Recovered from panic: %v", r)
+		}
+	}()
 	for i := 0; i < retryAttempts; i++ {
 		// Set readOnly to true for the first 80 attempts
 		opts := &opt.Options{ReadOnly: readOnly && i < 80}
@@ -35,11 +38,9 @@ func getDB(name string, readOnly bool) (tmdb.DB, error) {
 		if err == nil {
 			return db, nil
 		}
-
 		log.Printf("Failed attempt %d to initialize the database: %v", i, err)
 		time.Sleep(retryDelay)
 	}
-
 	return nil, err
 }
 

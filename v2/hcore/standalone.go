@@ -31,7 +31,7 @@ func RunStandalone(hiddifySettingPath string, configPath string, defaultConfig c
 		EnableOldCommandServer: false,
 		DelayStart:             false,
 		EnableRawConfig:        true,
-	}, nil)
+	})
 	go updateConfigInterval(current, hiddifySettingPath, configPath)
 
 	sigChan := make(chan os.Signal, 1)
@@ -188,7 +188,7 @@ func buildConfig(configContent string, options config.HiddifyOptions) (string, e
 			Debug:             false,
 			Listen:            "127.0.0.1:17078",
 			Mode:              SetupMode_GRPC_NORMAL_INSECURE,
-		}); err != nil {
+		}, nil); err != nil {
 		return "", fmt.Errorf("failed to set up global configuration: %w", err)
 	}
 
@@ -219,7 +219,7 @@ func updateConfigInterval(current ConfigResult, hiddifySettingPath string, confi
 				EnableOldCommandServer: false,
 				DisableMemoryLimit:     false,
 				EnableRawConfig:        true,
-			}, nil)
+			})
 		}
 		current = new
 	}

@@ -8,7 +8,7 @@ import (
 	"github.com/sagernet/sing-box/experimental/libbox"
 )
 
-func Setup(baseDir string, workingDir string, tempDir string, mode int, listen string, secret string, debug bool) error {
+func Setup(baseDir string, workingDir string, tempDir string, mode int, listen string, secret string, debug bool, platformInterface libbox.PlatformInterface) error {
 	return hcore.Setup(&hcore.SetupRequest{
 		BasePath:          baseDir,
 		WorkingDir:        workingDir,
@@ -18,7 +18,7 @@ func Setup(baseDir string, workingDir string, tempDir string, mode int, listen s
 		Debug:             debug,
 		Mode:              hcore.SetupMode(mode),
 		Secret:            secret,
-	})
+	}, platformInterface)
 
 	// return hcore.Start(17078)
 }
@@ -37,11 +37,11 @@ func BuildConfig(configPath string) (string, error) {
 // 	return state, err
 // }
 
-func Start(configPath string, configContent string, platformInterface libbox.PlatformInterface) error {
+func Start(configPath string, configContent string) error {
 	_, err := hcore.StartService(&hcore.StartRequest{
 		ConfigPath:    configPath,
 		ConfigContent: configContent,
-	}, platformInterface)
+	})
 	return err
 }
 

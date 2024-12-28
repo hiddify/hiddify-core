@@ -17,23 +17,24 @@ func (s *CoreService) Start(ctx context.Context, in *StartRequest) (*CoreInfoRes
 }
 
 func Start(in *StartRequest) (*CoreInfoResponse, error) {
-	return StartService(in, nil)
+	return StartService(in)
 }
 
 func (s *CoreService) StartService(ctx context.Context, in *StartRequest) (*CoreInfoResponse, error) {
-	return StartService(in, nil)
+	return StartService(in)
 }
 
-func StartService(in *StartRequest, platformInterface libbox.PlatformInterface) (coreResponse *CoreInfoResponse, err error) {
+func StartService(in *StartRequest) (coreResponse *CoreInfoResponse, err error) {
 	defer config.DeferPanicToError("startmobile", func(recovered_err error) {
 		coreResponse, err = errorWrapper(MessageType_UNEXPECTED_ERROR, recovered_err)
 	})
 	SetCoreStatus(CoreStates_STARTING, MessageType_EMPTY, "")
-	Log(LogLevel_DEBUG, LogType_CORE, "Starting Core Service")
+
 	options, err := BuildConfig(in)
 	if err != nil {
 		return errorWrapper(MessageType_ERROR_BUILDING_CONFIG, err)
 	}
+	Log(LogLevel_DEBUG, LogType_CORE, "Main Service pre start")
 	if err := service_manager.OnMainServicePreStart(options); err != nil {
 		return errorWrapper(MessageType_ERROR_EXTENSION, err)
 	}
@@ -51,8 +52,8 @@ func StartService(in *StartRequest, platformInterface libbox.PlatformInterface) 
 		Options:           *options,
 		PlatformLogWriter: &LogInterface{},
 	}
-	if platformInterface != nil {
-		bopts.PlatformInterface = libbox.WrapPlatformInterface(platformInterface)
+	if globalPlatformInterface != nil {
+		bopts.PlatformInterface = libbox.WrapPlatformInterface(globalPlatformInterface)
 	}
 	instance, err := libbox.NewHService(bopts)
 	if err != nil {

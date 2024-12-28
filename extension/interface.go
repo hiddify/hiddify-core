@@ -122,5 +122,5 @@ func (s *extensionService) OnMainServiceClose() error {
 }
 
 func init() {
-	service_manager.Register(&extensionService{})
+	// service_manager.Register(&extensionService{})
 }
