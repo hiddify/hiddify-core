@@ -32,7 +32,7 @@ func runCommand(cmd *cobra.Command, args []string) {
 			Debug:             false,
 			Mode:              hcore.SetupMode_GRPC_NORMAL_INSECURE,
 			Listen:            "127.0.0.1:17078",
-		},
+		}, nil,
 	)
 	// conn, err := grpc.Dial("127.0.0.1:17078", grpc.WithInsecure())
 	// if err != nil {
