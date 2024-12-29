@@ -26,7 +26,7 @@ func StartTestExtensionServer() {
 		Secret:            "",
 		Debug:             false,
 		Mode:              hcore.SetupMode_OLD,
-	})
+	}, nil)
 	StartExtensionServer()
 }
 

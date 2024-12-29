@@ -26,13 +26,13 @@ const (
 	DNSFakeTag         = "dns-fake"
 	DNSTricksDirectTag = "dns-trick-direct"
 
-	OutboundDirectTag         = "direct"
-	OutboundBypassTag         = "bypass"
-	OutboundBlockTag          = "block"
+	OutboundDirectTag         = "direct §hide§"
+	OutboundBypassTag         = "bypass §hide§"
+	OutboundBlockTag          = "block §hide§"
 	OutboundSelectTag         = "select"
 	OutboundURLTestTag        = "auto"
-	OutboundDNSTag            = "dns-out"
-	OutboundDirectFragmentTag = "direct-fragment"
+	OutboundDNSTag            = "dns-out §hide§"
+	OutboundDirectFragmentTag = "direct-fragment §hide§"
 
 	InboundTUNTag   = "tun-in"
 	InboundMixedTag = "mixed-in"
@@ -141,7 +141,7 @@ func setOutbounds(options *option.Options, input *option.Options, opt *HiddifyOp
 		out = *outbound
 
 		switch out.Type {
-		case C.TypeDirect, C.TypeBlock, C.TypeDNS:
+		case C.TypeBlock, C.TypeDNS:
 			continue
 		case C.TypeSelector, C.TypeURLTest:
 			continue
@@ -159,14 +159,17 @@ func setOutbounds(options *option.Options, input *option.Options, opt *HiddifyOp
 
 		}
 	}
-
+	testurls := []string{"http://captive.apple.com/generate_204", "https://cp.cloudflare.com", "https://google.com/generate_204"}
+	if isBlockedConnectionTestUrl(opt.ConnectionTestUrl) {
+		testurls = []string{}
+	}
 	urlTest := option.Outbound{
 		Type: C.TypeURLTest,
 		Tag:  OutboundURLTestTag,
 		URLTestOptions: option.URLTestOutboundOptions{
 			Outbounds: tags,
 			URL:       opt.ConnectionTestUrl,
-			URLs:      []string{"http://captive.apple.com/generate_204", "https://cp.cloudflare.com", "https://google.com/generate_204"},
+			URLs:      testurls,
 			Interval:  option.Duration(opt.URLTestInterval.Duration()),
 			// IdleTimeout: option.Duration(opt.URLTestIdleTimeout.Duration()),
 			Tolerance:                 1,
@@ -230,6 +233,14 @@ func setOutbounds(options *option.Options, input *option.Options, opt *HiddifyOp
 	)
 
 	return nil
+}
+
+func isBlockedConnectionTestUrl(d string) bool {
+	u, err := url.Parse(d)
+	if err != nil {
+		return false
+	}
+	return isBlockedDomain(u.Host)
 }
 
 func setClashAPI(options *option.Options, opt *HiddifyOptions) {

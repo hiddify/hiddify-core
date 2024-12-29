@@ -153,10 +153,10 @@ require (
 
 replace github.com/sagernet/sing-box => github.com/hiddify/hiddify-sing-box v1.8.9-0.20241229165737-711ea7a9f7b2
 
-replace github.com/xtls/xray-core => github.com/hiddify/xray-core v0.0.0-20241219203851-cd7ad9af63bd
+replace github.com/xtls/xray-core => github.com/hiddify/xray-core v0.0.0-20241229214239-f398d912c726
 
 replace github.com/sagernet/wireguard-go => github.com/hiddify/wireguard-go v0.0.0-20240727191222-383c1da14ff1
 
 replace github.com/bepass-org/warp-plus => github.com/hiddify/warp-plus v0.0.0-20240717223357-4f3122e0d11d
 
-replace github.com/hiddify/ray2sing => github.com/hiddify/ray2sing v0.0.0-20241219213739-113036bccaba
+replace github.com/hiddify/ray2sing => github.com/hiddify/ray2sing v0.0.0-20241229214451-3fc92fa15e53
