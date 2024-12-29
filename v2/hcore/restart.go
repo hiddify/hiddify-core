@@ -18,9 +18,6 @@ func Restart(in *StartRequest) (coreResponse *CoreInfoResponse, err error) {
 		coreResponse, err = errorWrapper(MessageType_UNEXPECTED_ERROR, recovered_err)
 	})
 	log.Debug("[Service] Restarting")
-	if in.ConfigContent == "" && in.ConfigPath == "" {
-		in = previousStartRequest
-	}
 	if static.CoreState != CoreStates_STARTED {
 		return errorWrapper(MessageType_INSTANCE_NOT_STARTED, fmt.Errorf("instance not started"))
 	}

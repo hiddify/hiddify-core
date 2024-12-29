@@ -7,6 +7,8 @@ import (
 	"time"
 
 	"github.com/hiddify/hiddify-core/v2/config"
+	"github.com/hiddify/hiddify-core/v2/db"
+	hcommon "github.com/hiddify/hiddify-core/v2/hcommon"
 	service_manager "github.com/hiddify/hiddify-core/v2/service_manager"
 	box "github.com/sagernet/sing-box"
 	"github.com/sagernet/sing-box/experimental/libbox"
@@ -24,13 +26,56 @@ func (s *CoreService) StartService(ctx context.Context, in *StartRequest) (*Core
 	return StartService(in)
 }
 
+func saveLastStartRequest(in *StartRequest) error {
+	if in.ConfigContent == "" && in.ConfigPath == "" {
+		return nil
+	}
+	settings := db.GetTable[hcommon.AppSettings]()
+	return settings.UpdateInsert(
+		&hcommon.AppSettings{
+			Id:    "lastStartRequestPath",
+			Value: in.ConfigPath,
+		},
+		&hcommon.AppSettings{
+			Id:    "lastStartRequestContent",
+			Value: in.ConfigContent,
+		},
+	)
+}
+
+func loadLastStartRequestIfNeeded(in *StartRequest) (*StartRequest, error) {
+	if in.ConfigContent != "" || in.ConfigPath != "" {
+		return in, nil
+	}
+	settings := db.GetTable[hcommon.AppSettings]()
+	lastPath, err := settings.Get("lastStartRequestPath")
+	if err != nil {
+		return nil, err
+	}
+	lastContent, err := settings.Get("lastStartRequestContent")
+	if err != nil {
+		return nil, err
+	}
+	return &StartRequest{
+		ConfigPath:    lastPath.Value.(string),
+		ConfigContent: lastContent.Value.(string),
+	}, nil
+}
+
 func StartService(in *StartRequest) (coreResponse *CoreInfoResponse, err error) {
 	defer config.DeferPanicToError("startmobile", func(recovered_err error) {
 		coreResponse, err = errorWrapper(MessageType_UNEXPECTED_ERROR, recovered_err)
 	})
 	SetCoreStatus(CoreStates_STARTING, MessageType_EMPTY, "")
+
+	in, err = loadLastStartRequestIfNeeded(in)
+	if err != nil {
+		return errorWrapper(MessageType_ERROR_BUILDING_CONFIG, err)
+	}
+
 	previousStartRequest = in
 	options, err := BuildConfig(in)
+	saveLastStartRequest(in)
 	if err != nil {
 		return errorWrapper(MessageType_ERROR_BUILDING_CONFIG, err)
 	}

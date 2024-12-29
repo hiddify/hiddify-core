@@ -241,8 +241,8 @@ github.com/hashicorp/yamux v0.1.2 h1:XtB8kyFOyHXYVFnwT5C3+Bdo8gArse7j2AQ0DA0Uey8
 github.com/hashicorp/yamux v0.1.2/go.mod h1:C+zze2n6e/7wshOZep2A70/aQU6QBRWJO/G6FT1wIns=
 github.com/hectane/go-acl v0.0.0-20230122075934-ca0b05cb1adb h1:PGufWXXDq9yaev6xX1YQauaO1MV90e6Mpoq1I7Lz/VM=
 github.com/hectane/go-acl v0.0.0-20230122075934-ca0b05cb1adb/go.mod h1:QiyDdbZLaJ/mZP4Zwc9g2QsfaEA4o7XvvgZegSci5/E=
-github.com/hiddify/hiddify-sing-box v1.8.9-0.20241224082119-1aa6bc1919b9 h1:Nx3nQS/0VeaBD8ZolNnbO91BrYSZ6NQj2H9Ia3YIIS0=
-github.com/hiddify/hiddify-sing-box v1.8.9-0.20241224082119-1aa6bc1919b9/go.mod h1:u16dzx+T4FD39c223mKWT0H0mcHhVRpQaBlN34dPXMk=
+github.com/hiddify/hiddify-sing-box v1.8.9-0.20241229165737-711ea7a9f7b2 h1:ofbqvCRR39WDY/5Q+Hpr04ZP+YUqAwzchlkkLOs59V8=
+github.com/hiddify/hiddify-sing-box v1.8.9-0.20241229165737-711ea7a9f7b2/go.mod h1:u16dzx+T4FD39c223mKWT0H0mcHhVRpQaBlN34dPXMk=
 github.com/hiddify/ray2sing v0.0.0-20241219213739-113036bccaba h1:q28rvz9DROJ6P07DlLbSx6cxR00lVp2GYuSCn3WDrpU=
 github.com/hiddify/ray2sing v0.0.0-20241219213739-113036bccaba/go.mod h1:soYE48y/Q2HtgRFpcX6LcekVyigy7IELYw4fmIGwLSA=
 github.com/hiddify/warp-plus v0.0.0-20240717223357-4f3122e0d11d h1:vRGKh9ou+/vQGfVYa8MczhbIVjHxlP52OWwrDWO77RA=

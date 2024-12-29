@@ -97,7 +97,7 @@ func getHostnameIfNotIP(inp string) (string, error) {
 func setOutbounds(options *option.Options, input *option.Options, opt *HiddifyOptions) error {
 	var outbounds []option.Outbound
 	var tags []string
-	OutboundMainProxyTag = OutboundSelectTag
+	// OutboundMainProxyTag = OutboundSelectTag
 	// inbound==warp over proxies
 	// outbound==proxies over warp
 	if opt.Warp.EnableWarp {
@@ -125,7 +125,7 @@ func setOutbounds(options *option.Options, input *option.Options, opt *HiddifyOp
 		out.Tag = "Hiddify Warp ✅"
 		if opt.Warp.Mode == "warp_over_proxy" {
 			out.WireGuardOptions.Detour = OutboundSelectTag
-			OutboundMainProxyTag = out.Tag
+			options.Route.Final = out.Tag
 		} else {
 			out.WireGuardOptions.Detour = OutboundDirectTag
 		}
