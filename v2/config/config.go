@@ -151,7 +151,7 @@ func setOutbounds(options *option.Options, input *option.Options, opt *HiddifyOp
 			if opt.Warp.EnableWarp && opt.Warp.Mode == "warp_over_proxy" && out.Tag == "Hiddify Warp ✅" {
 				continue
 			}
-			if !strings.Contains(out.Tag, "§hide§") {
+			if !strings.Contains(out.Tag, "§hide§") && !contains([]string{"direct", "bypass", "block"}, out.Tag) {
 				tags = append(tags, out.Tag)
 			}
 			out = patchHiddifyWarpFromConfig(out, *opt)
@@ -241,6 +241,15 @@ func isBlockedConnectionTestUrl(d string) bool {
 		return false
 	}
 	return isBlockedDomain(u.Host)
+}
+
+func contains(slice []string, item string) bool {
+	for _, s := range slice {
+		if s == item {
+			return true
+		}
+	}
+	return false
 }
 
 func setClashAPI(options *option.Options, opt *HiddifyOptions) {
