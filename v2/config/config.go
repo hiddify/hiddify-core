@@ -33,6 +33,7 @@ const (
 	OutboundURLTestTag        = "auto"
 	OutboundDNSTag            = "dns-out §hide§"
 	OutboundDirectFragmentTag = "direct-fragment §hide§"
+	WARPConfigTag             = "Hiddify Warp ✅"
 
 	InboundTUNTag   = "tun-in"
 	InboundMixedTag = "mixed-in"
@@ -68,6 +69,11 @@ func BuildConfig(opt HiddifyOptions, input option.Options) (*option.Options, err
 	options.DNS = &option.DNSOptions{
 		StaticIPs: map[string][]string{},
 	}
+	if opt.Warp.EnableWarp && opt.Warp.Mode == "warp_over_proxy" {
+		OutboundMainProxyTag = WARPConfigTag
+	} else {
+		OutboundMainProxyTag = OutboundSelectTag
+	}
 	setClashAPI(&options, &opt)
 	setLog(&options, &opt)
 	setInbound(&options, &opt)
@@ -87,7 +93,6 @@ func getHostnameIfNotIP(inp string) (string, error) {
 	if inp == "" {
 		return "", fmt.Errorf("empty hostname: %s", inp)
 	}
-
 	if net.ParseIP(strings.Trim(inp, "[]")) == nil {
 		return inp, nil
 	}
@@ -122,16 +127,14 @@ func setOutbounds(options *option.Options, input *option.Options, opt *HiddifyOp
 		if err != nil {
 			return fmt.Errorf("failed to generate warp config: %v", err)
 		}
-		out.Tag = "Hiddify Warp ✅"
+		out.Tag = WARPConfigTag
 		if opt.Warp.Mode == "warp_over_proxy" {
 			out.WireGuardOptions.Detour = OutboundSelectTag
-			options.Route.Final = out.Tag
 		} else {
 			out.WireGuardOptions.Detour = OutboundDirectTag
 		}
 		patchWarp(out, opt, true, nil)
 		outbounds = append(outbounds, *out)
-		// tags = append(tags, out.Tag)
 	}
 	for _, out := range input.Outbounds {
 		outbound, err := patchOutbound(out, *opt, options.DNS.StaticIPs)
@@ -148,15 +151,17 @@ func setOutbounds(options *option.Options, input *option.Options, opt *HiddifyOp
 		case C.TypeCustom:
 			continue
 		default:
-			if opt.Warp.EnableWarp && opt.Warp.Mode == "warp_over_proxy" && out.Tag == "Hiddify Warp ✅" {
+			if opt.Warp.EnableWarp && opt.Warp.Mode == "warp_over_proxy" && out.Tag == WARPConfigTag {
 				continue
 			}
-			if !strings.Contains(out.Tag, "§hide§") && !contains([]string{"direct", "bypass", "block"}, out.Tag) {
+			if contains([]string{"direct", "bypass", "block"}, out.Tag) {
+				continue
+			}
+			if !strings.Contains(out.Tag, "§hide§") {
 				tags = append(tags, out.Tag)
 			}
 			out = patchHiddifyWarpFromConfig(out, *opt)
 			outbounds = append(outbounds, out)
-
 		}
 	}
 	testurls := []string{"http://captive.apple.com/generate_204", "https://cp.cloudflare.com", "https://google.com/generate_204"}
@@ -384,6 +389,7 @@ func setDns(options *option.Options, opt *HiddifyOptions) {
 				Address:         opt.RemoteDnsAddress,
 				AddressResolver: DNSDirectTag,
 				Strategy:        opt.RemoteDnsDomainStrategy,
+				Detour:          OutboundMainProxyTag,
 			},
 			{
 				Tag:     DNSTricksDirectTag,
@@ -795,7 +801,6 @@ func setRoutingOptions(options *option.Options, opt *HiddifyOptions) {
 				Outbound: OutboundDirectTag,
 			},
 		})
-
 	}
 	options.Route = &option.RouteOptions{
 		Rules:               routeRules,
@@ -828,49 +833,49 @@ func setRoutingOptions(options *option.Options, opt *HiddifyOptions) {
 func patchHiddifyWarpFromConfig(out option.Outbound, opt HiddifyOptions) option.Outbound {
 	if opt.Warp.EnableWarp && opt.Warp.Mode == "proxy_over_warp" {
 		if out.DirectOptions.Detour == "" {
-			out.DirectOptions.Detour = "Hiddify Warp ✅"
+			out.DirectOptions.Detour = WARPConfigTag
 		}
 		if out.HTTPOptions.Detour == "" {
-			out.HTTPOptions.Detour = "Hiddify Warp ✅"
+			out.HTTPOptions.Detour = WARPConfigTag
 		}
 		if out.Hysteria2Options.Detour == "" {
-			out.Hysteria2Options.Detour = "Hiddify Warp ✅"
+			out.Hysteria2Options.Detour = WARPConfigTag
 		}
 		if out.HysteriaOptions.Detour == "" {
-			out.HysteriaOptions.Detour = "Hiddify Warp ✅"
+			out.HysteriaOptions.Detour = WARPConfigTag
 		}
 		if out.SSHOptions.Detour == "" {
-			out.SSHOptions.Detour = "Hiddify Warp ✅"
+			out.SSHOptions.Detour = WARPConfigTag
 		}
 		if out.ShadowTLSOptions.Detour == "" {
-			out.ShadowTLSOptions.Detour = "Hiddify Warp ✅"
+			out.ShadowTLSOptions.Detour = WARPConfigTag
 		}
 		if out.ShadowsocksOptions.Detour == "" {
-			out.ShadowsocksOptions.Detour = "Hiddify Warp ✅"
+			out.ShadowsocksOptions.Detour = WARPConfigTag
 		}
 		if out.ShadowsocksROptions.Detour == "" {
-			out.ShadowsocksROptions.Detour = "Hiddify Warp ✅"
+			out.ShadowsocksROptions.Detour = WARPConfigTag
 		}
 		if out.SocksOptions.Detour == "" {
-			out.SocksOptions.Detour = "Hiddify Warp ✅"
+			out.SocksOptions.Detour = WARPConfigTag
 		}
 		if out.TUICOptions.Detour == "" {
-			out.TUICOptions.Detour = "Hiddify Warp ✅"
+			out.TUICOptions.Detour = WARPConfigTag
 		}
 		if out.TorOptions.Detour == "" {
-			out.TorOptions.Detour = "Hiddify Warp ✅"
+			out.TorOptions.Detour = WARPConfigTag
 		}
 		if out.TrojanOptions.Detour == "" {
-			out.TrojanOptions.Detour = "Hiddify Warp ✅"
+			out.TrojanOptions.Detour = WARPConfigTag
 		}
 		if out.VLESSOptions.Detour == "" {
-			out.VLESSOptions.Detour = "Hiddify Warp ✅"
+			out.VLESSOptions.Detour = WARPConfigTag
 		}
 		if out.VMessOptions.Detour == "" {
-			out.VMessOptions.Detour = "Hiddify Warp ✅"
+			out.VMessOptions.Detour = WARPConfigTag
 		}
 		if out.WireGuardOptions.Detour == "" {
-			out.WireGuardOptions.Detour = "Hiddify Warp ✅"
+			out.WireGuardOptions.Detour = WARPConfigTag
 		}
 	}
 	return out
