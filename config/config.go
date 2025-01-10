@@ -296,6 +296,8 @@ func setClashAPI(options *option.Options, opt *HiddifyOptions) {
 	if opt.EnableClashApi {
 		if opt.ClashApiSecret == "" {
 			opt.ClashApiSecret = generateRandomString(16)
+		} else {
+			opt.ClashApiSecret = ReplaceEnvVariables(opt.ClashApiSecret)
 		}
 		options.Experimental = &option.ExperimentalOptions{
 			ClashAPI: &option.ClashAPIOptions{
