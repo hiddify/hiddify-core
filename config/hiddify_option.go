@@ -28,6 +28,19 @@ type HiddifyOptions struct {
 	InboundOptions
 	URLTestOptions
 	RouteOptions
+	GeositeConfigOptions
+}
+
+// Move the download link to the configuration file
+type GeositeConfigOptions struct {
+	GeositeAds          string `json:"geosite-ads"`
+	GeositeMalware      string `json:"geosite-malware"`
+	GeositePhishing     string `json:"geosite-phishing"`
+	GeositeCryptominers string `json:"geosite-cryptominers"`
+	GeoipPhishing       string `json:"geoip-phishing"`
+	GeoipMalware        string `json:"geoip-malware"`
+	GeoipRegion         string `json:"geoip-region"`
+	GeositeRegion       string `json:"geosite-region"`
 }
 
 type DNSOptions struct {

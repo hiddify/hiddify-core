@@ -623,7 +623,7 @@ func setRoutingOptions(options *option.Options, opt *HiddifyOptions) {
 			Tag:    "geosite-ads",
 			Format: C.RuleSetFormatBinary,
 			RemoteOptions: option.RemoteRuleSet{
-				URL:            "https://gh.api.99988866.xyz/https://raw.githubusercontent.com/hiddify/hiddify-geo/rule-set/block/geosite-category-ads-all.srs",
+				URL:            opt.GeositeConfigOptions.GeositeAds,
 				UpdateInterval: option.Duration(5 * time.Hour * 24),
 			},
 		})
@@ -632,7 +632,7 @@ func setRoutingOptions(options *option.Options, opt *HiddifyOptions) {
 			Tag:    "geosite-malware",
 			Format: C.RuleSetFormatBinary,
 			RemoteOptions: option.RemoteRuleSet{
-				URL:            "https://gh.api.99988866.xyz/https://raw.githubusercontent.com/hiddify/hiddify-geo/rule-set/block/geosite-malware.srs",
+				URL:            opt.GeositeConfigOptions.GeositeMalware,
 				UpdateInterval: option.Duration(5 * time.Hour * 24),
 			},
 		})
@@ -641,7 +641,7 @@ func setRoutingOptions(options *option.Options, opt *HiddifyOptions) {
 			Tag:    "geosite-phishing",
 			Format: C.RuleSetFormatBinary,
 			RemoteOptions: option.RemoteRuleSet{
-				URL:            "https://gh.api.99988866.xyz/https://raw.githubusercontent.com/hiddify/hiddify-geo/rule-set/block/geosite-phishing.srs",
+				URL:            opt.GeositeConfigOptions.GeositePhishing,
 				UpdateInterval: option.Duration(5 * time.Hour * 24),
 			},
 		})
@@ -650,7 +650,7 @@ func setRoutingOptions(options *option.Options, opt *HiddifyOptions) {
 			Tag:    "geosite-cryptominers",
 			Format: C.RuleSetFormatBinary,
 			RemoteOptions: option.RemoteRuleSet{
-				URL:            "https://gh.api.99988866.xyz/https://raw.githubusercontent.com/hiddify/hiddify-geo/rule-set/block/geosite-cryptominers.srs",
+				URL:            opt.GeositeConfigOptions.GeositeCryptominers,
 				UpdateInterval: option.Duration(5 * time.Hour * 24),
 			},
 		})
@@ -659,7 +659,7 @@ func setRoutingOptions(options *option.Options, opt *HiddifyOptions) {
 			Tag:    "geoip-phishing",
 			Format: C.RuleSetFormatBinary,
 			RemoteOptions: option.RemoteRuleSet{
-				URL:            "https://gh.api.99988866.xyz/https://raw.githubusercontent.com/hiddify/hiddify-geo/rule-set/block/geoip-phishing.srs",
+				URL:            opt.GeositeConfigOptions.GeoipPhishing,
 				UpdateInterval: option.Duration(5 * time.Hour * 24),
 			},
 		})
@@ -668,7 +668,7 @@ func setRoutingOptions(options *option.Options, opt *HiddifyOptions) {
 			Tag:    "geoip-malware",
 			Format: C.RuleSetFormatBinary,
 			RemoteOptions: option.RemoteRuleSet{
-				URL:            "https://gh.api.99988866.xyz/https://raw.githubusercontent.com/hiddify/hiddify-geo/rule-set/block/geoip-malware.srs",
+				URL:            opt.GeositeConfigOptions.GeoipMalware,
 				UpdateInterval: option.Duration(5 * time.Hour * 24),
 			},
 		})
@@ -701,6 +701,7 @@ func setRoutingOptions(options *option.Options, opt *HiddifyOptions) {
 		})
 
 	}
+	opt.Region = ReplaceEnvVariables(opt.Region)
 	if opt.Region != "other" {
 		dnsRules = append(dnsRules, option.DefaultDNSRule{
 			DomainSuffix: []string{"." + opt.Region},
@@ -726,7 +727,7 @@ func setRoutingOptions(options *option.Options, opt *HiddifyOptions) {
 			Tag:    "geoip-" + opt.Region,
 			Format: C.RuleSetFormatBinary,
 			RemoteOptions: option.RemoteRuleSet{
-				URL:            "https://gh.api.99988866.xyz/https://raw.githubusercontent.com/hiddify/hiddify-geo/rule-set/country/geoip-" + opt.Region + ".srs",
+				URL:            ReplaceEnvVariables(opt.GeositeConfigOptions.GeoipRegion),
 				UpdateInterval: option.Duration(5 * time.Hour * 24),
 			},
 		})
@@ -735,7 +736,7 @@ func setRoutingOptions(options *option.Options, opt *HiddifyOptions) {
 			Tag:    "geosite-" + opt.Region,
 			Format: C.RuleSetFormatBinary,
 			RemoteOptions: option.RemoteRuleSet{
-				URL:            "https://gh.api.99988866.xyz/https://raw.githubusercontent.com/hiddify/hiddify-geo/rule-set/country/geosite-" + opt.Region + ".srs",
+				URL:            ReplaceEnvVariables(opt.GeositeConfigOptions.GeositeRegion),
 				UpdateInterval: option.Duration(5 * time.Hour * 24),
 			},
 		})
