@@ -3,6 +3,7 @@ package config
 import (
 	"github.com/sagernet/sing-box/option"
 	dns "github.com/sagernet/sing-dns"
+	"github.com/sagernet/sing/common/auth"
 )
 
 type HiddifyOptions struct {
@@ -40,15 +41,16 @@ type DNSOptions struct {
 }
 
 type InboundOptions struct {
-	EnableTun        bool   `json:"enable-tun"`
-	EnableTunService bool   `json:"enable-tun-service"`
-	SetSystemProxy   bool   `json:"set-system-proxy"`
-	MixedPort        uint16 `json:"mixed-port"`
-	TProxyPort       uint16 `json:"tproxy-port"`
-	LocalDnsPort     uint16 `json:"local-dns-port"`
-	MTU              uint32 `json:"mtu"`
-	StrictRoute      bool   `json:"strict-route"`
-	TUNStack         string `json:"tun-implementation"`
+	EnableTun        bool        `json:"enable-tun"`
+	EnableTunService bool        `json:"enable-tun-service"`
+	SetSystemProxy   bool        `json:"set-system-proxy"`
+	MixedPort        uint16      `json:"mixed-port"`
+	TProxyPort       uint16      `json:"tproxy-port"`
+	LocalDnsPort     uint16      `json:"local-dns-port"`
+	MTU              uint32      `json:"mtu"`
+	StrictRoute      bool        `json:"strict-route"`
+	TUNStack         string      `json:"tun-implementation"`
+	Users            []auth.User `json:"users,omitempty"`
 }
 
 type URLTestOptions struct {

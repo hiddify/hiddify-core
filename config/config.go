@@ -50,20 +50,19 @@ func ReplaceEnvVariables(input string) string {
 	})
 }
 
-func GetUsers() []auth.User {
-	username := os.Getenv("PROXY_USER")
-	password := os.Getenv("PROXY_PASS")
-
-	if username == "" || password == "" {
-		return []auth.User{}
+func GetUsers(opt *HiddifyOptions) []auth.User {
+	var newUsers []auth.User
+	for _, user := range opt.InboundOptions.Users {
+		newUsername := ReplaceEnvVariables(user.Username)
+		newPassword := ReplaceEnvVariables(user.Password)
+		if newUsername != "" && newPassword != "" {
+			newUsers = append(newUsers, auth.User{
+				Username: newUsername,
+				Password: newPassword,
+			})
+		}
 	}
-
-	return []auth.User{
-		{
-			Username: username,
-			Password: password,
-		},
-	}
+	return newUsers
 }
 
 var OutboundMainProxyTag = OutboundSelectTag
@@ -394,7 +393,7 @@ func setInbound(options *option.Options, opt *HiddifyOptions) {
 						DomainStrategy:           inboundDomainStrategy,
 					},
 				},
-				Users:          GetUsers(),
+				Users:          GetUsers(opt),
 				SetSystemProxy: opt.SetSystemProxy,
 			},
 		},
