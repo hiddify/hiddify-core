@@ -17,7 +17,7 @@ require (
 	github.com/xmdhs/clash2singbox v0.0.2
 	golang.org/x/sys v0.28.0
 	google.golang.org/grpc v1.67.1
-	google.golang.org/protobuf v1.36.0
+	google.golang.org/protobuf v1.36.1
 	gopkg.in/yaml.v3 v3.0.1
 )
 
@@ -52,6 +52,7 @@ require (
 	github.com/sagernet/cors v1.2.1 // indirect
 	github.com/sagernet/fswatch v0.1.1 // indirect
 	github.com/sagernet/nftables v0.3.0-beta.4 // indirect
+	github.com/xtls/quic-go v0.0.0-20241220091641-6f5777d1c087 // indirect
 	go.etcd.io/bbolt v1.3.6 // indirect
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 	nhooyr.io/websocket v1.8.6 // indirect
@@ -106,7 +107,6 @@ require (
 	github.com/pires/go-proxyproto v0.8.0 // indirect
 	github.com/quic-go/qpack v0.4.0 // indirect
 	github.com/quic-go/qtls-go1-20 v0.4.1 // indirect
-	github.com/quic-go/quic-go v0.46.0 // indirect
 	github.com/refraction-networking/utls v1.6.7 // indirect
 	github.com/riobard/go-bloom v0.0.0-20200614022211-cdc8013cb5b3 // indirect
 	github.com/sagernet/bbolt v0.0.0-20231014093535-ea5cb2fe9f0a // indirect
@@ -121,7 +121,7 @@ require (
 	github.com/sagernet/sing-shadowsocks2 v0.2.0 // indirect
 	github.com/sagernet/sing-shadowtls v0.1.5 // indirect
 	github.com/sagernet/sing-tun v0.4.5 // indirect
-	github.com/sagernet/sing-vmess v0.1.12 // indirect
+	github.com/sagernet/sing-vmess v0.1.13 // indirect
 	github.com/sagernet/smux v0.0.0-20231208180855-7041f6ea79e7 // indirect
 	github.com/sagernet/utls v1.6.7 // indirect
 	github.com/sagernet/wireguard-go v0.0.1-beta.5 // indirect
@@ -141,7 +141,7 @@ require (
 	golang.org/x/crypto v0.31.0 // indirect
 	golang.org/x/exp v0.0.0-20240719175910-8a7402abbf56 // indirect
 	golang.org/x/mod v0.20.0 // indirect
-	golang.org/x/net v0.32.0
+	golang.org/x/net v0.33.0
 	golang.org/x/sync v0.10.0 // indirect
 	golang.org/x/text v0.21.0 // indirect
 	golang.org/x/time v0.7.0 // indirect
@@ -151,12 +151,13 @@ require (
 	lukechampine.com/blake3 v1.3.0 // indirect
 )
 
-replace github.com/sagernet/sing-box => github.com/hiddify/hiddify-sing-box v1.8.9-0.20250101231347-96d04e591c0b
+replace github.com/sagernet/sing-box => github.com/hiddify/hiddify-sing-box v1.8.9-0.20250112102034-087673389c1f
 
-replace github.com/xtls/xray-core => github.com/hiddify/xray-core v0.0.0-20241229214239-f398d912c726
+// replace github.com/sagernet/sing-box => ../../hiddify-sing-box/
+replace github.com/xtls/xray-core => github.com/hiddify/xray-core v0.0.0-20250112103047-f021f72d604c
 
 replace github.com/sagernet/wireguard-go => github.com/hiddify/wireguard-go v0.0.0-20240727191222-383c1da14ff1
 
 replace github.com/bepass-org/warp-plus => github.com/hiddify/warp-plus v0.0.0-20240717223357-4f3122e0d11d
 
-replace github.com/hiddify/ray2sing => github.com/hiddify/ray2sing v0.0.0-20241229214451-3fc92fa15e53
+replace github.com/hiddify/ray2sing => github.com/hiddify/ray2sing v0.0.0-20250112101407-113455799711
