@@ -44,6 +44,7 @@ jobs:
         job:
           - { name: 'hiddify-core-android', os: 'ubuntu-latest', target: 'android' }
           - { name: 'hiddify-core-linux-amd64', os: 'ubuntu-20.04', target: 'linux-amd64' }
+          - { name: 'hiddify-core-linux-arm64', os: 'ubuntu-24.04-arm', target: 'linux-arm64' }
           - { name: "hiddify-core-windows-amd64", os: 'ubuntu-latest', target: 'windows-amd64', aarch: 'x64' }
           - { name: "hiddify-core-macos", os: 'macos-13', target: 'macos' }
           - { name: "hiddify-core-ios", os: "macos-13", target: "ios" }
