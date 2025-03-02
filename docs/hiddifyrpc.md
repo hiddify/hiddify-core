@@ -3,6 +3,14 @@
 
 ## Table of Contents
 
+- [v2/config/route_rule.proto](#v2_config_route_rule-proto)
+    - [RouteRule](#config-RouteRule)
+    - [Rule](#config-Rule)
+  
+    - [Network](#config-Network)
+    - [Outbound](#config-Outbound)
+    - [Protocol](#config-Protocol)
+  
 - [v2/hcore/hcore.proto](#v2_hcore_hcore-proto)
     - [ChangeHiddifySettingsRequest](#hcore-ChangeHiddifySettingsRequest)
     - [CoreInfoResponse](#hcore-CoreInfoResponse)
@@ -103,6 +111,112 @@
     - [ExtensionResponseType](#extension-ExtensionResponseType)
   
 - [Scalar Value Types](#scalar-value-types)
+
+
+
+<a name="v2_config_route_rule-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## v2/config/route_rule.proto
+
+
+
+<a name="config-RouteRule"></a>
+
+### RouteRule
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| rules | [Rule](#config-Rule) | repeated |  |
+
+
+
+
+
+
+<a name="config-Rule"></a>
+
+### Rule
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| list_order | [uint32](#uint32) |  |  |
+| enabled | [bool](#bool) |  |  |
+| name | [string](#string) |  |  |
+| outbound | [Outbound](#config-Outbound) |  |  |
+| rule_sets | [string](#string) | repeated |  |
+| package_names | [string](#string) | repeated |  |
+| process_names | [string](#string) | repeated |  |
+| process_paths | [string](#string) | repeated |  |
+| network | [Network](#config-Network) |  |  |
+| port_ranges | [string](#string) | repeated |  |
+| source_port_ranges | [string](#string) | repeated |  |
+| protocols | [Protocol](#config-Protocol) | repeated |  |
+| ip_cidrs | [string](#string) | repeated |  |
+| source_ip_cidrs | [string](#string) | repeated |  |
+| domains | [string](#string) | repeated |  |
+| domain_suffixes | [string](#string) | repeated |  |
+| domain_keywords | [string](#string) | repeated |  |
+| domain_regexes | [string](#string) | repeated |  |
+
+
+
+
+
+ 
+
+
+<a name="config-Network"></a>
+
+### Network
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| all | 0 |  |
+| tcp | 1 |  |
+| udp | 2 |  |
+
+
+
+<a name="config-Outbound"></a>
+
+### Outbound
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| proxy | 0 |  |
+| direct | 1 |  |
+| direct_with_fragment | 2 |  |
+| block | 3 |  |
+
+
+
+<a name="config-Protocol"></a>
+
+### Protocol
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| tls | 0 |  |
+| http | 1 |  |
+| quic | 2 |  |
+| stun | 3 |  |
+| dns | 4 |  |
+| bittorrent | 5 |  |
+
+
+ 
+
+ 
+
+ 
 
 
 
