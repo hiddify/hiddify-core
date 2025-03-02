@@ -85,8 +85,16 @@ func BuildConfig(opt HiddifyOptions, input option.Options) (*option.Options, err
 	}
 	setFakeDns(&options, &opt)
 	addForceDirect(&options, &opt)
-
+	setNTP(&options)
 	return &options, nil
+}
+
+func setNTP(options *option.Options) {
+	options.NTP = &option.NTPOptions{
+		Enabled:       true,
+		ServerOptions: option.ServerOptions{ServerPort: 123, Server: "time.apple.com"},
+		Interval:      option.Duration(30 * time.Minute),
+	}
 }
 
 func getHostnameIfNotIP(inp string) (string, error) {
