@@ -78,6 +78,7 @@ func BuildConfig(opt HiddifyOptions, input option.Options) (*option.Options, err
 	setLog(&options, &opt)
 	setInbound(&options, &opt)
 	setDns(&options, &opt)
+	setNTP(&options)
 	setRoutingOptions(&options, &opt)
 	err := setOutbounds(&options, &input, &opt)
 	if err != nil {
@@ -85,7 +86,6 @@ func BuildConfig(opt HiddifyOptions, input option.Options) (*option.Options, err
 	}
 	setFakeDns(&options, &opt)
 	addForceDirect(&options, &opt)
-	setNTP(&options)
 	return &options, nil
 }
 
@@ -93,7 +93,7 @@ func setNTP(options *option.Options) {
 	options.NTP = &option.NTPOptions{
 		Enabled:       true,
 		ServerOptions: option.ServerOptions{ServerPort: 123, Server: "time.apple.com"},
-		Interval:      option.Duration(30 * time.Minute),
+		Interval:      option.Duration(12 * time.Hour),
 	}
 }
 
@@ -625,49 +625,49 @@ func setRoutingOptions(options *option.Options, opt *HiddifyOptions) {
 		)
 	}
 
-	for _, rule := range opt.Rules {
-		routeRule := rule.MakeRule()
-		switch rule.Outbound {
-		case "bypass":
-			routeRule.Outbound = OutboundBypassTag
-		case "block":
-			routeRule.Outbound = OutboundBlockTag
-		case "proxy":
-			routeRule.Outbound = OutboundMainProxyTag
-		}
+	// for _, rule := range opt.Rules {
+	// 	routeRule := rule.MakeRule()
+	// 	switch rule.Outbound {
+	// 	case "bypass":
+	// 		routeRule.Outbound = OutboundBypassTag
+	// 	case "block":
+	// 		routeRule.Outbound = OutboundBlockTag
+	// 	case "proxy":
+	// 		routeRule.Outbound = OutboundMainProxyTag
+	// 	}
 
-		if routeRule.IsValid() {
-			routeRules = append(
-				routeRules,
-				option.Rule{
-					Type:           C.RuleTypeDefault,
-					DefaultOptions: routeRule,
-				},
-			)
-		}
+	// 	if routeRule.IsValid() {
+	// 		routeRules = append(
+	// 			routeRules,
+	// 			option.Rule{
+	// 				Type:           C.RuleTypeDefault,
+	// 				DefaultOptions: routeRule,
+	// 			},
+	// 		)
+	// 	}
 
-		dnsRule := rule.MakeDNSRule()
-		switch rule.Outbound {
-		case "bypass":
-			dnsRule.Server = DNSDirectTag
-		case "block":
-			dnsRule.Server = DNSBlockTag
-			dnsRule.DisableCache = true
-		case "proxy":
-			if opt.EnableFakeDNS {
-				fakeDnsRule := dnsRule
-				fakeDnsRule.Server = DNSFakeTag
-				fakeDnsRule.Inbound = []string{InboundTUNTag, InboundMixedTag}
-				dnsRules = append(dnsRules, fakeDnsRule)
-			}
-			dnsRule.Server = DNSRemoteTag
-		}
-		dnsRules = append(dnsRules, dnsRule)
-	}
+	// 	dnsRule := rule.MakeDNSRule()
+	// 	switch rule.Outbound {
+	// 	case "bypass":
+	// 		dnsRule.Server = DNSDirectTag
+	// 	case "block":
+	// 		dnsRule.Server = DNSBlockTag
+	// 		dnsRule.DisableCache = true
+	// 	case "proxy":
+	// 		if opt.EnableFakeDNS {
+	// 			fakeDnsRule := dnsRule
+	// 			fakeDnsRule.Server = DNSFakeTag
+	// 			fakeDnsRule.Inbound = []string{InboundTUNTag, InboundMixedTag}
+	// 			dnsRules = append(dnsRules, fakeDnsRule)
+	// 		}
+	// 		dnsRule.Server = DNSRemoteTag
+	// 	}
+	// 	dnsRules = append(dnsRules, dnsRule)
+	// }
 
 	parsedURL, err := url.Parse(opt.ConnectionTestUrl)
+	var dnsCPttl uint32 = 30000
 	if err == nil {
-		var dnsCPttl uint32 = 3000
 		dnsRules = append(dnsRules, option.DefaultDNSRule{
 			Domain:       []string{parsedURL.Host},
 			Server:       DNSRemoteTag,
@@ -675,6 +675,20 @@ func setRoutingOptions(options *option.Options, opt *HiddifyOptions) {
 			DisableCache: false,
 		})
 	}
+	dnsRules = append(dnsRules, option.DefaultDNSRule{
+		Domain:       []string{options.NTP.Server},
+		Server:       DNSDirectTag,
+		RewriteTTL:   &dnsCPttl,
+		DisableCache: false,
+	})
+
+	routeRules = append(routeRules, option.Rule{
+		Type: C.RuleTypeDefault,
+		DefaultOptions: option.DefaultRule{
+			Domain:   []string{options.NTP.Server},
+			Outbound: OutboundDirectTag,
+		},
+	})
 
 	if opt.BlockAds {
 		rulesets = append(rulesets, option.RuleSet{
@@ -836,6 +850,14 @@ func setRoutingOptions(options *option.Options, opt *HiddifyOptions) {
 			}
 		}
 	}
+	routeRules = append(routeRules, option.Rule{
+		Type: C.RuleTypeDefault,
+		DefaultOptions: option.DefaultRule{
+			Port:     []uint16{443},
+			Network:  []string{"udp"},
+			Outbound: OutboundBlockTag,
+		},
+	})
 }
 
 func patchHiddifyWarpFromConfig(out option.Outbound, opt HiddifyOptions) option.Outbound {

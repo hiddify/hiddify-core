@@ -62,7 +62,15 @@ func Setup(params *SetupRequest, platformInterface libbox.PlatformInterface) err
 		return nil
 	}
 	tcpConn := true // runtime.GOOS == "windows" // TODO add TVOS
-	libbox.Setup(params.BasePath, params.WorkingDir, params.TempDir, tcpConn)
+	libbox.Setup(
+		&libbox.SetupOptions{
+			BasePath:        params.BasePath,
+			WorkingPath:     params.WorkingDir,
+			TempPath:        params.TempDir,
+			IsTVOS:          !tcpConn,
+			FixAndroidStack: true,
+		})
+
 	hutils.RedirectStderr(fmt.Sprint(params.WorkingDir, "/data/stderr", params.Mode, ".log"))
 
 	Log(LogLevel_DEBUG, LogType_CORE, fmt.Sprintf("libbox.Setup success %s %s %s %v", params.BasePath, params.WorkingDir, params.TempDir, tcpConn))

@@ -32,7 +32,7 @@ protos:
 	# npx browserify extension/html/rpc/extension.js >extension/html/rpc.js
 
 
-lib_install:
+lib_install: prepare
 	go install -v github.com/sagernet/gomobile/cmd/gomobile@v0.1.4
 	go install -v github.com/sagernet/gomobile/cmd/gobind@v0.1.4
 	npm install
@@ -61,7 +61,7 @@ webui:
 	mv Yacd-meta-gh-pages bin/webui
 
 .PHONY: build
-windows-amd64:
+windows-amd64: prepare
 	env GOOS=windows GOARCH=amd64 CC=x86_64-w64-mingw32-gcc $(GOBUILDLIB) -o $(BINDIR)/$(LIBNAME).dll ./platform/desktop
 	go install -mod=readonly github.com/akavel/rsrc@latest ||echo "rsrc error in installation"
 	go run ./cli tunnel exit
@@ -72,7 +72,7 @@ windows-amd64:
 	make webui
 	
 
-linux-amd64:
+linux-amd64: prepare
 	mkdir -p $(BINDIR)/lib
 	env GOOS=linux GOARCH=amd64 $(GOBUILDLIB) -o $(BINDIR)/lib/$(LIBNAME).so ./platform/desktop
 	mkdir lib
@@ -83,7 +83,7 @@ linux-amd64:
 	make webui
 
 
-linux-custom:
+linux-custom: prepare
 	mkdir -p $(BINDIR)/
 	#env GOARCH=mips $(GOBUILDSRV) -o $(BINDIR)/$(CLINAME) ./cmd/
 	go build -ldflags "-s -w" -trimpath -tags $(TAGS) -o $(BINDIR)/$(CLINAME) ./cmd/main
