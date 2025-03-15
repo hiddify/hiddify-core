@@ -2,6 +2,7 @@ package config
 
 import (
 	"bytes"
+	context "context"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -11,6 +12,7 @@ import (
 	"net/url"
 	"runtime"
 	"strings"
+	sync "sync"
 	"time"
 
 	C "github.com/sagernet/sing-box/constant"
@@ -172,9 +174,9 @@ func setOutbounds(options *option.Options, input *option.Options, opt *HiddifyOp
 			outbounds = append(outbounds, out)
 		}
 	}
-	testurls := []string{"http://captive.apple.com/generate_204", "https://cp.cloudflare.com", "https://google.com/generate_204"}
+	testurls := []string{opt.ConnectionTestUrl, "http://captive.apple.com/generate_204", "https://cp.cloudflare.com", "https://google.com/generate_204"}
 	if isBlockedConnectionTestUrl(opt.ConnectionTestUrl) {
-		testurls = []string{}
+		testurls = []string{opt.ConnectionTestUrl}
 	}
 	urlTest := option.Outbound{
 		Type: C.TypeURLTest,
@@ -401,7 +403,7 @@ func setDns(options *option.Options, opt *HiddifyOptions) {
 			},
 			{
 				Tag:     DNSTricksDirectTag,
-				Address: "https://sky.rethinkdns.com/",
+				Address: "https://dns.cloudflare.com/dns-query",
 				// AddressResolver: "dns-local",
 				Strategy: opt.DirectDnsDomainStrategy,
 				Detour:   OutboundDirectFragmentTag,
@@ -411,7 +413,7 @@ func setDns(options *option.Options, opt *HiddifyOptions) {
 				Address:         opt.DirectDnsAddress,
 				AddressResolver: DNSLocalTag,
 				Strategy:        opt.DirectDnsDomainStrategy,
-				Detour:          OutboundDirectTag,
+				Detour:          OutboundDirectFragmentTag,
 			},
 			{
 				Tag:     DNSLocalTag,
@@ -424,25 +426,36 @@ func setDns(options *option.Options, opt *HiddifyOptions) {
 			},
 		},
 	}
-	sky_rethinkdns := getIPs("www.speedtest.net", "sky.rethinkdns.com")
-	if len(sky_rethinkdns) > 0 {
-		options.DNS.StaticIPs["sky.rethinkdns.com"] = sky_rethinkdns
+	domains := map[string][]string{
+		"time.apple.com":     {"time.g.aaplimg.com", "time.apple.com"},
+		"ipinfo.io":          {"ipinfo.io"},
+		"dns.cloudflare.com": {"www.speedtest.net", "cloudflare.com"},
+		"ipwho.is":           {"ipwho.is"},
+		"api.my-ip.io":       {"api.my-ip.io"},
+		"myip.expert":        {"myip.expert"},
+		"ip-api.com":         {"ip-api.com"},
 	}
-	ipinfo := getIPs("ipinfo.io")
-	if len(ipinfo) > 0 {
-		options.DNS.StaticIPs["ipinfo.io"] = ipinfo
+	var wg sync.WaitGroup
+	var mu sync.Mutex
+	for key, domainList := range domains {
+		wg.Add(1)
+		go func(k string, dList []string) {
+			defer wg.Done()
+			ips := getIPs(dList...)
+			if len(ips) > 0 {
+				mu.Lock()
+				options.DNS.StaticIPs[k] = ips
+				mu.Unlock()
+			}
+		}(key, domainList)
 	}
-	ipwhois := getIPs("ipwho.is")
-	if len(ipwhois) > 0 {
-		options.DNS.StaticIPs["ipwho.is"] = ipwhois
-	}
-	ipsb := sky_rethinkdns // getIPs("api.ip.sb")
-	if len(ipsb) > 0 {
-		options.DNS.StaticIPs["api.ip.sb"] = ipsb
-	}
-	ipapico := sky_rethinkdns // getIPs("ipapi.co")
-	if len(ipapico) > 0 {
-		options.DNS.StaticIPs["ipapi.co"] = ipapico
+
+	wg.Wait()
+	if options.DNS.StaticIPs["dns.cloudflare.com"] == nil {
+		options.DNS.StaticIPs["api.ip.sb"] = options.DNS.StaticIPs["dns.cloudflare.com"]
+		options.DNS.StaticIPs["ipapi.co"] = options.DNS.StaticIPs["dns.cloudflare.com"]
+		options.DNS.StaticIPs["reallyfreegeoip.org"] = options.DNS.StaticIPs["dns.cloudflare.com"]
+		options.DNS.StaticIPs["freeipapi.com"] = options.DNS.StaticIPs["dns.cloudflare.com"]
 	}
 }
 
@@ -457,12 +470,11 @@ func addForceDirect(options *option.Options, opt *HiddifyOptions) {
 
 	if err == nil {
 		if domain, err := getHostnameIfNotIP(parsedUrl.Host); err == nil {
-			dnsMap[domain] = DNSDirectTag
+			dnsMap[domain] = OutboundDirectTag
 		}
 	}
 
 	for _, outbound := range options.Outbounds {
-
 		outboundOptions, err := outbound.RawOptions()
 		if err != nil {
 			continue
@@ -911,19 +923,50 @@ func patchHiddifyWarpFromConfig(out option.Outbound, opt HiddifyOptions) option.
 	return out
 }
 
+var (
+	ipMaps      = map[string][]string{}
+	ipMapsMutex sync.Mutex
+)
+
 func getIPs(domains ...string) []string {
-	res := []string{}
+	var wg sync.WaitGroup
+	resChan := make(chan string, len(domains)*10) // Collect both IPv4 and IPv6
+	ctx, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
+	defer cancel()
+
 	for _, d := range domains {
-		ips, err := net.LookupHost(d)
-		if err != nil {
-			continue
-		}
-		for _, ip := range ips {
-			if !strings.HasPrefix(ip, "10.") {
-				res = append(res, ip)
+		wg.Add(1)
+		go func(domain string) {
+			defer wg.Done()
+			ips, err := net.DefaultResolver.LookupIP(ctx, "ip", domain)
+			if err != nil {
+				return
 			}
-		}
+			for _, ip := range ips {
+				ipStr := ip.String()
+				if !isBlockedIP(ipStr) {
+					resChan <- ipStr
+				}
+			}
+		}(d)
 	}
+
+	go func() {
+		wg.Wait()
+		close(resChan)
+	}()
+
+	var res []string
+	for ip := range resChan {
+		res = append(res, ip)
+	}
+	if len(res) == 0 && ipMaps[domains[0]] != nil {
+		return ipMaps[domains[0]]
+	}
+	ipMapsMutex.Lock()
+	ipMaps[domains[0]] = res
+	ipMapsMutex.Unlock()
+
 	return res
 }
 
@@ -931,18 +974,28 @@ func isBlockedDomain(domain string) bool {
 	if strings.HasPrefix("full:", domain) {
 		return false
 	}
-	ips, err := net.LookupHost(domain)
-	if err != nil {
+	if strings.Contains(domain, "instagram") || strings.Contains(domain, "facebook") || strings.Contains(domain, "telegram") || strings.Contains(domain, "t.me") {
+		return true
+	}
+	ips := getIPs(domain)
+	if len(ips) == 0 {
 		// fmt.Println(err)
 		return true
 	}
 
-	// Print the IP addresses associated with the domain
-	fmt.Printf("IP addresses for %s:\n", domain)
-	for _, ip := range ips {
-		if strings.HasPrefix(ip, "10.") || strings.HasPrefix(ip, "2001:4188:2:600:10") {
-			return true
-		}
+	// // Print the IP addresses associated with the domain
+	// fmt.Printf("IP addresses for %s:\n", domain)
+	// for _, ip := range ips {
+	// 	if isBlockedIP(ip) {
+	// 		return true
+	// 	}
+	// }
+	return false
+}
+
+func isBlockedIP(ip string) bool {
+	if strings.HasPrefix(ip, "10.") || strings.HasPrefix(ip, "2001:4188:2:600:10") {
+		return true
 	}
 	return false
 }

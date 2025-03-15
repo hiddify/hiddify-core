@@ -75,10 +75,11 @@ func StartService(in *StartRequest) (coreResponse *CoreInfoResponse, err error) 
 
 	previousStartRequest = in
 	options, err := BuildConfig(in)
-	saveLastStartRequest(in)
 	if err != nil {
 		return errorWrapper(MessageType_ERROR_BUILDING_CONFIG, err)
 	}
+	saveLastStartRequest(in)
+
 	Log(LogLevel_DEBUG, LogType_CORE, "Main Service pre start")
 	if err := service_manager.OnMainServicePreStart(options); err != nil {
 		return errorWrapper(MessageType_ERROR_EXTENSION, err)
@@ -104,7 +105,11 @@ func StartService(in *StartRequest) (coreResponse *CoreInfoResponse, err error) 
 	if err != nil {
 		return errorWrapper(MessageType_CREATE_SERVICE, err)
 	}
-
+	// for i := 0; i < 10; i++ {
+	// 	if hutils.IsPortInUse(options.Inbounds[0].SocksOptions.ListenPort) {
+	// 		<-time.After(100 * time.Millisecond)
+	// 	}
+	// }
 	Log(LogLevel_DEBUG, LogType_CORE, "Stating Service with delay ?", in.DelayStart)
 	if in.DelayStart {
 		<-time.After(250 * time.Millisecond)

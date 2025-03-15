@@ -79,7 +79,7 @@ require (
 	github.com/google/pprof v0.0.0-20240528025155-186aa0362fba // indirect
 	github.com/gorilla/websocket v1.5.3 // indirect
 	github.com/hashicorp/yamux v0.1.2 // indirect
-	github.com/hiddify/ray2sing v0.0.0-20240804185422-f340989b59a0
+	github.com/hiddify/ray2sing v0.0.0-20250314194602-c5cf020d501f
 	github.com/imkira/go-observer/v2 v2.0.0-20230629064422-8e0b61f11f1b // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/insomniacslk/dhcp v0.0.0-20231206064809-8c70d406f6d2 // indirect
@@ -151,7 +151,7 @@ require (
 	lukechampine.com/blake3 v1.4.0 // indirect
 )
 
-replace github.com/sagernet/sing-box => github.com/hiddify/hiddify-sing-box v1.8.9-0.20250315090918-09766de096ac
+replace github.com/sagernet/sing-box => github.com/hiddify/hiddify-sing-box v1.8.9-0.20250315191500-71d82a69da13
 
 // replace github.com/sagernet/sing-box => ../../hiddify-sing-box
 
@@ -161,4 +161,4 @@ replace github.com/sagernet/wireguard-go => github.com/hiddify/wireguard-go v0.0
 
 replace github.com/bepass-org/warp-plus => github.com/hiddify/warp-plus v0.0.0-20240717223357-4f3122e0d11d
 
-replace github.com/hiddify/ray2sing => github.com/hiddify/ray2sing v0.0.0-20250314194602-c5cf020d501f
+replace github.com/hiddify/ray2sing => github.com/hiddify/ray2sing v0.0.0-20250315191946-8ea87f764ed8

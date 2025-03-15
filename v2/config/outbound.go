@@ -46,17 +46,7 @@ func patchOutboundTLSTricks(base option.Outbound, configOpt HiddifyOptions, obj 
 		tls = base.VMessOptions.OutboundTLSOptionsContainer.TLS
 		transport = base.VMessOptions.Transport
 	}
-	if base.Type == C.TypeXray {
-		if configOpt.TLSTricks.EnableFragment {
-			if obj["xray_fragment"] == nil || obj["xray_fragment"].(map[string]any)["packets"] == "" {
-				obj["xray_fragment"] = map[string]any{
-					"packets":  "tlshello",
-					"length":   configOpt.TLSTricks.FragmentSize,
-					"interval": configOpt.TLSTricks.FragmentSleep,
-				}
-			}
-		}
-	}
+
 	if base.Type == C.TypeDirect {
 		return patchOutboundFragment(base, configOpt, obj)
 	}
@@ -185,6 +175,17 @@ func patchOutboundXray(base option.Outbound, configOpt HiddifyOptions, obj outbo
 			xconfig = map[string]any{"outbounds": xconfig}
 		}
 
+		if configOpt.TLSTricks.EnableFragment {
+			// TODO
+			// if obj["xray_fragment"] == nil || obj["xray_fragment"].(map[string]any)["packets"] == "" {
+			// 	obj["xray_fragment"] = map[string]any{
+			// 		"packets":  "tlshello",
+			// 		"length":   configOpt.TLSTricks.FragmentSize,
+			// 		"interval": configOpt.TLSTricks.FragmentSleep,
+			// 	}
+			// }
+		}
+
 		dnsConfig, ok := xconfig["dns"].(map[string]any)
 		if !ok {
 			dnsConfig = map[string]any{}
@@ -195,6 +196,15 @@ func patchOutboundXray(base option.Outbound, configOpt HiddifyOptions, obj outbo
 		if !ok {
 			servers = []any{}
 		}
+
+		// // Ensure "servers" key exists and is a slice
+		// hosts, ok := dnsConfig["hosts"].([]any)
+		// if !ok {
+		// 	hosts = []any{}
+		// }
+		// for _, host := range base.DNSOptions. {
+		// 	hosts = append(hosts, host)
+		// }
 
 		// Append remote DNS address
 		servers = append(servers, configOpt.DNSOptions.RemoteDnsAddress)
