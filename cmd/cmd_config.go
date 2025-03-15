@@ -170,7 +170,7 @@ func addHConfigFlags(commandRun *cobra.Command) {
 	commandRun.Flags().BoolVar(&defaultConfigs.InboundOptions.EnableTun, "tun", false, "Enable Tun")
 	commandRun.Flags().BoolVar(&defaultConfigs.InboundOptions.EnableTunService, "tun-service", false, "Enable Tun Service")
 	commandRun.Flags().BoolVar(&defaultConfigs.InboundOptions.SetSystemProxy, "system-proxy", false, "Enable System Proxy")
-	commandRun.Flags().Uint16Var(&defaultConfigs.InboundOptions.MixedPort, "in-proxy-port", 2334, "Input Mixed Port")
+	commandRun.Flags().Uint16Var(&defaultConfigs.InboundOptions.MixedPort, "in-proxy-port", 12334, "Input Mixed Port")
 	commandRun.Flags().BoolVar(&defaultConfigs.TLSTricks.EnableFragment, "fragment", false, "Enable Fragment")
 	commandRun.Flags().StringVar(&defaultConfigs.TLSTricks.FragmentSize, "fragment-size", "2-4", "FragmentSize")
 	commandRun.Flags().StringVar(&defaultConfigs.TLSTricks.FragmentSleep, "fragment-sleep", "2-4", "FragmentSleep")

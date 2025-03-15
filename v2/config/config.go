@@ -940,7 +940,7 @@ func isBlockedDomain(domain string) bool {
 	// Print the IP addresses associated with the domain
 	fmt.Printf("IP addresses for %s:\n", domain)
 	for _, ip := range ips {
-		if strings.HasPrefix(ip, "10.") {
+		if strings.HasPrefix(ip, "10.") || strings.HasPrefix(ip, "2001:4188:2:600:10") {
 			return true
 		}
 	}

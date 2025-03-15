@@ -3,6 +3,7 @@ package config
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	C "github.com/sagernet/sing-box/constant"
 	"github.com/sagernet/sing-box/option"
@@ -152,7 +153,7 @@ func patchOutbound(base option.Outbound, configOpt HiddifyOptions, staticIpsDns 
 	case C.TypeVMess, C.TypeVLESS, C.TypeTrojan, C.TypeShadowsocks:
 		obj = patchOutboundMux(base, configOpt, obj)
 	}
-
+	obj = patchOutboundXray(base, configOpt, obj)
 	modifiedJson, err := json.Marshal(obj)
 	if err != nil {
 		return nil, formatErr(err)
@@ -164,6 +165,65 @@ func patchOutbound(base option.Outbound, configOpt HiddifyOptions, staticIpsDns 
 	}
 
 	return &outbound, nil
+}
+
+func patchOutboundXray(base option.Outbound, configOpt HiddifyOptions, obj outboundMap) outboundMap {
+	if base.Type == C.TypeXray {
+		// Handle alternative key "xray_outbound_raw"
+		if rawConfig, exists := obj["xray_outbound_raw"]; exists && rawConfig != nil && rawConfig != "" {
+			obj["xconfig"] = rawConfig
+		}
+
+		// Ensure "xconfig" exists and properly structured
+		xconfig, ok := obj["xconfig"].(map[string]any)
+		if !ok {
+			return obj // Return early if the structure is invalid
+		}
+
+		// Ensure "outbounds" key exists within "xconfig"
+		if _, exists := xconfig["outbounds"]; !exists {
+			xconfig = map[string]any{"outbounds": xconfig}
+		}
+
+		dnsConfig, ok := xconfig["dns"].(map[string]any)
+		if !ok {
+			dnsConfig = map[string]any{}
+		}
+
+		// Ensure "servers" key exists and is a slice
+		servers, ok := dnsConfig["servers"].([]any)
+		if !ok {
+			servers = []any{}
+		}
+
+		// Append remote DNS address
+		servers = append(servers, configOpt.DNSOptions.RemoteDnsAddress)
+
+		// Append direct DNS address if not "local"
+		if configOpt.DNSOptions.DirectDnsAddress != "local" {
+			dnsAdd := configOpt.DNSOptions.DirectDnsAddress
+			if strings.Contains(dnsAdd, "://") {
+				dnsAdd = strings.Replace(dnsAdd, "://", "+local://", 1)
+			} else {
+				dnsAdd = "udp+local://" + dnsAdd
+			}
+			servers = append(servers, dnsAdd)
+		}
+
+		// Append fallback DNS server
+		if configOpt.DNSOptions.DirectDnsAddress != "1.1.1.1" {
+			servers = append(servers, "udp+local://1.1.1.1")
+		}
+
+		// Update "servers" key in "dns"
+		dnsConfig["servers"] = servers
+		dnsConfig["disableFallback"] = false
+		xconfig["dns"] = dnsConfig
+		obj["xconfig"] = xconfig
+		obj["xdebug"] = configOpt.LogLevel == "debug" || configOpt.LogLevel == "trace"
+	}
+
+	return obj
 }
 
 // func (o outboundMap) transportType() string {
