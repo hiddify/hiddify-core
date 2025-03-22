@@ -30,7 +30,11 @@ func (s *CoreService) CoreInfoListener(req *hcommon.Empty, stream grpc.ServerStr
 		return err
 	}
 	defer static.coreInfoObserver.UnSubscribe(coreSub)
-
+	stream.Send(&CoreInfoResponse{
+		CoreState:   static.CoreState,
+		MessageType: MessageType_EMPTY,
+		Message:     "",
+	})
 	for {
 		select {
 		case <-stream.Context().Done():
