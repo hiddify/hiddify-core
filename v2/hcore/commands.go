@@ -215,8 +215,7 @@ func UrlTest(in *UrlTestRequest) (*hcommon.Response, error) {
 		}, E.New("outbound is not a group: ", groupTag)
 	}
 
-	urlTest, isURLTest := abstractOutboundGroup.(*outbound.URLTest)
-	if isURLTest {
+	if urlTest, isURLTest := abstractOutboundGroup.(*outbound.URLTest); isURLTest {
 		go urlTest.CheckOutbounds()
 	} else {
 		historyStorage := static.Box.UrlTestHistory()
