@@ -3,11 +3,9 @@ package hcore
 import (
 	"context"
 	"fmt"
-	"time"
 
 	hcommon "github.com/hiddify/hiddify-core/v2/hcommon"
 	adapter "github.com/sagernet/sing-box/adapter"
-	"github.com/sagernet/sing-box/common/urltest"
 	outbound "github.com/sagernet/sing-box/outbound"
 	common "github.com/sagernet/sing/common"
 	"github.com/sagernet/sing/common/batch"
@@ -200,7 +198,8 @@ func UrlTest(in *UrlTestRequest) (*hcommon.Response, error) {
 	if static.Box == nil {
 		return nil, E.New("service not ready")
 	}
-	abstractOutboundGroup, isLoaded := static.Box.GetInstance().Router().Outbound(groupTag)
+	router := static.Box.GetInstance().Router()
+	abstractOutboundGroup, isLoaded := router.Outbound(groupTag)
 	if !isLoaded {
 		return &hcommon.Response{
 			Code:    hcommon.ResponseCode_FAILED,
@@ -216,11 +215,21 @@ func UrlTest(in *UrlTestRequest) (*hcommon.Response, error) {
 	}
 
 	if urlTest, isURLTest := abstractOutboundGroup.(*outbound.URLTest); isURLTest {
-		go urlTest.CheckOutbounds()
+		go func() {
+			for _, p := range router.Outbounds() {
+				if p.Tag() == groupTag {
+					continue
+				}
+				if group, isGroup := p.(adapter.OutboundGroup); isGroup {
+					urlTest.ForceRecheckOutbound(group.Now())
+				}
+			}
+			urlTest.CheckOutbounds()
+		}()
 	} else {
 		historyStorage := static.Box.UrlTestHistory()
 		outbounds := common.Filter(common.Map(outboundGroup.All(), func(it string) adapter.Outbound {
-			itOutbound, _ := static.Box.GetInstance().Router().Outbound(it)
+			itOutbound, _ := router.Outbound(it)
 			return itOutbound
 		}), func(it adapter.Outbound) bool {
 			if it == nil {
@@ -234,17 +243,8 @@ func UrlTest(in *UrlTestRequest) (*hcommon.Response, error) {
 			outboundToTest := detour
 			outboundTag := outboundToTest.Tag()
 			b.Go(outboundTag, func() (any, error) {
-				t, err := urltest.URLTest(static.Box.Context(), "", outboundToTest)
-				if err != nil {
-					// historyStorage.DeleteURLTestHistory(outboundTag)
-					t = 65535
-				} else {
-				}
-				historyStorage.StoreURLTestHistory(outboundTag, &urltest.History{
-					Time:  time.Now(),
-					Delay: t,
-				})
-
+				instance := static.Box.GetInstance()
+				outbound.CheckOutbound(instance.GetLogger(), static.Box.Context(), historyStorage, router, "", outboundToTest, nil)
 				return nil, nil
 			})
 		}
