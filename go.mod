@@ -155,10 +155,10 @@ replace github.com/sagernet/sing-box => github.com/hiddify/hiddify-sing-box v1.8
 
 // replace github.com/sagernet/sing-box => ../../hiddify-sing-box
 
-replace github.com/xtls/xray-core => github.com/hiddify/xray-core v0.0.0-20250302074410-d8932392ffa9
+replace github.com/xtls/xray-core => github.com/hiddify/xray-core v0.0.0-20250330132203-dec3b7ffc9a5
 
 replace github.com/sagernet/wireguard-go => github.com/hiddify/wireguard-go v0.0.0-20240727191222-383c1da14ff1
 
 replace github.com/bepass-org/warp-plus => github.com/hiddify/warp-plus v0.0.0-20240717223357-4f3122e0d11d
 
-replace github.com/hiddify/ray2sing => github.com/hiddify/ray2sing v0.0.0-20250323112758-e59a65459bd3
+replace github.com/hiddify/ray2sing => github.com/hiddify/ray2sing v0.0.0-20250330175200-02073ca4517e
