@@ -162,6 +162,7 @@ func patchOutboundXray(base option.Outbound, configOpt HiddifyOptions, obj outbo
 		// Handle alternative key "xray_outbound_raw"
 		if rawConfig, exists := obj["xray_outbound_raw"]; exists && rawConfig != nil && rawConfig != "" {
 			obj["xconfig"] = rawConfig
+			delete(obj, "xray_outbound_raw")
 		}
 
 		// Ensure "xconfig" exists and properly structured
