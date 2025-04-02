@@ -101,6 +101,7 @@ func StartService(in *StartRequest) (coreResponse *CoreInfoResponse, err error) 
 	if globalPlatformInterface != nil {
 		bopts.PlatformInterface = libbox.WrapPlatformInterface(globalPlatformInterface)
 	}
+	libbox.SetMemoryLimit(!in.DisableMemoryLimit)
 	instance, err := libbox.NewHService(bopts)
 	if err != nil {
 		return errorWrapper(MessageType_CREATE_SERVICE, err)

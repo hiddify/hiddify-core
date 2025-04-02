@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/hiddify/hiddify-core/v2/config"
-	"github.com/sagernet/sing-box/experimental/libbox"
 	"github.com/sagernet/sing-box/log"
 )
 
@@ -30,7 +29,6 @@ func Restart(in *StartRequest) (coreResponse *CoreInfoResponse, err error) {
 		return resp, err
 	}
 
-	libbox.SetMemoryLimit(!in.DisableMemoryLimit)
 	resp, gErr := StartService(in)
 	return resp, gErr
 }
