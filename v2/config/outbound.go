@@ -173,7 +173,7 @@ func patchOutboundXray(base option.Outbound, configOpt HiddifyOptions, obj outbo
 
 		// Ensure "outbounds" key exists within "xconfig"
 		if _, exists := xconfig["outbounds"]; !exists {
-			xconfig = map[string]any{"outbounds": xconfig}
+			xconfig = map[string]any{"outbounds": []any{xconfig}}
 		}
 
 		if configOpt.TLSTricks.EnableFragment {
