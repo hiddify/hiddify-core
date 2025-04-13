@@ -35,7 +35,8 @@ func BuildConfig(in *StartRequest) (*option.Options, error) {
 		}
 		content = string(fileContent)
 	}
-	Log(LogLevel_DEBUG, LogType_CORE, "Parsing Config... ", in.ConfigPath, " content:", content, "-")
+	// Log(LogLevel_DEBUG, LogType_CORE, "Parsing Config... ", in.ConfigPath, " content:", content, "-")
+	Log(LogLevel_DEBUG, LogType_CORE, "Parsing Config... ")
 
 	parsedContent, err := readOptions(content)
 	Log(LogLevel_DEBUG, LogType_CORE, "Parsed")
@@ -45,14 +46,14 @@ func BuildConfig(in *StartRequest) (*option.Options, error) {
 	}
 
 	if !in.EnableRawConfig {
-		hcontent, err := json.MarshalIndent(static.HiddifyOptions, "", " ")
-		if err != nil {
-			return nil, err
-		}
+		// hcontent, err := json.MarshalIndent(static.HiddifyOptions, "", " ")
+		// if err != nil {
+		// 	return nil, err
+		// }
 
-		Log(LogLevel_DEBUG, LogType_CORE, "Building config ", string(hcontent))
+		// Log(LogLevel_DEBUG, LogType_CORE, "Building config ", string(hcontent))
+		// Log(LogLevel_DEBUG, LogType_CORE, "Building config ")
 		return config.BuildConfig(*static.HiddifyOptions, parsedContent)
-
 	}
 
 	return &parsedContent, nil

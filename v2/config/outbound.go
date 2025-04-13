@@ -143,7 +143,7 @@ func patchOutbound(base option.Outbound, configOpt HiddifyOptions, staticIpsDns 
 	case C.TypeVMess, C.TypeVLESS, C.TypeTrojan, C.TypeShadowsocks:
 		obj = patchOutboundMux(base, configOpt, obj)
 	}
-	obj = patchOutboundXray(base, configOpt, obj)
+	obj = patchOutboundXray(base, configOpt, obj, staticIpsDns)
 	modifiedJson, err := json.Marshal(obj)
 	if err != nil {
 		return nil, formatErr(err)
@@ -157,7 +157,7 @@ func patchOutbound(base option.Outbound, configOpt HiddifyOptions, staticIpsDns 
 	return &outbound, nil
 }
 
-func patchOutboundXray(base option.Outbound, configOpt HiddifyOptions, obj outboundMap) outboundMap {
+func patchOutboundXray(base option.Outbound, configOpt HiddifyOptions, obj outboundMap, staticIpsDns map[string][]string) outboundMap {
 	if base.Type == C.TypeXray {
 		// Handle alternative key "xray_outbound_raw"
 		if rawConfig, exists := obj["xray_outbound_raw"]; exists && rawConfig != nil && rawConfig != "" {
@@ -191,12 +191,24 @@ func patchOutboundXray(base option.Outbound, configOpt HiddifyOptions, obj outbo
 		if !ok {
 			dnsConfig = map[string]any{}
 		}
-
+		if dnsConfig["tag"] == nil {
+			dnsConfig["tag"] = "hiddify-dns-out"
+		}
 		// Ensure "servers" key exists and is a slice
 		servers, ok := dnsConfig["servers"].([]any)
 		if !ok {
 			servers = []any{}
 		}
+
+		// Ensure "hosts" key exists and is a slice
+		// hosts, ok := dnsConfig["hosts"].(map[string]any)
+		// if !ok {
+		// 	hosts = map[string]any{}
+		// }
+		// // for host, ip := range staticIpsDns {
+		// // hosts[host] = ip
+		// // }
+		// dnsConfig["hosts"] = hosts
 
 		// // Ensure "servers" key exists and is a slice
 		// hosts, ok := dnsConfig["hosts"].([]any)
@@ -206,26 +218,64 @@ func patchOutboundXray(base option.Outbound, configOpt HiddifyOptions, obj outbo
 		// for _, host := range base.DNSOptions. {
 		// 	hosts = append(hosts, host)
 		// }
-
-		// Append remote DNS address
-		servers = append(servers, configOpt.DNSOptions.RemoteDnsAddress)
-
-		// Append direct DNS address if not "local"
-		if configOpt.DNSOptions.DirectDnsAddress != "local" {
-			dnsAdd := configOpt.DNSOptions.DirectDnsAddress
-			if strings.Contains(dnsAdd, "://") {
-				dnsAdd = strings.Replace(dnsAdd, "://", "+local://", 1)
+		addDnsServer := func(dnsAdd string) []any {
+			if dnsAdd == "local" {
+				dnsAdd = "localhost"
 			} else {
-				dnsAdd = "udp+local://" + dnsAdd
+				dnsAdd = strings.Replace(dnsAdd, "udp://", "", 1)
+				dnsAdd = strings.Replace(dnsAdd, "://", "+local://", 1)
 			}
-			servers = append(servers, dnsAdd)
+			for _, server := range servers {
+				if server == dnsAdd {
+					return servers
+				}
+			}
+			return append(servers, dnsAdd)
 		}
+		// Append remote DNS address
+		servers = addDnsServer(configOpt.DNSOptions.RemoteDnsAddress)
+		servers = addDnsServer(configOpt.DNSOptions.DirectDnsAddress)
+		servers = addDnsServer("1.1.1.1")
 
-		// Append fallback DNS server
-		if configOpt.DNSOptions.DirectDnsAddress != "1.1.1.1" {
-			servers = append(servers, "udp+local://1.1.1.1")
-		}
+		// if outbounds, ok := xconfig["outbounds"].([]any); ok {
+		// 	hasDns := false
+		// 	for _, out := range outbounds {
+		// 		if outbound, ok := out.(map[string]any); ok {
+		// 			if outbound["tag"] == dnsConfig["tag"] {
+		// 				hasDns = true
+		// 			}
+		// 		}
+		// 	}
+		// 	if !hasDns {
+		// 		outbounds = append(outbounds, map[string]any{
+		// 			"tag":      dnsConfig["tag"],
+		// 			"protocol": "dns",
+		// 		})
+		// 	}
+		// 	xconfig["outbounds"] = outbounds
+		// }
 
+		// Ensure "routing" is a map
+		// routing, ok := xconfig["routing"].(map[string]any)
+		// if !ok {
+		// 	routing = map[string]any{}
+		// }
+
+		// // Ensure "rules" is a slice of maps
+		// rules, ok := routing["rules"].([]map[string]any)
+		// if !ok {
+		// 	rules = []map[string]any{}
+		// }
+
+		// // Append the DNS rule
+		// // rules = append([]map[string]any{{
+		// // 	"type":        "field",
+		// // 	"port":        53,
+		// // 	"outboundTag": dnsConfig["tag"],
+		// // }}, rules...)
+
+		// routing["rules"] = rules
+		// xconfig["routing"] = routing
 		// Update "servers" key in "dns"
 		dnsConfig["servers"] = servers
 		dnsConfig["disableFallback"] = false

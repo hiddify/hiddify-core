@@ -42,7 +42,10 @@ const (
 	InboundDNSTag   = "dns-in"
 )
 
-var OutboundMainProxyTag = OutboundSelectTag
+var (
+	OutboundMainProxyTag   = OutboundSelectTag
+	PredefinedOutboundTags = []string{OutboundDirectTag, OutboundBypassTag, OutboundBlockTag, OutboundSelectTag, OutboundURLTestTag, OutboundDNSTag, OutboundDirectFragmentTag}
+)
 
 func BuildConfigJson(configOpt HiddifyOptions, input option.Options) (string, error) {
 	options, err := BuildConfig(configOpt, input)
@@ -147,6 +150,9 @@ func setOutbounds(options *option.Options, input *option.Options, opt *HiddifyOp
 		outbounds = append(outbounds, *out)
 	}
 	for _, out := range input.Outbounds {
+		if contains(PredefinedOutboundTags, out.Tag) {
+			continue
+		}
 		outbound, err := patchOutbound(out, *opt, options.DNS.StaticIPs)
 		if err != nil {
 			return err
@@ -291,7 +297,7 @@ func setLog(options *option.Options, opt *HiddifyOptions) {
 		Level:        opt.LogLevel,
 		Output:       opt.LogFile,
 		Disabled:     false,
-		Timestamp:    true,
+		Timestamp:    false,
 		DisableColor: true,
 	}
 }
@@ -400,13 +406,14 @@ func setDns(options *option.Options, opt *HiddifyOptions) {
 				AddressResolver: DNSDirectTag,
 				Strategy:        opt.RemoteDnsDomainStrategy,
 				Detour:          OutboundMainProxyTag,
+				// Detour: OutboundDirectTag,
 			},
 			{
-				Tag:     DNSTricksDirectTag,
-				Address: "https://dns.cloudflare.com/dns-query",
-				// AddressResolver: "dns-local",
-				Strategy: opt.DirectDnsDomainStrategy,
-				Detour:   OutboundDirectFragmentTag,
+				Tag:             DNSTricksDirectTag,
+				Address:         "https://dns.cloudflare.com/dns-query",
+				AddressResolver: DNSDirectTag,
+				Strategy:        opt.DirectDnsDomainStrategy,
+				Detour:          OutboundDirectFragmentTag,
 			},
 			{
 				Tag:             DNSDirectTag,
@@ -451,28 +458,16 @@ func setDns(options *option.Options, opt *HiddifyOptions) {
 	}
 
 	wg.Wait()
-	if options.DNS.StaticIPs["dns.cloudflare.com"] == nil {
-		options.DNS.StaticIPs["api.ip.sb"] = options.DNS.StaticIPs["dns.cloudflare.com"]
-		options.DNS.StaticIPs["ipapi.co"] = options.DNS.StaticIPs["dns.cloudflare.com"]
-		options.DNS.StaticIPs["reallyfreegeoip.org"] = options.DNS.StaticIPs["dns.cloudflare.com"]
-		options.DNS.StaticIPs["freeipapi.com"] = options.DNS.StaticIPs["dns.cloudflare.com"]
+	if dnsstr := options.DNS.StaticIPs["dns.cloudflare.com"]; dnsstr != nil {
+		options.DNS.StaticIPs["api.ip.sb"] = dnsstr
+		options.DNS.StaticIPs["ipapi.co"] = dnsstr
+		options.DNS.StaticIPs["reallyfreegeoip.org"] = dnsstr
+		options.DNS.StaticIPs["freeipapi.com"] = dnsstr
 	}
 }
 
 func addForceDirect(options *option.Options, opt *HiddifyOptions) {
 	dnsMap := make(map[string]string)
-
-	remoteDNSAddress := opt.RemoteDnsAddress
-	if strings.Contains(remoteDNSAddress, "://") {
-		remoteDNSAddress = strings.SplitAfter(remoteDNSAddress, "://")[1]
-	}
-	parsedUrl, err := url.Parse(fmt.Sprint("https://", remoteDNSAddress))
-
-	if err == nil {
-		if domain, err := getHostnameIfNotIP(parsedUrl.Host); err == nil {
-			dnsMap[domain] = OutboundDirectTag
-		}
-	}
 
 	for _, outbound := range options.Outbounds {
 		outboundOptions, err := outbound.RawOptions()
@@ -483,12 +478,12 @@ func addForceDirect(options *option.Options, opt *HiddifyOptions) {
 			serverDomain := server.TakeServerOptions().Server
 			detour := OutboundDirectTag
 			if dialer, ok := outboundOptions.(option.DialerOptionsWrapper); ok {
-				if dialer.TakeDialerOptions().Detour != "" {
-					detour = dialer.TakeDialerOptions().Detour
+				if server_detour := dialer.TakeDialerOptions().Detour; server_detour != "" {
+					detour = server_detour
 				}
 			}
-			host, err := getHostnameIfNotIP(serverDomain)
-			if err == nil {
+
+			if host, err := getHostnameIfNotIP(serverDomain); err == nil {
 				if _, ok := dnsMap[host]; !ok || detour == OutboundDirectTag {
 					dnsMap[host] = detour
 				}
@@ -519,7 +514,9 @@ func addForceDirect(options *option.Options, opt *HiddifyOptions) {
 					domains = append(domains, domain)
 				}
 			}
-
+			if len(domains) == 0 {
+				continue
+			}
 			options.DNS.Rules = append(options.DNS.Rules, option.DNSRule{
 				Type: C.RuleTypeDefault,
 				DefaultOptions: option.DefaultDNSRule{
@@ -570,18 +567,20 @@ func setRoutingOptions(options *option.Options, opt *HiddifyOptions) {
 	rulesets := []option.RuleSet{}
 
 	if opt.EnableTun && runtime.GOOS == "android" {
-		routeRules = append(
-			routeRules,
-			option.Rule{
-				Type: C.RuleTypeDefault,
+		// routeRules = append(
+		// 	routeRules,
+		// 	option.Rule{
+		// 		Type: C.RuleTypeDefault,
 
-				DefaultOptions: option.DefaultRule{
-					Inbound:     []string{InboundTUNTag},
-					PackageName: []string{"app.hiddify.com"},
-					Outbound:    OutboundBypassTag,
-				},
-			},
-		)
+		// 		DefaultOptions: option.DefaultRule{
+		// 			Inbound:     []string{InboundTUNTag},
+		// 			PackageName: []string{"app.hiddify.com"},
+		// 			Outbound:    OutboundBypassTag,
+		// 		},
+		// 	},
+		// )
+	}
+	if opt.EnableTun && runtime.GOOS == "windows" {
 		// routeRules = append(
 		// 	routeRules,
 		// 	option.Rule{

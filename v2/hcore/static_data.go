@@ -1,6 +1,8 @@
 package hcore
 
 import (
+	"sync"
+
 	"github.com/hiddify/hiddify-core/v2/config"
 	"github.com/sagernet/sing-box/experimental/libbox"
 	"github.com/sagernet/sing-box/log"
@@ -18,6 +20,7 @@ type HiddifyInstance struct {
 	systemInfoObserver        *observable.Observer[*SystemInfo]
 	outboundsInfoObserver     *observable.Observer[*OutboundGroupList]
 	mainOutboundsInfoObserver *observable.Observer[*OutboundGroupList]
+	lock                      sync.Mutex
 }
 
 var static = &HiddifyInstance{

@@ -3,6 +3,7 @@ package hcore
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"path/filepath"
 	"time"
 
@@ -66,6 +67,12 @@ func StartService(in *StartRequest) (coreResponse *CoreInfoResponse, err error) 
 	defer config.DeferPanicToError("startmobile", func(recovered_err error) {
 		coreResponse, err = errorWrapper(MessageType_UNEXPECTED_ERROR, recovered_err)
 	})
+	static.lock.Lock()
+	defer static.lock.Unlock()
+
+	if static.CoreState != CoreStates_STOPPED {
+		return errorWrapper(MessageType_ALREADY_STARTED, fmt.Errorf("instance already started"))
+	}
 	SetCoreStatus(CoreStates_STARTING, MessageType_EMPTY, "")
 
 	in, err = loadLastStartRequestIfNeeded(in)
