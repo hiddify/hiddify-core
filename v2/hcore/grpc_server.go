@@ -23,6 +23,7 @@ import (
 	"google.golang.org/grpc/credentials"
 
 	"github.com/hiddify/hiddify-core/v2/db"
+	_ "google.golang.org/grpc/encoding/gzip"
 )
 
 type CoreService struct {

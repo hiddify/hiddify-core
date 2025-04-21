@@ -4,6 +4,7 @@ import "google/protobuf/timestamp.proto";
 
 package hcore;
 option go_package = "github.com/hiddify/hiddify-core/v2/hcore";
+option java_package = "com.hiddify.core.api.v2.hcore";
 
 
 enum CoreStates {
@@ -44,6 +45,7 @@ message StartRequest {
   bool delay_start = 4;
   bool enable_old_command_server = 5;
   bool enable_raw_config = 6;
+  string config_name = 7; 
 }
 
 
@@ -77,6 +79,8 @@ message SystemInfo {
   int64 downlink = 7;
   int64 uplink_total = 8;
   int64 downlink_total = 9;
+  string current_outbound = 10;
+  string current_profile = 11;
 }
 
 message OutboundInfo {

@@ -3,6 +3,7 @@ import "v2/hcommon/common.proto";
 package hcore;
 
 option go_package = "github.com/hiddify/hiddify-core/v2/hcore";
+option java_package = "com.hiddify.core.api.v2.hcore";
 import "v2/hcore/hcore.proto";
 
 service Core {

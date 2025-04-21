@@ -3,50 +3,81 @@ package hcore
 import (
 	"context"
 	"fmt"
+	"runtime"
+	"time"
 
+	"github.com/hiddify/hiddify-core/v2/config"
+	"github.com/hiddify/hiddify-core/v2/db"
 	hcommon "github.com/hiddify/hiddify-core/v2/hcommon"
 	adapter "github.com/sagernet/sing-box/adapter"
+	"github.com/sagernet/sing-box/common/conntrack"
+	"github.com/sagernet/sing-box/experimental/clashapi"
 	outbound "github.com/sagernet/sing-box/outbound"
 	common "github.com/sagernet/sing/common"
 	"github.com/sagernet/sing/common/batch"
 	E "github.com/sagernet/sing/common/exceptions"
+	"github.com/sagernet/sing/common/memory"
 	"google.golang.org/grpc"
 )
 
+func readStatus(prev *SystemInfo) *SystemInfo {
+	var message SystemInfo
+	message.Memory = int64(memory.Inuse())
+	message.Goroutines = int32(runtime.NumGoroutine())
+	message.ConnectionsOut = int32(conntrack.Count())
+
+	if static.Box != nil {
+		if clashServer := static.Box.GetInstance().Router().ClashServer(); clashServer != nil {
+			message.TrafficAvailable = true
+			trafficManager := clashServer.(*clashapi.Server).TrafficManager()
+			message.UplinkTotal, message.DownlinkTotal = trafficManager.Total()
+			message.ConnectionsIn = int32(trafficManager.ConnectionsLen())
+			if prev != nil {
+				message.Uplink = message.UplinkTotal - prev.UplinkTotal
+				message.Downlink = message.DownlinkTotal - prev.DownlinkTotal
+			}
+		}
+
+		if currentOutBound, ok := static.Box.GetInstance().Router().Outbound(config.OutboundSelectTag); ok {
+			if selectOutBound, ok := currentOutBound.(*outbound.Selector); ok {
+				message.CurrentOutbound = TrimTagName(selectOutBound.Now())
+			}
+		}
+		if message.CurrentOutbound == config.OutboundURLTestTag {
+			if currentOutBound, ok := static.Box.GetInstance().Router().Outbound(config.OutboundURLTestTag); ok {
+				if urltest, ok := currentOutBound.(*outbound.URLTest); ok {
+					message.CurrentOutbound = fmt.Sprint(message.CurrentOutbound, "→", TrimTagName(urltest.Now()))
+				}
+			}
+		}
+
+		if prev == nil || prev.CurrentProfile == "" {
+			settings := db.GetTable[hcommon.AppSettings]()
+			lastName, err := settings.Get("lastStartRequestName")
+			if err == nil {
+				message.CurrentProfile = lastName.Value.(string)
+			}
+		} else {
+			message.CurrentProfile = prev.CurrentProfile
+		}
+	}
+
+	return &message
+}
+
 func (s *CoreService) GetSystemInfo(req *hcommon.Empty, stream grpc.ServerStreamingServer[SystemInfo]) error {
-	return fmt.Errorf("not implemented yet")
-	// if statusClient == nil {
-	// 	statusClient = libbox.NewCommandClient(
-	// 		&CommandClientHandler{
-	// 			command: libbox.CommandStatus,
-	// 			// port:   s.port,
-	// 		},
-	// 		&libbox.CommandClientOptions{
-	// 			Command:        libbox.CommandStatus,
-	// 			StatusInterval: 1000000000, // 1000ms debounce
-	// 		},
-	// 	)
-
-	// 	defer func() {
-	// 		statusClient.Disconnect()
-	// 		statusClient = nil
-	// 	}()
-	// 	statusClient.Connect()
-	// }
-
-	// sub, done, _ := static.systemInfoObserver.Subscribe()
-
-	// for {
-	// 	select {
-	// 	case <-stream.Context().Done():
-	// 		return nil
-	// 	case <-done:
-	// 		return nil
-	// 	case info := <-sub:
-	// 		stream.Send(info)
-	// 		// case <-time.After(1000 * time.Millisecond):
-	// 	}
-	// }
+	// return fmt.Errorf("not implemented yet")
+	ticker := time.NewTicker(time.Duration(1 * time.Second))
+	current_status := readStatus(nil)
+	for {
+		select {
+		case <-stream.Context().Done():
+			return nil
+		case <-ticker.C:
+			current_status = readStatus(current_status)
+			stream.Send(current_status)
+		}
+	}
 }
 
 // func (s *CoreService) OutboundsInfo(req *hcommon.Empty, stream grpc.ServerStreamingServer[OutboundGroupList]) error {

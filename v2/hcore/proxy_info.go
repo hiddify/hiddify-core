@@ -2,6 +2,7 @@ package hcore
 
 import (
 	"strings"
+	"time"
 
 	hcommon "github.com/hiddify/hiddify-core/v2/hcommon"
 	"github.com/sagernet/sing-box/adapter"
@@ -87,7 +88,7 @@ func GetAllProxiesInfo(onlyGroupitems bool) *OutboundGroupList {
 
 			group.Items = append(group.Items, pinfo)
 			pinfo.IsVisible = !strings.Contains(itemTag, "§hide§")
-			pinfo.TagDisplay = strings.Trim(strings.Split(itemTag, "§")[0], " ")
+			pinfo.TagDisplay = TrimTagName(itemTag)
 		}
 		if len(group.Items) == 0 {
 			continue
@@ -96,6 +97,10 @@ func GetAllProxiesInfo(onlyGroupitems bool) *OutboundGroupList {
 	}
 
 	return &groups
+}
+
+func TrimTagName(tag string) string {
+	return strings.Trim(strings.Split(tag, "§")[0], " ")
 }
 
 func (s *CoreService) OutboundsInfo(req *hcommon.Empty, stream grpc.ServerStreamingServer[OutboundGroupList]) error {
@@ -129,7 +134,7 @@ func AllProxiesInfoStream(stream grpc.ServerStreamingServer[OutboundGroupList], 
 				}
 			}
 			stream.Send(GetAllProxiesInfo(onlyMain))
-			// case <-time.After(500 * time.Millisecond):
+		case <-time.After(500 * time.Millisecond):
 		}
 	}
 }

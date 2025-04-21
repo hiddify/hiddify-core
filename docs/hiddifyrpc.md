@@ -513,6 +513,7 @@ Define the message equivalent of SetupParameters
 | delay_start | [bool](#bool) |  |  |
 | enable_old_command_server | [bool](#bool) |  |  |
 | enable_raw_config | [bool](#bool) |  |  |
+| config_name | [string](#string) |  |  |
 
 
 
@@ -546,6 +547,8 @@ Define the message equivalent of SetupParameters
 | downlink | [int64](#int64) |  |  |
 | uplink_total | [int64](#int64) |  |  |
 | downlink_total | [int64](#int64) |  |  |
+| current_outbound | [string](#string) |  |  |
+| current_profile | [string](#string) |  |  |
 
 
 

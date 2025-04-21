@@ -21,7 +21,7 @@ func getDB(name string, readOnly bool) (tmdb.DB, error) {
 		readOnly = false
 	}
 	const retryAttempts = 100
-	const retryDelay = 100 * time.Microsecond
+	const retryDelay = 50 * time.Millisecond
 
 	var db tmdb.DB
 	var err error
