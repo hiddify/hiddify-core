@@ -43,26 +43,26 @@ jobs:
       matrix:
         job:
           - { name: 'hiddify-core-android', os: 'ubuntu-latest', target: 'android' }
-          - { name: 'hiddify-core-linux-amd64', os: 'ubuntu-20.04', target: 'linux-amd64' }
+          - { name: 'hiddify-core-linux-amd64', os: 'ubuntu-22.04', target: 'linux-amd64' }
           - { name: 'hiddify-core-linux-arm64', os: 'ubuntu-24.04-arm', target: 'linux-arm64' }
           - { name: "hiddify-core-windows-amd64", os: 'ubuntu-latest', target: 'windows-amd64', aarch: 'x64' }
           - { name: "hiddify-core-macos", os: 'macos-13', target: 'macos' }
           - { name: "hiddify-core-ios", os: "macos-13", target: "ios" }
           # linux custom
-          - {name: hiddify-cli-linux-amd64, goos: linux, goarch: amd64, goamd64: v1, target: 'linux-custom', os: 'ubuntu-20.04'}
-          - {name: hiddify-cli-linux-amd64-v3, goos: linux, goarch: amd64, goamd64: v3, target: 'linux-custom', os: 'ubuntu-20.04'}
-          - {name: hiddify-cli-linux-386, goos: linux, goarch: 386, target: 'linux-custom', os: 'ubuntu-20.04'}
-          - {name: hiddify-cli-linux-arm64, goos: linux, goarch: arm64, target: 'linux-custom', os: 'ubuntu-20.04'}
-          - {name: hiddify-cli-linux-armv5, goos: linux, goarch: arm, goarm: 5, target: 'linux-custom', os: 'ubuntu-20.04'}
-          - {name: hiddify-cli-linux-armv6, goos: linux, goarch: arm, goarm: 6, target: 'linux-custom', os: 'ubuntu-20.04'}
-          - {name: hiddify-cli-linux-armv7, goos: linux, goarch: arm, goarm: 7, target: 'linux-custom', os: 'ubuntu-20.04'}
-          - {name: hiddify-cli-linux-mips-softfloat, goos: linux, goarch: mips, gomips: softfloat, target: 'linux-custom', os: 'ubuntu-20.04'}
-          - {name: hiddify-cli-linux-mips-hardfloat, goos: linux, goarch: mips, gomips: hardfloat, target: 'linux-custom', os: 'ubuntu-20.04'}
-          - {name: hiddify-cli-linux-mipsel-softfloat, goos: linux, goarch: mipsle, gomips: softfloat, target: 'linux-custom', os: 'ubuntu-20.04'}
-          - {name: hiddify-cli-linux-mipsel-hardfloat, goos: linux, goarch: mipsle, gomips: hardfloat, target: 'linux-custom', os: 'ubuntu-20.04'}
-          - {name: hiddify-cli-linux-mips64, goos: linux, goarch: mips64, target: 'linux-custom', os: 'ubuntu-20.04'}
-          - {name: hiddify-cli-linux-mips64el, goos: linux, goarch: mips64le, target: 'linux-custom', os: 'ubuntu-20.04'}
-          - {name: hiddify-cli-linux-s390x, goos: linux, goarch: s390x, target: 'linux-custom', os: 'ubuntu-20.04'}
+          - {name: hiddify-cli-linux-amd64, goos: linux, goarch: amd64, goamd64: v1, target: 'linux-custom', os: 'ubuntu-22.04'}
+          - {name: hiddify-cli-linux-amd64-v3, goos: linux, goarch: amd64, goamd64: v3, target: 'linux-custom', os: 'ubuntu-22.04'}
+          - {name: hiddify-cli-linux-386, goos: linux, goarch: 386, target: 'linux-custom', os: 'ubuntu-22.04'}
+          - {name: hiddify-cli-linux-arm64, goos: linux, goarch: arm64, target: 'linux-custom', os: 'ubuntu-22.04'}
+          - {name: hiddify-cli-linux-armv5, goos: linux, goarch: arm, goarm: 5, target: 'linux-custom', os: 'ubuntu-22.04'}
+          - {name: hiddify-cli-linux-armv6, goos: linux, goarch: arm, goarm: 6, target: 'linux-custom', os: 'ubuntu-22.04'}
+          - {name: hiddify-cli-linux-armv7, goos: linux, goarch: arm, goarm: 7, target: 'linux-custom', os: 'ubuntu-22.04'}
+          - {name: hiddify-cli-linux-mips-softfloat, goos: linux, goarch: mips, gomips: softfloat, target: 'linux-custom', os: 'ubuntu-22.04'}
+          - {name: hiddify-cli-linux-mips-hardfloat, goos: linux, goarch: mips, gomips: hardfloat, target: 'linux-custom', os: 'ubuntu-22.04'}
+          - {name: hiddify-cli-linux-mipsel-softfloat, goos: linux, goarch: mipsle, gomips: softfloat, target: 'linux-custom', os: 'ubuntu-22.04'}
+          - {name: hiddify-cli-linux-mipsel-hardfloat, goos: linux, goarch: mipsle, gomips: hardfloat, target: 'linux-custom', os: 'ubuntu-22.04'}
+          - {name: hiddify-cli-linux-mips64, goos: linux, goarch: mips64, target: 'linux-custom', os: 'ubuntu-22.04'}
+          - {name: hiddify-cli-linux-mips64el, goos: linux, goarch: mips64le, target: 'linux-custom', os: 'ubuntu-22.04'}
+          - {name: hiddify-cli-linux-s390x, goos: linux, goarch: s390x, target: 'linux-custom', os: 'ubuntu-22.04'}
     
     runs-on: ${{ matrix.job.os }}
     env:
