@@ -161,4 +161,4 @@ replace github.com/sagernet/wireguard-go => github.com/hiddify/wireguard-go v0.0
 
 replace github.com/bepass-org/warp-plus => github.com/hiddify/warp-plus v0.0.0-20240717223357-4f3122e0d11d
 
-replace github.com/hiddify/ray2sing => github.com/hiddify/ray2sing v0.0.0-20250412163213-79113b9cbf01
+replace github.com/hiddify/ray2sing => github.com/hiddify/ray2sing v0.0.0-20250421090415-3f7c0fc24042
