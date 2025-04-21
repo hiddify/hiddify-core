@@ -9,19 +9,11 @@ Additional Permissions and Restrictions Under GNU GPL Version 3 Section 7
 
 - Any forks should be published open-source under the same license.
 
-- Prior consent is required to publish a fork or utilize any part of this repository (github.com/hiddify/hiddify-next and github.com/hiddify/hiddify-next-core) in an application intended for publication on the App Store or for iOS/macOS platforms. (We reserve the right to modify this requirement in the future after completing development for iOS and macOS).
-- You need prior consent to publish a fork or use any part of this code in an application published in AppStore or publish for iOS or macOS. (We reserve the right to modify this requirement in the future after completing development for iOS and macOS).
-- You are free to:
-  - Share — copy and redistribute the material in any medium or format with 
-  - Adapt — remix, transform, and build upon the material
-- Under the following terms:
-  - Attribution — You must give appropriate credit, provide a link to the license, and indicate if changes were made. You may do so in any reasonable manner, but not in any way that suggests the licensor endorses you or your use.
+— You must give appropriate credit, provide a link to the license, and indicate if changes were made. You may do so in any reasonable manner, but not in any way that suggests the licensor endorses you or your use.
 
-  - NonCommercial — You may not use the material for commercial purposes. You can not even include ads in it.
+- NonCommercial — You may not use the material for commercial purposes. You can not even include ads in it.
   
-  - ShareAlike — If you remix, transform, or build upon the material, you must distribute your contributions under the same license as the original.
- 
-  - Prior consent is required before utilizing any portion of this code for integration into an application intended for the App Store.
+- ShareAlike — If you remix, transform, or build upon the material, you must distribute your contributions under the same license as the original.
 
                     GNU GENERAL PUBLIC LICENSE
                        Version 3, 29 June 2007
