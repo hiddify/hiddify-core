@@ -90,7 +90,7 @@ func StartService(in *StartRequest) (coreResponse *CoreInfoResponse, err error) 
 		return errorWrapper(MessageType_ERROR_BUILDING_CONFIG, err)
 	}
 
-	previousStartRequest = in
+	static.previousStartRequest = in
 	options, err := BuildConfig(in)
 	if err != nil {
 		return errorWrapper(MessageType_ERROR_BUILDING_CONFIG, err)
@@ -115,8 +115,8 @@ func StartService(in *StartRequest) (coreResponse *CoreInfoResponse, err error) 
 		Options:           *options,
 		PlatformLogWriter: &LogInterface{},
 	}
-	if globalPlatformInterface != nil {
-		bopts.PlatformInterface = libbox.WrapPlatformInterface(globalPlatformInterface)
+	if static.globalPlatformInterface != nil {
+		bopts.PlatformInterface = libbox.WrapPlatformInterface(static.globalPlatformInterface)
 	}
 	libbox.SetMemoryLimit(!in.DisableMemoryLimit)
 	instance, err := libbox.NewHService(bopts)
@@ -130,7 +130,7 @@ func StartService(in *StartRequest) (coreResponse *CoreInfoResponse, err error) 
 	// }
 	Log(LogLevel_DEBUG, LogType_CORE, "Stating Service with delay ?", in.DelayStart)
 	if in.DelayStart {
-		<-time.After(250 * time.Millisecond)
+		<-time.After(1000 * time.Millisecond)
 	}
 
 	instance.GetInstance().AddPostService("hiddifyMainServiceManager", &hiddifyMainServiceManager{})

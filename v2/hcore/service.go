@@ -26,13 +26,11 @@ import (
 )
 
 var (
-	sWorkingPath            string
-	sTempPath               string
-	sUserID                 int
-	sGroupID                int
-	statusPropagationPort   int64
-	globalPlatformInterface libbox.PlatformInterface
-	previousStartRequest    *StartRequest
+	sWorkingPath          string
+	sTempPath             string
+	sUserID               int
+	sGroupID              int
+	statusPropagationPort int64
 )
 
 func InitHiddifyService() error {
@@ -56,7 +54,7 @@ func Setup(params *SetupRequest, platformInterface libbox.PlatformInterface) err
 		Log(LogLevel_FATAL, LogType_CORE, err.Error())
 		<-time.After(5 * time.Second)
 	})
-	globalPlatformInterface = platformInterface
+	static.globalPlatformInterface = platformInterface
 	if grpcServer[params.Mode] != nil {
 		Log(LogLevel_WARNING, LogType_CORE, "grpcServer already started")
 		return nil

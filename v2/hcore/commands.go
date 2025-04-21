@@ -51,7 +51,7 @@ func readStatus(prev *SystemInfo) *SystemInfo {
 			}
 		}
 
-		if prev == nil || prev.CurrentProfile == "" {
+		if prev == nil || prev.CurrentProfile == "" || message.UplinkTotal < 1000000 {
 			settings := db.GetTable[hcommon.AppSettings]()
 			lastName, err := settings.Get("lastStartRequestName")
 			if err == nil {

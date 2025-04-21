@@ -21,6 +21,8 @@ type HiddifyInstance struct {
 	outboundsInfoObserver     *observable.Observer[*OutboundGroupList]
 	mainOutboundsInfoObserver *observable.Observer[*OutboundGroupList]
 	lock                      sync.Mutex
+	globalPlatformInterface   libbox.PlatformInterface
+	previousStartRequest      *StartRequest
 }
 
 var static = &HiddifyInstance{
