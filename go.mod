@@ -151,13 +151,13 @@ require (
 	lukechampine.com/blake3 v1.4.0 // indirect
 )
 
-replace github.com/sagernet/sing-box => github.com/hiddify/hiddify-sing-box v1.8.9-0.20250413182537-758ba0581053
+replace github.com/sagernet/sing-box => github.com/hiddify/hiddify-sing-box v1.8.9-0.20250427171527-75d1f520c1d0
 
 // replace github.com/sagernet/sing-box => ../../hiddify-sing-box
 
 replace github.com/xtls/xray-core => github.com/hiddify/xray-core v0.0.0-20250413171226-57bd02ee2c86
 
-replace github.com/sagernet/wireguard-go => github.com/hiddify/wireguard-go v0.0.0-20240727191222-383c1da14ff1
+replace github.com/sagernet/wireguard-go => github.com/hiddify/wireguard-go v0.0.0-20250427083853-fa9271bf7486
 
 replace github.com/bepass-org/warp-plus => github.com/hiddify/warp-plus v0.0.0-20240717223357-4f3122e0d11d
 
