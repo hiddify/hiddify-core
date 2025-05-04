@@ -277,7 +277,7 @@ func setClashAPI(options *option.Options, opt *HiddifyOptions) {
 			},
 
 			CacheFile: &option.CacheFileOptions{
-				Enabled: false,
+				Enabled: true,
 				Path:    "clash.db",
 			},
 		}
