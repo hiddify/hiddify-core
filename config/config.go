@@ -594,7 +594,7 @@ func setRoutingOptions(options *option.Options, opt *HiddifyOptions) {
 			Tag:    "geosite-ads",
 			Format: C.RuleSetFormatBinary,
 			RemoteOptions: option.RemoteRuleSet{
-				URL:            "https://gh.api.99988866.xyz/https://raw.githubusercontent.com/hiddify/hiddify-geo/rule-set/block/geosite-category-ads-all.srs",
+				URL:            "https://gh-proxy.com/raw.githubusercontent.com/hiddify/hiddify-geo/rule-set/block/geosite-category-ads-all.srs",
 				UpdateInterval: option.Duration(5 * time.Hour * 24),
 			},
 		})
@@ -603,7 +603,7 @@ func setRoutingOptions(options *option.Options, opt *HiddifyOptions) {
 			Tag:    "geosite-malware",
 			Format: C.RuleSetFormatBinary,
 			RemoteOptions: option.RemoteRuleSet{
-				URL:            "https://gh.api.99988866.xyz/https://raw.githubusercontent.com/hiddify/hiddify-geo/rule-set/block/geosite-malware.srs",
+				URL:            "https://gh-proxy.com/raw.githubusercontent.com/hiddify/hiddify-geo/rule-set/block/geosite-malware.srs",
 				UpdateInterval: option.Duration(5 * time.Hour * 24),
 			},
 		})
@@ -612,7 +612,7 @@ func setRoutingOptions(options *option.Options, opt *HiddifyOptions) {
 			Tag:    "geosite-phishing",
 			Format: C.RuleSetFormatBinary,
 			RemoteOptions: option.RemoteRuleSet{
-				URL:            "https://gh.api.99988866.xyz/https://raw.githubusercontent.com/hiddify/hiddify-geo/rule-set/block/geosite-phishing.srs",
+				URL:            "https://gh-proxy.com/raw.githubusercontent.com/hiddify/hiddify-geo/rule-set/block/geosite-phishing.srs",
 				UpdateInterval: option.Duration(5 * time.Hour * 24),
 			},
 		})
@@ -621,7 +621,7 @@ func setRoutingOptions(options *option.Options, opt *HiddifyOptions) {
 			Tag:    "geosite-cryptominers",
 			Format: C.RuleSetFormatBinary,
 			RemoteOptions: option.RemoteRuleSet{
-				URL:            "https://gh.api.99988866.xyz/https://raw.githubusercontent.com/hiddify/hiddify-geo/rule-set/block/geosite-cryptominers.srs",
+				URL:            "https://gh-proxy.com/raw.githubusercontent.com/hiddify/hiddify-geo/rule-set/block/geosite-cryptominers.srs",
 				UpdateInterval: option.Duration(5 * time.Hour * 24),
 			},
 		})
@@ -630,7 +630,7 @@ func setRoutingOptions(options *option.Options, opt *HiddifyOptions) {
 			Tag:    "geoip-phishing",
 			Format: C.RuleSetFormatBinary,
 			RemoteOptions: option.RemoteRuleSet{
-				URL:            "https://gh.api.99988866.xyz/https://raw.githubusercontent.com/hiddify/hiddify-geo/rule-set/block/geoip-phishing.srs",
+				URL:            "https://gh-proxy.com/raw.githubusercontent.com/hiddify/hiddify-geo/rule-set/block/geoip-phishing.srs",
 				UpdateInterval: option.Duration(5 * time.Hour * 24),
 			},
 		})
@@ -639,7 +639,7 @@ func setRoutingOptions(options *option.Options, opt *HiddifyOptions) {
 			Tag:    "geoip-malware",
 			Format: C.RuleSetFormatBinary,
 			RemoteOptions: option.RemoteRuleSet{
-				URL:            "https://gh.api.99988866.xyz/https://raw.githubusercontent.com/hiddify/hiddify-geo/rule-set/block/geoip-malware.srs",
+				URL:            "https://gh-proxy.com/raw.githubusercontent.com/hiddify/hiddify-geo/rule-set/block/geoip-malware.srs",
 				UpdateInterval: option.Duration(5 * time.Hour * 24),
 			},
 		})
@@ -697,7 +697,7 @@ func setRoutingOptions(options *option.Options, opt *HiddifyOptions) {
 			Tag:    "geoip-" + opt.Region,
 			Format: C.RuleSetFormatBinary,
 			RemoteOptions: option.RemoteRuleSet{
-				URL:            "https://gh.api.99988866.xyz/https://raw.githubusercontent.com/hiddify/hiddify-geo/rule-set/country/geoip-" + opt.Region + ".srs",
+				URL:            "https://gh-proxy.com/raw.githubusercontent.com/hiddify/hiddify-geo/rule-set/country/geoip-" + opt.Region + ".srs",
 				UpdateInterval: option.Duration(5 * time.Hour * 24),
 			},
 		})
@@ -706,7 +706,7 @@ func setRoutingOptions(options *option.Options, opt *HiddifyOptions) {
 			Tag:    "geosite-" + opt.Region,
 			Format: C.RuleSetFormatBinary,
 			RemoteOptions: option.RemoteRuleSet{
-				URL:            "https://gh.api.99988866.xyz/https://raw.githubusercontent.com/hiddify/hiddify-geo/rule-set/country/geosite-" + opt.Region + ".srs",
+				URL:            "https://gh-proxy.com/raw.githubusercontent.com/hiddify/hiddify-geo/rule-set/country/geosite-" + opt.Region + ".srs",
 				UpdateInterval: option.Duration(5 * time.Hour * 24),
 			},
 		})
