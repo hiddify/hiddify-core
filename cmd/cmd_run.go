@@ -1,7 +1,7 @@
 package cmd
 
 import (
-	v2 "github.com/hiddify/hiddify-core/v2"
+	hcore "github.com/hiddify/hiddify-core/v2/hcore"
 
 	"github.com/spf13/cobra"
 )
@@ -23,6 +23,27 @@ func init() {
 }
 
 func runCommand(cmd *cobra.Command, args []string) {
-	v2.Setup("./tmp", "./", "./tmp", 0, false)
-	v2.RunStandalone(hiddifySettingPath, configPath, defaultConfigs)
+	hcore.Setup(
+		&hcore.SetupRequest{
+			BasePath:          "./tmp",
+			WorkingDir:        "./",
+			TempDir:           "./tmp",
+			FlutterStatusPort: 0,
+			Debug:             false,
+			Mode:              hcore.SetupMode_GRPC_NORMAL_INSECURE,
+			Listen:            "127.0.0.1:17078",
+		}, nil,
+	)
+	// conn, err := grpc.Dial("127.0.0.1:17078", grpc.WithInsecure())
+	// if err != nil {
+	// 	fmt.Printf("did not connect: %v", err)
+	// }
+	// defer conn.Close()
+	// c := hello.NewHelloClient(conn)
+	// ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	// defer cancel()
+	// res, err := c.SayHello(ctx, &hello.HelloRequest{Name: "test"})
+	// fmt.Println(res, err)
+	// <-time.After(10 * time.Second)
+	hcore.RunStandalone(hiddifySettingPath, configPath, defaultConfigs)
 }

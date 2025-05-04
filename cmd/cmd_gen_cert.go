@@ -3,7 +3,7 @@ package cmd
 import (
 	"os"
 
-	"github.com/hiddify/hiddify-core/utils"
+	"github.com/hiddify/hiddify-core/v2/hutils"
 	"github.com/spf13/cobra"
 )
 
@@ -15,7 +15,7 @@ var commandGenerateCertification = &cobra.Command{
 		if err != nil {
 			panic("Error: " + err.Error())
 		}
-		utils.GenerateCertificate("cert/server-cert.pem", "cert/server-key.pem", true, true)
-		utils.GenerateCertificate("cert/client-cert.pem", "cert/client-key.pem", false, true)
+		hutils.GenerateCertificateFile("data/cert/server-cert.pem", "data/cert/server-key.pem", true, true)
+		hutils.GenerateCertificateFile("data/cert/client-cert.pem", "data/cert/client-key.pem", false, true)
 	},
 }

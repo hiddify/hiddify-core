@@ -3,6 +3,7 @@
 .build
 .idea
 cert
+data
 **/*.log
 .DS_Store
 

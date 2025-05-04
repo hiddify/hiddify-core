@@ -5,7 +5,7 @@ import (
 	"os/signal"
 	"syscall"
 
-	v2 "github.com/hiddify/hiddify-core/v2"
+	hcore "github.com/hiddify/hiddify-core/v2/hcore"
 	"github.com/sagernet/sing-box/log"
 	"github.com/spf13/cobra"
 )
@@ -17,14 +17,14 @@ var commandInstance = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		hiddifySetting := defaultConfigs
 		if hiddifySettingPath != "" {
-			hiddifySetting2, err := v2.ReadHiddifyOptionsAt(hiddifySettingPath)
+			hiddifySetting2, err := hcore.ReadHiddifyOptionsAt(hiddifySettingPath)
 			if err != nil {
 				log.Fatal(err)
 			}
 			hiddifySetting = *hiddifySetting2
 		}
 
-		instance, err := v2.RunInstanceString(&hiddifySetting, configPath)
+		instance, err := hcore.RunInstanceString(&hiddifySetting, configPath)
 		if err != nil {
 			log.Fatal(err)
 		}

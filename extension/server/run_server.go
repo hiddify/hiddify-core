@@ -10,20 +10,31 @@ import (
 	"sync"
 	"syscall"
 
-	v2 "github.com/hiddify/hiddify-core/v2"
-
-	"github.com/hiddify/hiddify-core/utils"
+	hcore "github.com/hiddify/hiddify-core/v2/hcore"
+	"github.com/hiddify/hiddify-core/v2/hutils"
 	"github.com/improbable-eng/grpc-web/go/grpcweb"
 	"google.golang.org/grpc"
 )
 
 func StartTestExtensionServer() {
-	v2.Setup("./tmp", "./", "./tmp", 0, false)
+	hcore.Setup(
+		&hcore.SetupRequest{
+			BasePath:          "./tmp",
+			WorkingDir:        "./",
+			TempDir:           "./tmp",
+			FlutterStatusPort: 0,
+			Listen:            "",
+			Secret:            "",
+			Debug:             false,
+			Mode:              hcore.SetupMode_OLD,
+		}, nil,
+	)
+	// "./tmp", "./", "./tmp", 0, false)
 	StartExtensionServer()
 }
 
 func StartExtensionServer() {
-	grpc_server, _ := v2.StartCoreGrpcServer("127.0.0.1:12345")
+	grpc_server, _ := hcore.StartCoreGrpcServer("127.0.0.1:12345")
 	fmt.Printf("Waiting for CTRL+C to stop\n")
 	runWebserver(grpc_server)
 }
@@ -81,8 +92,8 @@ func runWebserver(grpcServer *grpc.Server) {
 
 	go func() {
 		defer wg.Done()
-		utils.GenerateCertificate("cert/server-cert.pem", "cert/server-key.pem", true, true)
-		if err := rpcWebServer.ListenAndServeTLS("cert/server-cert.pem", "cert/server-key.pem"); err != nil && err != http.ErrServerClosed {
+		hutils.GenerateCertificateFile("data/cert/server-cert.pem", "data/cert/server-key.pem", true, true)
+		if err := rpcWebServer.ListenAndServeTLS("data/cert/server-cert.pem", "data/cert/server-key.pem"); err != nil && err != http.ErrServerClosed {
 			// if err := rpcWebServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			fmt.Printf("Web server (gRPC-web) shutdown with error: %s", err)
 		}

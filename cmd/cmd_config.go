@@ -6,9 +6,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/hiddify/hiddify-core/config"
-	pb "github.com/hiddify/hiddify-core/hiddifyrpc"
-	v2 "github.com/hiddify/hiddify-core/v2"
+	"github.com/hiddify/hiddify-core/v2/config"
+	hcore "github.com/hiddify/hiddify-core/v2/hcore"
 	"github.com/sagernet/sing-box/experimental/libbox"
 	"github.com/sagernet/sing-box/log"
 	"github.com/sagernet/sing-box/option"
@@ -38,7 +37,7 @@ var generateConfig = &cobra.Command{
 	Use:   "gen",
 	Short: "gen configuration",
 	Run: func(cmd *cobra.Command, args []string) {
-		conf, err := v2.GenerateConfig(&pb.GenerateConfigRequest{
+		conf, err := hcore.GenerateConfig(&hcore.GenerateConfigRequest{
 			Path: args[0],
 		})
 		if err != nil {
@@ -171,7 +170,7 @@ func addHConfigFlags(commandRun *cobra.Command) {
 	commandRun.Flags().BoolVar(&defaultConfigs.InboundOptions.EnableTun, "tun", false, "Enable Tun")
 	commandRun.Flags().BoolVar(&defaultConfigs.InboundOptions.EnableTunService, "tun-service", false, "Enable Tun Service")
 	commandRun.Flags().BoolVar(&defaultConfigs.InboundOptions.SetSystemProxy, "system-proxy", false, "Enable System Proxy")
-	commandRun.Flags().Uint16Var(&defaultConfigs.InboundOptions.MixedPort, "in-proxy-port", 2334, "Input Mixed Port")
+	commandRun.Flags().Uint16Var(&defaultConfigs.InboundOptions.MixedPort, "in-proxy-port", 12334, "Input Mixed Port")
 	commandRun.Flags().BoolVar(&defaultConfigs.TLSTricks.EnableFragment, "fragment", false, "Enable Fragment")
 	commandRun.Flags().StringVar(&defaultConfigs.TLSTricks.FragmentSize, "fragment-size", "2-4", "FragmentSize")
 	commandRun.Flags().StringVar(&defaultConfigs.TLSTricks.FragmentSleep, "fragment-sleep", "2-4", "FragmentSleep")
@@ -185,4 +184,5 @@ func addHConfigFlags(commandRun *cobra.Command) {
 	commandRun.Flags().StringVar(&defaultConfigs.DirectDnsAddress, "dns-direct", "1.1.1.1", "DirectDNS (1.1.1.1, https://1.1.1.1/dns-query)")
 	commandRun.Flags().StringVar(&defaultConfigs.ClashApiSecret, "web-secret", "", "Web Server Secret")
 	commandRun.Flags().Uint16Var(&defaultConfigs.ClashApiPort, "web-port", 6756, "Web Server Port")
+	commandRun.Flags().StringVar(&defaultConfigs.LogLevel, "log-level", "warn", "log level")
 }

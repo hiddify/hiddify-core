@@ -5,7 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/hiddify/hiddify-core/config"
+	"github.com/hiddify/hiddify-core/v2/config"
 	"github.com/sagernet/sing-box/log"
 	"github.com/spf13/cobra"
 )
@@ -40,7 +40,7 @@ func parse(path string) error {
 	}
 	if commandParseOutputPath != "" {
 		outputPath, _ := filepath.Abs(filepath.Join(workingDir, commandParseOutputPath))
-		err = os.WriteFile(outputPath, config, 0644)
+		err = os.WriteFile(outputPath, config, 0o644)
 		if err != nil {
 			return err
 		}
