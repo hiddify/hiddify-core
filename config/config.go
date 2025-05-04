@@ -9,8 +9,6 @@ import (
 	"net"
 	"net/netip"
 	"net/url"
-	"os"
-	"regexp"
 	"runtime"
 	"strings"
 	"time"
@@ -18,7 +16,6 @@ import (
 	C "github.com/sagernet/sing-box/constant"
 	"github.com/sagernet/sing-box/option"
 	dns "github.com/sagernet/sing-dns"
-	"github.com/sagernet/sing/common/auth"
 )
 
 const (
@@ -41,30 +38,6 @@ const (
 	InboundMixedTag = "mixed-in"
 	InboundDNSTag   = "dns-in"
 )
-
-func ReplaceEnvVariables(input string) string {
-	re := regexp.MustCompile(`\$\{(\w+)\}`)
-	return re.ReplaceAllStringFunc(input, func(m string) string {
-		varName := m[2 : len(m)-1]
-		return os.Getenv(varName)
-	})
-}
-
-func GetUsers() []auth.User {
-	username := os.Getenv("PROXY_USER")
-	password := os.Getenv("PROXY_PASS")
-
-	if username == "" || password == "" {
-		return []auth.User{}
-	}
-
-	return []auth.User{
-		{
-			Username: username,
-			Password: password,
-		},
-	}
-}
 
 var OutboundMainProxyTag = OutboundSelectTag
 
@@ -301,7 +274,7 @@ func setClashAPI(options *option.Options, opt *HiddifyOptions) {
 			ClashAPI: &option.ClashAPIOptions{
 				ExternalController: fmt.Sprintf("%s:%d", "127.0.0.1", opt.ClashApiPort),
 				Secret:             opt.ClashApiSecret,
-				ExternalUI:         ReplaceEnvVariables(opt.ClashWebPath),
+				ExternalUI:         opt.ClashWebPath,
 			},
 			CacheFile: &option.CacheFileOptions{
 				Enabled: false,
@@ -392,7 +365,6 @@ func setInbound(options *option.Options, opt *HiddifyOptions) {
 						DomainStrategy:           inboundDomainStrategy,
 					},
 				},
-				Users:          GetUsers(),
 				SetSystemProxy: opt.SetSystemProxy,
 			},
 		},
