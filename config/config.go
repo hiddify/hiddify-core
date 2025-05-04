@@ -274,8 +274,8 @@ func setClashAPI(options *option.Options, opt *HiddifyOptions) {
 			ClashAPI: &option.ClashAPIOptions{
 				ExternalController: fmt.Sprintf("%s:%d", "127.0.0.1", opt.ClashApiPort),
 				Secret:             opt.ClashApiSecret,
-				ExternalUI:         opt.ClashWebPath,
 			},
+
 			CacheFile: &option.CacheFileOptions{
 				Enabled: false,
 				Path:    "clash.db",

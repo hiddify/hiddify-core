@@ -11,7 +11,6 @@ type HiddifyOptions struct {
 	LogFile                 string `json:"log-file"`
 	EnableClashApi          bool   `json:"enable-clash-api"`
 	ClashApiPort            uint16 `json:"clash-api-port"`
-	ClashWebPath            string `json:"clash-web-path"`
 	ClashApiSecret          string `json:"web-secret"`
 	Region                  string `json:"region"`
 	BlockAds                bool   `json:"block-ads"`

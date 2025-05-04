@@ -167,7 +167,7 @@ func buildConfig(configContent string, options config.HiddifyOptions) (string, e
 	}
 
 	finalconfig.Log.Output = ""
-	// finalconfig.Experimental.ClashAPI.ExternalUI = "/etc/s6-overlay/s6-rc.d/hiddify/webui"
+	finalconfig.Experimental.ClashAPI.ExternalUI = "/etc/s6-overlay/s6-rc.d/hiddify/webui"
 	if options.AllowConnectionFromLAN {
 		finalconfig.Experimental.ClashAPI.ExternalController = "0.0.0.0:6756"
 	} else {
