@@ -258,6 +258,7 @@ func patchWarp(base *option.Outbound, configOpt *HiddifyOptions, final bool, sta
 				base.WireGuardOptions.MTU = 1280
 			}
 			base.WireGuardOptions.FakePackets = ""
+			base.WireGuardOptions.FakePacketsMode = ""
 			base.WireGuardOptions.FakePacketsDelay = ""
 			base.WireGuardOptions.FakePacketsSize = ""
 		}
