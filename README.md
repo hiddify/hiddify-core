@@ -16,8 +16,31 @@ cd hiddify-core/docker
 docker-compose up
 ```
 
-## WRT
-...
+## OpenWrt
+### Configure and enable Hiddify service
+```ash
+root@OpenWrt:~# uci set hiddify.main.config='https://www.example.com/sub.txt'
+root@OpenWrt:~# uci set hiddify.main.enabled='1'
+root@OpenWrt:~# uci commit hiddify
+root@OpenWrt:~# service hiddify restart
+```
+### Forward all traffic to the tun interface by assigning it to firewall wan zone.
+
+Command Line: 
+
+```ash
+root@OpenWrt:~# uci add_list firewall.@zone[1].device='tun+'
+root@OpenWrt:~# uci commit firewall
+root@OpenWrt:~# service firewall restart
+```
+Luci : 
+
+Select Firewall from the Network tab and edit the wan zone.
+Add tun+ under covered devices on the Advanced Settings tab,
+Save and Apply .
+
+![image](https://github.com/user-attachments/assets/ef431c51-9f58-4bf5-afe6-4b1eca0feca7)
+
 
 ## Extension
 
