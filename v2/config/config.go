@@ -136,7 +136,8 @@ func setOutbounds(options *option.Options, input *option.Options, opt *HiddifyOp
 		}
 	}
 	if opt.Warp.EnableWarp && (opt.Warp.Mode == "warp_over_proxy" || opt.Warp.Mode == "proxy_over_warp") {
-		out, err := GenerateWarpSingbox(opt.Warp.WireguardConfig, opt.Warp.CleanIP, opt.Warp.CleanPort, opt.Warp.FakePackets, opt.Warp.FakePacketSize, opt.Warp.FakePacketDelay, opt.Warp.FakePacketMode)
+		wg := getOrGenerateWarpLocallyIfNeeded(&opt.Warp)
+		out, err := GenerateWarpSingbox(wg, opt.Warp.CleanIP, opt.Warp.CleanPort, opt.Warp.FakePackets, opt.Warp.FakePacketSize, opt.Warp.FakePacketDelay, opt.Warp.FakePacketMode)
 		if err != nil {
 			return fmt.Errorf("failed to generate warp config: %v", err)
 		}
