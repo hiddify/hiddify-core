@@ -116,11 +116,11 @@ func isOutboundReality(base option.Outbound) bool {
 	return base.VLESSOptions.OutboundTLSOptionsContainer.TLS.Reality.Enabled
 }
 
-func patchOutbound(base option.Outbound, configOpt HiddifyOptions, staticIpsDns map[string][]string) (*option.Outbound, error) {
+func patchOutbound(base option.Outbound, configOpt HiddifyOptions, dns *option.DNSOptions) (*option.Outbound, error) {
 	formatErr := func(err error) error {
 		return fmt.Errorf("error patching outbound[%s][%s]: %w", base.Tag, base.Type, err)
 	}
-	err := patchWarp(&base, &configOpt, true, staticIpsDns)
+	err := patchWarp(&base, &configOpt, true, dns.StaticIPs)
 	if err != nil {
 		return nil, formatErr(err)
 	}
@@ -143,7 +143,7 @@ func patchOutbound(base option.Outbound, configOpt HiddifyOptions, staticIpsDns 
 	case C.TypeVMess, C.TypeVLESS, C.TypeTrojan, C.TypeShadowsocks:
 		obj = patchOutboundMux(base, configOpt, obj)
 	}
-	obj = patchOutboundXray(base, configOpt, obj, staticIpsDns)
+	obj = patchOutboundXray(base, configOpt, obj, dns.StaticIPs)
 	modifiedJson, err := json.Marshal(obj)
 	if err != nil {
 		return nil, formatErr(err)

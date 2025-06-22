@@ -86,6 +86,7 @@ func BuildConfig(opt HiddifyOptions, input option.Options) (*option.Options, err
 	setNTP(&options)
 	setRoutingOptions(&options, &opt)
 	err := setOutbounds(&options, &input, &opt)
+
 	if err != nil {
 		return nil, err
 	}
@@ -153,7 +154,7 @@ func setOutbounds(options *option.Options, input *option.Options, opt *HiddifyOp
 		if contains(PredefinedOutboundTags, out.Tag) {
 			continue
 		}
-		outbound, err := patchOutbound(out, *opt, options.DNS.StaticIPs)
+		outbound, err := patchOutbound(out, *opt, options.DNS)
 		if err != nil {
 			return err
 		}
@@ -433,37 +434,19 @@ func setDns(options *option.Options, opt *HiddifyOptions) {
 			},
 		},
 	}
-	domains := map[string][]string{
-		"time.apple.com":     {"time.g.aaplimg.com", "time.apple.com"},
-		"ipinfo.io":          {"ipinfo.io"},
-		"dns.cloudflare.com": {"www.speedtest.net", "cloudflare.com"},
-		"ipwho.is":           {"ipwho.is"},
-		"api.my-ip.io":       {"api.my-ip.io"},
-		"myip.expert":        {"myip.expert"},
-		"ip-api.com":         {"ip-api.com"},
-	}
-	var wg sync.WaitGroup
-	var mu sync.Mutex
-	for key, domainList := range domains {
-		wg.Add(1)
-		go func(k string, dList []string) {
-			defer wg.Done()
-			ips := getIPs(dList...)
-			if len(ips) > 0 {
-				mu.Lock()
-				options.DNS.StaticIPs[k] = ips
-				mu.Unlock()
-			}
-		}(key, domainList)
-	}
 
-	wg.Wait()
-	if dnsstr := options.DNS.StaticIPs["dns.cloudflare.com"]; dnsstr != nil {
-		options.DNS.StaticIPs["api.ip.sb"] = dnsstr
-		options.DNS.StaticIPs["ipapi.co"] = dnsstr
-		options.DNS.StaticIPs["reallyfreegeoip.org"] = dnsstr
-		options.DNS.StaticIPs["freeipapi.com"] = dnsstr
-	}
+	options.DNS.StaticIPs["time.apple.com"] = []string{"time.g.aaplimg.com", "time.apple.com"}
+	options.DNS.StaticIPs["ipinfo.io"] = []string{"ipinfo.io"}
+	options.DNS.StaticIPs["dns.cloudflare.com"] = []string{"www.speedtest.net", "cloudflare.com"}
+	options.DNS.StaticIPs["ipwho.is"] = []string{"ipwho.is"}
+	options.DNS.StaticIPs["api.my-ip.io"] = []string{"api.my-ip.io"}
+	options.DNS.StaticIPs["myip.expert"] = []string{"myip.expert"}
+	options.DNS.StaticIPs["ip-api.com"] = []string{"ip-api.com"}
+	options.DNS.StaticIPs["freeipapi.com"] = []string{"www.speedtest.net", "cloudflare.com"}
+	options.DNS.StaticIPs["reallyfreegeoip.org"] = []string{"www.speedtest.net", "cloudflare.com"}
+	options.DNS.StaticIPs["ipapi.co"] = []string{"www.speedtest.net", "cloudflare.com"}
+	options.DNS.StaticIPs["api.ip.sb"] = []string{"www.speedtest.net", "cloudflare.com"}
+
 }
 
 func addForceDirect(options *option.Options, opt *HiddifyOptions) {
@@ -490,6 +473,7 @@ func addForceDirect(options *option.Options, opt *HiddifyOptions) {
 			}
 		}
 	}
+
 	if len(dnsMap) > 0 {
 		unique_dns_detours := make(map[string]bool)
 		for _, detour := range dnsMap {
@@ -497,36 +481,39 @@ func addForceDirect(options *option.Options, opt *HiddifyOptions) {
 		}
 
 		for detour := range unique_dns_detours {
-			if detour == OutboundDirectTag {
-				detour = "direct"
-			} else {
+			dns_detour := "dns-direct"
+			if detour != OutboundDirectTag {
+				dns_detour = "dns-" + detour
 				options.DNS.Servers = append(options.DNS.Servers, option.DNSServerOptions{
-					Tag:             "dns-" + detour,
+					Tag:             dns_detour,
 					Address:         opt.RemoteDnsAddress,
 					AddressResolver: DNSDirectTag,
 					Strategy:        opt.RemoteDnsDomainStrategy,
 					Detour:          detour,
 				})
 			}
+
 			domains := []string{}
 			for domain, d := range dnsMap {
 				if d == detour {
 					domains = append(domains, domain)
 				}
 			}
+
 			if len(domains) == 0 {
 				continue
 			}
 			options.DNS.Rules = append(options.DNS.Rules, option.DNSRule{
 				Type: C.RuleTypeDefault,
 				DefaultOptions: option.DefaultDNSRule{
-					Server: "dns-" + detour,
+					Server: dns_detour,
 					Domain: domains,
 				},
 			})
 		}
 
 	}
+
 }
 
 func setFakeDns(options *option.Options, opt *HiddifyOptions) {
@@ -835,6 +822,16 @@ func setRoutingOptions(options *option.Options, opt *HiddifyOptions) {
 			},
 		})
 	}
+	if opt.RouteOptions.BlockQuic {
+		routeRules = append(routeRules, option.Rule{
+			Type: C.RuleTypeDefault,
+			DefaultOptions: option.DefaultRule{
+				Port:     []uint16{443},
+				Network:  []string{"udp"},
+				Outbound: OutboundBlockTag,
+			},
+		})
+	}
 	options.Route = &option.RouteOptions{
 		Rules:               routeRules,
 		Final:               OutboundMainProxyTag,
@@ -861,14 +858,7 @@ func setRoutingOptions(options *option.Options, opt *HiddifyOptions) {
 			}
 		}
 	}
-	routeRules = append(routeRules, option.Rule{
-		Type: C.RuleTypeDefault,
-		DefaultOptions: option.DefaultRule{
-			Port:     []uint16{443},
-			Network:  []string{"udp"},
-			Outbound: OutboundBlockTag,
-		},
-	})
+
 }
 
 func patchHiddifyWarpFromConfig(out option.Outbound, opt HiddifyOptions) option.Outbound {

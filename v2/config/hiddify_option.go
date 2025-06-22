@@ -27,6 +27,8 @@ type HiddifyOptions struct {
 	Warp2     WarpOptions `json:"warp2,omitempty"`
 	Mux       MuxOptions  `json:"mux,omitempty" overridable:"true"`
 	TLSTricks TLSTricks   `json:"tls-tricks,omitempty"`
+	EnableNTP bool        `json:"enable-ntp,omitempty"`
+
 	DNSOptions
 	InboundOptions
 	URLTestOptions
@@ -66,6 +68,7 @@ type RouteOptions struct {
 	IPv6Mode               option.DomainStrategy `json:"ipv6-mode,omitempty"`
 	BypassLAN              bool                  `json:"bypass-lan,omitempty"`
 	AllowConnectionFromLAN bool                  `json:"allow-connection-from-lan,omitempty"`
+	BlockQuic              bool                  `json:"block-quic,omitempty"`
 }
 
 type TLSTricks struct {
@@ -101,6 +104,7 @@ type WarpOptions struct {
 
 func DefaultHiddifyOptions() *HiddifyOptions {
 	return &HiddifyOptions{
+		EnableNTP: true,
 		DNSOptions: DNSOptions{
 			RemoteDnsAddress:        "1.1.1.1",
 			RemoteDnsDomainStrategy: option.DomainStrategy(dns.DomainStrategyAsIS),
@@ -136,6 +140,7 @@ func DefaultHiddifyOptions() *HiddifyOptions {
 		LogFile:        "data/box.log",
 		Region:         "other",
 		EnableClashApi: true,
+
 		ClashApiPort:   16756,
 		ClashApiSecret: "",
 		// GeoIPPath:      "geoip.db",
