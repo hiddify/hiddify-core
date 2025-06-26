@@ -504,13 +504,18 @@ func addForceDirect(options *option.Options, opt *HiddifyOptions) {
 			if len(domains) == 0 {
 				continue
 			}
-			options.DNS.Rules = append(options.DNS.Rules, option.DNSRule{
-				Type: C.RuleTypeDefault,
-				DefaultOptions: option.DefaultDNSRule{
-					Server: dns_detour,
-					Domain: domains,
+			options.DNS.Rules = append(
+				[]option.DNSRule{
+					{
+						Type: C.RuleTypeDefault,
+						DefaultOptions: option.DefaultDNSRule{
+							Server: dns_detour,
+							Domain: domains,
+						},
+					},
 				},
-			})
+				options.DNS.Rules...,
+			)
 		}
 
 	}
@@ -594,7 +599,13 @@ func setRoutingOptions(options *option.Options, opt *HiddifyOptions) {
 			Outbound: OutboundDNSTag,
 		},
 	})
-
+	routeRules = append(routeRules, option.Rule{
+		Type: C.RuleTypeDefault,
+		DefaultOptions: option.DefaultRule{
+			IPCIDR:   []string{"10.10.34.0/24"},
+			Outbound: OutboundMainProxyTag,
+		},
+	})
 	// {
 	// 	Type: C.RuleTypeDefault,
 	// 	DefaultOptions: option.DefaultRule{
@@ -765,8 +776,6 @@ func setRoutingOptions(options *option.Options, opt *HiddifyOptions) {
 				"geosite-malware",
 				"geosite-phishing",
 				"geosite-cryptominers",
-				"geoip-malware",
-				"geoip-phishing",
 			},
 			Server: DNSBlockTag,
 			//		DisableCache: true,
@@ -787,7 +796,7 @@ func setRoutingOptions(options *option.Options, opt *HiddifyOptions) {
 		})
 		dnsRules = append(dnsRules, option.DefaultDNSRule{
 			RuleSet: []string{
-				"geoip-" + opt.Region,
+				// "geoip-" + opt.Region,
 				"geosite-" + opt.Region,
 			},
 			Server: DNSDirectTag,
