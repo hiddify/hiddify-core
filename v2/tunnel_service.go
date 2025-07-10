@@ -46,7 +46,7 @@ func makeTunnelConfig(Ipv6 bool, ServerPort int32, StrictRoute bool, EndpointInd
 		  {
 			"type": "tun",
 			"tag": "tun-in",
-			"interface_name": "HiddifyTunnel",
+			"interface_name": "JumperTunnel",
 			"inet4_address": "172.19.0.1/30",
 			` + ipv6 + `
 			"auto_route": true,
@@ -72,10 +72,10 @@ func makeTunnelConfig(Ipv6 bool, ServerPort int32, StrictRoute bool, EndpointInd
 		  "rules": [
 			{
 				"process_name":[
-					"Hiddify.exe",
-					"Hiddify",
-					"HiddifyCli",
-					"HiddifyCli.exe"
+					"Jumper.exe",
+					"Jumper",
+					"JumperCli",
+					"JumperCli.exe"
 					],
 				"outbound": "direct-out"
 			}
