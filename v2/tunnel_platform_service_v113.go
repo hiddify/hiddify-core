@@ -35,11 +35,7 @@ func getCurrentExecutableDirectory() string {
 	if err != nil {
 		return ""
 	}
-
-	// Extract the directory (folder) containing the executable
-	executableDirectory := filepath.Dir(executablePath)
-
-	return executableDirectory
+	return filepath.Dir(executablePath)
 }
 
 func StartTunnelService(goArg string) (int, string) {
@@ -57,7 +53,6 @@ func StartTunnelService(goArg string) (int, string) {
 	prg := &hiddifyNext{}
 	s, err := service.New(prg, svcConfig)
 	if err != nil {
-		// log.Printf("Error: %v", err)
 		return 1, fmt.Sprintf("Error: %v", err)
 	}
 
@@ -69,8 +64,7 @@ func StartTunnelService(goArg string) (int, string) {
 	if err != nil {
 		log.Printf("Error: %v", err)
 	}
-	err = s.Run()
-	if err != nil {
+	if err = s.Run(); err != nil {
 		logger.Error(err)
 		return 3, fmt.Sprintf("Error: %v", err)
 	}
@@ -79,11 +73,11 @@ func StartTunnelService(goArg string) (int, string) {
 
 func control(s service.Service, goArg string) (int, string) {
 	dolog := false
-	var err error
 	status, serr := s.Status()
 	if dolog {
 		fmt.Printf("Current Status: %+v %+v!\n", status, serr)
 	}
+
 	switch goArg {
 	case "uninstall":
 		if status == service.StatusRunning {
@@ -92,34 +86,51 @@ func control(s service.Service, goArg string) (int, string) {
 		if dolog {
 			fmt.Printf("Tunnel Service Uninstalled Successfully.\n")
 		}
-		err = s.Uninstall()
+		if err := s.Uninstall(); err != nil {
+			return 2, fmt.Sprintf("Error: %v", err)
+		}
+		return 0, "Tunnel Service Uninstalled Successfully."
+
 	case "start":
-		if status == service.StatusRunning {
+		switch status {
+		case service.StatusRunning:
 			if dolog {
 				fmt.Printf("Tunnel Service Already Running.\n")
 			}
 			return 0, "Tunnel Service Already Running."
-		} else if status == service.StatusUnknown {
-			s.Uninstall()
-			s.Install()
+		case service.StatusUnknown:
+			_ = s.Uninstall()
+			_ = s.Install()
 			status, serr = s.Status()
 			if dolog {
 				fmt.Printf("Check status again: %+v %+v!", status, serr)
 			}
+			fallthrough
+		default:
+			if status != service.StatusRunning {
+				if err := s.Start(); err != nil {
+					return 2, fmt.Sprintf("Error: %v", err)
+				}
+			}
 		}
-		if status != service.StatusRunning {
-			err = s.Start()
-		}
+		return 0, "Tunnel Service Started."
+
 	case "install":
-		s.Uninstall()
-		err = s.Install()
+		_ = s.Uninstall()
+		if err := s.Install(); err != nil {
+			return 2, fmt.Sprintf("Error: %v", err)
+		}
 		status, serr = s.Status()
 		if dolog {
 			fmt.Printf("Check Status Again: %+v %+v", status, serr)
 		}
 		if status != service.StatusRunning {
-			err = s.Start()
+			if err := s.Start(); err != nil {
+				return 2, fmt.Sprintf("Error: %v", err)
+			}
 		}
+		return 0, "Tunnel Service Installed."
+
 	case "stop":
 		if status == service.StatusStopped {
 			if dolog {
@@ -127,21 +138,15 @@ func control(s service.Service, goArg string) (int, string) {
 			}
 			return 0, "Tunnel Service Already Stopped."
 		}
-		err = s.Stop()
+		if err := s.Stop(); err != nil {
+			return 2, fmt.Sprintf("Error: %v", err)
+		}
+		return 0, "Tunnel Service Stopped."
+
 	default:
-		err = service.Control(s, goArg)
-	}
-	if err == nil {
-		out := fmt.Sprintf("Tunnel Service %sed Successfully.", goArg)
-		if dolog {
-			fmt.Printf(out)
+		if err := service.Control(s, goArg); err != nil {
+			return 2, fmt.Sprintf("Error: %v", err)
 		}
-		return 0, out
-	} else {
-		out := fmt.Sprintf("Error: %v", err)
-		if dolog {
-			log.Printf(out)
-		}
-		return 2, out
+		return 0, fmt.Sprintf("Tunnel Service %s Successfully.", goArg)
 	}
 }

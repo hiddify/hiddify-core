@@ -6,7 +6,6 @@ require (
 	github.com/bepass-org/warp-plus v1.2.4
 	github.com/fatih/color v1.18.0 // indirect
 	github.com/hiddify/hiddify-app-demo-extension v0.0.0-20241001070003-26039f960ad6
-	github.com/hiddify/hiddify-ip-scanner-extension v0.0.0-20241001070353-7ffd688b96b2
 	github.com/improbable-eng/grpc-web v0.15.0
 	github.com/sagernet/gomobile v0.1.8
 	github.com/sagernet/sing v0.8.0-beta.5
@@ -74,7 +73,6 @@ require (
 	github.com/onsi/gomega v1.33.1 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/prometheus-community/pro-bing v0.4.0 // indirect
-	github.com/rodaine/table v1.1.1 // indirect
 	github.com/rs/cors v1.7.0 // indirect
 	github.com/safchain/ethtool v0.3.0 // indirect
 	github.com/sagernet/cors v1.2.1 // indirect

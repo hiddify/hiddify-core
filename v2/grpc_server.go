@@ -20,7 +20,6 @@ type HelloService struct {
 type CoreService struct {
 	pb.UnimplementedCoreServer
 }
-
 type TunnelService struct {
 	pb.UnimplementedTunnelServiceServer
 }
@@ -32,16 +31,15 @@ func StartGrpcServer(listenAddressG string, service string) (*grpc.Server, error
 		return nil, err
 	}
 	s := grpc.NewServer()
-	if service == "core" {
-
+	switch service {
+	case "core":
 		// Setup("./tmp/", "./tmp", "./tmp", 11111, false)
-
 		useFlutterBridge = false
 		pb.RegisterCoreServer(s, &CoreService{})
 		pb.RegisterExtensionHostServiceServer(s, &extension.ExtensionHostService{})
-	} else if service == "hello" {
+	case "hello":
 		pb.RegisterHelloServer(s, &HelloService{})
-	} else if service == "tunnel" {
+	case "tunnel":
 		pb.RegisterTunnelServiceServer(s, &TunnelService{})
 	}
 	log.Printf("Server listening on %s", listenAddressG)
@@ -49,7 +47,7 @@ func StartGrpcServer(listenAddressG string, service string) (*grpc.Server, error
 		if err := s.Serve(lis); err != nil {
 			log.Printf("failed to serve: %v", err)
 		}
-		log.Printf("Server stopped")
+		// log.Printf("Server stopped")
 		// cancel()
 	}()
 	return s, nil
@@ -58,7 +56,6 @@ func StartGrpcServer(listenAddressG string, service string) (*grpc.Server, error
 func StartCoreGrpcServer(listenAddressG string) (*grpc.Server, error) {
 	return StartGrpcServer(listenAddressG, "core")
 }
-
 func StartHelloGrpcServer(listenAddressG string) (*grpc.Server, error) {
 	return StartGrpcServer(listenAddressG, "hello")
 }

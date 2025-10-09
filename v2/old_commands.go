@@ -5,9 +5,8 @@ import (
 )
 
 var (
-	oldStatusClient        *libbox.CommandClient
-	oldGroupClient         *libbox.CommandClient
-	oldGroupInfoOnlyClient *libbox.CommandClient
+	oldStatusClient   *libbox.CommandClient
+	oldGroupClient   *libbox.CommandClient
 )
 
 func StartCommand(command int32, port int64) error {
@@ -20,7 +19,7 @@ func StartCommand(command int32, port int64) error {
 			},
 			&libbox.CommandClientOptions{
 				Command:        libbox.CommandStatus,
-				StatusInterval: 1000000000, //1000ms debounce
+				StatusInterval: 1000000000, // 1000ms debounce
 			},
 		)
 		return oldStatusClient.Connect()
@@ -30,23 +29,31 @@ func StartCommand(command int32, port int64) error {
 				port:   port,
 				logger: coreLogFactory.NewLogger("[Group Command Client]"),
 			},
+			&libbox.CommandClientOptions{
 				Command:        libbox.CommandGroup,
-				StatusInterval: 300000000, //300ms debounce
+				StatusInterval: 300000000, // 300ms debounce
 			},
 		)
 		return oldGroupClient.Connect()
+	default:
+		return nil
+	}
+}
+
+func StopCommand(command int32) error {
+	switch command {
 	case libbox.CommandStatus:
-		err := oldStatusClient.Disconnect()
-		oldStatusClient = nil
-		return err
+		if oldStatusClient != nil {
+			err := oldStatusClient.Disconnect()
+			oldStatusClient = nil
+			return err
+		}
 	case libbox.CommandGroup:
-		err := oldGroupClient.Disconnect()
-		oldGroupClient = nil
-		return err
-	case libbox.CommandGroupInfoOnly:
-		err := oldGroupInfoOnlyClient.Disconnect()
-		oldGroupInfoOnlyClient = nil
-		return err
+		if oldGroupClient != nil {
+			err := oldGroupClient.Disconnect()
+			oldGroupClient = nil
+			return err
+		}
 	}
 	return nil
 }

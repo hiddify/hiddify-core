@@ -13,13 +13,13 @@ func NewObserver[T any](listenerBufferSize int) *observable.Observer[T] {
 	return observable.NewObserver(observable.NewSubscriber[T](listenerBufferSize), listenerBufferSize)
 }
 
-var logObserver = NewObserver[pb.LogMessage](10)
+var logObserver = NewObserver[*pb.LogMessage](10)
 
 func Log(level pb.LogLevel, typ pb.LogType, message string) {
 	if level != pb.LogLevel_DEBUG {
 		fmt.Printf("%s %s %s\n", level, typ, message)
 	}
-	logObserver.Emit(pb.LogMessage{
+	logObserver.Emit(&pb.LogMessage{
 		Level:   level,
 		Type:    typ,
 		Message: message,
@@ -37,7 +37,7 @@ func (s *CoreService) LogListener(req *pb.Empty, stream grpc.ServerStreamingServ
 		case <-stopch:
 			return nil
 		case info := <-logSub:
-			stream.Send(&info)
+			stream.Send(info)
 		case <-time.After(500 * time.Millisecond):
 		}
 	}
