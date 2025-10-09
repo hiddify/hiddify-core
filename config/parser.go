@@ -9,7 +9,6 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/hiddify/ray2sing/ray2sing"
 	"github.com/sagernet/sing-box/experimental/libbox"
 	"github.com/sagernet/sing-box/option"
 	"github.com/sagernet/sing/common/batch"
@@ -76,7 +75,7 @@ func ParseConfigContent(contentstr string, debug bool, configOpt *HiddifyOptions
 		return patchConfig(newContent, "SingboxParser", configOpt)
 	}
 
-	v2rayStr, err := ray2sing.Ray2Singbox(string(content), configOpt.UseXrayCoreWhenPossible)
+	v2rayStr, err := convertV2ray(string(content), configOpt.UseXrayCoreWhenPossible)
 	if err == nil {
 		return patchConfig([]byte(v2rayStr), "V2rayParser", configOpt)
 	}

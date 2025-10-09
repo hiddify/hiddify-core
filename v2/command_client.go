@@ -1,44 +1,53 @@
 package v2
 
 import (
-	pb "github.com/hiddify/hiddify-core/hiddifyrpc"
-	"github.com/sagernet/sing-box/experimental/libbox"
-	"github.com/sagernet/sing-box/log"
+    pb "github.com/hiddify/hiddify-core/hiddifyrpc"
+    "github.com/sagernet/sing-box/experimental/libbox"
+    "github.com/sagernet/sing-box/log"
 )
 
 type CommandClientHandler struct {
-	port   int64
-	logger log.Logger
+    port   int64
+    logger log.Logger
 }
 
 func (cch *CommandClientHandler) Connected() {
-	cch.logger.Debug("CONNECTED")
+    cch.logger.Debug("CONNECTED")
+}
+
+// Legacy methods (older libbox)
+func (cch *CommandClientHandler) ClearLog()               { cch.logger.Debug("clear log") }
+func (cch *CommandClientHandler) WriteLog(message string) { cch.logger.Debug("log:", message) }
+
+// New methods in libbox v1.13
+func (cch *CommandClientHandler) ClearLogs() { cch.logger.Debug("clear logs") }
+func (cch *CommandClientHandler) WriteLogs(messageList libbox.StringIterator) {
+    for messageList.HasNext() {
+        msg := messageList.Next()
+        cch.logger.Debug("log:", msg)
+    }
 }
 
 func (cch *CommandClientHandler) Disconnected(message string) {
-	cch.logger.Debug("DISCONNECTED: ", message)
+    cch.logger.Debug("DISCONNECTED: ", message)
 }
 
-func (cch *CommandClientHandler) ClearLog() {
-	cch.logger.Debug("clear log")
-}
-
-func (cch *CommandClientHandler) WriteLog(message string) {
-	cch.logger.Debug("log: ", message)
+func (cch *CommandClientHandler) WriteConnections(message *libbox.Connections) {
+    cch.logger.Debug("connections update")
 }
 
 func (cch *CommandClientHandler) WriteStatus(message *libbox.StatusMessage) {
-	systemInfoObserver.Emit(pb.SystemInfo{
-		ConnectionsIn:  message.ConnectionsIn,
-		ConnectionsOut: message.ConnectionsOut,
-		Uplink:         message.Uplink,
-		Downlink:       message.Downlink,
-		UplinkTotal:    message.UplinkTotal,
-		DownlinkTotal:  message.DownlinkTotal,
-		Memory:         message.Memory,
-		Goroutines:     message.Goroutines,
-	})
-	cch.logger.Debug("Memory: ", libbox.FormatBytes(message.Memory), ", Goroutines: ", message.Goroutines)
+    systemInfoObserver.Emit(pb.SystemInfo{
+        ConnectionsIn:  message.ConnectionsIn,
+        ConnectionsOut: message.ConnectionsOut,
+        Uplink:         message.Uplink,
+        Downlink:       message.Downlink,
+        UplinkTotal:    message.UplinkTotal,
+        DownlinkTotal:  message.DownlinkTotal,
+        Memory:         message.Memory,
+        Goroutines:     message.Goroutines,
+    })
+    cch.logger.Debug("Memory: ", libbox.FormatBytes(message.Memory), ", Goroutines: ", message.Goroutines)
 
 }
 

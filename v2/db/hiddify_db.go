@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 	"reflect"
 	"time"
 
@@ -40,6 +41,21 @@ func getDB(name string, readOnly bool) (tmdb.DB, error) {
 		time.Sleep(retryDelay)
 	}
 
+	// If the database appears corrupted (manifest), back it up and recreate a fresh one
+	if err != nil && strings.Contains(err.Error(), "manifest corrupted") {
+		backup := fmt.Sprintf("%s.bak.%d", dbPath, time.Now().Unix())
+		if renameErr := os.Rename(dbPath, backup); renameErr != nil {
+			log.Printf("Failed to backup corrupted database %s: %v", dbPath, renameErr)
+		} else {
+			log.Printf("Backed up corrupted database to %s, attempting to recreate...", backup)
+			opts := &opt.Options{ReadOnly: false}
+			db, recErr := tmdb.NewGoLevelDBWithOpts(name, "./data", opts)
+			if recErr == nil {
+				return db, nil
+			}
+			log.Printf("Recreate database failed: %v", recErr)
+		}
+	}
 	return nil, err
 }
 

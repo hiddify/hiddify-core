@@ -1,7 +1,8 @@
 package config
 
 import (
-	context "context"
+	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"net"
@@ -15,7 +16,6 @@ import (
 type server struct {
 	UnimplementedCoreServiceServer
 }
-
 func String(s string) *string {
 	return &s
 }
@@ -33,25 +33,22 @@ func (s *server) ParseConfig(ctx context.Context, in *ParseConfigRequest) (*Pars
 }
 
 func (s *server) GenerateFullConfig(ctx context.Context, in *GenerateConfigRequest) (*GenerateConfigResponse, error) {
-	os.Chdir(filepath.Dir(in.Path))
-	content, err := os.ReadFile(in.Path)
-	if err != nil {
-		return nil, err
-	}
-	var options option.Options
-	err = options.UnmarshalJSON(content)
-	if err != nil {
-		return nil, err
-	}
-	if err != nil {
-		return nil, err
-	}
-	config, err := BuildConfigJson(*DefaultHiddifyOptions(), options)
-	if err != nil {
-		return nil, err
-	}
-	return &GenerateConfigResponse{
-		Config: config,
+    os.Chdir(filepath.Dir(in.Path))
+    content, err := os.ReadFile(in.Path)
+    if err != nil {
+        return nil, err
+    }
+    var options option.Options
+    // Parse with standard encoding/json (yields generic maps for Outbound.Options)
+    if err := json.Unmarshal(content, &options); err != nil {
+        return nil, err
+    }
+    config, err := BuildConfigJson(*DefaultHiddifyOptions(), options)
+    if err != nil {
+        return nil, err
+    }
+    return &GenerateConfigResponse{
+        Config: config,
 	}, nil
 }
 

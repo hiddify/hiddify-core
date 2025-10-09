@@ -101,58 +101,58 @@ func build(path string, optionsPath string) error {
 		// libbox.Setup(outputPath, workingDir, workingDir, true)
 		// instance, err := NewService(*patchedOptions)
 	} else {
-		os.Stdout.WriteString(config)
 	}
 	return nil
 }
 
 func check(path string) error {
-	content, err := os.ReadFile(path)
-	if err != nil {
-		return err
-	}
-	return libbox.CheckConfig(string(content))
+    content, err := os.ReadFile(path)
+    if err != nil {
+        return err
+    }
+    return libbox.CheckConfig(string(content))
 }
 
 func readConfigAt(path string) (*option.Options, error) {
-	content, err := os.ReadFile(path)
-	if err != nil {
-		return nil, err
-	}
-	var options option.Options
-	err = options.UnmarshalJSON(content)
-	if err != nil {
-		return nil, err
-	}
-	return &options, nil
+    content, err := os.ReadFile(path)
+    if err != nil {
+        return nil, err
+    }
+    var options option.Options
+    if err := json.Unmarshal(content, &options); err != nil {
+        return nil, err
+    }
+    return &options, nil
 }
 
 func readConfigBytes(content []byte) (*option.Options, error) {
-	var options option.Options
-	err := options.UnmarshalJSON(content)
-	if err != nil {
-		return nil, err
-	}
-	return &options, nil
+    var options option.Options
+    if err := json.Unmarshal(content, &options); err != nil {
+        return nil, err
+    }
+    return &options, nil
 }
 
 func readHiddifyOptionsAt(path string) (*config.HiddifyOptions, error) {
-	content, err := os.ReadFile(path)
-	if err != nil {
-		return nil, err
-	}
-	var options config.HiddifyOptions
-	err = json.Unmarshal(content, &options)
-	if err != nil {
-		return nil, err
-	}
-	if options.Warp.WireguardConfigStr != "" {
-		err := json.Unmarshal([]byte(options.Warp.WireguardConfigStr), &options.Warp.WireguardConfig)
-		if err != nil {
-			return nil, err
-		}
-	}
-	if options.Warp2.WireguardConfigStr != "" {
+    content, err := os.ReadFile(path)
+    if err != nil {
+        return nil, err
+    }
+    var options config.HiddifyOptions
+    if err := json.Unmarshal(content, &options); err != nil {
+        return nil, err
+    }
+    if options.Warp.WireguardConfigStr != "" {
+        if err := json.Unmarshal([]byte(options.Warp.WireguardConfigStr), &options.Warp.WireguardConfig); err != nil {
+            return nil, err
+        }
+    }
+    if options.Warp2.WireguardConfigStr != "" {
+        if err := json.Unmarshal([]byte(options.Warp2.WireguardConfigStr), &options.Warp2.WireguardConfig); err != nil {
+            return nil, err
+        }
+    }
+    return &options, nil
 		err := json.Unmarshal([]byte(options.Warp2.WireguardConfigStr), &options.Warp2.WireguardConfig)
 		if err != nil {
 			return nil, err

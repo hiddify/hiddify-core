@@ -24,8 +24,8 @@ protos:
 
 
 lib_install:
-	go install -v github.com/sagernet/gomobile/cmd/gomobile@v0.1.1
-	go install -v github.com/sagernet/gomobile/cmd/gobind@v0.1.1
+	go install -v github.com/sagernet/gomobile/cmd/gomobile@v0.1.8
+	go install -v github.com/sagernet/gomobile/cmd/gobind@v0.1.8
 	npm install
 
 headers:

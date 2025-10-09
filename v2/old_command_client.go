@@ -18,6 +18,11 @@ type OldCommandClientHandler struct {
 	logger log.Logger
 }
 
+func (cch *OldCommandClientHandler) WriteConnections(message *libbox.Connections) {
+    // No-op for legacy client
+    cch.logger.Debug("connections update")
+}
+
 func (cch *OldCommandClientHandler) Connected() {
 	cch.logger.Debug("CONNECTED")
 }
@@ -25,13 +30,23 @@ func (cch *OldCommandClientHandler) Connected() {
 func (cch *OldCommandClientHandler) Disconnected(message string) {
 	cch.logger.Debug("DISCONNECTED: ", message)
 }
-
 func (cch *OldCommandClientHandler) ClearLog() {
 	cch.logger.Debug("clear log")
 }
 
 func (cch *OldCommandClientHandler) WriteLog(message string) {
 	cch.logger.Debug("log: ", message)
+}
+
+// New in libbox v1.13
+func (cch *OldCommandClientHandler) ClearLogs() {
+	cch.logger.Debug("clear logs")
+}
+func (cch *OldCommandClientHandler) WriteLogs(messageList libbox.StringIterator) {
+	for messageList.HasNext() {
+		msg := messageList.Next()
+		cch.logger.Debug("log:", msg)
+	}
 }
 
 func (cch *OldCommandClientHandler) WriteStatus(message *libbox.StatusMessage) {

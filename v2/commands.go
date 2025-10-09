@@ -90,7 +90,7 @@ func (s *CoreService) MainOutboundsInfo(req *pb.Empty, stream grpc.ServerStreami
 		groupInfoOnlyClient = libbox.NewCommandClient(
 			&CommandClientHandler{},
 			&libbox.CommandClientOptions{
-				Command:        libbox.CommandGroupInfoOnly,
+				Command:        libbox.CommandGroup,
 				StatusInterval: 500000000, // 500ms debounce
 			},
 		)

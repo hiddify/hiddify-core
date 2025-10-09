@@ -31,5 +31,6 @@ func main() {
 
 	// Call the C function
 	result := C.parseCli(C.int(len(cArgs)), (**C.char)(unsafe.Pointer(&cArgs[0])))
+	defer C.free(unsafe.Pointer(result))
 	fmt.Println(C.GoString(result))
 }

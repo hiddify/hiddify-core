@@ -1,6 +1,7 @@
 FROM alpine:latest
+ARG VERSION=latest
 ENV CONFIG='https://raw.githubusercontent.com/ircfspace/warpsub/main/export/warp#WARP%20(IRCF)'
-ENV VERSION=v3.1.8
+ENV VERSION=${VERSION}
 WORKDIR /hiddify
 RUN apk add  curl tar gzip libc6-compat # iptables ip6tables
 
@@ -15,6 +16,10 @@ RUN echo "architecture: $(apk --print-arch)" && \
             s390x) ARCH=s390x ;; \
             *) echo "Unsupported architecture: $(apk --print-arch) $(uname -m)" && exit 1 ;; \
         esac && \
+        if [ "$VERSION" = "latest" ]; then \
+            VERSION=$(curl -s https://api.github.com/repos/hiddify/hiddify-core/releases/latest | grep tag_name | cut -d '"' -f4); \
+        fi && \
+        echo "Resolved VERSION=$VERSION" && \
         echo "Downloading https://github.com/hiddify/hiddify-core/releases/download/${VERSION}/hiddify-cli-linux-$ARCH.tar.gz" && \
         curl -L -o hiddify-cli.tar.gz https://github.com/hiddify/hiddify-core/releases/download/${VERSION}/hiddify-cli-linux-$ARCH.tar.gz && \
         tar -xzf hiddify-cli.tar.gz && rm hiddify-cli.tar.gz

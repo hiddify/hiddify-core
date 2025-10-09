@@ -2,6 +2,7 @@ package v2
 
 import (
 	"context"
+	"os"
 
 	pb "github.com/hiddify/hiddify-core/hiddifyrpc"
 	"github.com/sagernet/sing-box/experimental/libbox"
@@ -34,6 +35,18 @@ func SetSystemProxyEnabled(ctx context.Context, in *pb.SetSystemProxyEnabledRequ
 			ResponseCode: pb.ResponseCode_FAILED,
 			Message:      err.Error(),
 		}, err
+	}
+
+	// Also clear common proxy environment variables if disabling
+	if !in.IsEnabled {
+		keys := []string{
+			"http_proxy", "https_proxy", "ftp_proxy", "all_proxy",
+			"HTTP_PROXY", "HTTPS_PROXY", "FTP_PROXY", "ALL_PROXY",
+			"no_proxy", "NO_PROXY",
+		}
+		for _, k := range keys {
+			_ = os.Unsetenv(k)
+		}
 	}
 
 	return &pb.Response{

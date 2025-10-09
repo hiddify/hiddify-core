@@ -1,12 +1,13 @@
 package extension
 
 import (
-	"fmt"
+    "fmt"
 
-	"github.com/hiddify/hiddify-core/v2/db"
-	"github.com/sagernet/sing-box/log"
+    "github.com/hiddify/hiddify-core/v2/db"
+    "github.com/sagernet/sing-box/adapter"
+    "github.com/sagernet/sing-box/log"
 
-	"github.com/hiddify/hiddify-core/v2/service_manager"
+    "github.com/hiddify/hiddify-core/v2/service_manager"
 )
 
 var (
@@ -43,17 +44,24 @@ func loadExtension(factory ExtensionFactory) error {
 	extension.init(factory.Id)
 
 	// fmt.Printf("Registered extension: %+v\n", extension)
-	enabledExtensionsMap[factory.Id] = &extension
 
 	return nil
 }
 
 type extensionService struct {
-	// Storage *CacheFile
+    // Storage *CacheFile
 }
 
-func (s *extensionService) Start() error {
-	table := db.GetTable[extensionData]()
+func (s *extensionService) Tag() string {
+    return "hiddify-extension"
+}
+
+func (s *extensionService) Type() string {
+    return "extension"
+}
+
+func (s *extensionService) Start(stage adapter.StartStage) error {
+    table := db.GetTable[extensionData]()
 
 	for _, factory := range allExtensionsMap {
 		data, err := table.Get(factory.Id)

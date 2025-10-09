@@ -16,6 +16,7 @@ import (
 	C "github.com/sagernet/sing-box/constant"
 	"github.com/sagernet/sing-box/option"
 	dns "github.com/sagernet/sing-dns"
+	badoption "github.com/sagernet/sing/common/json/badoption"
 )
 
 const (
@@ -92,27 +93,6 @@ func addForceDirect(options *option.Options, opt *HiddifyOptions, directDNSDomai
 		directDNSDomains[parsedUrl.Host] = true
 	}
 	if len(directDNSDomains) > 0 {
-		// trickDnsDomains := []string{}
-		// directDNSDomains = removeDuplicateStr(directDNSDomains)
-		// b, _ := batch.New(context.Background(), batch.WithConcurrencyNum[bool](10))
-		// for _, d := range directDNSDomains {
-		// 	b.Go(d, func() (bool, error) {
-		// 		return isBlockedDomain(d), nil
-		// 	})
-		// }
-		// b.Wait()
-		// for domain, isBlock := range b.Result() {
-		// 	if isBlock.Value {
-		// 		trickDnsDomains = append(trickDnsDomains, domain)
-		// 	}
-		// }
-
-		// trickDomains := strings.Join(trickDnsDomains, ",")
-		// trickRule := Rule{Domains: trickDomains, Outbound: OutboundBypassTag}
-		// trickDnsRule := trickRule.MakeDNSRule()
-		// trickDnsRule.Server = DNSTricksDirectTag
-		// options.DNS.Rules = append([]option.DNSRule{{Type: C.RuleTypeDefault, DefaultOptions: trickDnsRule}}, options.DNS.Rules...)
-
 		directDNSDomainskeys := make([]string, 0, len(directDNSDomains))
 		for key := range directDNSDomains {
 			directDNSDomainskeys = append(directDNSDomainskeys, key)
@@ -121,7 +101,8 @@ func addForceDirect(options *option.Options, opt *HiddifyOptions, directDNSDomai
 		domains := strings.Join(directDNSDomainskeys, ",")
 		directRule := Rule{Domains: domains, Outbound: OutboundBypassTag}
 		dnsRule := directRule.MakeDNSRule()
-		dnsRule.Server = DNSDirectTag
+		dnsRule.DNSRuleAction.Action = C.RuleActionTypeRoute
+		dnsRule.DNSRuleAction.RouteOptions = option.DNSRouteActionOptions{Server: DNSDirectTag}
 		options.DNS.Rules = append([]option.DNSRule{{Type: C.RuleTypeDefault, DefaultOptions: dnsRule}}, options.DNS.Rules...)
 	}
 }
@@ -133,41 +114,18 @@ func setOutbounds(options *option.Options, input *option.Options, opt *HiddifyOp
 	OutboundMainProxyTag = OutboundSelectTag
 	// inbound==warp over proxies
 	// outbound==proxies over warp
-	if opt.Warp.EnableWarp {
-		for _, out := range input.Outbounds {
-			if out.Type == C.TypeCustom {
-				if warp, ok := out.CustomOptions["warp"].(map[string]interface{}); ok {
-					key, _ := warp["key"].(string)
-					if key == "p1" {
-						opt.Warp.EnableWarp = false
-						break
-					}
-				}
-			}
-			if out.Type == C.TypeWireGuard && (out.WireGuardOptions.PrivateKey == opt.Warp.WireguardConfig.PrivateKey || out.WireGuardOptions.PrivateKey == "p1") {
-				opt.Warp.EnableWarp = false
-				break
-			}
-		}
-	}
+	// Note: WARP detour wiring and fragmentation will be adapted later for v1.13 API
 	if opt.Warp.EnableWarp && (opt.Warp.Mode == "warp_over_proxy" || opt.Warp.Mode == "proxy_over_warp") {
 		out, err := GenerateWarpSingbox(opt.Warp.WireguardConfig, opt.Warp.CleanIP, opt.Warp.CleanPort, opt.Warp.FakePackets, opt.Warp.FakePacketSize, opt.Warp.FakePacketDelay, opt.Warp.FakePacketMode)
 		if err != nil {
 			return fmt.Errorf("failed to generate warp config: %v", err)
 		}
-		out.Tag = "Hiddify Warp ✅"
-		if opt.Warp.Mode == "warp_over_proxy" {
-			out.WireGuardOptions.Detour = OutboundSelectTag
-			OutboundMainProxyTag = out.Tag
-		} else {
-			out.WireGuardOptions.Detour = OutboundDirectTag
-		}
-		patchWarp(out, opt, true, nil)
+		out.Tag = "Hiddify Warp "
+		OutboundMainProxyTag = out.Tag
 		outbounds = append(outbounds, *out)
-		// tags = append(tags, out.Tag)
 	}
 	for _, out := range input.Outbounds {
-		outbound, serverDomain, err := patchOutbound(out, *opt, options.DNS.StaticIPs)
+		outbound, serverDomain, err := patchOutbound(out, *opt, nil)
 		if err != nil {
 			return err
 		}
@@ -182,29 +140,18 @@ func setOutbounds(options *option.Options, input *option.Options, opt *HiddifyOp
 			continue
 		case C.TypeSelector, C.TypeURLTest:
 			continue
-		case C.TypeCustom:
-			continue
 		default:
 			if !strings.Contains(out.Tag, "§hide§") {
 				tags = append(tags, out.Tag)
 			}
-			out = patchHiddifyWarpFromConfig(out, *opt)
 			outbounds = append(outbounds, out)
 		}
 	}
 
 	urlTest := option.Outbound{
-		Type: C.TypeURLTest,
-		Tag:  OutboundURLTestTag,
-		URLTestOptions: option.URLTestOutboundOptions{
-			Outbounds: tags,
-			URL:       opt.ConnectionTestUrl,
-			Interval:  option.Duration(opt.URLTestInterval.Duration()),
-			// IdleTimeout: option.Duration(opt.URLTestIdleTimeout.Duration()),
-			Tolerance:                 1,
-			IdleTimeout:               option.Duration(opt.URLTestInterval.Duration().Nanoseconds() * 3),
-			InterruptExistConnections: true,
-		},
+		Type:    C.TypeURLTest,
+		Tag:     OutboundURLTestTag,
+		Options: option.URLTestOutboundOptions{Outbounds: tags, URL: opt.ConnectionTestUrl, Interval: badoption.Duration(opt.URLTestInterval.Duration()), Tolerance: 1, IdleTimeout: badoption.Duration(opt.URLTestInterval.Duration().Nanoseconds() * 3), InterruptExistConnections: true},
 	}
 	defaultSelect := urlTest.Tag
 
@@ -213,15 +160,7 @@ func setOutbounds(options *option.Options, input *option.Options, opt *HiddifyOp
 			defaultSelect = "§default§"
 		}
 	}
-	selector := option.Outbound{
-		Type: C.TypeSelector,
-		Tag:  OutboundSelectTag,
-		SelectorOptions: option.SelectorOutboundOptions{
-			Outbounds:                 append([]string{urlTest.Tag}, tags...),
-			Default:                   defaultSelect,
-			InterruptExistConnections: true,
-		},
-	}
+	selector := option.Outbound{Type: C.TypeSelector, Tag: OutboundSelectTag, Options: option.SelectorOutboundOptions{Outbounds: append([]string{urlTest.Tag}, tags...), Default: defaultSelect, InterruptExistConnections: true}}
 
 	outbounds = append([]option.Outbound{selector, urlTest}, outbounds...)
 
@@ -239,14 +178,9 @@ func setOutbounds(options *option.Options, input *option.Options, opt *HiddifyOp
 			{
 				Tag:  OutboundDirectFragmentTag,
 				Type: C.TypeDirect,
-				DirectOptions: option.DirectOutboundOptions{
+				Options: option.DirectOutboundOptions{
 					DialerOptions: option.DialerOptions{
 						TCPFastOpen: false,
-						TLSFragment: option.TLSFragmentOptions{
-							Enabled: true,
-							Size:    opt.TLSTricks.FragmentSize,
-							Sleep:   opt.TLSTricks.FragmentSleep,
-						},
 					},
 				},
 			},
@@ -272,7 +206,7 @@ func setClashAPI(options *option.Options, opt *HiddifyOptions) {
 		}
 		options.Experimental = &option.ExperimentalOptions{
 			ClashAPI: &option.ClashAPIOptions{
-				ExternalController: fmt.Sprintf("%s:%d", "127.0.0.1", opt.ClashApiPort),
+				ExternalController: fmt.Sprintf("%s:%d", opt.ClashApiHost, opt.ClashApiPort),
 				Secret:             opt.ClashApiSecret,
 			},
 
@@ -285,537 +219,457 @@ func setClashAPI(options *option.Options, opt *HiddifyOptions) {
 }
 
 func setLog(options *option.Options, opt *HiddifyOptions) {
-	options.Log = &option.LogOptions{
-		Level:        opt.LogLevel,
-		Output:       opt.LogFile,
-		Disabled:     false,
-		Timestamp:    true,
-		DisableColor: true,
-	}
+    options.Log = &option.LogOptions{
+        Level:        opt.LogLevel,
+        Output:       opt.LogFile,
+        Disabled:     false,
+        Timestamp:    true,
+        DisableColor: true,
+    }
 }
 
 func setInbound(options *option.Options, opt *HiddifyOptions) {
-	var inboundDomainStrategy option.DomainStrategy
-	if !opt.ResolveDestination {
-		inboundDomainStrategy = option.DomainStrategy(dns.DomainStrategyAsIS)
-	} else {
-		inboundDomainStrategy = opt.IPv6Mode
-	}
-	if opt.EnableTunService {
-		ActivateTunnelService(*opt)
-	} else if opt.EnableTun {
-		tunInbound := option.Inbound{
-			Type: C.TypeTun,
-			Tag:  InboundTUNTag,
+    var inboundDomainStrategy option.DomainStrategy
+    if !opt.ResolveDestination {
+        inboundDomainStrategy = option.DomainStrategy(dns.DomainStrategyAsIS)
+    } else {
+        inboundDomainStrategy = opt.IPv6Mode
+    }
+    if opt.EnableTunService {
+        ActivateTunnelService(*opt)
+    } else if opt.EnableTun {
+        tunOpt := option.TunInboundOptions{
+            Stack:       opt.TUNStack,
+            MTU:         opt.MTU,
+            AutoRoute:   true,
+            StrictRoute: opt.StrictRoute,
+            InboundOptions: option.InboundOptions{
+                SniffEnabled:             true,
+                SniffOverrideDestination: false,
+                DomainStrategy:           inboundDomainStrategy,
+            },
+        }
+        options.Inbounds = append(options.Inbounds, option.Inbound{Type: C.TypeTun, Tag: InboundTUNTag, Options: tunOpt})
+    }
 
-			TunOptions: option.TunInboundOptions{
-				Stack:                  opt.TUNStack,
-				MTU:                    opt.MTU,
-				AutoRoute:              true,
-				StrictRoute:            opt.StrictRoute,
-				EndpointIndependentNat: true,
-				// GSO:                    runtime.GOOS != "windows",
-				InboundOptions: option.InboundOptions{
-					SniffEnabled:             true,
-					SniffOverrideDestination: false,
-					DomainStrategy:           inboundDomainStrategy,
-				},
-			},
-		}
-		switch opt.IPv6Mode {
-		case option.DomainStrategy(dns.DomainStrategyUseIPv4):
-			tunInbound.TunOptions.Inet4Address = []netip.Prefix{
-				netip.MustParsePrefix("172.19.0.1/28"),
-			}
-		case option.DomainStrategy(dns.DomainStrategyUseIPv6):
-			tunInbound.TunOptions.Inet6Address = []netip.Prefix{
-				netip.MustParsePrefix("fdfe:dcba:9876::1/126"),
-			}
-		default:
-			tunInbound.TunOptions.Inet4Address = []netip.Prefix{
-				netip.MustParsePrefix("172.19.0.1/28"),
-			}
-			tunInbound.TunOptions.Inet6Address = []netip.Prefix{
-				netip.MustParsePrefix("fdfe:dcba:9876::1/126"),
-			}
-		}
-		options.Inbounds = append(options.Inbounds, tunInbound)
+    var bind string
+    if opt.AllowConnectionFromLAN {
+        bind = "0.0.0.0"
+    } else {
+        bind = "127.0.0.1"
+    }
 
-	}
+    mixedListenAddr := badoption.Addr(netip.MustParseAddr(bind))
+    options.Inbounds = append(options.Inbounds, option.Inbound{
+        Type: C.TypeMixed,
+        Tag:  InboundMixedTag,
+        Options: option.HTTPMixedInboundOptions{
+            ListenOptions: option.ListenOptions{
+                Listen:     &mixedListenAddr,
+                ListenPort: opt.MixedPort,
+                InboundOptions: option.InboundOptions{
+                    SniffEnabled:             true,
+                    SniffOverrideDestination: true,
+                    DomainStrategy:           inboundDomainStrategy,
+                },
+            },
+            SetSystemProxy: opt.SetSystemProxy,
+        },
+    })
 
-	var bind string
-	if opt.AllowConnectionFromLAN {
-		bind = "0.0.0.0"
-	} else {
-		bind = "127.0.0.1"
-	}
-
-	options.Inbounds = append(
-		options.Inbounds,
-		option.Inbound{
-			Type: C.TypeMixed,
-			Tag:  InboundMixedTag,
-			MixedOptions: option.HTTPMixedInboundOptions{
-				ListenOptions: option.ListenOptions{
-					Listen:     option.NewListenAddress(netip.MustParseAddr(bind)),
-					ListenPort: opt.MixedPort,
-					InboundOptions: option.InboundOptions{
-						SniffEnabled:             true,
-						SniffOverrideDestination: true,
-						DomainStrategy:           inboundDomainStrategy,
-					},
-				},
-				SetSystemProxy: opt.SetSystemProxy,
-			},
-		},
-	)
-
-	options.Inbounds = append(
-		options.Inbounds,
-		option.Inbound{
-			Type: C.TypeDirect,
-			Tag:  InboundDNSTag,
-			DirectOptions: option.DirectInboundOptions{
-				ListenOptions: option.ListenOptions{
-					Listen:     option.NewListenAddress(netip.MustParseAddr(bind)),
-					ListenPort: opt.LocalDnsPort,
-				},
-				// OverrideAddress: "1.1.1.1",
-				// OverridePort:    53,
-			},
-		},
-	)
+    dnsListenAddr := badoption.Addr(netip.MustParseAddr(bind))
+    options.Inbounds = append(options.Inbounds, option.Inbound{
+        Type: C.TypeDirect,
+        Tag:  InboundDNSTag,
+        Options: option.DirectInboundOptions{
+            ListenOptions: option.ListenOptions{
+                Listen:     &dnsListenAddr,
+                ListenPort: opt.LocalDnsPort,
+            },
+        },
+    })
 }
 
 func setDns(options *option.Options, opt *HiddifyOptions) {
-	options.DNS = &option.DNSOptions{
-		StaticIPs: map[string][]string{},
-		DNSClientOptions: option.DNSClientOptions{
-			IndependentCache: opt.IndependentDNSCache,
-		},
-		Final: DNSRemoteTag,
-		Servers: []option.DNSServerOptions{
-			{
-				Tag:             DNSRemoteTag,
-				Address:         opt.RemoteDnsAddress,
-				AddressResolver: DNSDirectTag,
-				Strategy:        opt.RemoteDnsDomainStrategy,
-			},
-			{
-				Tag:     DNSTricksDirectTag,
-				Address: "https://sky.rethinkdns.com/",
-				// AddressResolver: "dns-local",
-				Strategy: opt.DirectDnsDomainStrategy,
-				Detour:   OutboundDirectFragmentTag,
-			},
-			{
-				Tag:             DNSDirectTag,
-				Address:         opt.DirectDnsAddress,
-				AddressResolver: DNSLocalTag,
-				Strategy:        opt.DirectDnsDomainStrategy,
-				Detour:          OutboundDirectTag,
-			},
-			{
-				Tag:     DNSLocalTag,
-				Address: "local",
-				Detour:  OutboundDirectTag,
-			},
-			{
-				Tag:     DNSBlockTag,
-				Address: "rcode://success",
-			},
-		},
-	}
-	sky_rethinkdns := getIPs([]string{"www.speedtest.net", "sky.rethinkdns.com"})
-	if len(sky_rethinkdns) > 0 {
-		options.DNS.StaticIPs["sky.rethinkdns.com"] = sky_rethinkdns
-	}
+    options.DNS = &option.DNSOptions{
+        RawDNSOptions: option.RawDNSOptions{
+            DNSClientOptions: option.DNSClientOptions{
+                IndependentCache: opt.IndependentDNSCache,
+            },
+            Final: DNSRemoteTag,
+            Servers: []option.DNSServerOptions{
+                {Tag: DNSRemoteTag, Options: option.LegacyDNSServerOptions{Address: opt.RemoteDnsAddress, AddressResolver: DNSDirectTag, Strategy: opt.RemoteDnsDomainStrategy}},
+                {Tag: DNSTricksDirectTag, Options: option.LegacyDNSServerOptions{Address: "https://sky.rethinkdns.com/", Strategy: opt.DirectDnsDomainStrategy, Detour: OutboundDirectTag}},
+                {Tag: DNSDirectTag, Options: option.LegacyDNSServerOptions{Address: opt.DirectDnsAddress, AddressResolver: DNSLocalTag, Strategy: opt.DirectDnsDomainStrategy, Detour: OutboundDirectTag}},
+                {Tag: DNSLocalTag, Type: C.DNSTypeLocal, Options: option.LocalDNSServerOptions{}},
+                {Tag: DNSBlockTag, Options: option.LegacyDNSServerOptions{Address: "rcode://success"}},
+            },
+        },
+    }
 }
 
 func setFakeDns(options *option.Options, opt *HiddifyOptions) {
-	if opt.EnableFakeDNS {
-		inet4Range := netip.MustParsePrefix("198.18.0.0/15")
-		inet6Range := netip.MustParsePrefix("fc00::/18")
-		options.DNS.FakeIP = &option.DNSFakeIPOptions{
-			Enabled:    true,
-			Inet4Range: &inet4Range,
-			Inet6Range: &inet6Range,
-		}
-		options.DNS.Servers = append(
-			options.DNS.Servers,
-			option.DNSServerOptions{
-				Tag:      DNSFakeTag,
-				Address:  "fakeip",
-				Strategy: option.DomainStrategy(dns.DomainStrategyUseIPv4),
-			},
-		)
-		options.DNS.Rules = append(
-			options.DNS.Rules,
-			option.DNSRule{
-				Type: C.RuleTypeDefault,
-				DefaultOptions: option.DefaultDNSRule{
-					Inbound:      []string{InboundTUNTag},
-					Server:       DNSFakeTag,
-					DisableCache: true,
-				},
-			},
-		)
-
-	}
+    if opt.EnableFakeDNS {
+        inet4Range := netip.MustParsePrefix("198.18.0.0/15")
+        inet6Range := netip.MustParsePrefix("fc00::/18")
+        inet4Prefix := badoption.Prefix(inet4Range)
+        inet6Prefix := badoption.Prefix(inet6Range)
+        options.DNS.Servers = append(options.DNS.Servers, option.DNSServerOptions{
+            Tag:  DNSFakeTag,
+            Type: C.DNSTypeFakeIP,
+            Options: option.FakeIPDNSServerOptions{
+                Inet4Range: &inet4Prefix,
+                Inet6Range: &inet6Prefix,
+            },
+        })
+        options.DNS.Rules = append(options.DNS.Rules, option.DNSRule{
+            Type: C.RuleTypeDefault,
+            DefaultOptions: option.DefaultDNSRule{
+                RawDefaultDNSRule: option.RawDefaultDNSRule{
+                    Inbound: badoption.Listable[string]{InboundTUNTag},
+                },
+                DNSRuleAction: option.DNSRuleAction{Action: C.RuleActionTypeRoute, RouteOptions: option.DNSRouteActionOptions{Server: DNSFakeTag, DisableCache: true}},
+            },
+        })
+    }
 }
 
 func setRoutingOptions(options *option.Options, opt *HiddifyOptions) {
-	dnsRules := []option.DefaultDNSRule{}
-	routeRules := []option.Rule{}
-	rulesets := []option.RuleSet{}
+    dnsRules := []option.DefaultDNSRule{}
+    routeRules := []option.Rule{}
+    rulesets := []option.RuleSet{}
 
-	if opt.EnableTun && runtime.GOOS == "android" {
-		routeRules = append(
-			routeRules,
-			option.Rule{
-				Type: C.RuleTypeDefault,
+    if opt.EnableTun && runtime.GOOS == "android" {
+        routeRules = append(
+            routeRules,
+            option.Rule{
+                Type: C.RuleTypeDefault,
 
-				DefaultOptions: option.DefaultRule{
-					Inbound:     []string{InboundTUNTag},
-					PackageName: []string{"app.hiddify.com"},
-					Outbound:    OutboundBypassTag,
-				},
-			},
-		)
-		// routeRules = append(
-		// 	routeRules,
-		// 	option.Rule{
-		// 		Type: C.RuleTypeDefault,
-		// 		DefaultOptions: option.DefaultRule{
-		// 			ProcessName: []string{"Hiddify", "Hiddify.exe", "HiddifyCli", "HiddifyCli.exe"},
-		// 			Outbound:    OutboundBypassTag,
-		// 		},
-		// 	},
-		// )
-	}
-	routeRules = append(routeRules, option.Rule{
-		Type: C.RuleTypeDefault,
-		DefaultOptions: option.DefaultRule{
-			Inbound:  []string{InboundDNSTag},
-			Outbound: OutboundDNSTag,
-		},
-	})
-	routeRules = append(routeRules, option.Rule{
-		Type: C.RuleTypeDefault,
-		DefaultOptions: option.DefaultRule{
-			Port:     []uint16{53},
-			Outbound: OutboundDNSTag,
-		},
-	})
+                DefaultOptions: option.DefaultRule{
+                    RawDefaultRule: option.RawDefaultRule{
+                        Inbound:     badoption.Listable[string]{InboundTUNTag},
+                        PackageName: badoption.Listable[string]{"app.hiddify.com"},
+                    },
+                    RuleAction: option.RuleAction{Action: C.RuleActionTypeRoute, RouteOptions: option.RouteActionOptions{Outbound: OutboundBypassTag}},
+                },
+            },
+        )
+        // routeRules = append(
+        // 	routeRules,
+        // 	option.Rule{
+        // 		Type: C.RuleTypeDefault,
+        // 		DefaultOptions: option.DefaultRule{
+        // 			ProcessName: []string{"Hiddify", "Hiddify.exe", "HiddifyCli", "HiddifyCli.exe"},
+        // 			Outbound:    OutboundBypassTag,
+        // 		},
+        // 	},
+        // )
+    }
+    routeRules = append(routeRules, option.Rule{
+        Type: C.RuleTypeDefault,
+        DefaultOptions: option.DefaultRule{
+            RawDefaultRule: option.RawDefaultRule{
+                Inbound: badoption.Listable[string]{InboundDNSTag},
+            },
+            RuleAction: option.RuleAction{Action: C.RuleActionTypeRoute, RouteOptions: option.RouteActionOptions{Outbound: OutboundDNSTag}},
+        },
+    })
+    routeRules = append(routeRules, option.Rule{
+        Type: C.RuleTypeDefault,
+        DefaultOptions: option.DefaultRule{
+            RawDefaultRule: option.RawDefaultRule{
+                Port: badoption.Listable[uint16]{53},
+            },
+            RuleAction: option.RuleAction{Action: C.RuleActionTypeRoute, RouteOptions: option.RouteActionOptions{Outbound: OutboundDNSTag}},
+        },
+    })
 
-	// {
-	// 	Type: C.RuleTypeDefault,
-	// 	DefaultOptions: option.DefaultRule{
-	// 		ClashMode: "Direct",
-	// 		Outbound:  OutboundDirectTag,
-	// 	},
-	// },
-	// {
-	// 	Type: C.RuleTypeDefault,
-	// 	DefaultOptions: option.DefaultRule{
-	// 		ClashMode: "Global",
-	// 		Outbound:  OutboundMainProxyTag,
-	// 	},
-	// },	}
+    // {
+    // 	Type: C.RuleTypeDefault,
+    // 	DefaultOptions: option.DefaultRule{
+    // 		ClashMode: "Direct",
+    // 		Outbound:  OutboundDirectTag,
+    // 	},
+    // },
+    // {
+    // 	Type: C.RuleTypeDefault,
+    // 	DefaultOptions: option.DefaultRule{
+    // 		ClashMode: "Global",
+    // 		Outbound:  OutboundMainProxyTag,
+    // 	},
+    // },	}
 
-	if opt.BypassLAN {
-		routeRules = append(
-			routeRules,
-			option.Rule{
-				Type: C.RuleTypeDefault,
-				DefaultOptions: option.DefaultRule{
-					// GeoIP:    []string{"private"},
-					IPIsPrivate: true,
-					Outbound:    OutboundBypassTag,
-				},
-			},
-		)
-	}
+    if opt.BypassLAN {
+        routeRules = append(
+            routeRules,
+            option.Rule{
+                Type: C.RuleTypeDefault,
+                DefaultOptions: option.DefaultRule{
+                    RawDefaultRule: option.RawDefaultRule{
+                        // GeoIP:    []string{"private"},
+                        IPIsPrivate: true,
+                    },
+                    RuleAction: option.RuleAction{Action: C.RuleActionTypeRoute, RouteOptions: option.RouteActionOptions{Outbound: OutboundBypassTag}},
+                },
+            },
+        )
+    }
 
-	for _, rule := range opt.Rules {
-		routeRule := rule.MakeRule()
-		switch rule.Outbound {
-		case "bypass":
-			routeRule.Outbound = OutboundBypassTag
-		case "block":
-			routeRule.Outbound = OutboundBlockTag
-		case "proxy":
-			routeRule.Outbound = OutboundMainProxyTag
-		}
+    if len(opt.ExtraBypassCIDRs) > 0 {
+        routeRules = append(routeRules, option.Rule{
+            Type: C.RuleTypeDefault,
+            DefaultOptions: option.DefaultRule{
+                RawDefaultRule: option.RawDefaultRule{
+                    IPCIDR: badoption.Listable[string](opt.ExtraBypassCIDRs),
+                },
+                RuleAction: option.RuleAction{Action: C.RuleActionTypeRoute, RouteOptions: option.RouteActionOptions{Outbound: OutboundBypassTag}},
+            },
+        })
+    }
 
-		if routeRule.IsValid() {
-			routeRules = append(
-				routeRules,
-				option.Rule{
-					Type:           C.RuleTypeDefault,
-					DefaultOptions: routeRule,
-				},
-			)
-		}
+    for _, rule := range opt.Rules {
+        routeRule := rule.MakeRule()
+        switch rule.Outbound {
+        case "bypass":
+            routeRule.RuleAction = option.RuleAction{Action: C.RuleActionTypeRoute, RouteOptions: option.RouteActionOptions{Outbound: OutboundBypassTag}}
+        case "block":
+            routeRule.RuleAction = option.RuleAction{Action: C.RuleActionTypeRoute, RouteOptions: option.RouteActionOptions{Outbound: OutboundBlockTag}}
+        case "proxy":
+            routeRule.RuleAction = option.RuleAction{Action: C.RuleActionTypeRoute, RouteOptions: option.RouteActionOptions{Outbound: OutboundMainProxyTag}}
+        }
 
-		dnsRule := rule.MakeDNSRule()
-		switch rule.Outbound {
-		case "bypass":
-			dnsRule.Server = DNSDirectTag
-		case "block":
-			dnsRule.Server = DNSBlockTag
-			dnsRule.DisableCache = true
-		case "proxy":
-			if opt.EnableFakeDNS {
-				fakeDnsRule := dnsRule
-				fakeDnsRule.Server = DNSFakeTag
-				fakeDnsRule.Inbound = []string{InboundTUNTag, InboundMixedTag}
-				dnsRules = append(dnsRules, fakeDnsRule)
-			}
-			dnsRule.Server = DNSRemoteTag
-		}
-		dnsRules = append(dnsRules, dnsRule)
-	}
+        if routeRule.IsValid() {
+            routeRules = append(
+                routeRules,
+                option.Rule{
+                    Type:           C.RuleTypeDefault,
+                    DefaultOptions: routeRule,
+                },
+            )
+        }
 
-	parsedURL, err := url.Parse(opt.ConnectionTestUrl)
-	if err == nil {
-		var dnsCPttl uint32 = 3000
-		dnsRules = append(dnsRules, option.DefaultDNSRule{
-			Domain:       []string{parsedURL.Host},
-			Server:       DNSRemoteTag,
-			RewriteTTL:   &dnsCPttl,
-			DisableCache: false,
-		})
-	}
+        dnsRule := rule.MakeDNSRule()
+        switch rule.Outbound {
+        case "bypass":
+            dnsRule.DNSRuleAction = option.DNSRuleAction{Action: C.RuleActionTypeRoute, RouteOptions: option.DNSRouteActionOptions{Server: DNSDirectTag}}
+        case "block":
+            dnsRule.DNSRuleAction = option.DNSRuleAction{Action: C.RuleActionTypeRoute, RouteOptions: option.DNSRouteActionOptions{Server: DNSBlockTag, DisableCache: true}}
+        case "proxy":
+            if opt.EnableFakeDNS {
+                fakeDnsRule := dnsRule
+                fakeDnsRule.DNSRuleAction = option.DNSRuleAction{Action: C.RuleActionTypeRoute, RouteOptions: option.DNSRouteActionOptions{Server: DNSFakeTag}}
+                fakeDnsRule.RawDefaultDNSRule.Inbound = badoption.Listable[string]{InboundTUNTag, InboundMixedTag}
+                dnsRules = append(dnsRules, fakeDnsRule)
+            }
+            dnsRule.DNSRuleAction = option.DNSRuleAction{Action: C.RuleActionTypeRoute, RouteOptions: option.DNSRouteActionOptions{Server: DNSRemoteTag}}
+        }
+        dnsRules = append(dnsRules, dnsRule)
+    }
 
-	if opt.BlockAds {
-		rulesets = append(rulesets, option.RuleSet{
-			Type:   C.RuleSetTypeRemote,
-			Tag:    "geosite-ads",
-			Format: C.RuleSetFormatBinary,
-			RemoteOptions: option.RemoteRuleSet{
-				URL:            "https://raw.githubusercontent.com/hiddify/hiddify-geo/rule-set/block/geosite-category-ads-all.srs",
-				UpdateInterval: option.Duration(5 * time.Hour * 24),
-			},
-		})
-		rulesets = append(rulesets, option.RuleSet{
-			Type:   C.RuleSetTypeRemote,
-			Tag:    "geosite-malware",
-			Format: C.RuleSetFormatBinary,
-			RemoteOptions: option.RemoteRuleSet{
-				URL:            "https://raw.githubusercontent.com/hiddify/hiddify-geo/rule-set/block/geosite-malware.srs",
-				UpdateInterval: option.Duration(5 * time.Hour * 24),
-			},
-		})
-		rulesets = append(rulesets, option.RuleSet{
-			Type:   C.RuleSetTypeRemote,
-			Tag:    "geosite-phishing",
-			Format: C.RuleSetFormatBinary,
-			RemoteOptions: option.RemoteRuleSet{
-				URL:            "https://raw.githubusercontent.com/hiddify/hiddify-geo/rule-set/block/geosite-phishing.srs",
-				UpdateInterval: option.Duration(5 * time.Hour * 24),
-			},
-		})
-		rulesets = append(rulesets, option.RuleSet{
-			Type:   C.RuleSetTypeRemote,
-			Tag:    "geosite-cryptominers",
-			Format: C.RuleSetFormatBinary,
-			RemoteOptions: option.RemoteRuleSet{
-				URL:            "https://raw.githubusercontent.com/hiddify/hiddify-geo/rule-set/block/geosite-cryptominers.srs",
-				UpdateInterval: option.Duration(5 * time.Hour * 24),
-			},
-		})
-		rulesets = append(rulesets, option.RuleSet{
-			Type:   C.RuleSetTypeRemote,
-			Tag:    "geoip-phishing",
-			Format: C.RuleSetFormatBinary,
-			RemoteOptions: option.RemoteRuleSet{
-				URL:            "https://raw.githubusercontent.com/hiddify/hiddify-geo/rule-set/block/geoip-phishing.srs",
-				UpdateInterval: option.Duration(5 * time.Hour * 24),
-			},
-		})
-		rulesets = append(rulesets, option.RuleSet{
-			Type:   C.RuleSetTypeRemote,
-			Tag:    "geoip-malware",
-			Format: C.RuleSetFormatBinary,
-			RemoteOptions: option.RemoteRuleSet{
-				URL:            "https://raw.githubusercontent.com/hiddify/hiddify-geo/rule-set/block/geoip-malware.srs",
-				UpdateInterval: option.Duration(5 * time.Hour * 24),
-			},
-		})
+    parsedURL, err := url.Parse(opt.ConnectionTestUrl)
+    if err == nil {
+        var dnsCPttl uint32 = 3000
+        dnsRules = append(dnsRules, option.DefaultDNSRule{
+            RawDefaultDNSRule: option.RawDefaultDNSRule{
+                Domain: badoption.Listable[string]{parsedURL.Host},
+            },
+            DNSRuleAction: option.DNSRuleAction{Action: C.RuleActionTypeRoute, RouteOptions: option.DNSRouteActionOptions{Server: DNSRemoteTag, RewriteTTL: &dnsCPttl}},
+        })
+    }
 
-		routeRules = append(routeRules, option.Rule{
-			Type: C.RuleTypeDefault,
-			DefaultOptions: option.DefaultRule{
-				RuleSet: []string{
-					"geosite-ads",
-					"geosite-malware",
-					"geosite-phishing",
-					"geosite-cryptominers",
-					"geoip-malware",
-					"geoip-phishing",
-				},
-				Outbound: OutboundBlockTag,
-			},
-		})
-		dnsRules = append(dnsRules, option.DefaultDNSRule{
-			RuleSet: []string{
-				"geosite-ads",
-				"geosite-malware",
-				"geosite-phishing",
-				"geosite-cryptominers",
-				"geoip-malware",
-				"geoip-phishing",
-			},
-			Server: DNSBlockTag,
-			//		DisableCache: true,
-		})
+    if opt.BlockAds {
+        rulesets = append(rulesets, option.RuleSet{
+            Type:   C.RuleSetTypeRemote,
+            Tag:    "geosite-ads",
+            Format: C.RuleSetFormatBinary,
+            RemoteOptions: option.RemoteRuleSet{
+                URL:            fmt.Sprintf("%s/rule-set/block/geosite-category-ads-all.srs", opt.GeoRulesBaseURL),
+                UpdateInterval: badoption.Duration(5 * time.Hour * 24),
+            },
+        })
+        rulesets = append(rulesets, option.RuleSet{
+            Type:   C.RuleSetTypeRemote,
+            Tag:    "geosite-malware",
+            Format: C.RuleSetFormatBinary,
+            RemoteOptions: option.RemoteRuleSet{
+                URL:            fmt.Sprintf("%s/rule-set/block/geosite-malware.srs", opt.GeoRulesBaseURL),
+                UpdateInterval: badoption.Duration(5 * time.Hour * 24),
+            },
+        })
+        rulesets = append(rulesets, option.RuleSet{
+            Type:   C.RuleSetTypeRemote,
+            Tag:    "geosite-phishing",
+            Format: C.RuleSetFormatBinary,
+            RemoteOptions: option.RemoteRuleSet{
+                URL:            fmt.Sprintf("%s/rule-set/block/geosite-phishing.srs", opt.GeoRulesBaseURL),
+                UpdateInterval: badoption.Duration(5 * time.Hour * 24),
+            },
+        })
+        rulesets = append(rulesets, option.RuleSet{
+            Type:   C.RuleSetTypeRemote,
+            Tag:    "geosite-cryptominers",
+            Format: C.RuleSetFormatBinary,
+            RemoteOptions: option.RemoteRuleSet{
+                URL:            fmt.Sprintf("%s/rule-set/block/geosite-cryptominers.srs", opt.GeoRulesBaseURL),
+                UpdateInterval: badoption.Duration(5 * time.Hour * 24),
+            },
+        })
+        rulesets = append(rulesets, option.RuleSet{
+            Type:   C.RuleSetTypeRemote,
+            Tag:    "geoip-phishing",
+            Format: C.RuleSetFormatBinary,
+            RemoteOptions: option.RemoteRuleSet{
+                URL:            fmt.Sprintf("%s/rule-set/block/geoip-phishing.srs", opt.GeoRulesBaseURL),
+                UpdateInterval: badoption.Duration(5 * time.Hour * 24),
+            },
+        })
+        rulesets = append(rulesets, option.RuleSet{
+            Type:   C.RuleSetTypeRemote,
+            Tag:    "geoip-malware",
+            Format: C.RuleSetFormatBinary,
+            RemoteOptions: option.RemoteRuleSet{
+                URL:            fmt.Sprintf("%s/rule-set/block/geoip-malware.srs", opt.GeoRulesBaseURL),
+                UpdateInterval: badoption.Duration(5 * time.Hour * 24),
+            },
+        })
 
-	}
-	if opt.Region != "other" {
-		dnsRules = append(dnsRules, option.DefaultDNSRule{
-			DomainSuffix: []string{"." + opt.Region},
-			Server:       DNSDirectTag,
-		})
-		routeRules = append(routeRules, option.Rule{
-			Type: C.RuleTypeDefault,
-			DefaultOptions: option.DefaultRule{
-				DomainSuffix: []string{"." + opt.Region},
-				Outbound:     OutboundDirectTag,
-			},
-		})
-		dnsRules = append(dnsRules, option.DefaultDNSRule{
-			RuleSet: []string{
-				"geoip-" + opt.Region,
-				"geosite-" + opt.Region,
-			},
-			Server: DNSDirectTag,
-		})
+        routeRules = append(routeRules, option.Rule{
+            Type: C.RuleTypeDefault,
+            DefaultOptions: option.DefaultRule{
+                RawDefaultRule: option.RawDefaultRule{
+                    RuleSet: badoption.Listable[string]{
+                        "geosite-ads",
+                        "geosite-malware",
+                        "geosite-phishing",
+                        "geosite-cryptominers",
+                        "geoip-malware",
+                        "geoip-phishing",
+                    },
+                },
+                RuleAction: option.RuleAction{Action: C.RuleActionTypeRoute, RouteOptions: option.RouteActionOptions{Outbound: OutboundBlockTag}},
+            },
+        })
+        dnsRules = append(dnsRules, option.DefaultDNSRule{
+            RawDefaultDNSRule: option.RawDefaultDNSRule{
+                RuleSet: badoption.Listable[string]{
+                    "geosite-ads",
+                    "geosite-malware",
+                    "geosite-phishing",
+                    "geosite-cryptominers",
+                    "geoip-malware",
+                    "geoip-phishing",
+                },
+            },
+            DNSRuleAction: option.DNSRuleAction{Action: C.RuleActionTypeRoute, RouteOptions: option.DNSRouteActionOptions{Server: DNSBlockTag}},
+        })
+        //		DisableCache: true,
+    }
 
-		rulesets = append(rulesets, option.RuleSet{
-			Type:   C.RuleSetTypeRemote,
-			Tag:    "geoip-" + opt.Region,
-			Format: C.RuleSetFormatBinary,
-			RemoteOptions: option.RemoteRuleSet{
-				URL:            "https://raw.githubusercontent.com/hiddify/hiddify-geo/rule-set/country/geoip-" + opt.Region + ".srs",
-				UpdateInterval: option.Duration(5 * time.Hour * 24),
-			},
-		})
-		rulesets = append(rulesets, option.RuleSet{
-			Type:   C.RuleSetTypeRemote,
-			Tag:    "geosite-" + opt.Region,
-			Format: C.RuleSetFormatBinary,
-			RemoteOptions: option.RemoteRuleSet{
-				URL:            "https://raw.githubusercontent.com/hiddify/hiddify-geo/rule-set/country/geosite-" + opt.Region + ".srs",
-				UpdateInterval: option.Duration(5 * time.Hour * 24),
-			},
-		})
+    if opt.Region != "other" {
+        dnsRules = append(dnsRules, option.DefaultDNSRule{
+            RawDefaultDNSRule: option.RawDefaultDNSRule{
+                DomainSuffix: badoption.Listable[string]{"." + opt.Region},
+            },
+            DNSRuleAction: option.DNSRuleAction{Action: C.RuleActionTypeRoute, RouteOptions: option.DNSRouteActionOptions{Server: DNSDirectTag}},
+        })
+        routeRules = append(routeRules, option.Rule{
+            Type: C.RuleTypeDefault,
+            DefaultOptions: option.DefaultRule{
+                RawDefaultRule: option.RawDefaultRule{
+                    DomainSuffix: badoption.Listable[string]{"." + opt.Region},
+                },
+                RuleAction: option.RuleAction{Action: C.RuleActionTypeRoute, RouteOptions: option.RouteActionOptions{Outbound: OutboundDirectTag}},
+            },
+        })
+        dnsRules = append(dnsRules, option.DefaultDNSRule{
+            RawDefaultDNSRule: option.RawDefaultDNSRule{
+                RuleSet: badoption.Listable[string]{
+                    "geoip-" + opt.Region,
+                    "geosite-" + opt.Region,
+                },
+            },
+            DNSRuleAction: option.DNSRuleAction{Action: C.RuleActionTypeRoute, RouteOptions: option.DNSRouteActionOptions{Server: DNSDirectTag}},
+        })
 
-		routeRules = append(routeRules, option.Rule{
-			Type: C.RuleTypeDefault,
-			DefaultOptions: option.DefaultRule{
-				RuleSet: []string{
-					"geoip-" + opt.Region,
-					"geosite-" + opt.Region,
-				},
-				Outbound: OutboundDirectTag,
-			},
-		})
+        rulesets = append(rulesets, option.RuleSet{
+            Type:   C.RuleSetTypeRemote,
+            Tag:    "geoip-" + opt.Region,
+            Format: C.RuleSetFormatBinary,
+            RemoteOptions: option.RemoteRuleSet{
+                URL:            fmt.Sprintf("%s/rule-set/country/geoip-%s.srs", opt.GeoRulesBaseURL, opt.Region),
+                UpdateInterval: badoption.Duration(5 * time.Hour * 24),
+            },
+        })
+        rulesets = append(rulesets, option.RuleSet{
+            Type:   C.RuleSetTypeRemote,
+            Tag:    "geosite-" + opt.Region,
+            Format: C.RuleSetFormatBinary,
+            RemoteOptions: option.RemoteRuleSet{
+                URL:            fmt.Sprintf("%s/rule-set/country/geosite-%s.srs", opt.GeoRulesBaseURL, opt.Region),
+                UpdateInterval: badoption.Duration(5 * time.Hour * 24),
+            },
+        })
 
-	}
-	options.Route = &option.RouteOptions{
-		Rules:               routeRules,
-		Final:               OutboundMainProxyTag,
-		AutoDetectInterface: true,
-		OverrideAndroidVPN:  true,
-		RuleSet:             rulesets,
-		// GeoIP: &option.GeoIPOptions{
-		// 	Path: opt.GeoIPPath,
-		// },
-		// Geosite: &option.GeositeOptions{
-		// 	Path: opt.GeoSitePath,
-		// },
-	}
-	if opt.EnableDNSRouting {
-		for _, dnsRule := range dnsRules {
-			if dnsRule.IsValid() {
-				options.DNS.Rules = append(
-					options.DNS.Rules,
-					option.DNSRule{
-						Type:           C.RuleTypeDefault,
-						DefaultOptions: dnsRule,
-					},
-				)
-			}
-		}
-	}
+        routeRules = append(routeRules, option.Rule{
+            Type: C.RuleTypeDefault,
+            DefaultOptions: option.DefaultRule{
+                RawDefaultRule: option.RawDefaultRule{
+                    RuleSet: badoption.Listable[string]{
+                        "geoip-" + opt.Region,
+                        "geosite-" + opt.Region,
+                    },
+                },
+                RuleAction: option.RuleAction{Action: C.RuleActionTypeRoute, RouteOptions: option.RouteActionOptions{Outbound: OutboundDirectTag}},
+            },
+        })
+
+    }
+    options.Route = &option.RouteOptions{
+        Rules:               routeRules,
+        Final:               OutboundMainProxyTag,
+        AutoDetectInterface: true,
+        OverrideAndroidVPN:  true,
+        RuleSet:             rulesets,
+        // GeoIP: &option.GeoIPOptions{
+        // 	Path: opt.GeoIPPath,
+        // },
+        // Geosite: &option.GeositeOptions{
+        // 	Path: opt.GeoSitePath,
+        // },
+    }
+    if opt.EnableDNSRouting {
+        for _, dnsRule := range dnsRules {
+            if dnsRule.IsValid() {
+                options.DNS.Rules = append(
+                    options.DNS.Rules,
+                    option.DNSRule{
+                        Type:           C.RuleTypeDefault,
+                        DefaultOptions: dnsRule,
+                    },
+                )
+            }
+        }
+    }
 }
 
 func patchHiddifyWarpFromConfig(out option.Outbound, opt HiddifyOptions) option.Outbound {
-	if opt.Warp.EnableWarp && opt.Warp.Mode == "proxy_over_warp" {
-		if out.DirectOptions.Detour == "" {
-			out.DirectOptions.Detour = "Hiddify Warp ✅"
-		}
-		if out.HTTPOptions.Detour == "" {
-			out.HTTPOptions.Detour = "Hiddify Warp ✅"
-		}
-		if out.Hysteria2Options.Detour == "" {
-			out.Hysteria2Options.Detour = "Hiddify Warp ✅"
-		}
-		if out.HysteriaOptions.Detour == "" {
-			out.HysteriaOptions.Detour = "Hiddify Warp ✅"
-		}
-		if out.SSHOptions.Detour == "" {
-			out.SSHOptions.Detour = "Hiddify Warp ✅"
-		}
-		if out.ShadowTLSOptions.Detour == "" {
-			out.ShadowTLSOptions.Detour = "Hiddify Warp ✅"
-		}
-		if out.ShadowsocksOptions.Detour == "" {
-			out.ShadowsocksOptions.Detour = "Hiddify Warp ✅"
-		}
-		if out.ShadowsocksROptions.Detour == "" {
-			out.ShadowsocksROptions.Detour = "Hiddify Warp ✅"
-		}
-		if out.SocksOptions.Detour == "" {
-			out.SocksOptions.Detour = "Hiddify Warp ✅"
-		}
-		if out.TUICOptions.Detour == "" {
-			out.TUICOptions.Detour = "Hiddify Warp ✅"
-		}
-		if out.TorOptions.Detour == "" {
-			out.TorOptions.Detour = "Hiddify Warp ✅"
-		}
-		if out.TrojanOptions.Detour == "" {
-			out.TrojanOptions.Detour = "Hiddify Warp ✅"
-		}
-		if out.VLESSOptions.Detour == "" {
-			out.VLESSOptions.Detour = "Hiddify Warp ✅"
-		}
-		if out.VMessOptions.Detour == "" {
-			out.VMessOptions.Detour = "Hiddify Warp ✅"
-		}
-		if out.WireGuardOptions.Detour == "" {
-			out.WireGuardOptions.Detour = "Hiddify Warp ✅"
-		}
-	}
-	return out
+    return out
 }
 
 func getIPs(domains []string) []string {
-	res := []string{}
-	for _, d := range domains {
-		ips, err := net.LookupHost(d)
-		if err != nil {
-			continue
-		}
-		for _, ip := range ips {
-			if !strings.HasPrefix(ip, "10.") {
-				res = append(res, ip)
-			}
-		}
-	}
-	return res
+    res := []string{}
+    for _, d := range domains {
+        ips, err := net.LookupHost(d)
+        if err != nil {
+            continue
+        }
+        for _, ip := range ips {
+            if !strings.HasPrefix(ip, "10.") {
+                res = append(res, ip)
+            }
+        }
+    }
+    return res
 }
 
 func isBlockedDomain(domain string) bool {
