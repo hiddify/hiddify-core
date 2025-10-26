@@ -24,6 +24,7 @@
     - [OutboundInfo](#hcore-OutboundInfo)
     - [ParseRequest](#hcore-ParseRequest)
     - [ParseResponse](#hcore-ParseResponse)
+    - [PauseRequest](#hcore-PauseRequest)
     - [SelectOutboundRequest](#hcore-SelectOutboundRequest)
     - [SetSystemProxyEnabledRequest](#hcore-SetSystemProxyEnabledRequest)
     - [SetupRequest](#hcore-SetupRequest)
@@ -446,6 +447,21 @@
 
 
 
+<a name="hcore-PauseRequest"></a>
+
+### PauseRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| mode | [SetupMode](#hcore-SetupMode) |  |  |
+
+
+
+
+
+
 <a name="hcore-SelectOutboundRequest"></a>
 
 ### SelectOutboundRequest
@@ -766,6 +782,7 @@ Define the message equivalent of SetupParameters
 | GetSystemProxyStatus | [.hcommon.Empty](#hcommon-Empty) | [SystemProxyStatus](#hcore-SystemProxyStatus) |  |
 | SetSystemProxyEnabled | [SetSystemProxyEnabledRequest](#hcore-SetSystemProxyEnabledRequest) | [.hcommon.Response](#hcommon-Response) |  |
 | LogListener | [.hcommon.Empty](#hcommon-Empty) | [LogMessage](#hcore-LogMessage) stream |  |
+| Pause | [PauseRequest](#hcore-PauseRequest) | [.hcommon.Empty](#hcommon-Empty) |  |
 
  
 

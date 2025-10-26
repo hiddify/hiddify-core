@@ -37,6 +37,7 @@ const (
 	Core_GetSystemProxyStatus_FullMethodName  = "/hcore.Core/GetSystemProxyStatus"
 	Core_SetSystemProxyEnabled_FullMethodName = "/hcore.Core/SetSystemProxyEnabled"
 	Core_LogListener_FullMethodName           = "/hcore.Core/LogListener"
+	Core_Pause_FullMethodName                 = "/hcore.Core/Pause"
 )
 
 // CoreClient is the client API for Core service.
@@ -61,6 +62,7 @@ type CoreClient interface {
 	GetSystemProxyStatus(ctx context.Context, in *hcommon.Empty, opts ...grpc.CallOption) (*SystemProxyStatus, error)
 	SetSystemProxyEnabled(ctx context.Context, in *SetSystemProxyEnabledRequest, opts ...grpc.CallOption) (*hcommon.Response, error)
 	LogListener(ctx context.Context, in *hcommon.Empty, opts ...grpc.CallOption) (grpc.ServerStreamingClient[LogMessage], error)
+	Pause(ctx context.Context, in *PauseRequest, opts ...grpc.CallOption) (*hcommon.Empty, error)
 }
 
 type coreClient struct {
@@ -286,6 +288,16 @@ func (c *coreClient) LogListener(ctx context.Context, in *hcommon.Empty, opts ..
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type Core_LogListenerClient = grpc.ServerStreamingClient[LogMessage]
 
+func (c *coreClient) Pause(ctx context.Context, in *PauseRequest, opts ...grpc.CallOption) (*hcommon.Empty, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(hcommon.Empty)
+	err := c.cc.Invoke(ctx, Core_Pause_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // CoreServer is the server API for Core service.
 // All implementations must embed UnimplementedCoreServer
 // for forward compatibility.
@@ -308,6 +320,7 @@ type CoreServer interface {
 	GetSystemProxyStatus(context.Context, *hcommon.Empty) (*SystemProxyStatus, error)
 	SetSystemProxyEnabled(context.Context, *SetSystemProxyEnabledRequest) (*hcommon.Response, error)
 	LogListener(*hcommon.Empty, grpc.ServerStreamingServer[LogMessage]) error
+	Pause(context.Context, *PauseRequest) (*hcommon.Empty, error)
 	mustEmbedUnimplementedCoreServer()
 }
 
@@ -368,6 +381,9 @@ func (UnimplementedCoreServer) SetSystemProxyEnabled(context.Context, *SetSystem
 }
 func (UnimplementedCoreServer) LogListener(*hcommon.Empty, grpc.ServerStreamingServer[LogMessage]) error {
 	return status.Errorf(codes.Unimplemented, "method LogListener not implemented")
+}
+func (UnimplementedCoreServer) Pause(context.Context, *PauseRequest) (*hcommon.Empty, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Pause not implemented")
 }
 func (UnimplementedCoreServer) mustEmbedUnimplementedCoreServer() {}
 func (UnimplementedCoreServer) testEmbeddedByValue()              {}
@@ -661,6 +677,24 @@ func _Core_LogListener_Handler(srv interface{}, stream grpc.ServerStream) error 
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type Core_LogListenerServer = grpc.ServerStreamingServer[LogMessage]
 
+func _Core_Pause_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(PauseRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CoreServer).Pause(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Core_Pause_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CoreServer).Pause(ctx, req.(*PauseRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Core_ServiceDesc is the grpc.ServiceDesc for Core service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -715,6 +749,10 @@ var Core_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "SetSystemProxyEnabled",
 			Handler:    _Core_SetSystemProxyEnabled_Handler,
+		},
+		{
+			MethodName: "Pause",
+			Handler:    _Core_Pause_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{
