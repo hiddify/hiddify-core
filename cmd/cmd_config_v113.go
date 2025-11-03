@@ -120,14 +120,6 @@ func readConfigAt(path string) (*option.Options, error) {
 	return &options, nil
 }
 
-func readConfigBytes(content []byte) (*option.Options, error) {
-	var options option.Options
-	if err := json.Unmarshal(content, &options); err != nil {
-		return nil, err
-	}
-	return &options, nil
-}
-
 func readHiddifyOptionsAt(path string) (*config.HiddifyOptions, error) {
 	content, err := os.ReadFile(path)
 	if err != nil {
