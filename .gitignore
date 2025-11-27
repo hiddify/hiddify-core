@@ -10,3 +10,4 @@ cert
 node_modules
 *.db
 *.json
+*.tar.gz
