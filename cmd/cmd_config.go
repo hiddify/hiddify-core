@@ -73,12 +73,10 @@ func build(path string, optionsPath string) error {
             optionsPath = filepath.Join(workingDir, optionsPath)
         }
     }
-    if options.Warp2.WireguardConfigStr != "" {
-        if err := json.Unmarshal([]byte(options.Warp2.WireguardConfigStr), &options.Warp2.WireguardConfig); err != nil {
-            return nil, err
-        }
-    }
-    return &options, nil
+	if options.Masque.Enable {
+		// ...
+	}
+	return &options, nil
 }
 
 func addHConfigFlags(commandRun *cobra.Command) {

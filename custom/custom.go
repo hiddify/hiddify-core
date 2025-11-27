@@ -133,37 +133,7 @@ func emptyOrErrorC(err error) *C.char {
 
 //export generateWarpConfig
 func generateWarpConfig(licenseKey *C.char, accountId *C.char, accessToken *C.char) (CResp *C.char) {
-	res, err := v2.GenerateWarpConfig(&pb.GenerateWarpConfigRequest{
-		LicenseKey:  C.GoString(licenseKey),
-		AccountId:   C.GoString(accountId),
-		AccessToken: C.GoString(accessToken),
-	})
-	if err != nil {
-		return C.CString(fmt.Sprint("error: ", err.Error()))
-	}
-	warpAccount := config.WarpAccount{
-		AccountID:   res.Account.AccountId,
-		AccessToken: res.Account.AccessToken,
-	}
-	warpConfig := config.WarpWireguardConfig{
-		PrivateKey:       res.Config.PrivateKey,
-		LocalAddressIPv4: res.Config.LocalAddressIpv4,
-		LocalAddressIPv6: res.Config.LocalAddressIpv6,
-		PeerPublicKey:    res.Config.PeerPublicKey,
-		ClientID:         res.Config.ClientId,
-	}
-	log := res.Log
-	response := &config.WarpGenerationResponse{
-		WarpAccount: warpAccount,
-		Log:         log,
-		Config:      warpConfig,
-	}
-
-	responseJson, err := json.Marshal(response)
-	if err != nil {
-		return C.CString("")
-	}
-	return C.CString(string(responseJson))
+	return C.CString("")
 }
 
 func main() {}

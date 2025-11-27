@@ -19,8 +19,7 @@ type HiddifyOptions struct {
 	// GeoIPPath        string      `json:"geoip-path"`
 	// GeoSitePath      string      `json:"geosite-path"`
 	Rules     []Rule      `json:"rules"`
-	Warp      WarpOptions `json:"warp"`
-	Warp2     WarpOptions `json:"warp2"`
+	Masque    MasqueOptions `json:"masque"`
 	Mux       MuxOptions  `json:"mux"`
 	TLSTricks TLSTricks   `json:"tls-tricks"`
 	GeoRulesBaseURL        string   `json:"geo-rules-base-url"`
@@ -88,19 +87,13 @@ type MuxOptions struct {
     Protocol   string `json:"protocol"`
 }
 
-type WarpOptions struct {
-    Id                 string              `json:"id"`
-    EnableWarp         bool                `json:"enable"`
-    Mode               string              `json:"mode"`
-    WireguardConfigStr string              `json:"wireguard-config"`
-    WireguardConfig    WarpWireguardConfig `json:"wireguardConfig"`
-    FakePackets        string              `json:"noise"`
-    FakePacketSize     string              `json:"noise-size"`
-    FakePacketDelay    string              `json:"noise-delay"`
-    FakePacketMode     string              `json:"noise-mode"`
-    CleanIP            string              `json:"clean-ip"`
-    CleanPort          uint16              `json:"clean-port"`
-    Account            WarpAccount         `json:"-"`
+type MasqueOptions struct {
+	Enable     bool   `json:"enable"`
+	Server     string `json:"server"`
+	Port       int    `json:"port"`
+	ServerName string `json:"server_name"`
+	Auth       string `json:"auth"`
+	ALPN       []string `json:"alpn"`
 }
 
 func DefaultHiddifyOptions() *HiddifyOptions {
