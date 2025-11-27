@@ -1,14 +1,41 @@
 package ui
 
-// import (
-// 	"encoding/json"
-// 	"testing"
-// )
+import (
+	json "github.com/goccy/go-json"
+	"testing"
+)
 
 // // Test UnmarshalJSON for different field types
-// func TestFormUnmarshalJSON(t *testing.T) {
-// 	formJSON := `{
-// 		"title": "Form Example",
+func TestFormUnmarshalJSON(t *testing.T) {
+	formJSON := `{
+		"title": "Form Example",
+		"description": "This is a sample form.",
+		"fields": [
+			{
+				"key": "inputKey",
+				"type": "Input",
+				"label": "Hi Group",
+				"placeholder": "Hi Group flutter",
+				"required": true,
+				"value": "D"
+			},
+			{
+				"key": "passwordKey",
+				"type": "Password",
+				"label": "Password",
+				"required": true,
+				"value": "secret"
+			},
+			{
+				"key": "emailKey",
+				"type": "Email",
+				"label": "Email Label",
+				"placeholder": "Enter your email",
+				"required": true,
+				"value": "example@example.com"
+			}
+		]
+	}`
 // 		"description": "This is a sample form.",
 // 		"fields": [
 // 			{

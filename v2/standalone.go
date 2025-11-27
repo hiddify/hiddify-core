@@ -104,7 +104,7 @@ func readConfigContent(configPath string) (ConfigResult, error) {
 		}
 		defer resp.Body.Close()
 
-		body, err := ioutil.ReadAll(resp.Body)
+		body, err := io.ReadAll(resp.Body)
 		if err != nil {
 			return ConfigResult{}, fmt.Errorf("failed to read config body: %w", err)
 		}
@@ -112,7 +112,7 @@ func readConfigContent(configPath string) (ConfigResult, error) {
 		refreshInterval, _ = extractRefreshInterval(resp.Header, content)
 		fmt.Printf("Refresh interval: %d\n", refreshInterval)
 	} else {
-		data, err := ioutil.ReadFile(configPath)
+		data, err := os.ReadFile(configPath)
 		if err != nil {
 			return ConfigResult{}, fmt.Errorf("failed to read config file: %w", err)
 		}
@@ -230,18 +230,6 @@ func ReadHiddifyOptionsAt(path string) (*config.HiddifyOptions, error) {
     err = json.Unmarshal(content, &options)
     if err != nil {
         return nil, err
-    }
-    if options.Warp.WireguardConfigStr != "" {
-        err := json.Unmarshal([]byte(options.Warp.WireguardConfigStr), &options.Warp.WireguardConfig)
-        if err != nil {
-            return nil, err
-        }
-    }
-    if options.Warp2.WireguardConfigStr != "" {
-        err := json.Unmarshal([]byte(options.Warp2.WireguardConfigStr), &options.Warp2.WireguardConfig)
-        if err != nil {
-            return nil, err
-        }
     }
     return &options, nil
 }

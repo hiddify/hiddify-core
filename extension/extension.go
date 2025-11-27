@@ -1,7 +1,7 @@
 package extension
 
 import (
-	"encoding/json"
+	json "github.com/goccy/go-json"
 
 	"github.com/hiddify/hiddify-core/config"
 	"github.com/hiddify/hiddify-core/extension/ui"

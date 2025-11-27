@@ -2,9 +2,8 @@ package config
 
 import (
 	"bytes"
-	"context"
+	json "github.com/goccy/go-json"
 	_ "embed"
-	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -15,7 +14,7 @@ import (
 	SJ "github.com/sagernet/sing/common/json"
 	"github.com/xmdhs/clash2singbox/convert"
 	"github.com/xmdhs/clash2singbox/model/clash"
-	"gopkg.in/yaml.v3"
+	"github.com/goccy/go-yaml"
 )
 
 //go:embed config.json.template

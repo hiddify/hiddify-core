@@ -1,7 +1,8 @@
 package v2
 
 import (
-	"encoding/json"
+	"context"
+	json "github.com/goccy/go-json"
 	"fmt"
 
 	"github.com/hiddify/hiddify-core/bridge"

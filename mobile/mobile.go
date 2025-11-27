@@ -1,7 +1,7 @@
 package mobile
 
 import (
-	"encoding/json"
+	json "github.com/goccy/go-json"
 	"os"
 	"path/filepath"
 

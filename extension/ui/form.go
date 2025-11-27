@@ -1,9 +1,9 @@
 package ui
 
-// import (
-// 	"encoding/json"
-// 	"fmt"
-// )
+import (
+	json "github.com/goccy/go-json"
+	"fmt"
+)
 
 // // InputField represents a text input field.
 // type InputField struct {

@@ -2,7 +2,7 @@ package v2
 
 import (
 	"context"
-	"encoding/json"
+	json "github.com/goccy/go-json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -209,18 +209,18 @@ func ChangeHiddifySettings(in *pb.ChangeHiddifySettingsRequest) (*pb.CoreInfoRes
 	if err != nil {
 		return nil, err
 	}
-	if HiddifyOptions.Warp.WireguardConfigStr != "" {
-		err := json.Unmarshal([]byte(HiddifyOptions.Warp.WireguardConfigStr), &HiddifyOptions.Warp.WireguardConfig)
-		if err != nil {
-			return nil, err
-		}
-	}
-	if HiddifyOptions.Warp2.WireguardConfigStr != "" {
-		err := json.Unmarshal([]byte(HiddifyOptions.Warp2.WireguardConfigStr), &HiddifyOptions.Warp2.WireguardConfig)
-		if err != nil {
-			return nil, err
-		}
-	}
+	// if HiddifyOptions.Warp.WireguardConfigStr != "" {
+	// 	err := json.Unmarshal([]byte(HiddifyOptions.Warp.WireguardConfigStr), &HiddifyOptions.Warp.WireguardConfig)
+	// 	if err != nil {
+	// 		return nil, err
+	// 	}
+	// }
+	// if HiddifyOptions.Warp2.WireguardConfigStr != "" {
+	// 	err := json.Unmarshal([]byte(HiddifyOptions.Warp2.WireguardConfigStr), &HiddifyOptions.Warp2.WireguardConfig)
+	// 	if err != nil {
+	// 		return nil, err
+	// 	}
+	// }
 	return &pb.CoreInfoResponse{}, nil
 }
 

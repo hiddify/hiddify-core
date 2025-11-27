@@ -1,18 +1,18 @@
 package v2
 
 import (
-    "encoding/json"
-    "io"
-    runtimeDebug "runtime/debug"
-    "time"
+	json "github.com/goccy/go-json"
+	"io"
+	runtimeDebug "runtime/debug"
+	"time"
 
-    "github.com/hiddify/hiddify-core/config"
-    "github.com/hiddify/hiddify-core/v2/service_manager"
+	"github.com/hiddify/hiddify-core/config"
+	"github.com/hiddify/hiddify-core/v2/service_manager"
 
-    "github.com/sagernet/sing-box/experimental/libbox"
-    "github.com/sagernet/sing-box/log"
-    "github.com/sagernet/sing-box/option"
-    E "github.com/sagernet/sing/common/exceptions"
+	"github.com/sagernet/sing-box/experimental/libbox"
+	"github.com/sagernet/sing-box/log"
+	"github.com/sagernet/sing-box/option"
+	E "github.com/sagernet/sing/common/exceptions"
 )
 
 var (

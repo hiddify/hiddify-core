@@ -1,8 +1,8 @@
 package config
 
 import (
+	json "github.com/goccy/go-json"
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
