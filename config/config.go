@@ -565,6 +565,27 @@ func setRoutingOptions(options *option.Options, opt *HiddifyOptions) {
         //		DisableCache: true,
     }
 
+    if opt.Region == "ir" {
+        rulesets = append(rulesets, option.RuleSet{
+            Type:   C.RuleSetTypeRemote,
+            Tag:    "geosite-category-ads-ir",
+            Format: C.RuleSetFormatBinary,
+            RemoteOptions: option.RemoteRuleSet{
+                URL:            fmt.Sprintf("%s/rule-set/block/geosite-category-ads-ir.srs", opt.GeoRulesBaseURL),
+                UpdateInterval: badoption.Duration(5 * time.Hour * 24),
+            },
+        })
+        routeRules = append(routeRules, option.Rule{
+            Type: C.RuleTypeDefault,
+            DefaultOptions: option.DefaultRule{
+                RawDefaultRule: option.RawDefaultRule{
+                    RuleSet: badoption.Listable[string]{"geosite-category-ads-ir"},
+                },
+                RuleAction: option.RuleAction{Action: C.RuleActionTypeRoute, RouteOptions: option.RouteActionOptions{Outbound: OutboundBlockTag}},
+            },
+        })
+    }
+
     if opt.Region != "other" {
         dnsRules = append(dnsRules, option.DefaultDNSRule{
             RawDefaultDNSRule: option.RawDefaultDNSRule{
