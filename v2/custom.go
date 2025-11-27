@@ -355,3 +355,41 @@ func Restart(in *pb.StartRequest) (*pb.CoreInfoResponse, error) {
 	resp, gErr := StartService(in)
 	return resp, gErr
 }
+
+func SelectOutbound(in *pb.SelectOutboundRequest) (*pb.CoreInfoResponse, error) {
+	client := libbox.NewCommandClient(
+		&CommandClientHandler{},
+		&libbox.CommandClientOptions{
+			Command: libbox.CommandGroup,
+		},
+	)
+	defer client.Disconnect()
+	err := client.Connect()
+	if err != nil {
+		return nil, err
+	}
+	err = client.SelectOutbound(in.GroupTag, in.OutboundTag)
+	if err != nil {
+		return nil, err
+	}
+	return &pb.CoreInfoResponse{}, nil
+}
+
+func UrlTest(in *pb.UrlTestRequest) (*pb.CoreInfoResponse, error) {
+	client := libbox.NewCommandClient(
+		&CommandClientHandler{},
+		&libbox.CommandClientOptions{
+			Command: libbox.CommandGroup,
+		},
+	)
+	defer client.Disconnect()
+	err := client.Connect()
+	if err != nil {
+		return nil, err
+	}
+	err = client.URLTest(in.GroupTag)
+	if err != nil {
+		return nil, err
+	}
+	return &pb.CoreInfoResponse{}, nil
+}

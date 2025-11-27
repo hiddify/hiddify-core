@@ -6,13 +6,11 @@ package main
 import "C"
 
 import (
-	json "github.com/goccy/go-json"
 	"fmt"
 	"os"
 	"unsafe"
 
 	"github.com/hiddify/hiddify-core/bridge"
-	"github.com/hiddify/hiddify-core/config"
 	pb "github.com/hiddify/hiddify-core/hiddifyrpc"
 	v2 "github.com/hiddify/hiddify-core/v2"
 

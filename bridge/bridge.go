@@ -2,6 +2,7 @@
 package bridge
 
 // #include "stdint.h"
+// #include "stdlib.h"
 // #include "include/dart_api_dl.c"
 //
 // // Go does not allow calling C function pointers directly. So we are
