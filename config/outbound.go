@@ -1,8 +1,6 @@
 package config
 
 import (
-    "fmt"
-
     C "github.com/sagernet/sing-box/constant"
     "github.com/sagernet/sing-box/option"
 )
@@ -111,12 +109,12 @@ func isOutboundReality(base option.Outbound, obj outboundMap) bool {
 }
 
 func patchOutbound(base option.Outbound, configOpt HiddifyOptions, staticIpsDns map[string][]string) (*option.Outbound, string, error) {
-    formatErr := func(err error) error {
-        return fmt.Errorf("error patching outbound[%s][%s]: %w", base.Tag, base.Type, err)
-    }
-    if err := patchWarp(&base, &configOpt, true, staticIpsDns); err != nil {
-        return nil, "", formatErr(err)
-    }
+    // formatErr := func(err error) error {
+    //     return fmt.Errorf("error patching outbound[%s][%s]: %w", base.Tag, base.Type, err)
+    // }
+    // if err := patchWarp(&base, &configOpt, true, staticIpsDns); err != nil {
+    //     return nil, "", formatErr(err)
+    // }
     // Apply MUX options in typed way for common outbounds
     if configOpt.Mux.Enable {
         mux := option.OutboundMultiplexOptions{

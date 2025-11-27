@@ -129,16 +129,16 @@ func readHiddifyOptionsAt(path string) (*config.HiddifyOptions, error) {
 	if err := json.Unmarshal(content, &options); err != nil {
 		return nil, err
 	}
-	if options.Warp.WireguardConfigStr != "" {
-		if err := json.Unmarshal([]byte(options.Warp.WireguardConfigStr), &options.Warp.WireguardConfig); err != nil {
-			return nil, err
-		}
-	}
-	if options.Warp2.WireguardConfigStr != "" {
-		if err := json.Unmarshal([]byte(options.Warp2.WireguardConfigStr), &options.Warp2.WireguardConfig); err != nil {
-			return nil, err
-		}
-	}
+	// if options.Warp.WireguardConfigStr != "" {
+	// 	if err := json.Unmarshal([]byte(options.Warp.WireguardConfigStr), &options.Warp.WireguardConfig); err != nil {
+	// 		return nil, err
+	// 	}
+	// }
+	// if options.Warp2.WireguardConfigStr != "" {
+	// 	if err := json.Unmarshal([]byte(options.Warp2.WireguardConfigStr), &options.Warp2.WireguardConfig); err != nil {
+	// 		return nil, err
+	// 	}
+	// }
 	return &options, nil
 }
 

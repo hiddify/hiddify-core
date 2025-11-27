@@ -1,9 +1,5 @@
 package v2
 
-/*
-#include "stdint.h"
-*/
-
 import (
 	"log"
 	"net"

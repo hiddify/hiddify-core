@@ -1,9 +1,9 @@
 package v2
 
 import (
-	"encoding/json"
+	json "github.com/goccy/go-json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"os"
 	"os/signal"

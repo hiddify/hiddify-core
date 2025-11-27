@@ -4,6 +4,7 @@ import (
 	"bytes"
 	json "github.com/goccy/go-json"
 	_ "embed"
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -109,10 +110,10 @@ func patchConfig(content []byte, name string, configOpt *HiddifyOptions) ([]byte
 	for _, base := range options.Outbounds {
 		out := base
 		b.Go(base.Tag, func() (*option.Outbound, error) {
-			err := patchWarp(&out, configOpt, false, nil)
-			if err != nil {
-				return nil, fmt.Errorf("[Warp] patch warp error: %w", err)
-			}
+			// err := patchWarp(&out, configOpt, false, nil)
+			// if err != nil {
+			// 	return nil, fmt.Errorf("[Warp] patch warp error: %w", err)
+			// }
 			// options.Outbounds[i] = base
 			return &out, nil
 		})
