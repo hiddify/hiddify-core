@@ -1,103 +1,239 @@
-# hiddify-core
+# vwarp
 
-## Docker
+vwarp is an open-source implementation of Cloudflare's Warp, enhanced with Psiphon integration for circumventing censorship. This project aims to provide a robust and cross-platform VPN solution that can use psiphon on top of warp and warp-in-warp for changing the user virtual nat location.
+<div align="center">
 
-To Run our docker image see <https://github.com/hiddify/hiddify-core/pkgs/container/hiddify-core>
+<img src="https://github.com/voidr3aper-anon/Vwarp/blob/master/logo/logo.png" width="350" alt="Vwarp Logo" />
 
-Docker
+
+**Maintainer**: [voidreaper](https://github.com/voidr3aper-anon)
+
+**Check out the telegram channel**: 📱 [@VoidVerge](https://t.me/VoidVerge)
+
+</div>
+## 🚀 Quick Start
 
 ```bash
-docker pull ghcr.io/hiddify/hiddify-core:latest
+# Basic WARP connection
+vwarp --bind 127.0.0.1:8086
+
+# MASQUE mode with noize obfuscation (bypass DPI/censorship)
+vwarp --masque --masque-noize --masque-noize-preset light
+
+# With AtomicNoize obfuscation (WireGuard anti-censorship)
+vwarp --atomicnoize-enable --bind 127.0.0.1:8086
+
+# Through SOCKS5 proxy (double-VPN)
+vwarp --proxy socks5://127.0.0.1:1080 --bind 127.0.0.1:8086
+
+# Maximum privacy (MASQUE + noize + SOCKS5 proxy)
+vwarp --masque --masque-noize --masque-noize-preset heavy --proxy socks5://127.0.0.1:1080
 ```
 
-Docker Compose
+📖 **Need help?** Check out the [MASQUE Noize Guide](docs/MASQUE_NOIZE_GUIDE.md), [SOCKS5 Proxy Guide](SOCKS_PROXY_GUIDE.md) and [AtomicNoize Guide](cmd/docs/ATOMICNOIZE_README.md)
 
+## Features
+
+- **Warp Integration**: Leverages Cloudflare's Warp to provide a fast and secure VPN service.
+- **MASQUE Tunneling**: Connect to Warp via MASQUE proxy protocol for enhanced censorship resistance.
+- **MASQUE Noize Obfuscation**: Advanced packet obfuscation system to bypass Deep Packet Inspection (DPI). [Learn more](docs/MASQUE_NOIZE_GUIDE.md)
+- **Psiphon Chaining**: Integrates with Psiphon for censorship circumvention, allowing seamless access to the internet in restrictive environments.
+- **Warp in Warp Chaining**: Chaining two instances of warp together to bypass location restrictions.
+- **AtomicNoize Protocol**: Advanced obfuscation protocol for enhanced privacy and censorship resistance. [Learn more](cmd/docs/ATOMICNOIZE_README.md)
+- **SOCKS5 Proxy Chaining**: Route WireGuard traffic through SOCKS5 proxies for double-VPN setups. [Learn more](SOCKS_PROXY_GUIDE.md)
+- **SOCKS5 Proxy Server**: Includes a SOCKS5 proxy server for secure and private browsing.
+
+## Getting Started
+
+### Prerequisites
+
+- [Download the latest version from the releases page](https://github.com/bepass-org/vwarp/releases)
+- Basic understanding of VPN and proxy configurations
+
+### Usage
+
+```
+NAME
+  vwarp
+
+FLAGS
+  -v, --verbose                                enable verbose logging
+  -4                                           only use IPv4 for random warp endpoint
+  -6                                           only use IPv6 for random warp endpoint
+  -b, --bind STRING                            socks bind address (default: 127.0.0.1:8086)
+  -e, --endpoint STRING                        warp endpoint
+  -k, --key STRING                             warp key
+      --dns STRING                             DNS address (default: 1.1.1.1)
+      --gool                                   enable gool mode (warp in warp)
+      --cfon                                   enable psiphon mode (must provide country as well)
+      --country STRING                         psiphon country code (default: AT)
+      --scan                                   enable warp scanning
+      --rtt DURATION                            (default: 1s)
+      --cache-dir STRING
+      --fwmark UINT32                           (default: 0)
+      --reserved STRING
+      --wgconf STRING
+      --test-url STRING                         (default: http://connectivity.cloudflareclient.com/cdn-cgi/trace)
+  -c, --config STRING
+      --atomicnoize-enable
+      --atomicnoize-i1 STRING                  AtomicNoize I1 signature packet in CPS format (e.g., '<b 0xc200...>'). Required for obfuscation.
+      --atomicnoize-i2 STRING                  AtomicNoize I2 signature packet (CPS format or simple number) (default: 1)
+      --atomicnoize-i3 STRING                  AtomicNoize I3 signature packet (CPS format or simple number) (default: 2)
+      --atomicnoize-i4 STRING                  AtomicNoize I4 signature packet (CPS format or simple number) (default: 3)
+      --atomicnoize-i5 STRING                  AtomicNoize I5 signature packet (CPS format or simple number) (default: 4)
+      --atomicnoize-s1 INT                     AtomicNoize S1 random prefix for Init packets (0-64 bytes) - disabled for WARP compatibility (default: 0)
+      --atomicnoize-s2 INT                     AtomicNoize S2 random prefix for Response packets (0-64 bytes) - disabled for WARP compatibility (default: 0)
+      --atomicnoize-jc INT                     Total number of junk packets to send (0-128) (default: 4)
+      --atomicnoize-jmin INT                   Minimum junk packet size in bytes (default: 40)
+      --atomicnoize-jmax INT                   Maximum junk packet size in bytes (default: 70)
+      --atomicnoize-jc-after-i1 INT            Number of junk packets to send immediately after I1 packet (default: 0)
+      --atomicnoize-jc-before-hs INT           Number of junk packets to send before handshake initiation (default: 0)
+      --atomicnoize-jc-after-hs INT            Number of junk packets to send after handshake (auto-calculated as Jc - JcBeforeHS - JcAfterI1) (default: 0)
+      --atomicnoize-junk-interval DURATION     Time interval between sending junk packets (e.g., 10ms, 50ms) (default: 10ms)
+      --atomicnoize-allow-zero-size            Allow zero-size junk packets (may not work with all UDP implementations)
+      --atomicnoize-handshake-delay DURATION   Delay before actual WireGuard handshake after I-sequence (e.g., 50ms, 100ms) (default: 0s)
+      --masque                                 enable MASQUE mode (connect to warp via MASQUE proxy)
+      --masque-auto-fallback                   automatically fallback to WireGuard if MASQUE fails
+      --masque-preferred                       prefer MASQUE over WireGuard (with automatic fallback)
+      --masque-noize                           enable MASQUE QUIC obfuscation (helps bypass DPI/censorship)
+      --masque-noize-preset STRING             MASQUE noize preset: light, medium, heavy, stealth, gfw, firewall (default: medium)
+      --masque-noize-config STRING             path to custom MASQUE noize configuration JSON file (overrides preset)
+      --proxy STRING                           SOCKS5 proxy address to route WireGuard traffic through (e.g., socks5://127.0.0.1:1080)
+```
+
+### Basic Examples
+
+#### Standard WARP Connection
 ```bash
-git clone https://github.com/hiddify/hiddify-core
-cd hiddify-core/docker
-docker-compose up
+vwarp --bind 127.0.0.1:8086
 ```
 
-## WRT
+#### MASQUE Mode with Noize Obfuscation
+```bash
+# Light obfuscation (recommended for most users)
+vwarp --masque --masque-noize --masque-noize-preset light
 
-...
+# Heavy obfuscation for strict censorship
+vwarp --masque --masque-noize --masque-noize-preset heavy
 
-## Extension
+# Custom configuration from JSON file
+vwarp --masque --masque-noize --masque-noize-config docs/examples/basic-obfuscation.json
+```
 
-An extension is something that can be added to hiddify application by a third party. It will add capability to modify configs, do some extra action, show and receive data from users.
+#### With AtomicNoize Obfuscation (WireGuard)
+```bash
+vwarp --atomicnoize-enable --atomicnoize-packet-size 1280 --bind 127.0.0.1:8086
+```
 
-This extension will be shown in all Hiddify Platforms such as Android/macOS/Linux/Windows/iOS
+#### Through SOCKS5 Proxy (Double VPN)
+```bash
+# First, start your SOCKS5 proxy (e.g., SSH tunnel, VPN, etc.)
+# Then route WARP through it:
+vwarp --proxy socks5://127.0.0.1:1080 --bind 127.0.0.1:8086
+```
 
-[Create an extension](https://github.com/hiddify/hiddify-app-example-extension)
+#### With Psiphon for Censorship Circumvention
+```bash
+vwarp --cfon --country US --bind 127.0.0.1:8086
+```
 
-Features and Road map:
+#### Warp-in-Warp (Change Location)
+```bash
+vwarp --gool --bind 127.0.0.1:8086
+```
 
-- [x] Add Third Party Extension capability
-- [x] Test Extension from Browser without any dependency to android/mac/.... `./cmd.sh extension` the open browser `https://127.0.0.1:12346`
-- [x] Show Custom UI from Extension `github.com/hiddify/hiddify-core/extension.UpdateUI()`
-- [x] Show Custom Dialog from Extension `github.com/hiddify/hiddify-core/extension.ShowDialog()`
-- [x] Show Alert Dialog from Extension `github.com/hiddify/hiddify-core/extension.ShowMessage()`
-- [x] Get Data from UI `github.com/hiddify/hiddify-core/extension.SubmitData()`
-- [x] Save Extension Data from `e.Base.Data`
-- [x] Load Extension Data to `e.Base.Data`
-- [x] Disable / Enable Extension
-- [x] Update user proxies before connecting `github.com/hiddify/hiddify-core/extension.BeforeAppConnect()`
-- [x] Parse Any type of configs/url `github.com/hiddify/hiddify-core/extension/sdk.ParseConfig()`
-- [ ] ToDo: Add Support for MultiLanguage Interface
-- [ ] ToDo: Custom Extension Outbound
-- [ ] ToDo: Custom Extension ProxyConfig
+#### Maximum Privacy Setup
+```bash
+vwarp \
+  --proxy socks5://127.0.0.1:1080 \
+  --atomicnoize-enable \
+  --atomicnoize-packet-size 1280 \
+  --atomicnoize-junk-size 50 \
+  --verbose
+```
 
-Demo Screenshots from HTML:
+#### Scan for Best Endpoint
+```bash
+vwarp --scan --rtt 800ms
+```
 
-![image](https://github.com/user-attachments/assets/0fbef76f-896f-4c45-a6b8-7a2687c47013)
-![image](https://github.com/user-attachments/assets/15bccfa0-d03e-4354-9368-241836d82948)
+For more detailed examples and configurations, see:
+- [SOCKS5 Proxy Chaining Guide](SOCKS_PROXY_GUIDE.md)
+- [AtomicNoize Protocol Guide](cmd/docs/ATOMICNOIZE_README.md)
 
-## SingBox
+### Country Codes for Psiphon
 
-Hiddify-core به صورت پیش‌فرض بر پایه `sing-box` نسخه `v1.13.0-alpha.20` (مطابق `go.mod`) اجرا می‌شود و از ساختار رسمی معرفی‌شده در [مستندات sing-box](https://sing-box.sagernet.org/configuration/) پیروی می‌کند.
+- Austria (AT)
+- Australia (AU)
+- Belgium (BE)
+- Bulgaria (BG)
+- Canada (CA)
+- Switzerland (CH)
+- Czech Republic (CZ)
+- Germany (DE)
+- Denmark (DK)
+- Estonia (EE)
+- Spain (ES)
+- Finland (FI)
+- France (FR)
+- United Kingdom (GB)
+- Croatia (HR)
+- Hungary (HU)
+- Ireland (IE)
+- India (IN)
+- Italy (IT)
+- Japan (JP)
+- Latvia (LV)
+- Netherlands (NL)
+- Norway (NO)
+- Poland (PL)
+- Portugal (PT)
+- Romania (RO)
+- Serbia (RS)
+- Sweden (SE)
+- Singapore (SG)
+- Slovakia (SK)
+- United States (US)
+![0](https://raw.githubusercontent.com/Ptechgithub/configs/main/media/line.gif)
+### Termux
 
-### مفاهیم پایه
+```
+bash <(curl -fsSL https://raw.githubusercontent.com/bepass-org/vwarp/master/termux.sh)
+```
+![1](https://github.com/Ptechgithub/configs/blob/main/media/18.jpg?raw=true)
 
-- **ساختار پیکربندی**
+- اگه حس کردی کانکت نمیشه یا خطا میده دستور `rm -rf .cache/vwarp` رو بزن و مجدد warp رو وارد کن.
+- بعد از نصب برای اجرای مجدد فقط کافیه که `warp` یا `usef` یا `./warp` یا `vwarp`را وارد کنید. همش یکیه هیچ فرقی ندارد.
+- اگر با 1 نصب نشد و خطا گرفتید ابتدا یک بار 3 را بزنید تا `Uninstall` شود سپس عدد 2 رو انتخاب کنید یعنی Arm.
+- برای نمایش راهنما ` warp -h` را وارد کنید. 
+- ای پی و پورت `127.0.0.1:8086`پروتکل socks
+- در روش تبدیل اکانت  warp به warp plus (گزینه 6) مقدار ID را وارد میکنید. پس از اجرای warp دو اکانت برای شما ساخته شده که پس از انتخاب گزینه 6 خودش مقدار ID هر دو اکانت را پیدا میکند و شما باید هر بار یکی را انتخاب کنید و یا میتوانید با انتخاب manual مقدار ID دیگری را وارد کنید (مثلا برای خود برنامه ی 1.1.1.1 یا جای دیگر) با این کار هر 20 ثانیه 1 GB به اکانت شما اضافه میشود. و اکانت شما از حالت رایگان به پلاس تبدیل میشود. 
+- برای تغییر  لوکیشن با استفاده از سایفون از طریق منو یا به صورت دستی (برای مثال به USA  از دستور  زیر استفاده کنید) 
+- `warp --cfon --country US`
+- برای اسکن ای پی سالم وارپ از دستور `warp --scan` استفاده کنید. 
+- برای ترکیب (chain) دو کانفیگ برای تغییر لوکیشن از دستور `warp --gool` استفاده کنید. 
 
-  ```jsonc
-  {
-    "log": {},
-    "dns": {},
-    "ntp": {},
-    "certificate": {},
-    "endpoints": [],
-    "inbounds": [],
-    "outbounds": [],
-    "route": {},
-    "services": [],
-    "experimental": {}
-  }
-  ```
+## Documentation
 
-  این اسکلت با سند `index.md` در مستندات رسمی هم‌راستاست و توسط توابع `config.BuildConfig()` و `config.BuildConfigJson()` ایجاد و تکمیل می‌شود.
-- **راستی‌آزمایی و قالب‌بندی**
+- **[SOCKS5 Proxy Chaining Guide](docs/SOCKS_PROXY_GUIDE.md)** - Complete guide for double-VPN setups
+- **[AtomicNoize Protocol](docs/ATOMICNOIZE_README.md)** - Advanced obfuscation protocol documentation
+- **[Configuration Examples](example_config.json)** - Sample configuration files(will place later)
 
-  - اجرای `sing-box check` برای اعتبارسنجی نهایی.
-  - اجرای `sing-box format -w -c config.json` جهت یکسان‌سازی قالب.
-  - در صورت نیاز به ادغام چند فایل: `sing-box merge output.json -c config.json`.
+## Acknowledgements
 
-- **منابع رسمی برای فیلدها**
+- **Maintainer**: [voidreaper](https://github.com/voidr3aper-anon)
+- Cloudflare Warp
+- Psiphon
+- WireGuard Protocol
+- Original Bepass-org team
+- All contributors and supporters of this project
 
-  - ورودی‌ها (Inbound): [Inbound](https://sing-box.sagernet.org/configuration/inbound/)
-  - خروجی‌ها (Outbound): [Outbound](https://sing-box.sagernet.org/configuration/outbound/)
-  - مسیریابی (Route): [Route](https://sing-box.sagernet.org/configuration/route/)
+## License
 
-### گردش کار در هسته
+This repository is a fork of [vwarp] (MIT licensed).
+Original files are © their respective authors and remain under the MIT License.
+All additional changes and new files in this fork are © voidreaper and licensed under [LICENSE-GPL-3.0], see LICENSE-GPL-3.0. all new feature tricks and ideas are not allowed to copy or pull from this  repo to the main repo or other similar project unless the maintainers have granted permission.
 
-- **تجمیع گزینه‌ها**: ساختار `config.HiddifyOptions` تنظیمات برنامه را نگهداری می‌کند و با `option.Options` کتابخانه sing-box ادغام می‌شود.
-- **تولید خودکار کانفیگ**:
-  - تابع `config.BuildConfig()` ماژول‌های DNS، Inbound، Outbound، و Rules را با آخرین استانداردهای sing-box تنظیم می‌کند.
-  - تابع `config.ParseConfigContent()` ورودی‌های Clash، V2Ray یا JSON را به ساختار sing-box تبدیل و با `libbox.CheckConfig` اعتبارسنجی می‌کند.
-- **به‌روزرسانی Warp و گزینه‌های پویا**: ماژول‌های `config/warp.go` و `config/outbound.go` پروفایل‌های WireGuard/WARP را مطابق API‌های sing-box 1.13 نگاشت می‌کنند.
 
-### نکات نسخه‌ای و مهاجرت
-
-- **توجه به تغییرات 1.11 تا 1.13**: قوانین DNS و Route در نسخه‌های اخیر به Rule-Setها منتقل شده‌اند. برای مهاجرت کانفیگ‌های قدیمی از راهنمای [Migration](https://sing-box.sagernet.org/migration/) استفاده کنید.
-- **فعال‌سازی ویژگی‌های جدید**: گزینه‌های `Route.AutoDetectInterface` و `Experimental.ClashAPI` در `config/config.go` مطابق توصیه‌های رسمی فعال شده‌اند.
-- **پیگیری انتشارها**: به‌منظور همگام‌سازی با تغییرات آینده، به مخزن [SagerNet/sing-box](https://github.com/SagerNet/sing-box) و صفحه انتشار نسخه‌ها مراجعه کنید.
+## Moto 
+ Beside Licensing , we honor the main developer of the code yousef Ghobadi ,and We coutinue the way of actively help the people access internet of freedom. We are legion. 
