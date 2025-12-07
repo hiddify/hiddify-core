@@ -32,15 +32,13 @@ jobs:
           go-version: '1.24'
           check-latest: true
 
-      - name: Setup `ko`
-        # The latest (@v0.6) version of this workflow has bug if there are uppercase letters in repo name
+      - name: Setup ko
         uses: ko-build/setup-ko@main
 
       - name: Extract metadata
         uses: docker/metadata-action@v5
         id: meta
         with:
-          # The images doesn't required, as only tags needed for the ko build step.
           images: ""
           tags: |
             type=ref,event=branch
@@ -54,4 +52,4 @@ jobs:
         env:
           TAGS: ${{ steps.meta.outputs.tags }}
           GOFLAGS: "-ldflags=-checklinkname=0"
-        run: ko build ./cmd/vwarp --platform "${PLATFORMS}" --bare --tags $(echo $TAGS | tr ' ' ',')
+        run: ko build ./main --platform "${PLATFORMS}" --bare --tags $(echo $TAGS | tr ' ' ',')
