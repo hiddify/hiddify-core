@@ -1,0 +1,74 @@
+name: Build Android (Manual)
+
+on:
+  workflow_dispatch:
+    inputs:
+      upload-artifact:
+        description: 'Upload artifact'
+        type: boolean
+        default: true
+        required: false
+
+env:
+  REGISTRY_IMAGE: ghcr.io/hiddify/hiddify-core
+
+jobs:
+  build-android:
+    name: Build Android Core
+    runs-on: ubuntu-latest
+    permissions: write-all
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: 'go.mod'
+          check-latest: false
+
+      - name: Setup Java
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Setup NDK
+        uses: nttld/setup-ndk@v1.4.0
+        id: setup-ndk
+        with:
+          ndk-version: r26b
+          add-to-path: true
+          local-cache: false
+          link-to-sdk: true
+
+      - name: Build Android
+        run: |
+          make -j$(($(nproc) + 1)) android
+
+      - name: Prepare artifacts
+        run: |
+          cd bin
+          tree || ls -la
+          rm -f /*.h */*.h
+          rm ./hiddify-libcore*sources* || echo "no source"
+          files=$(ls | grep -E '^libcore\.aar$')
+          echo "Packaging: $files"
+          tar -czvf hiddify-core-android.tar.gz $files
+
+      - name: Upload artifact
+        if: ${{ inputs.upload-artifact }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: hiddify-core-android
+          path: bin/*.tar.gz
+          retention-days: 7
+
+      - name: Summary
+        run: |
+          echo "✅ Android core compiled successfully with 16KB page size support!"
+          echo "📦 Artifact: hiddify-core-android.tar.gz"
+          ls -lh bin/*.tar.gz
