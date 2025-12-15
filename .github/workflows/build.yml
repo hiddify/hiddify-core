@@ -11,6 +11,20 @@ on:
       channel:
         type: string
         default: "dev"
+  workflow_dispatch:
+    inputs:
+      upload-artifact:
+        description: 'Upload artifacts'
+        type: boolean
+        default: true
+      tag-name:
+        description: 'Tag name'
+        type: string
+        default: "draft"
+      channel:
+        description: 'Channel (dev/prod)'
+        type: string
+        default: "dev"
 env:
     REGISTRY_IMAGE: ghcr.io/hiddify/hiddify-core
 
