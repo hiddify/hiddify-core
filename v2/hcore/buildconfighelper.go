@@ -108,19 +108,21 @@ func Parse(in *ParseRequest) (*ParseResponse, error) {
 }
 
 func (s *CoreService) ChangeHiddifySettings(ctx context.Context, in *ChangeHiddifySettingsRequest) (*CoreInfoResponse, error) {
-	return ChangeHiddifySettings(in)
+	return ChangeHiddifySettings(in, true)
 }
 
-func ChangeHiddifySettings(in *ChangeHiddifySettingsRequest) (*CoreInfoResponse, error) {
+func ChangeHiddifySettings(in *ChangeHiddifySettingsRequest, insert bool) (*CoreInfoResponse, error) {
 	static.HiddifyOptions = config.DefaultHiddifyOptions()
 	if in.HiddifySettingsJson == "" {
 		return &CoreInfoResponse{}, nil
 	}
-	settings := db.GetTable[hcommon.AppSettings]()
-	settings.UpdateInsert(&hcommon.AppSettings{
-		Id:    "HiddifySettingsJson",
-		Value: in.HiddifySettingsJson,
-	})
+	if insert {
+		settings := db.GetTable[hcommon.AppSettings]()
+		settings.UpdateInsert(&hcommon.AppSettings{
+			Id:    "HiddifySettingsJson",
+			Value: in.HiddifySettingsJson,
+		})
+	}
 	err := json.Unmarshal([]byte(in.HiddifySettingsJson), static.HiddifyOptions)
 	if err != nil {
 		return nil, err

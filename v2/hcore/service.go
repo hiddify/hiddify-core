@@ -54,6 +54,7 @@ func Setup(params *SetupRequest, platformInterface libbox.PlatformInterface) err
 		Log(LogLevel_FATAL, LogType_CORE, err.Error())
 		<-time.After(5 * time.Second)
 	})
+	static.debug = params.Debug
 	static.globalPlatformInterface = platformInterface
 	if grpcServer[params.Mode] != nil {
 		Log(LogLevel_WARNING, LogType_CORE, "grpcServer already started")
@@ -113,17 +114,18 @@ func Setup(params *SetupRequest, platformInterface libbox.PlatformInterface) err
 	}
 	settings := db.GetTable[hcommon.AppSettings]()
 	val, err := settings.Get("HiddifySettingsJson")
+	Log(LogLevel_DEBUG, LogType_CORE, "HiddifySettingsJson", val, err)
 	if val == nil || err != nil {
 		// if params.Mode == SetupMode_GRPC_BACKGROUND_INSECURE {
-		_, err := ChangeHiddifySettings(&ChangeHiddifySettingsRequest{HiddifySettingsJson: ""})
+		_, err := ChangeHiddifySettings(&ChangeHiddifySettingsRequest{HiddifySettingsJson: ""}, false)
 		if err != nil {
-			Log(LogLevel_DEBUG, LogType_CORE, E.Cause(err, "ChangeHiddifySettings").Error())
+			Log(LogLevel_ERROR, LogType_CORE, E.Cause(err, "ChangeHiddifySettings").Error())
 		}
 	} else {
 		// settings := db.GetTable[hcommon.AppSettings]()
-		_, err := ChangeHiddifySettings(&ChangeHiddifySettingsRequest{HiddifySettingsJson: val.Value.(string)})
+		_, err := ChangeHiddifySettings(&ChangeHiddifySettingsRequest{HiddifySettingsJson: val.Value.(string)}, false)
 		if err != nil {
-			Log(LogLevel_DEBUG, LogType_CORE, E.Cause(err, "ChangeHiddifySettings").Error())
+			Log(LogLevel_ERROR, LogType_CORE, E.Cause(err, "ChangeHiddifySettings").Error())
 		}
 
 	}

@@ -109,7 +109,7 @@ func StartService(in *StartRequest) (coreResponse *CoreInfoResponse, err error) 
 	if err != nil {
 		return errorWrapper(MessageType_ERROR_BUILDING_CONFIG, err)
 	}
-	Log(LogLevel_DEBUG, LogType_CORE, "Current Config is:\n", string(pout))
+	Log(LogLevel_INFO, LogType_CORE, "Current Config is:\n", string(pout))
 
 	bopts := box.Options{
 		Options:           *options,

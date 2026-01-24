@@ -17,7 +17,7 @@ func NewObserver[T any](listenerBufferSize int) *observable.Observer[T] {
 }
 
 func Log(level LogLevel, typ LogType, message ...any) {
-	if level != LogLevel_DEBUG {
+	if static.debug || level != LogLevel_DEBUG {
 		log.Debug(level, typ, fmt.Sprint(message...))
 		fmt.Printf("%v %v %v\n", level, typ, fmt.Sprint(message...))
 		os.Stderr.WriteString(fmt.Sprintf("%v %v %v\n", level, typ, fmt.Sprint(message...)))

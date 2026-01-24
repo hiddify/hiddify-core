@@ -23,6 +23,7 @@ type HiddifyInstance struct {
 	lock                      sync.Mutex
 	globalPlatformInterface   libbox.PlatformInterface
 	previousStartRequest      *StartRequest
+	debug                     bool
 }
 
 var static = &HiddifyInstance{
