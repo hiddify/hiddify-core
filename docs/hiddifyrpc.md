@@ -11,6 +11,12 @@
     - [Outbound](#config-Outbound)
     - [Protocol](#config-Protocol)
   
+- [v2/hcommon/common.proto](#v2_hcommon_common-proto)
+    - [Empty](#hcommon-Empty)
+    - [Response](#hcommon-Response)
+  
+    - [ResponseCode](#hcommon-ResponseCode)
+  
 - [v2/hcore/hcore.proto](#v2_hcore_hcore-proto)
     - [ChangeHiddifySettingsRequest](#hcore-ChangeHiddifySettingsRequest)
     - [CoreInfoResponse](#hcore-CoreInfoResponse)
@@ -53,6 +59,13 @@
 - [v2/hcore/tunnelservice/tunnel_service.proto](#v2_hcore_tunnelservice_tunnel_service-proto)
     - [TunnelService](#tunnelservice-TunnelService)
   
+- [v2/hello/hello.proto](#v2_hello_hello-proto)
+    - [HelloRequest](#hello-HelloRequest)
+    - [HelloResponse](#hello-HelloResponse)
+  
+- [v2/hello/hello_service.proto](#v2_hello_hello_service-proto)
+    - [Hello](#hello-Hello)
+  
 - [v2/hiddifyoptions/hiddify_options.proto](#v2_hiddifyoptions_hiddify_options-proto)
     - [DNSOptions](#hiddifyoptions-DNSOptions)
     - [HiddifyOptions](#hiddifyoptions-HiddifyOptions)
@@ -69,6 +82,11 @@
   
     - [DomainStrategy](#hiddifyoptions-DomainStrategy)
   
+- [v2/profile/profile.proto](#v2_profile_profile-proto)
+    - [ProfileEntity](#profile-ProfileEntity)
+    - [ProfileOptions](#profile-ProfileOptions)
+    - [SubscriptionInfo](#profile-SubscriptionInfo)
+  
 - [v2/profile/profile_service.proto](#v2_profile_profile_service-proto)
     - [AddProfileRequest](#profile-AddProfileRequest)
     - [MultiProfilesResponse](#profile-MultiProfilesResponse)
@@ -76,27 +94,6 @@
     - [ProfileResponse](#profile-ProfileResponse)
   
     - [ProfileService](#profile-ProfileService)
-  
-- [v2/profile/profile.proto](#v2_profile_profile-proto)
-    - [ProfileEntity](#profile-ProfileEntity)
-    - [ProfileOptions](#profile-ProfileOptions)
-    - [SubscriptionInfo](#profile-SubscriptionInfo)
-  
-- [v2/hcommon/common.proto](#v2_hcommon_common-proto)
-    - [Empty](#hcommon-Empty)
-    - [Response](#hcommon-Response)
-  
-    - [ResponseCode](#hcommon-ResponseCode)
-  
-- [v2/hello/hello_service.proto](#v2_hello_hello_service-proto)
-    - [Hello](#hello-Hello)
-  
-- [v2/hello/hello.proto](#v2_hello_hello-proto)
-    - [HelloRequest](#hello-HelloRequest)
-    - [HelloResponse](#hello-HelloResponse)
-  
-- [extension/extension_service.proto](#extension_extension_service-proto)
-    - [ExtensionHostService](#extension-ExtensionHostService)
   
 - [extension/extension.proto](#extension_extension-proto)
     - [EditExtensionRequest](#extension-EditExtensionRequest)
@@ -110,6 +107,9 @@
     - [SendExtensionDataRequest.DataEntry](#extension-SendExtensionDataRequest-DataEntry)
   
     - [ExtensionResponseType](#extension-ExtensionResponseType)
+  
+- [extension/extension_service.proto](#extension_extension_service-proto)
+    - [ExtensionHostService](#extension-ExtensionHostService)
   
 - [Scalar Value Types](#scalar-value-types)
 
@@ -211,6 +211,61 @@
 | stun | 3 |  |
 | dns | 4 |  |
 | bittorrent | 5 |  |
+
+
+ 
+
+ 
+
+ 
+
+
+
+<a name="v2_hcommon_common-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## v2/hcommon/common.proto
+
+
+
+<a name="hcommon-Empty"></a>
+
+### Empty
+
+
+
+
+
+
+
+<a name="hcommon-Response"></a>
+
+### Response
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| code | [ResponseCode](#hcommon-ResponseCode) |  |  |
+| message | [string](#string) |  |  |
+
+
+
+
+
+ 
+
+
+<a name="hcommon-ResponseCode"></a>
+
+### ResponseCode
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| OK | 0 |  |
+| FAILED | 1 |  |
+| AUTH_NEED | 2 |  |
 
 
  
@@ -869,6 +924,79 @@ Define the message equivalent of SetupParameters
 
 
 
+<a name="v2_hello_hello-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## v2/hello/hello.proto
+
+
+
+<a name="hello-HelloRequest"></a>
+
+### HelloRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="hello-HelloResponse"></a>
+
+### HelloResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| message | [string](#string) |  |  |
+
+
+
+
+
+ 
+
+ 
+
+ 
+
+ 
+
+
+
+<a name="v2_hello_hello_service-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## v2/hello/hello_service.proto
+
+
+ 
+
+ 
+
+ 
+
+
+<a name="hello-Hello"></a>
+
+### Hello
+
+
+| Method Name | Request Type | Response Type | Description |
+| ----------- | ------------ | ------------- | ------------|
+| SayHello | [HelloRequest](#hello-HelloRequest) | [HelloResponse](#hello-HelloResponse) |  |
+| SayHelloStream | [HelloRequest](#hello-HelloRequest) stream | [HelloResponse](#hello-HelloResponse) stream |  |
+
+ 
+
+
+
 <a name="v2_hiddifyoptions_hiddify_options-proto"></a>
 <p align="right"><a href="#top">Top</a></p>
 
@@ -1146,6 +1274,80 @@ DomainStrategy defines the strategies for IP address preference when resolving d
 
 
 
+<a name="v2_profile_profile-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## v2/profile/profile.proto
+
+
+
+<a name="profile-ProfileEntity"></a>
+
+### ProfileEntity
+ProfileEntity defines a profile entity.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| id | [string](#string) |  | Unique identifier for the profile. |
+| name | [string](#string) |  | bool active = 2; // Indicates if the profile is active.
+
+Name of the profile. |
+| url | [string](#string) |  | URL associated with the profile. |
+| last_update | [int64](#int64) |  | Last update time in milliseconds of the profile. |
+| options | [ProfileOptions](#profile-ProfileOptions) |  | Options associated with the profile. |
+| sub_info | [SubscriptionInfo](#profile-SubscriptionInfo) |  | Subscription-related information. |
+| override_hiddify_options | [hiddifyoptions.HiddifyOptions](#hiddifyoptions-HiddifyOptions) |  | Override Hiddify options. |
+
+
+
+
+
+
+<a name="profile-ProfileOptions"></a>
+
+### ProfileOptions
+ProfileOptions defines options for a profile.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| update_interval | [int64](#int64) |  | Update interval in milliseconds. |
+
+
+
+
+
+
+<a name="profile-SubscriptionInfo"></a>
+
+### SubscriptionInfo
+SubscriptionInfo defines subscription-related information.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| upload | [int64](#int64) |  | Upload speed in bytes. |
+| download | [int64](#int64) |  | Download speed in bytes. |
+| total | [int64](#int64) |  | Total data in bytes. |
+| expire | [int64](#int64) |  | Expiration time in milliseconds of the subscription. |
+| web_page_url | [string](#string) |  | URL for the web page. |
+| support_url | [string](#string) |  | URL for support. |
+
+
+
+
+
+ 
+
+ 
+
+ 
+
+ 
+
+
+
 <a name="v2_profile_profile_service-proto"></a>
 <p align="right"><a href="#top">Top</a></p>
 
@@ -1244,239 +1446,6 @@ ProfileService defines the RPC methods available for managing profiles.
 | SetActiveProfile | [ProfileRequest](#profile-ProfileRequest) | [.hcommon.Response](#hcommon-Response) | SetActiveProfile sets a profile as active, identified by ID, name, or URL. |
 | AddProfile | [AddProfileRequest](#profile-AddProfileRequest) | [ProfileResponse](#profile-ProfileResponse) | AddProfile adds a new profile using either a URL or the raw profile content. |
 | DeleteProfile | [ProfileRequest](#profile-ProfileRequest) | [.hcommon.Response](#hcommon-Response) | DeleteProfile deletes a profile identified by ID, name, or URL. |
-
- 
-
-
-
-<a name="v2_profile_profile-proto"></a>
-<p align="right"><a href="#top">Top</a></p>
-
-## v2/profile/profile.proto
-
-
-
-<a name="profile-ProfileEntity"></a>
-
-### ProfileEntity
-ProfileEntity defines a profile entity.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| id | [string](#string) |  | Unique identifier for the profile. |
-| name | [string](#string) |  | bool active = 2; // Indicates if the profile is active.
-
-Name of the profile. |
-| url | [string](#string) |  | URL associated with the profile. |
-| last_update | [int64](#int64) |  | Last update time in milliseconds of the profile. |
-| options | [ProfileOptions](#profile-ProfileOptions) |  | Options associated with the profile. |
-| sub_info | [SubscriptionInfo](#profile-SubscriptionInfo) |  | Subscription-related information. |
-| override_hiddify_options | [hiddifyoptions.HiddifyOptions](#hiddifyoptions-HiddifyOptions) |  | Override Hiddify options. |
-
-
-
-
-
-
-<a name="profile-ProfileOptions"></a>
-
-### ProfileOptions
-ProfileOptions defines options for a profile.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| update_interval | [int64](#int64) |  | Update interval in milliseconds. |
-
-
-
-
-
-
-<a name="profile-SubscriptionInfo"></a>
-
-### SubscriptionInfo
-SubscriptionInfo defines subscription-related information.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| upload | [int64](#int64) |  | Upload speed in bytes. |
-| download | [int64](#int64) |  | Download speed in bytes. |
-| total | [int64](#int64) |  | Total data in bytes. |
-| expire | [int64](#int64) |  | Expiration time in milliseconds of the subscription. |
-| web_page_url | [string](#string) |  | URL for the web page. |
-| support_url | [string](#string) |  | URL for support. |
-
-
-
-
-
- 
-
- 
-
- 
-
- 
-
-
-
-<a name="v2_hcommon_common-proto"></a>
-<p align="right"><a href="#top">Top</a></p>
-
-## v2/hcommon/common.proto
-
-
-
-<a name="hcommon-Empty"></a>
-
-### Empty
-
-
-
-
-
-
-
-<a name="hcommon-Response"></a>
-
-### Response
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| code | [ResponseCode](#hcommon-ResponseCode) |  |  |
-| message | [string](#string) |  |  |
-
-
-
-
-
- 
-
-
-<a name="hcommon-ResponseCode"></a>
-
-### ResponseCode
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| OK | 0 |  |
-| FAILED | 1 |  |
-| AUTH_NEED | 2 |  |
-
-
- 
-
- 
-
- 
-
-
-
-<a name="v2_hello_hello_service-proto"></a>
-<p align="right"><a href="#top">Top</a></p>
-
-## v2/hello/hello_service.proto
-
-
- 
-
- 
-
- 
-
-
-<a name="hello-Hello"></a>
-
-### Hello
-
-
-| Method Name | Request Type | Response Type | Description |
-| ----------- | ------------ | ------------- | ------------|
-| SayHello | [HelloRequest](#hello-HelloRequest) | [HelloResponse](#hello-HelloResponse) |  |
-| SayHelloStream | [HelloRequest](#hello-HelloRequest) stream | [HelloResponse](#hello-HelloResponse) stream |  |
-
- 
-
-
-
-<a name="v2_hello_hello-proto"></a>
-<p align="right"><a href="#top">Top</a></p>
-
-## v2/hello/hello.proto
-
-
-
-<a name="hello-HelloRequest"></a>
-
-### HelloRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  |  |
-
-
-
-
-
-
-<a name="hello-HelloResponse"></a>
-
-### HelloResponse
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| message | [string](#string) |  |  |
-
-
-
-
-
- 
-
- 
-
- 
-
- 
-
-
-
-<a name="extension_extension_service-proto"></a>
-<p align="right"><a href="#top">Top</a></p>
-
-## extension/extension_service.proto
-
-
- 
-
- 
-
- 
-
-
-<a name="extension-ExtensionHostService"></a>
-
-### ExtensionHostService
-
-
-| Method Name | Request Type | Response Type | Description |
-| ----------- | ------------ | ------------- | ------------|
-| ListExtensions | [.hcommon.Empty](#hcommon-Empty) | [ExtensionList](#extension-ExtensionList) |  |
-| Connect | [ExtensionRequest](#extension-ExtensionRequest) | [ExtensionResponse](#extension-ExtensionResponse) stream |  |
-| EditExtension | [EditExtensionRequest](#extension-EditExtensionRequest) | [ExtensionActionResult](#extension-ExtensionActionResult) |  |
-| SubmitForm | [SendExtensionDataRequest](#extension-SendExtensionDataRequest) | [ExtensionActionResult](#extension-ExtensionActionResult) |  |
-| Close | [ExtensionRequest](#extension-ExtensionRequest) | [ExtensionActionResult](#extension-ExtensionActionResult) |  |
-| GetUI | [ExtensionRequest](#extension-ExtensionRequest) | [ExtensionActionResult](#extension-ExtensionActionResult) |  |
 
  
 
@@ -1655,6 +1624,37 @@ SubscriptionInfo defines subscription-related information.
  
 
  
+
+ 
+
+
+
+<a name="extension_extension_service-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## extension/extension_service.proto
+
+
+ 
+
+ 
+
+ 
+
+
+<a name="extension-ExtensionHostService"></a>
+
+### ExtensionHostService
+
+
+| Method Name | Request Type | Response Type | Description |
+| ----------- | ------------ | ------------- | ------------|
+| ListExtensions | [.hcommon.Empty](#hcommon-Empty) | [ExtensionList](#extension-ExtensionList) |  |
+| Connect | [ExtensionRequest](#extension-ExtensionRequest) | [ExtensionResponse](#extension-ExtensionResponse) stream |  |
+| EditExtension | [EditExtensionRequest](#extension-EditExtensionRequest) | [ExtensionActionResult](#extension-ExtensionActionResult) |  |
+| SubmitForm | [SendExtensionDataRequest](#extension-SendExtensionDataRequest) | [ExtensionActionResult](#extension-ExtensionActionResult) |  |
+| Close | [ExtensionRequest](#extension-ExtensionRequest) | [ExtensionActionResult](#extension-ExtensionActionResult) |  |
+| GetUI | [ExtensionRequest](#extension-ExtensionRequest) | [ExtensionActionResult](#extension-ExtensionActionResult) |  |
 
  
 
