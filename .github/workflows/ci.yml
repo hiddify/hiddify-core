@@ -11,6 +11,7 @@ on:
        - main
        - dev
        - v3
+       - v4
     paths-ignore:
       - '**.md'
       - 'docs/**'
