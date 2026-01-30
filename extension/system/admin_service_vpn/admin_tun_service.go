@@ -30,10 +30,14 @@ func (b *AdminServiceExtension) OnMainServicePreStart(singconfig *option.Options
 
 	for _, inb := range singconfig.Inbounds {
 		if inb.Type == C.TypeTun {
-			b.tunInboundOptions = &inb.TunOptions
+			if d, ok := inb.Options.(option.TunInboundOptions); ok {
+				b.tunInboundOptions = &d
+			}
 		} else {
 			if inb.Type == C.TypeSOCKS {
-				b.socksOptions = &inb.SocksOptions
+				if d, ok := inb.Options.(option.SocksInboundOptions); ok {
+					b.socksOptions = &d
+				}
 			}
 			newInbounds = append(newInbounds, inb)
 		}

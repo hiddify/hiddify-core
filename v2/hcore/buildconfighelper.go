@@ -4,47 +4,32 @@ import (
 	"context"
 	"encoding/json"
 	"os"
-	"path/filepath"
 
 	"github.com/hiddify/hiddify-core/v2/config"
 	"github.com/hiddify/hiddify-core/v2/db"
 	hcommon "github.com/hiddify/hiddify-core/v2/hcommon"
 	hutils "github.com/hiddify/hiddify-core/v2/hutils"
 	C "github.com/sagernet/sing-box/constant"
+	"github.com/sagernet/sing-box/experimental/libbox"
 	"github.com/sagernet/sing-box/option"
 )
 
-func BuildConfigJson(in *StartRequest) (string, error) {
+func BuildConfigJson(ctx context.Context, in *StartRequest) (string, error) {
 	Log(LogLevel_DEBUG, LogType_CORE, "Stating Service ")
 
-	parsedContent, err := BuildConfig(in)
+	parsedContent, err := BuildConfig(ctx, in)
 	if err != nil {
 		return "", err
 	}
-	return config.ToJson(*parsedContent)
+	res, err := parsedContent.MarshalJSONContext(libbox.BaseContext(nil))
+	return string(res), err
 }
 
-func BuildConfig(in *StartRequest) (*option.Options, error) {
+func BuildConfig(ctx context.Context, in *StartRequest) (*option.Options, error) {
 	Log(LogLevel_DEBUG, LogType_CORE, "Building Config...")
-	content := in.ConfigContent
 
-	if content == "" {
-		fileContent, err := os.ReadFile(in.ConfigPath)
-		if err != nil {
-			return nil, err
-		}
-		content = string(fileContent)
-	}
-	// Log(LogLevel_DEBUG, LogType_CORE, "Parsing Config... ", in.ConfigPath, " content:", content, "-")
-	Log(LogLevel_DEBUG, LogType_CORE, "Parsing Config... ")
-
-	parsedContent, err := readOptions(content)
-	Log(LogLevel_DEBUG, LogType_CORE, "Parsed")
-
-	if err != nil {
-		return nil, err
-	}
-
+	readOpt := &config.ReadOptions{Content: in.ConfigContent,
+		Path: in.ConfigPath}
 	if !in.EnableRawConfig {
 		// hcontent, err := json.MarshalIndent(static.HiddifyOptions, "", " ")
 		// if err != nil {
@@ -53,38 +38,28 @@ func BuildConfig(in *StartRequest) (*option.Options, error) {
 
 		// Log(LogLevel_DEBUG, LogType_CORE, "Building config ", string(hcontent))
 		// Log(LogLevel_DEBUG, LogType_CORE, "Building config ")
-		return config.BuildConfig(*static.HiddifyOptions, parsedContent)
+		return config.BuildConfig(ctx, static.HiddifyOptions, readOpt)
 	}
+	return config.ReadSingOptions(ctx, readOpt)
 
-	return &parsedContent, nil
 }
 
 func (s *CoreService) Parse(ctx context.Context, in *ParseRequest) (*ParseResponse, error) {
-	return Parse(in)
+	return Parse(libbox.FromContext(ctx, nil), in)
 }
 
-func Parse(in *ParseRequest) (*ParseResponse, error) {
+func Parse(ctx context.Context, in *ParseRequest) (*ParseResponse, error) {
 	defer config.DeferPanicToError("parse", func(err error) {
 		Log(LogLevel_FATAL, LogType_CONFIG, err.Error())
 		StopAndAlert(MessageType_UNEXPECTED_ERROR, err.Error())
 	})
 
-	content := in.Content
-	if content == "" {
-		path := in.TempPath
-		if path == "" {
-			path = in.ConfigPath
-		}
-		contentBytes, err := os.ReadFile(path)
-		content = string(contentBytes)
-		// os.Chdir(filepath.Dir(in.ConfigPath))
-		if err != nil {
-			return nil, err
-		}
-
+	path := in.TempPath
+	if path == "" {
+		path = in.ConfigPath
 	}
 
-	config, err := config.ParseConfigContent(content, true, static.HiddifyOptions, false)
+	config, err := config.ParseConfigBytes(ctx, &config.ReadOptions{Content: in.Content, Path: path}, true, static.HiddifyOptions, false)
 	if err != nil {
 		return &ParseResponse{
 			ResponseCode: hcommon.ResponseCode_FAILED,
@@ -143,10 +118,10 @@ func ChangeHiddifySettings(in *ChangeHiddifySettingsRequest, insert bool) (*Core
 }
 
 func (s *CoreService) GenerateConfig(ctx context.Context, in *GenerateConfigRequest) (*GenerateConfigResponse, error) {
-	return GenerateConfig(in)
+	return GenerateConfig(libbox.FromContext(ctx, nil), in)
 }
 
-func GenerateConfig(in *GenerateConfigRequest) (*GenerateConfigResponse, error) {
+func GenerateConfig(ctx context.Context, in *GenerateConfigRequest) (*GenerateConfigResponse, error) {
 	defer config.DeferPanicToError("generateConfig", func(err error) {
 		Log(LogLevel_FATAL, LogType_CONFIG, err.Error())
 		StopAndAlert(MessageType_UNEXPECTED_ERROR, err.Error())
@@ -154,30 +129,14 @@ func GenerateConfig(in *GenerateConfigRequest) (*GenerateConfigResponse, error) 
 	if static.HiddifyOptions == nil {
 		static.HiddifyOptions = config.DefaultHiddifyOptions()
 	}
-	config, err := generateConfigFromFile(in.Path, *static.HiddifyOptions)
+	config, err := config.ParseBuildConfigBytes(ctx, static.HiddifyOptions, &config.ReadOptions{Path: in.Path})
 	if err != nil {
 		return nil, err
 	}
-	return &GenerateConfigResponse{
-		ConfigContent: config,
-	}, nil
-}
 
-func generateConfigFromFile(path string, configOpt config.HiddifyOptions) (string, error) {
-	os.Chdir(filepath.Dir(path))
-	content, err := os.ReadFile(path)
-	if err != nil {
-		return "", err
-	}
-	options, err := readOptions(string(content))
-	if err != nil {
-		return "", err
-	}
-	config, err := config.BuildConfigJson(configOpt, options)
-	if err != nil {
-		return "", err
-	}
-	return config, nil
+	return &GenerateConfigResponse{
+		ConfigContent: string(config),
+	}, nil
 }
 
 func removeTunnelIfNeeded(options *option.Options) (tuninb *option.TunInboundOptions) {
@@ -190,7 +149,10 @@ func removeTunnelIfNeeded(options *option.Options) (tuninb *option.TunInboundOpt
 
 	for _, inb := range options.Inbounds {
 		if inb.Type == C.TypeTun {
-			tuninb = &inb.TunOptions
+			if d, ok := inb.Options.(option.TunInboundOptions); ok {
+				tuninb = &d
+			}
+
 		} else {
 			newInbounds = append(newInbounds, inb)
 		}

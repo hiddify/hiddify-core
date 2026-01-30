@@ -7,7 +7,7 @@ import (
 	"time"
 
 	C "github.com/sagernet/sing-box/constant"
-	"github.com/sagernet/sing-box/experimental/libbox"
+	"github.com/sagernet/sing-box/daemon"
 	"github.com/sagernet/sing-box/option"
 
 	hcommon "github.com/hiddify/hiddify-core/v2/hcommon"
@@ -16,7 +16,7 @@ import (
 
 type TunnelService struct {
 	UnimplementedTunnelServiceServer
-	box *libbox.BoxService
+	box *daemon.StartedService
 }
 
 func (s *TunnelService) Start(ctx context.Context, in *TunnelStartRequest) (*TunnelResponse, error) {
@@ -25,13 +25,8 @@ func (s *TunnelService) Start(ctx context.Context, in *TunnelStartRequest) (*Tun
 	}
 	option := makeTunnelConfig(in)
 
-	instance, err := hcore.NewService(option)
-	if err != nil {
-		return &TunnelResponse{
-			Message: err.Error(),
-		}, err
-	}
-	err = instance.Start()
+	box, err := hcore.NewService(ctx, option)
+	s.box = box
 	if err != nil {
 		return &TunnelResponse{
 			Message: err.Error(),
@@ -54,7 +49,7 @@ func makeTunnelConfig(in *TunnelStartRequest) option.Options {
 			{
 				Type: C.TypeTun,
 				Tag:  "tun-in",
-				TunOptions: option.TunInboundOptions{
+				Options: option.TunInboundOptions{
 					EndpointIndependentNat: in.EndpointIndependentNat,
 					StrictRoute:            in.StrictRoute,
 					AutoRoute:              true,
@@ -68,7 +63,7 @@ func makeTunnelConfig(in *TunnelStartRequest) option.Options {
 			{
 				Type: C.TypeSOCKS,
 				Tag:  "socks-out",
-				SocksOptions: option.SocksOutboundOptions{
+				Options: option.SOCKSOutboundOptions{
 					ServerOptions: option.ServerOptions{
 						Server:     "127.0.0.1",
 						ServerPort: uint16(in.ServerPort),
@@ -88,13 +83,20 @@ func makeTunnelConfig(in *TunnelStartRequest) option.Options {
 			Rules: []option.Rule{
 				{
 					DefaultOptions: option.DefaultRule{
-						ProcessName: []string{
-							"Hiddify.exe",
-							"Hiddify",
-							"HiddifyCli",
-							"HiddifyCli.exe",
+						RawDefaultRule: option.RawDefaultRule{
+							ProcessName: []string{
+								"Hiddify.exe",
+								"Hiddify",
+								"HiddifyCli",
+								"HiddifyCli.exe",
+							},
 						},
-						Outbound: "direct-out",
+						RuleAction: option.RuleAction{
+							Action: C.RuleActionTypeDirect,
+							RouteOptions: option.RouteActionOptions{
+								Outbound: "direct-out",
+							},
+						},
 					},
 				},
 			},
@@ -108,7 +110,7 @@ func (s *TunnelService) Stop(ctx context.Context, _ *hcommon.Empty) (*TunnelResp
 			Message: "Not Started",
 		}, nil
 	}
-	err := s.box.Close()
+	err := s.box.CloseService()
 	if err != nil {
 		return &TunnelResponse{
 			Message: err.Error(),
@@ -128,7 +130,7 @@ func (s *TunnelService) Status(ctx context.Context, _ *hcommon.Empty) (*TunnelRe
 
 func (s *TunnelService) Exit(ctx context.Context, _ *hcommon.Empty) (*TunnelResponse, error) {
 	if s.box != nil {
-		s.box.Close()
+		s.box.CloseService()
 	}
 	go func() {
 		<-time.After(time.Second * 1)

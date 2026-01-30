@@ -14,9 +14,9 @@ func errorWrapper(state MessageType, err error) (*CoreInfoResponse, error) {
 func StopAndAlert(msgType MessageType, message string) {
 	SetCoreStatus(CoreStates_STOPPED, msgType, message)
 
-	if static.Box != nil {
-		static.Box.Close()
-		static.Box = nil
+	if static.StartedService != nil {
+		static.StartedService.CloseService()
+		static.StartedService = nil
 	}
 }
 

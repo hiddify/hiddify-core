@@ -1,6 +1,8 @@
 package mobile
 
 import (
+	"context"
+
 	hcore "github.com/hiddify/hiddify-core/v2/hcore"
 
 	_ "github.com/sagernet/gomobile"
@@ -23,12 +25,6 @@ func Setup(baseDir string, workingDir string, tempDir string, mode int, listen s
 	// return hcore.Start(17078)
 }
 
-func BuildConfig(configPath string) (string, error) {
-	return hcore.BuildConfigJson(&hcore.StartRequest{
-		ConfigPath: configPath,
-	})
-}
-
 // func Start(configPath string, configContent string, platformInterface libbox.PlatformInterface) (*hcore.CoreInfoResponse, error) {
 // 	state, err := hcore.StartWithPlatformInterface(&hcore.StartRequest{
 // 		ConfigContent: configContent,
@@ -37,8 +33,8 @@ func BuildConfig(configPath string) (string, error) {
 // 	return state, err
 // }
 
-func Start(configPath string, configContent string) error {
-	_, err := hcore.StartService(&hcore.StartRequest{
+func Start(ctx context.Context, configPath string, configContent string) error {
+	_, err := hcore.StartService(ctx, &hcore.StartRequest{
 		ConfigPath:    configPath,
 		ConfigContent: configContent,
 	})

@@ -34,24 +34,9 @@ func wireGuardToSingbox(wgConfig WarpWireguardConfig, server string, port uint16
 	if len(clientID) < 2 {
 		clientID = []byte{0, 0, 0}
 	}
-	out := T.Outbound{
-		Type: "wireguard",
-		Tag:  "WARP",
-		WireGuardOptions: T.WireGuardOutboundOptions{
-			ServerOptions: T.ServerOptions{
-				Server:     server,
-				ServerPort: port,
-			},
 
-			PrivateKey:    wgConfig.PrivateKey,
-			PeerPublicKey: wgConfig.PeerPublicKey,
-			Reserved:      []uint8{clientID[0], clientID[1], clientID[2]},
-			// Reserved: []uint8{0, 0, 0},
-			MTU: 1330,
-		},
-	}
 	ips := []string{wgConfig.LocalAddressIPv4 + "/24", wgConfig.LocalAddressIPv6 + "/128"}
-
+	localsaddrs := make([]netip.Prefix, 0)
 	for _, addr := range ips {
 		if addr == "" {
 			continue
@@ -60,8 +45,26 @@ func wireGuardToSingbox(wgConfig WarpWireguardConfig, server string, port uint16
 		if err != nil {
 			return nil, err // Handle the error appropriately
 		}
-		out.WireGuardOptions.LocalAddress = append(out.WireGuardOptions.LocalAddress, prefix)
+		localsaddrs = append(localsaddrs, prefix)
 	}
+	out := T.Outbound{
+		Type: "wireguard",
+		Tag:  "WARP",
+		Options: T.WireGuardEndpointOptions{
+			Peers: []T.WireGuardPeer{
+				{
+					Address:   server,
+					Port:      port,
+					PublicKey: wgConfig.PeerPublicKey,
+					Reserved:  []uint8{clientID[0], clientID[1], clientID[2]},
+				},
+			},
+			Address:    localsaddrs,
+			PrivateKey: wgConfig.PrivateKey,
+			MTU:        1330,
+		},
+	}
+
 	return &out, nil
 }
 
@@ -104,12 +107,13 @@ func GenerateWarpSingbox(wgConfig WarpWireguardConfig, host string, port uint16,
 		fmt.Printf("%v %v", singboxConfig, err)
 		return nil, err
 	}
+	if opts, ok := singboxConfig.Options.(T.WireGuardEndpointOptions); ok {
 
-	singboxConfig.WireGuardOptions.FakePackets = fakePackets
-	singboxConfig.WireGuardOptions.FakePacketsSize = fakePacketsSize
-	singboxConfig.WireGuardOptions.FakePacketsDelay = fakePacketsDelay
-	singboxConfig.WireGuardOptions.FakePacketsMode = fakePacketMode
-
+		opts.Peers[0].FakePackets = fakePackets
+		opts.Peers[0].FakePacketsSize = fakePacketsSize
+		opts.Peers[0].FakePacketsDelay = fakePacketsDelay
+		opts.Peers[0].FakePacketsMode = fakePacketMode
+	}
 	return singboxConfig, nil
 }
 
@@ -174,98 +178,110 @@ func getOrGenerateWarpLocallyIfNeeded(warpOptions *WarpOptions) WarpWireguardCon
 
 func patchWarp(base *option.Outbound, configOpt *HiddifyOptions, final bool, staticIpsDns map[string][]string) error {
 	if base.Type == C.TypeCustom {
-		if warp, ok := base.CustomOptions["warp"].(map[string]interface{}); ok {
-			key, _ := warp["key"].(string)
-			host, _ := warp["host"].(string)
-			port, _ := warp["port"].(uint16)
-			detour, _ := warp["detour"].(string)
-			fakePackets, _ := warp["fake_packets"].(string)
-			fakePacketsSize, _ := warp["fake_packets_size"].(string)
-			fakePacketsDelay, _ := warp["fake_packets_delay"].(string)
-			fakePacketsMode, _ := warp["fake_packets_mode"].(string)
-			var warpOutbound *T.Outbound
-			var err error
+		if opts, ok := base.Options.(map[string]any); ok {
+			if warp, ok := opts["warp"].(map[string]any); ok {
+				key, _ := warp["key"].(string)
+				host, _ := warp["host"].(string)
+				port, _ := warp["port"].(uint16)
+				detour, _ := warp["detour"].(string)
+				fakePackets, _ := warp["fake_packets"].(string)
+				fakePacketsSize, _ := warp["fake_packets_size"].(string)
+				fakePacketsDelay, _ := warp["fake_packets_delay"].(string)
+				fakePacketsMode, _ := warp["fake_packets_mode"].(string)
+				var warpOutbound *T.Outbound
+				var err error
 
-			is_saved_key := len(key) > 1 && key[0] == 'p'
+				is_saved_key := len(key) > 1 && key[0] == 'p'
 
-			if (configOpt == nil || !final) && is_saved_key {
-				return nil
-			}
-			var wireguardConfig WarpWireguardConfig
-			if is_saved_key {
-				var warpOpt *WarpOptions
-				if key == "p1" {
-					warpOpt = &configOpt.Warp
-				} else if key == "p2" {
-					warpOpt = &configOpt.Warp2
-				} else {
-					warpOpt = &WarpOptions{
-						Id: key,
-					}
+				if (configOpt == nil || !final) && is_saved_key {
+					return nil
 				}
-				warpOpt.Id = key
+				var wireguardConfig WarpWireguardConfig
+				if is_saved_key {
+					var warpOpt *WarpOptions
+					if key == "p1" {
+						warpOpt = &configOpt.Warp
+					} else if key == "p2" {
+						warpOpt = &configOpt.Warp2
+					} else {
+						warpOpt = &WarpOptions{
+							Id: key,
+						}
+					}
+					warpOpt.Id = key
 
-				wireguardConfig = getOrGenerateWarpLocallyIfNeeded(warpOpt)
-			} else {
-				_, _, wgConfig, err := GenerateWarpInfo(key, "", "")
+					wireguardConfig = getOrGenerateWarpLocallyIfNeeded(warpOpt)
+				} else {
+					_, _, wgConfig, err := GenerateWarpInfo(key, "", "")
+					if err != nil {
+						return err
+					}
+					wireguardConfig = *wgConfig
+				}
+				warpOutbound, err = GenerateWarpSingbox(wireguardConfig, host, port, fakePackets, fakePacketsSize, fakePacketsDelay, fakePacketsMode)
 				if err != nil {
+					fmt.Printf("Error generating warp config: %v", err)
 					return err
 				}
-				wireguardConfig = *wgConfig
+				base.Type = C.TypeWireGuard
+				if opts, ok := warpOutbound.Options.(option.WireGuardEndpointOptions); ok {
+					opts.Detour = detour
+					base.Options = opts
+				}
+
 			}
-			warpOutbound, err = GenerateWarpSingbox(wireguardConfig, host, port, fakePackets, fakePacketsSize, fakePacketsDelay, fakePacketsMode)
-			if err != nil {
-				fmt.Printf("Error generating warp config: %v", err)
-				return err
-			}
-			warpOutbound.WireGuardOptions.Detour = detour
-			base.Type = C.TypeWireGuard
-			base.WireGuardOptions = warpOutbound.WireGuardOptions
 		}
 	}
 
 	if final && base.Type == C.TypeWireGuard {
-		host := base.WireGuardOptions.Server
+		if opts, ok := base.Options.(option.WireGuardEndpointOptions); ok {
+			host := "auto"
+			if len(opts.Peers) == 0 {
+				opts.Peers = append(opts.Peers, T.WireGuardPeer{Address: "auto"})
+			}
+			if opts.Peers[0].Address != "" {
+				host = opts.Peers[0].Address
+			}
 
-		if host == "default" || host == "random" || host == "auto" || host == "auto4" || host == "auto6" || isBlockedDomain(host) {
-			// if base.WireGuardOptions.Detour != "" {
-			// 	base.WireGuardOptions.Server = "162.159.192.1"
-			// } else {
-			// rndDomain := strings.ToLower(generateRandomString(20))
-			// staticIpsDns[rndDomain] = []string{}
-			if host != "auto4" {
-				if host == "auto6" { //|| common.u.CanConnectIPv6() {
-					randomIpPort, _ := warp.RandomWarpEndpoint(false, true)
+			if host == "default" || host == "random" || host == "auto" || host == "auto4" || host == "auto6" || isBlockedDomain(host) {
+				// if base.WireGuardOptions.Detour != "" {
+				// 	base.WireGuardOptions.Server = "162.159.192.1"
+				// } else {
+				// rndDomain := strings.ToLower(generateRandomString(20))
+				// staticIpsDns[rndDomain] = []string{}
+				if host != "auto4" {
+					if host == "auto6" { //|| common.u.CanConnectIPv6() {
+						randomIpPort, _ := warp.RandomWarpEndpoint(false, true)
+						// staticIpsDns[rndDomain] = append(staticIpsDns[rndDomain], randomIpPort.Addr().String())
+						host = randomIpPort.Addr().String()
+					}
+				}
+				if host != "auto6" {
+					randomIpPort, _ := warp.RandomWarpEndpoint(true, false)
 					// staticIpsDns[rndDomain] = append(staticIpsDns[rndDomain], randomIpPort.Addr().String())
 					host = randomIpPort.Addr().String()
 				}
+				opts.Peers[0].Address = host
+				// }
 			}
-			if host != "auto6" {
-				randomIpPort, _ := warp.RandomWarpEndpoint(true, false)
-				// staticIpsDns[rndDomain] = append(staticIpsDns[rndDomain], randomIpPort.Addr().String())
-				host = randomIpPort.Addr().String()
+			if opts.Peers[0].Port == 0 {
+				port := warp.RandomWarpPort()
+				opts.Peers[0].Port = port
 			}
-			base.WireGuardOptions.Server = host
+
+			if opts.Detour != "" {
+				if opts.MTU < 100 {
+					opts.MTU = 1280
+				}
+				opts.Peers[0].FakePackets = ""
+				opts.Peers[0].FakePacketsMode = ""
+				opts.Peers[0].FakePacketsDelay = ""
+				opts.Peers[0].FakePacketsSize = ""
+			}
+			// if base.WireGuardOptions.Detour == "" {
+			// 	base.WireGuardOptions.GSO = runtime.GOOS != "windows"
 			// }
 		}
-		if base.WireGuardOptions.ServerPort == 0 {
-			port := warp.RandomWarpPort()
-			base.WireGuardOptions.ServerPort = port
-		}
-
-		if base.WireGuardOptions.Detour != "" {
-			if base.WireGuardOptions.MTU < 100 {
-				base.WireGuardOptions.MTU = 1280
-			}
-			base.WireGuardOptions.FakePackets = ""
-			base.WireGuardOptions.FakePacketsMode = ""
-			base.WireGuardOptions.FakePacketsDelay = ""
-			base.WireGuardOptions.FakePacketsSize = ""
-		}
-		// if base.WireGuardOptions.Detour == "" {
-		// 	base.WireGuardOptions.GSO = runtime.GOOS != "windows"
-		// }
 	}
-
 	return nil
 }

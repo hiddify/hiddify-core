@@ -5,10 +5,12 @@ import (
 	"testing"
 
 	"github.com/hiddify/hiddify-core/v2/profile"
+	"github.com/sagernet/sing-box/experimental/libbox"
 )
 
 func TestAddByContent(t *testing.T) {
-	entity, err := profile.AddByUrl("https://raw.githubusercontent.com/hiddify/hiddify-next/refs/heads/main/test.configs/warp", "", false)
+	ctx := libbox.BaseContext(nil)
+	entity, err := profile.AddByUrl(ctx, "https://raw.githubusercontent.com/hiddify/hiddify-next/refs/heads/main/test.configs/warp", "", false)
 	if err != nil {
 		t.Fatalf("expected no error, but got: %v", err)
 	}

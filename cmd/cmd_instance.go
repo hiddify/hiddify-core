@@ -6,6 +6,7 @@ import (
 	"syscall"
 
 	hcore "github.com/hiddify/hiddify-core/v2/hcore"
+	"github.com/sagernet/sing-box/experimental/libbox"
 	"github.com/sagernet/sing-box/log"
 	"github.com/spf13/cobra"
 )
@@ -23,8 +24,8 @@ var commandInstance = &cobra.Command{
 			}
 			hiddifySetting = *hiddifySetting2
 		}
-
-		instance, err := hcore.RunInstanceString(&hiddifySetting, configPath)
+		ctx := libbox.BaseContext(nil)
+		instance, err := hcore.RunInstanceString(ctx, &hiddifySetting, configPath)
 		if err != nil {
 			log.Fatal(err)
 		}

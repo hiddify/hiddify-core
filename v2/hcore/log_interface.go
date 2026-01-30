@@ -1,6 +1,8 @@
 package hcore
 
 import (
+	"github.com/hiddify/hiddify-core/v2/service_manager"
+	daemon "github.com/sagernet/sing-box/daemon"
 	"github.com/sagernet/sing-box/log"
 )
 
@@ -13,10 +15,26 @@ var _ log.PlatformWriter = (*LogInterface)(nil)
 
 type LogInterface struct{}
 
-func (h *LogInterface) DisableColors() bool {
-	return true
+func (h *LogInterface) ServiceStop() error {
+	return service_manager.OnMainServiceClose()
+}
+func (h *LogInterface) ServiceReload() error {
+	return service_manager.OnMainServiceStart()
+
+}
+func (h *LogInterface) SystemProxyStatus() (*daemon.SystemProxyStatus, error) {
+	return nil, nil
+}
+func (h *LogInterface) SetSystemProxyEnabled(enabled bool) error {
+	return nil
 }
 
+func (h *LogInterface) WriteDebugMessage(message string) {
+	h.WriteMessage(log.LevelDebug, message)
+}
+func (h *LogInterface) WriteMessage(level log.Level, message string) {
+	Log(convertLogLevel(level), LogType_SERVICE, message)
+}
 func convertLogLevel(level log.Level) LogLevel {
 	switch level {
 	case log.LevelDebug:
@@ -31,10 +49,6 @@ func convertLogLevel(level log.Level) LogLevel {
 		return LogLevel_FATAL
 	}
 	return LogLevel(log.LevelDebug)
-}
-
-func (h *LogInterface) WriteMessage(level log.Level, message string) {
-	Log(convertLogLevel(level), LogType_SERVICE, message)
 }
 
 // 	router          adapter.Router

@@ -1,8 +1,7 @@
 package config
 
 import (
-	"bytes"
-	"encoding/json"
+	context "context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -12,8 +11,8 @@ import (
 	"github.com/sagernet/sing-box/option"
 )
 
-func SaveCurrentConfig(path string, options option.Options) error {
-	json, err := ToJson(options)
+func SaveCurrentConfig(ctx context.Context, path string, options option.Options) error {
+	json, err := options.MarshalJSONContext(ctx)
 	if err != nil {
 		return err
 	}
@@ -24,19 +23,6 @@ func SaveCurrentConfig(path string, options option.Options) error {
 		return err
 	}
 	return os.WriteFile(p, []byte(json), 0o644)
-}
-
-func ToJson(options option.Options) (string, error) {
-	var buffer bytes.Buffer
-	encoder := json.NewEncoder(&buffer)
-	encoder.SetIndent("", "  ")
-	// fmt.Printf("%+v\n", options)
-	err := encoder.Encode(options)
-	if err != nil {
-		fmt.Printf("ERROR in coding:%+v\n", err)
-		return "", err
-	}
-	return buffer.String(), nil
 }
 
 func DeferPanicToError(name string, err func(error)) {

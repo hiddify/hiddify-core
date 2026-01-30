@@ -1,6 +1,7 @@
 package sdk
 
 import (
+	"context"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -12,11 +13,11 @@ import (
 	"github.com/sagernet/sing-box/option"
 )
 
-func RunInstance(hiddifySettings *config.HiddifyOptions, singconfig *option.Options) (*hcore.HiddifyService, error) {
-	return hcore.RunInstance(hiddifySettings, singconfig)
+func RunInstance(ctx context.Context, hiddifySettings *config.HiddifyOptions, singconfig *option.Options) (*hcore.HiddifyInstance, error) {
+	return hcore.RunInstance(ctx, hiddifySettings, singconfig)
 }
 
-func ParseConfig(hiddifySettings *config.HiddifyOptions, configStr string) (*option.Options, error) {
+func ParseConfig(ctx context.Context, hiddifySettings *config.HiddifyOptions, configStr string) (*option.Options, error) {
 	if hiddifySettings == nil {
 		hiddifySettings = config.DefaultHiddifyOptions()
 	}
@@ -43,5 +44,5 @@ func ParseConfig(hiddifySettings *config.HiddifyOptions, configStr string) (*opt
 		}
 		configStr = string(body)
 	}
-	return config.ParseConfigContentToOptions(configStr, true, hiddifySettings, false)
+	return config.ParseBuildConfig(ctx, hiddifySettings, &config.ReadOptions{Content: configStr})
 }

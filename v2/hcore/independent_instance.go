@@ -1,6 +1,7 @@
 package hcore
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"net"
@@ -10,7 +11,6 @@ import (
 	"github.com/hiddify/hiddify-core/v2/config"
 	"golang.org/x/net/proxy"
 
-	"github.com/sagernet/sing-box/experimental/libbox"
 	"github.com/sagernet/sing-box/option"
 )
 
@@ -24,18 +24,19 @@ func getRandomAvailblePort() uint16 {
 	return uint16(listener.Addr().(*net.TCPAddr).Port)
 }
 
-func RunInstanceString(hiddifySettings *config.HiddifyOptions, proxiesInput string) (*HiddifyService, error) {
+func RunInstanceString(ctx context.Context, hiddifySettings *config.HiddifyOptions, proxiesInput string) (*HiddifyInstance, error) {
 	if hiddifySettings == nil {
 		hiddifySettings = config.DefaultHiddifyOptions()
 	}
-	singconfigs, err := config.ParseConfigContentToOptions(proxiesInput, true, hiddifySettings, false)
+
+	singconfigs, err := config.ParseConfig(ctx, &config.ReadOptions{Content: proxiesInput}, true, hiddifySettings, false)
 	if err != nil {
 		return nil, err
 	}
-	return RunInstance(hiddifySettings, singconfigs)
+	return RunInstance(ctx, hiddifySettings, singconfigs)
 }
 
-func RunInstance(hiddifySettings *config.HiddifyOptions, singconfig *option.Options) (*HiddifyService, error) {
+func RunInstance(ctx context.Context, hiddifySettings *config.HiddifyOptions, singconfig *option.Options) (*HiddifyInstance, error) {
 	if hiddifySettings == nil {
 		hiddifySettings = config.DefaultHiddifyOptions()
 	}
@@ -50,41 +51,35 @@ func RunInstance(hiddifySettings *config.HiddifyOptions, singconfig *option.Opti
 	hiddifySettings.BlockAds = false
 	hiddifySettings.LogFile = "/dev/null"
 
-	finalConfigs, err := config.BuildConfig(*hiddifySettings, *singconfig)
+	finalConfigs, err := config.BuildConfig(ctx, hiddifySettings, &config.ReadOptions{Options: singconfig})
 	if err != nil {
 		return nil, err
 	}
 
-	instance, err := NewService(*finalConfigs)
+	instance, err := NewService(ctx, *finalConfigs)
 	if err != nil {
 		return nil, err
 	}
-	err = instance.Start()
-	if err != nil {
-		return nil, err
-	}
+
 	<-time.After(250 * time.Millisecond)
-	hservice := &HiddifyService{libbox: instance, ListenPort: hiddifySettings.InboundOptions.MixedPort}
+	hservice := &HiddifyInstance{
+		StartedService: instance,
+		ListenPort:     hiddifySettings.InboundOptions.MixedPort}
 	hservice.PingCloudflare()
 	return hservice, nil
 }
 
-type HiddifyService struct {
-	libbox     *libbox.BoxService
-	ListenPort uint16
-}
-
 // dialer, err := s.libbox.GetInstance().Router().Dialer(context.Background())
 
-func (s *HiddifyService) Close() error {
-	return s.libbox.Close()
+func (s *HiddifyInstance) Close() error {
+	return s.StartedService.CloseService()
 }
 
-func (s *HiddifyService) GetContent(url string) (string, error) {
+func (s *HiddifyInstance) GetContent(url string) (string, error) {
 	return s.ContentFromURL("GET", url, 10*time.Second)
 }
 
-func (s *HiddifyService) ContentFromURL(method string, url string, timeout time.Duration) (string, error) {
+func (s *HiddifyInstance) ContentFromURL(method string, url string, timeout time.Duration) (string, error) {
 	if method == "" {
 		return "", fmt.Errorf("empty method")
 	}
@@ -133,7 +128,7 @@ func (s *HiddifyService) ContentFromURL(method string, url string, timeout time.
 	return string(body), nil
 }
 
-func (s *HiddifyService) PingCloudflare() (time.Duration, error) {
+func (s *HiddifyInstance) PingCloudflare() (time.Duration, error) {
 	return s.Ping("http://cp.cloudflare.com")
 }
 
@@ -141,7 +136,7 @@ func (s *HiddifyService) PingCloudflare() (time.Duration, error) {
 // 	return
 // }
 
-func (s *HiddifyService) PingAverage(url string, count int) (time.Duration, error) {
+func (s *HiddifyInstance) PingAverage(url string, count int) (time.Duration, error) {
 	if count <= 0 {
 		return -1, fmt.Errorf("count must be greater than 0")
 	}
@@ -161,7 +156,7 @@ func (s *HiddifyService) PingAverage(url string, count int) (time.Duration, erro
 	return time.Duration(sum / real_count * int(time.Millisecond)), nil
 }
 
-func (s *HiddifyService) Ping(url string) (time.Duration, error) {
+func (s *HiddifyInstance) Ping(url string) (time.Duration, error) {
 	startTime := time.Now()
 	_, err := s.ContentFromURL("HEAD", url, 4*time.Second)
 	if err != nil {

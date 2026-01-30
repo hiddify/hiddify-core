@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -37,7 +38,8 @@ var generateConfig = &cobra.Command{
 	Use:   "gen",
 	Short: "gen configuration",
 	Run: func(cmd *cobra.Command, args []string) {
-		conf, err := hcore.GenerateConfig(&hcore.GenerateConfigRequest{
+		ctx := libbox.BaseContext(nil)
+		conf, err := hcore.GenerateConfig(ctx, &hcore.GenerateConfigRequest{
 			Path: args[0],
 		})
 		if err != nil {
@@ -67,26 +69,19 @@ func init() {
 }
 
 func build(path string, optionsPath string) error {
-	if workingDir != "" {
-		path = filepath.Join(workingDir, path)
-		if optionsPath != "" {
-			optionsPath = filepath.Join(workingDir, optionsPath)
-		}
-		os.Chdir(workingDir)
-	}
-	options, err := readConfigAt(path)
-	if err != nil {
-		return err
-	}
 
-	HiddifyOptions := &defaultConfigs // config.DefaultHiddifyOptions()
+	ctx := libbox.BaseContext(nil)
+	var err error
+
+	hiddifyOptions := &defaultConfigs // config.DefaultHiddifyOptions()
 	if optionsPath != "" {
-		HiddifyOptions, err = readHiddifyOptionsAt(optionsPath)
+		hiddifyOptions, err = readHiddifyOptionsAt(optionsPath)
 		if err != nil {
 			return err
 		}
 	}
-	config, err := config.BuildConfigJson(*HiddifyOptions, *options)
+
+	config, err := config.BuildConfigJson(ctx, hiddifyOptions, &config.ReadOptions{Path: path})
 	if err != nil {
 		return err
 	}
@@ -100,7 +95,7 @@ func build(path string, optionsPath string) error {
 		// libbox.Setup(outputPath, workingDir, workingDir, true)
 		// instance, err := NewService(*patchedOptions)
 	} else {
-		os.Stdout.WriteString(config)
+		os.Stdout.WriteString(string(config))
 	}
 	return nil
 }
@@ -113,22 +108,13 @@ func check(path string) error {
 	return libbox.CheckConfig(string(content))
 }
 
-func readConfigAt(path string) (*option.Options, error) {
+func readConfigAt(ctx context.Context, path string) (*option.Options, error) {
 	content, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}
 	var options option.Options
-	err = options.UnmarshalJSON(content)
-	if err != nil {
-		return nil, err
-	}
-	return &options, nil
-}
-
-func readConfigBytes(content []byte) (*option.Options, error) {
-	var options option.Options
-	err := options.UnmarshalJSON(content)
+	err = options.UnmarshalJSONContext(ctx, content)
 	if err != nil {
 		return nil, err
 	}

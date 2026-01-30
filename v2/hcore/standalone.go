@@ -1,6 +1,7 @@
 package hcore
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -18,21 +19,25 @@ import (
 	"github.com/sagernet/sing-box/option"
 )
 
-func RunStandalone(hiddifySettingPath string, configPath string, defaultConfig config.HiddifyOptions) error {
+func RunStandalone(ctx context.Context, hiddifySettingPath string, configPath string, defaultConfig config.HiddifyOptions) error {
 	fmt.Println("Running in standalone mode")
-	current, err := readAndBuildConfig(hiddifySettingPath, configPath, &defaultConfig)
+	current, err := readAndBuildConfig(ctx, hiddifySettingPath, configPath, &defaultConfig)
 	if err != nil {
 		fmt.Printf("Error in read and build config %v", err)
 		return err
 	}
 
-	StartService(&StartRequest{
+	_, err = StartService(ctx, &StartRequest{
 		ConfigContent:          current.Config,
 		EnableOldCommandServer: false,
 		DelayStart:             false,
 		EnableRawConfig:        true,
 	})
-	go updateConfigInterval(current, hiddifySettingPath, configPath)
+	if err != nil {
+		fmt.Printf("Error in start service %v", err)
+		return err
+	}
+	go updateConfigInterval(ctx, current, hiddifySettingPath, configPath)
 
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
@@ -51,7 +56,7 @@ type ConfigResult struct {
 	HiddifyHiddifyOptions *config.HiddifyOptions
 }
 
-func readAndBuildConfig(hiddifySettingPath string, configPath string, defaultConfig *config.HiddifyOptions) (ConfigResult, error) {
+func readAndBuildConfig(ctx context.Context, hiddifySettingPath string, configPath string, defaultConfig *config.HiddifyOptions) (ConfigResult, error) {
 	var result ConfigResult
 
 	result, err := readConfigContent(configPath)
@@ -73,7 +78,7 @@ func readAndBuildConfig(hiddifySettingPath string, configPath string, defaultCon
 	}
 
 	result.HiddifyHiddifyOptions = hiddifyconfig
-	result.Config, err = buildConfig(result.Config, *result.HiddifyHiddifyOptions)
+	result.Config, err = buildStandaloneConfig(ctx, &config.ReadOptions{Path: configPath}, result.HiddifyHiddifyOptions)
 	if err != nil {
 		return result, err
 	}
@@ -149,19 +154,10 @@ func extractRefreshInterval(header http.Header, bodyStr string) (int, error) {
 	return 0, nil
 }
 
-func buildConfig(configContent string, options config.HiddifyOptions) (string, error) {
-	parsedContent, err := config.ParseConfigContent(configContent, true, &options, false)
+func buildStandaloneConfig(ctx context.Context, ropt *config.ReadOptions, hopts *config.HiddifyOptions) (string, error) {
+	finalconfig, err := config.ParseBuildConfig(ctx, hopts, ropt)
 	if err != nil {
 		return "", fmt.Errorf("failed to parse config content: %w", err)
-	}
-	singconfigs, err := readConfigBytes([]byte(parsedContent))
-	if err != nil {
-		return "", err
-	}
-
-	finalconfig, err := config.BuildConfig(options, *singconfigs)
-	if err != nil {
-		return "", fmt.Errorf("failed to build config: %w", err)
 	}
 
 	finalconfig.Log.Output = ""
@@ -171,7 +167,7 @@ func buildConfig(configContent string, options config.HiddifyOptions) (string, e
 		},
 	}
 	// finalconfig.Experimental.ClashAPI.ExternalUI = "webui"
-	if options.AllowConnectionFromLAN {
+	if hopts.AllowConnectionFromLAN {
 		finalconfig.Experimental.ClashAPI.ExternalController = "0.0.0.0:16756"
 	} else {
 		finalconfig.Experimental.ClashAPI.ExternalController = "127.0.0.1:16756"
@@ -192,28 +188,28 @@ func buildConfig(configContent string, options config.HiddifyOptions) (string, e
 		return "", fmt.Errorf("failed to set up global configuration: %w", err)
 	}
 
-	configStr, err := config.ToJson(*finalconfig)
+	configStr, err := finalconfig.MarshalJSONContext(ctx)
 	if err != nil {
 		return "", fmt.Errorf("failed to convert config to JSON: %w", err)
 	}
 
-	return configStr, nil
+	return string(configStr), nil
 }
 
-func updateConfigInterval(current ConfigResult, hiddifySettingPath string, configPath string) {
+func updateConfigInterval(ctx context.Context, current ConfigResult, hiddifySettingPath string, configPath string) {
 	if current.RefreshInterval <= 0 {
 		return
 	}
 
 	for {
 		<-time.After(time.Duration(current.RefreshInterval) * time.Hour)
-		new, err := readAndBuildConfig(hiddifySettingPath, configPath, current.HiddifyHiddifyOptions)
+		new, err := readAndBuildConfig(ctx, hiddifySettingPath, configPath, current.HiddifyHiddifyOptions)
 		if err != nil {
 			continue
 		}
 		if new.Config != current.Config {
 			Stop()
-			StartService(&StartRequest{
+			StartService(ctx, &StartRequest{
 				ConfigContent:          new.Config,
 				DelayStart:             false,
 				EnableOldCommandServer: false,
@@ -223,15 +219,6 @@ func updateConfigInterval(current ConfigResult, hiddifySettingPath string, confi
 		}
 		current = new
 	}
-}
-
-func readConfigBytes(content []byte) (*option.Options, error) {
-	var options option.Options
-	err := options.UnmarshalJSON(content)
-	if err != nil {
-		return nil, err
-	}
-	return &options, nil
 }
 
 func ReadHiddifyOptionsAt(path string) (*config.HiddifyOptions, error) {

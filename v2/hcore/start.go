@@ -2,7 +2,6 @@ package hcore
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"path/filepath"
 	"time"
@@ -11,20 +10,22 @@ import (
 	"github.com/hiddify/hiddify-core/v2/db"
 	hcommon "github.com/hiddify/hiddify-core/v2/hcommon"
 	service_manager "github.com/hiddify/hiddify-core/v2/service_manager"
-	box "github.com/sagernet/sing-box"
+	"github.com/sagernet/sing-box/adapter"
 	"github.com/sagernet/sing-box/experimental/libbox"
+	"github.com/sagernet/sing-box/option"
+	"github.com/sagernet/sing/service"
 )
 
 func (s *CoreService) Start(ctx context.Context, in *StartRequest) (*CoreInfoResponse, error) {
-	return Start(in)
+	return Start(static.BaseContext, in)
 }
 
-func Start(in *StartRequest) (*CoreInfoResponse, error) {
-	return StartService(in)
+func Start(ctx context.Context, in *StartRequest) (*CoreInfoResponse, error) {
+	return StartService(ctx, in)
 }
 
 func (s *CoreService) StartService(ctx context.Context, in *StartRequest) (*CoreInfoResponse, error) {
-	return StartService(in)
+	return StartService(ctx, in)
 }
 
 func saveLastStartRequest(in *StartRequest) error {
@@ -73,7 +74,7 @@ func loadLastStartRequestIfNeeded(in *StartRequest) (*StartRequest, error) {
 	}, nil
 }
 
-func StartService(in *StartRequest) (coreResponse *CoreInfoResponse, err error) {
+func StartService(ctx context.Context, in *StartRequest) (coreResponse *CoreInfoResponse, err error) {
 	defer config.DeferPanicToError("startmobile", func(recovered_err error) {
 		coreResponse, err = errorWrapper(MessageType_UNEXPECTED_ERROR, recovered_err)
 	})
@@ -91,7 +92,7 @@ func StartService(in *StartRequest) (coreResponse *CoreInfoResponse, err error) 
 	}
 
 	static.previousStartRequest = in
-	options, err := BuildConfig(in)
+	options, err := BuildConfig(ctx, in)
 	if err != nil {
 		return errorWrapper(MessageType_ERROR_BUILDING_CONFIG, err)
 	}
@@ -104,45 +105,35 @@ func StartService(in *StartRequest) (coreResponse *CoreInfoResponse, err error) 
 	currentBuildConfigPath := filepath.Join(sWorkingPath, "data/current-config.json")
 	Log(LogLevel_DEBUG, LogType_CORE, "Saving config to ", currentBuildConfigPath)
 
-	config.SaveCurrentConfig(currentBuildConfigPath, *options)
-	pout, err := json.MarshalIndent(options, "", "  ")
-	if err != nil {
-		return errorWrapper(MessageType_ERROR_BUILDING_CONFIG, err)
-	}
-	Log(LogLevel_INFO, LogType_CORE, "Current Config is:\n", string(pout))
-
-	bopts := box.Options{
-		Options:           *options,
-		PlatformLogWriter: &LogInterface{},
-	}
-	if static.globalPlatformInterface != nil {
-		bopts.PlatformInterface = libbox.WrapPlatformInterface(static.globalPlatformInterface)
-	}
-	libbox.SetMemoryLimit(!in.DisableMemoryLimit)
-	instance, err := libbox.NewHService(bopts)
-	if err != nil {
-		return errorWrapper(MessageType_CREATE_SERVICE, err)
-	}
-	// for i := 0; i < 10; i++ {
-	// 	if hutils.IsPortInUse(options.Inbounds[0].SocksOptions.ListenPort) {
-	// 		<-time.After(100 * time.Millisecond)
-	// 	}
+	config.SaveCurrentConfig(ctx, currentBuildConfigPath, *options)
+	// pout, err := json.MarshalIndent(options, "", "  ")
+	// if err != nil {
+	// 	return errorWrapper(MessageType_ERROR_BUILDING_CONFIG, err)
 	// }
+	// Log(LogLevel_INFO, LogType_CORE, "Current Config is:\n", string(pout))
+
+	ctx = libbox.FromContext(ctx, static.globalPlatformInterface)
+	if static.globalPlatformInterface != nil {
+		platformWrapper := libbox.WrapPlatformInterface(static.globalPlatformInterface)
+		service.MustRegister[adapter.PlatformInterface](ctx, platformWrapper)
+		// } else {
+		// 	service.MustRegister[adapter.PlatformInterface](ctx, (*adapter.PlatformInterface)nil)
+	}
 	Log(LogLevel_DEBUG, LogType_CORE, "Stating Service with delay ?", in.DelayStart)
 	if in.DelayStart {
 		<-time.After(1000 * time.Millisecond)
 	}
-
-	instance.GetInstance().AddPostService("hiddifyMainServiceManager", &hiddifyMainServiceManager{})
-
-	// if err := startCommandServer(instance); err != nil {
-	// 	return errorWrapper(MessageType_START_COMMAND_SERVER, err)
-	// }
-
-	if err := instance.Start(); err != nil {
+	libbox.SetMemoryLimit(!in.DisableMemoryLimit)
+	instance, err := NewService(ctx, *options)
+	if err != nil {
 		return errorWrapper(MessageType_START_SERVICE, err)
 	}
-	static.Box = instance
+	static.StartedService = instance
+	for inb := range options.Inbounds {
+		if opts, ok := options.Inbounds[inb].Options.(option.SocksInboundOptions); ok {
+			static.ListenPort = opts.ListenPort
+		}
+	}
 
 	return SetCoreStatus(CoreStates_STARTED, MessageType_EMPTY, ""), nil
 }

@@ -32,7 +32,7 @@ func (s *ProfileRepositoryServer) GetProfile(ctx context.Context, req *ProfileRe
 	case req.Name != "":
 		profile, err = GetByName(req.Name)
 	case req.Url != "":
-		profile, err = GetByUrl(req.Url)
+		profile, err = GetByUrl(ctx, req.Url)
 	default:
 		return nil, fmt.Errorf("invalid request: %v", req)
 	}
@@ -50,10 +50,10 @@ func (s *ProfileRepositoryServer) AddProfile(ctx context.Context, req *AddProfil
 
 	switch {
 	case req.Url != "":
-		profile, err = AddByUrl(req.Url, req.Name, req.MarkAsActive)
+		profile, err = AddByUrl(ctx, req.Url, req.Name, req.MarkAsActive)
 
 	case req.Content != "":
-		profile, err = AddByContent(req.Content, req.Name, req.MarkAsActive)
+		profile, err = AddByContent(ctx, req.Content, req.Name, req.MarkAsActive)
 	default:
 		return nil, fmt.Errorf("invalid request: %v", req)
 	}
@@ -188,7 +188,7 @@ func GetByName(name string) (*ProfileEntity, error) {
 	return nil, fmt.Errorf("error fetching profile by ID: %v", err)
 }
 
-func GetByUrl(url string) (*ProfileEntity, error) {
+func GetByUrl(ctx context.Context, url string) (*ProfileEntity, error) {
 	table := db.GetTable[ProfileEntity]()
 	allEntities, err := table.All()
 	for _, entity := range allEntities {
@@ -200,8 +200,8 @@ func GetByUrl(url string) (*ProfileEntity, error) {
 	return nil, fmt.Errorf("error fetching profile by ID: %v", err)
 }
 
-func AddByUrl(url string, optionalName string, markAsActive bool) (*ProfileEntity, error) {
-	existingProfile, _ := GetByUrl(url)
+func AddByUrl(ctx context.Context, url string, optionalName string, markAsActive bool) (*ProfileEntity, error) {
+	existingProfile, _ := GetByUrl(ctx, url)
 	if existingProfile != nil {
 		// If the profile already exists, update it
 		return existingProfile, UpdateSubscription(existingProfile, false)
@@ -210,12 +210,12 @@ func AddByUrl(url string, optionalName string, markAsActive bool) (*ProfileEntit
 	profileId := generateUuid()
 
 	// Attempt to download the profile content
-	content, err := downloadProfileContent(url)
+	content, err := downloadProfileContent(ctx, url)
 	if err != nil {
 		return nil, fmt.Errorf("error downloading profile: %v", err)
 	}
 
-	err = UpdateContent(profileId, content.Body)
+	err = UpdateContent(ctx, profileId, content.Body)
 	if err != nil {
 		return nil, fmt.Errorf("error updating profile content: %v", err)
 	}
@@ -242,7 +242,7 @@ func AddByUrl(url string, optionalName string, markAsActive bool) (*ProfileEntit
 }
 
 // downloadProfileContent handles the download logic
-func downloadProfileContent(url string) (*request.Response, error) {
+func downloadProfileContent(ctx context.Context, url string) (*request.Response, error) {
 	resp, err := request.Send(request.Request{
 		Url:       url,
 		Method:    request.GET,
@@ -256,7 +256,7 @@ func downloadProfileContent(url string) (*request.Response, error) {
 			Timeout: 5 * time.Second,
 		})
 		if resp == nil {
-			instance, err1 := hcore.RunInstance(config.DefaultHiddifyOptions(), &option.Options{})
+			instance, err1 := hcore.RunInstance(ctx, config.DefaultHiddifyOptions(), &option.Options{})
 			if err1 != nil {
 				return nil, fmt.Errorf("%v,error running instance: %v", err, err1)
 			}
@@ -285,7 +285,7 @@ func downloadProfileContent(url string) (*request.Response, error) {
 	return resp, nil
 }
 
-func UpdateContent(profileId, content string) error {
+func UpdateContent(ctx context.Context, profileId, content string) error {
 	if _, err := os.Stat(profilesDirName); os.IsNotExist(err) {
 		err := os.MkdirAll(profilesDirName, 0o755)
 		if err != nil {
@@ -293,7 +293,7 @@ func UpdateContent(profileId, content string) error {
 		}
 	}
 
-	_, err := hcore.Parse(&hcore.ParseRequest{
+	_, err := hcore.Parse(ctx, &hcore.ParseRequest{
 		Content: content,
 	})
 	if err != nil {
@@ -303,10 +303,10 @@ func UpdateContent(profileId, content string) error {
 	return os.WriteFile(profilesDirName+"/"+profileId+".info", []byte(content), 0o644)
 }
 
-func AddByContent(content, name string, markAsActive bool) (*ProfileEntity, error) {
+func AddByContent(ctx context.Context, content, name string, markAsActive bool) (*ProfileEntity, error) {
 	profileId := generateUuid()
 
-	err := UpdateContent(profileId, content)
+	err := UpdateContent(ctx, profileId, content)
 	if err != nil {
 		return nil, err
 	}

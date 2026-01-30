@@ -1,9 +1,7 @@
 package config
 
 import (
-	"encoding/json"
 	"fmt"
-	"strings"
 
 	C "github.com/sagernet/sing-box/constant"
 	"github.com/sagernet/sing-box/option"
@@ -26,79 +24,83 @@ func patchOutboundMux(base option.Outbound, configOpt HiddifyOptions, obj outbou
 	return obj
 }
 
-func patchOutboundTLSTricks(base option.Outbound, configOpt HiddifyOptions, obj outboundMap) outboundMap {
+func patchOutboundTLSTricks(base option.Outbound, configOpt HiddifyOptions) option.Outbound {
 	if base.Type == C.TypeSelector || base.Type == C.TypeURLTest || base.Type == C.TypeBlock || base.Type == C.TypeDNS {
-		return obj
+		return base
 	}
 	if isOutboundReality(base) {
-		return obj
+		return base
 	}
 
 	var tls *option.OutboundTLSOptions
+	if tlsopt, ok := base.Options.(option.OutboundTLSOptionsWrapper); ok {
+		tls = tlsopt.TakeOutboundTLSOptions()
+	}
+
 	var transport *option.V2RayTransportOptions
-	if base.VLESSOptions.OutboundTLSOptionsContainer.TLS != nil {
-		tls = base.VLESSOptions.OutboundTLSOptionsContainer.TLS
-		transport = base.VLESSOptions.Transport
-	} else if base.TrojanOptions.OutboundTLSOptionsContainer.TLS != nil {
-		tls = base.TrojanOptions.OutboundTLSOptionsContainer.TLS
-		transport = base.TrojanOptions.Transport
-	} else if base.VMessOptions.OutboundTLSOptionsContainer.TLS != nil {
-		tls = base.VMessOptions.OutboundTLSOptionsContainer.TLS
-		transport = base.VMessOptions.Transport
+	if opts, ok := base.Options.(option.VLESSOutboundOptions); ok {
+		transport = opts.Transport
+	} else if opts, ok := base.Options.(option.TrojanOutboundOptions); ok {
+		transport = opts.Transport
+	} else if opts, ok := base.Options.(option.VMessOutboundOptions); ok {
+		transport = opts.Transport
 	}
 
 	if base.Type == C.TypeDirect {
-		return patchOutboundFragment(base, configOpt, obj)
+		return patchOutboundFragment(base, configOpt)
 	}
 
 	if tls == nil || !tls.Enabled || transport == nil {
-		return obj
+		return base
 	}
 
 	if transport.Type != C.V2RayTransportTypeWebsocket && transport.Type != C.V2RayTransportTypeGRPC && transport.Type != C.V2RayTransportTypeHTTPUpgrade {
-		return obj
+		return base
 	}
 
-	if outtls, ok := obj["tls"].(map[string]interface{}); ok {
-		obj = patchOutboundFragment(base, configOpt, obj)
-		tlsTricks := tls.TLSTricks
-		if tlsTricks == nil {
-			tlsTricks = &option.TLSTricksOptions{}
-		}
-		tlsTricks.MixedCaseSNI = tlsTricks.MixedCaseSNI || configOpt.TLSTricks.MixedSNICase
+	base = patchOutboundFragment(base, configOpt)
 
-		if configOpt.TLSTricks.EnablePadding {
-			tlsTricks.PaddingMode = "random"
-			tlsTricks.PaddingSize = configOpt.TLSTricks.PaddingSize
-			// fmt.Printf("--------------------%+v----%+v", tlsTricks.PaddingSize, configOpt)
-			outtls["utls"] = map[string]interface{}{
-				"enabled":     true,
-				"fingerprint": "custom",
-			}
-		}
-
-		outtls["tls_tricks"] = tlsTricks
-		// if tlsTricks.MixedCaseSNI || tlsTricks.PaddingMode != "" {
-		// 	// } else {
-		// 	// 	tls["tls_tricks"] = nil
-		// }
-		// fmt.Printf("-------%+v------------- ", tlsTricks)
+	if tls.TLSTricks == nil {
+		tls.TLSTricks = &option.TLSTricksOptions{}
 	}
-	return obj
+	tls.TLSTricks.MixedCaseSNI = tls.TLSTricks.MixedCaseSNI || configOpt.TLSTricks.MixedSNICase
+
+	if configOpt.TLSTricks.EnablePadding {
+		tls.TLSTricks.PaddingMode = "random"
+		tls.TLSTricks.PaddingSize = configOpt.TLSTricks.PaddingSize
+		tls.UTLS = &option.OutboundUTLSOptions{
+			Enabled:     true,
+			Fingerprint: "custom",
+		}
+		// fmt.Printf("--------------------%+v----%+v", tlsTricks.PaddingSize, configOpt)
+
+	}
+
+	// if tlsTricks.MixedCaseSNI || tlsTricks.PaddingMode != "" {
+	// 	// } else {
+	// 	// 	tls["tls_tricks"] = nil
+	// }
+	// fmt.Printf("-------%+v------------- ", tlsTricks)
+
+	return base
 }
 
-func patchOutboundFragment(base option.Outbound, configOpt HiddifyOptions, obj outboundMap) outboundMap {
+func patchOutboundFragment(base option.Outbound, configOpt HiddifyOptions) option.Outbound {
 	if configOpt.TLSTricks.EnableFragment {
-		obj["tcp_fast_open"] = false
-		obj["tls_fragment"] = option.TLSFragmentOptions{
-			Enabled: configOpt.TLSTricks.EnableFragment,
-			Size:    configOpt.TLSTricks.FragmentSize,
-			Sleep:   configOpt.TLSTricks.FragmentSleep,
+		if opts, ok := base.Options.(option.DialerOptionsWrapper); ok {
+			dialer := opts.TakeDialerOptions()
+			dialer.TCPFastOpen = false
+			dialer.TLSFragment = option.TLSFragmentOptions{
+				Enabled: configOpt.TLSTricks.EnableFragment,
+				Size:    configOpt.TLSTricks.FragmentSize,
+				Sleep:   configOpt.TLSTricks.FragmentSleep,
+			}
+			opts.ReplaceDialerOptions(dialer)
 		}
 
 	}
 
-	return obj
+	return base
 }
 
 func isOutboundReality(base option.Outbound) bool {
@@ -107,185 +109,170 @@ func isOutboundReality(base option.Outbound) bool {
 	if base.Type != C.TypeVLESS {
 		return false
 	}
-	if base.VLESSOptions.OutboundTLSOptionsContainer.TLS == nil {
+	var tls *option.OutboundTLSOptions
+	if tlsopt, ok := base.Options.(option.OutboundTLSOptionsWrapper); ok {
+		tls = tlsopt.TakeOutboundTLSOptions()
+	}
+
+	if tls == nil || !tls.Enabled {
 		return false
 	}
-	if base.VLESSOptions.OutboundTLSOptionsContainer.TLS.Reality == nil {
+	if tls.Reality == nil {
 		return false
 	}
-	return base.VLESSOptions.OutboundTLSOptionsContainer.TLS.Reality.Enabled
+
+	return tls.Reality.Enabled
 }
 
-func patchOutbound(base option.Outbound, configOpt HiddifyOptions, dns *option.DNSOptions) (*option.Outbound, error) {
+func patchOutbound(base option.Outbound, configOpt HiddifyOptions, staticIPs *map[string][]string) (*option.Outbound, error) {
 	formatErr := func(err error) error {
 		return fmt.Errorf("error patching outbound[%s][%s]: %w", base.Tag, base.Type, err)
 	}
-	err := patchWarp(&base, &configOpt, true, dns.StaticIPs)
-	if err != nil {
-		return nil, formatErr(err)
-	}
-	var outbound option.Outbound
-
-	jsonData, err := base.MarshalJSON()
+	err := patchWarp(&base, &configOpt, true, *staticIPs)
 	if err != nil {
 		return nil, formatErr(err)
 	}
 
-	var obj outboundMap
-	err = json.Unmarshal(jsonData, &obj)
-	if err != nil {
-		return nil, formatErr(err)
-	}
+	base = patchOutboundTLSTricks(base, configOpt)
 
-	obj = patchOutboundTLSTricks(base, configOpt, obj)
+	// switch base.Type {
+	// case C.TypeVMess, C.TypeVLESS, C.TypeTrojan, C.TypeShadowsocks:
+	// 	obj = patchOutboundMux(base, configOpt, obj)
+	// }
+	// base = patchOutboundXray(base, configOpt, *staticIPs)
 
-	switch base.Type {
-	case C.TypeVMess, C.TypeVLESS, C.TypeTrojan, C.TypeShadowsocks:
-		obj = patchOutboundMux(base, configOpt, obj)
-	}
-	obj = patchOutboundXray(base, configOpt, obj, dns.StaticIPs)
-	modifiedJson, err := json.Marshal(obj)
-	if err != nil {
-		return nil, formatErr(err)
-	}
-
-	err = outbound.UnmarshalJSON(modifiedJson)
-	if err != nil {
-		return nil, formatErr(err)
-	}
-
-	return &outbound, nil
+	return &base, nil
 }
 
-func patchOutboundXray(base option.Outbound, configOpt HiddifyOptions, obj outboundMap, staticIpsDns map[string][]string) outboundMap {
-	if base.Type == C.TypeXray {
-		// Handle alternative key "xray_outbound_raw"
-		if rawConfig, exists := obj["xray_outbound_raw"]; exists && rawConfig != nil && rawConfig != "" {
-			obj["xconfig"] = rawConfig
-			delete(obj, "xray_outbound_raw")
-		}
+// func patchOutboundXray(base option.Outbound, configOpt HiddifyOptions, staticIpsDns map[string][]string) outboundMap {
+// 	if base.Type == C.TypeXray {
+// 		if opts, ok := base.Options.(option.XrayOutboundOptions); ok {
+// 			if opts.DeprecatedXrayOutboundJson != nil {
+// 				opts.XConfig = opts.DeprecatedXrayOutboundJson
+// 				opts.DeprecatedXrayOutboundJson = nil
+// 			}
+// 			if xconfig := *(opts.XConfig); xconfig != nil {
+// 				if _, exists := xconfig["outbounds"]; !exists {
+// 					xconfig = map[string]any{"outbounds": []any{xconfig}}
+// 					opts.XConfig = &xconfig
+// 				}
 
-		// Ensure "xconfig" exists and properly structured
-		xconfig, ok := obj["xconfig"].(map[string]any)
-		if !ok {
-			return obj // Return early if the structure is invalid
-		}
+// 				xconfig = map[string]any{"outbounds": []any{xconfig}}
+// 			}
+// 		}
 
-		// Ensure "outbounds" key exists within "xconfig"
-		if _, exists := xconfig["outbounds"]; !exists {
-			xconfig = map[string]any{"outbounds": []any{xconfig}}
-		}
+// 		// Ensure "outbounds" key exists within "xconfig"
 
-		if configOpt.TLSTricks.EnableFragment {
-			// TODO
-			// if obj["xray_fragment"] == nil || obj["xray_fragment"].(map[string]any)["packets"] == "" {
-			// 	obj["xray_fragment"] = map[string]any{
-			// 		"packets":  "tlshello",
-			// 		"length":   configOpt.TLSTricks.FragmentSize,
-			// 		"interval": configOpt.TLSTricks.FragmentSleep,
-			// 	}
-			// }
-		}
+// 		if configOpt.TLSTricks.EnableFragment {
+// 			// TODO
+// 			// if obj["xray_fragment"] == nil || obj["xray_fragment"].(map[string]any)["packets"] == "" {
+// 			// 	obj["xray_fragment"] = map[string]any{
+// 			// 		"packets":  "tlshello",
+// 			// 		"length":   configOpt.TLSTricks.FragmentSize,
+// 			// 		"interval": configOpt.TLSTricks.FragmentSleep,
+// 			// 	}
+// 			// }
+// 		}
 
-		dnsConfig, ok := xconfig["dns"].(map[string]any)
-		if !ok {
-			dnsConfig = map[string]any{}
-		}
-		if dnsConfig["tag"] == nil {
-			dnsConfig["tag"] = "hiddify-dns-out"
-		}
-		// Ensure "servers" key exists and is a slice
-		servers, ok := dnsConfig["servers"].([]any)
-		if !ok {
-			servers = []any{}
-		}
+// 		dnsConfig, ok := xconfig["dns"].(map[string]any)
+// 		if !ok {
+// 			dnsConfig = map[string]any{}
+// 		}
+// 		if dnsConfig["tag"] == nil {
+// 			dnsConfig["tag"] = "hiddify-dns-out"
+// 		}
+// 		// Ensure "servers" key exists and is a slice
+// 		servers, ok := dnsConfig["servers"].([]any)
+// 		if !ok {
+// 			servers = []any{}
+// 		}
 
-		// Ensure "hosts" key exists and is a slice
-		// hosts, ok := dnsConfig["hosts"].(map[string]any)
-		// if !ok {
-		// 	hosts = map[string]any{}
-		// }
-		// // for host, ip := range staticIpsDns {
-		// // hosts[host] = ip
-		// // }
-		// dnsConfig["hosts"] = hosts
+// 		// Ensure "hosts" key exists and is a slice
+// 		// hosts, ok := dnsConfig["hosts"].(map[string]any)
+// 		// if !ok {
+// 		// 	hosts = map[string]any{}
+// 		// }
+// 		// // for host, ip := range staticIpsDns {
+// 		// // hosts[host] = ip
+// 		// // }
+// 		// dnsConfig["hosts"] = hosts
 
-		// // Ensure "servers" key exists and is a slice
-		// hosts, ok := dnsConfig["hosts"].([]any)
-		// if !ok {
-		// 	hosts = []any{}
-		// }
-		// for _, host := range base.DNSOptions. {
-		// 	hosts = append(hosts, host)
-		// }
-		addDnsServer := func(dnsAdd string) []any {
-			if dnsAdd == "local" {
-				dnsAdd = "localhost"
-			} else {
-				dnsAdd = strings.Replace(dnsAdd, "udp://", "", 1)
-				dnsAdd = strings.Replace(dnsAdd, "://", "+local://", 1)
-			}
-			for _, server := range servers {
-				if server == dnsAdd {
-					return servers
-				}
-			}
-			return append(servers, dnsAdd)
-		}
-		// Append remote DNS address
-		servers = addDnsServer(configOpt.DNSOptions.RemoteDnsAddress)
-		servers = addDnsServer(configOpt.DNSOptions.DirectDnsAddress)
-		servers = addDnsServer("1.1.1.1")
+// 		// // Ensure "servers" key exists and is a slice
+// 		// hosts, ok := dnsConfig["hosts"].([]any)
+// 		// if !ok {
+// 		// 	hosts = []any{}
+// 		// }
+// 		// for _, host := range base.DNSOptions. {
+// 		// 	hosts = append(hosts, host)
+// 		// }
+// 		addDnsServer := func(dnsAdd string) []any {
+// 			if dnsAdd == "local" {
+// 				dnsAdd = "localhost"
+// 			} else {
+// 				dnsAdd = strings.Replace(dnsAdd, "udp://", "", 1)
+// 				dnsAdd = strings.Replace(dnsAdd, "://", "+local://", 1)
+// 			}
+// 			for _, server := range servers {
+// 				if server == dnsAdd {
+// 					return servers
+// 				}
+// 			}
+// 			return append(servers, dnsAdd)
+// 		}
+// 		// Append remote DNS address
+// 		servers = addDnsServer(configOpt.DNSOptions.RemoteDnsAddress)
+// 		servers = addDnsServer(configOpt.DNSOptions.DirectDnsAddress)
+// 		servers = addDnsServer("1.1.1.1")
 
-		// if outbounds, ok := xconfig["outbounds"].([]any); ok {
-		// 	hasDns := false
-		// 	for _, out := range outbounds {
-		// 		if outbound, ok := out.(map[string]any); ok {
-		// 			if outbound["tag"] == dnsConfig["tag"] {
-		// 				hasDns = true
-		// 			}
-		// 		}
-		// 	}
-		// 	if !hasDns {
-		// 		outbounds = append(outbounds, map[string]any{
-		// 			"tag":      dnsConfig["tag"],
-		// 			"protocol": "dns",
-		// 		})
-		// 	}
-		// 	xconfig["outbounds"] = outbounds
-		// }
+// 		// if outbounds, ok := xconfig["outbounds"].([]any); ok {
+// 		// 	hasDns := false
+// 		// 	for _, out := range outbounds {
+// 		// 		if outbound, ok := out.(map[string]any); ok {
+// 		// 			if outbound["tag"] == dnsConfig["tag"] {
+// 		// 				hasDns = true
+// 		// 			}
+// 		// 		}
+// 		// 	}
+// 		// 	if !hasDns {
+// 		// 		outbounds = append(outbounds, map[string]any{
+// 		// 			"tag":      dnsConfig["tag"],
+// 		// 			"protocol": "dns",
+// 		// 		})
+// 		// 	}
+// 		// 	xconfig["outbounds"] = outbounds
+// 		// }
 
-		// Ensure "routing" is a map
-		// routing, ok := xconfig["routing"].(map[string]any)
-		// if !ok {
-		// 	routing = map[string]any{}
-		// }
+// 		// Ensure "routing" is a map
+// 		// routing, ok := xconfig["routing"].(map[string]any)
+// 		// if !ok {
+// 		// 	routing = map[string]any{}
+// 		// }
 
-		// // Ensure "rules" is a slice of maps
-		// rules, ok := routing["rules"].([]map[string]any)
-		// if !ok {
-		// 	rules = []map[string]any{}
-		// }
+// 		// // Ensure "rules" is a slice of maps
+// 		// rules, ok := routing["rules"].([]map[string]any)
+// 		// if !ok {
+// 		// 	rules = []map[string]any{}
+// 		// }
 
-		// // Append the DNS rule
-		// // rules = append([]map[string]any{{
-		// // 	"type":        "field",
-		// // 	"port":        53,
-		// // 	"outboundTag": dnsConfig["tag"],
-		// // }}, rules...)
+// 		// // Append the DNS rule
+// 		// // rules = append([]map[string]any{{
+// 		// // 	"type":        "field",
+// 		// // 	"port":        53,
+// 		// // 	"outboundTag": dnsConfig["tag"],
+// 		// // }}, rules...)
 
-		// routing["rules"] = rules
-		// xconfig["routing"] = routing
-		// Update "servers" key in "dns"
-		dnsConfig["servers"] = servers
-		dnsConfig["disableFallback"] = false
-		xconfig["dns"] = dnsConfig
-		obj["xconfig"] = xconfig
-		obj["xdebug"] = configOpt.LogLevel == "debug" || configOpt.LogLevel == "trace"
-	}
+// 		// routing["rules"] = rules
+// 		// xconfig["routing"] = routing
+// 		// Update "servers" key in "dns"
+// 		dnsConfig["servers"] = servers
+// 		dnsConfig["disableFallback"] = false
+// 		xconfig["dns"] = dnsConfig
+// 		obj["xconfig"] = xconfig
+// 		obj["xdebug"] = configOpt.LogLevel == "debug" || configOpt.LogLevel == "trace"
+// 	}
 
-	return obj
-}
+// 	return obj
+// }
 
 // func (o outboundMap) transportType() string {
 // 	if transport, ok := o["transport"].(map[string]interface{}); ok {

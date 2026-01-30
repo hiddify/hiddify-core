@@ -5,7 +5,6 @@ import (
 
 	"github.com/hiddify/hiddify-core/v2/config"
 	hcommon "github.com/hiddify/hiddify-core/v2/hcommon"
-	"github.com/sagernet/sing/common"
 )
 
 func (s *CoreService) Stop(ctx context.Context, empty *hcommon.Empty) (*CoreInfoResponse, error) {
@@ -27,11 +26,13 @@ func Stop() (coreResponse *CoreInfoResponse, err error) {
 	defer static.lock.Unlock()
 
 	SetCoreStatus(CoreStates_STOPPING, MessageType_EMPTY, "")
-	if static.Box == nil {
+	ss := static.StartedService
+	if ss == nil {
 		return SetCoreStatus(CoreStates_STOPPED, MessageType_ALREADY_STOPPED, ""), nil
 	}
-	err = common.Close(static.Box)
-	static.Box = nil
+	ss.CloseService()
+	// err = common.Close(static.StartedService)
+	static.StartedService = nil
 	if err != nil {
 		return errorWrapper(MessageType_UNEXPECTED_ERROR, err)
 	}

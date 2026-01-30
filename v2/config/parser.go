@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"path/filepath"
 
 	"github.com/hiddify/ray2sing/ray2sing"
 	"github.com/sagernet/sing-box/experimental/libbox"
@@ -22,39 +21,46 @@ import (
 //go:embed config.json.template
 var configByte []byte
 
-func ParseConfig(path string, debug bool) ([]byte, error) {
-	content, err := os.ReadFile(path)
-	os.Chdir(filepath.Dir(path))
-	if err != nil {
-		return nil, err
+func ReadContent(ctx context.Context, opt *ReadOptions) ([]byte, error) {
+	if opt.Content == "" {
+		contentBytes, err := os.ReadFile(opt.Path)
+		if err != nil {
+			return nil, err
+		}
+		opt.Content = string(contentBytes)
 	}
-	return ParseConfigContent(string(content), debug, nil, false)
+	return []byte(opt.Content), nil
 }
 
-func ParseConfigContentToOptions(contentstr string, debug bool, configOpt *HiddifyOptions, fullConfig bool) (*option.Options, error) {
-	content, err := ParseConfigContent(contentstr, debug, configOpt, fullConfig)
+func ParseConfig(ctx context.Context, opt *ReadOptions, debug bool, configOpt *HiddifyOptions, fullConfig bool) (*option.Options, error) {
+	content, err := ReadContent(ctx, opt)
 	if err != nil {
 		return nil, err
 	}
-	var options option.Options
-	err = json.Unmarshal(content, &options)
-	if err != nil {
-		return nil, err
-	}
-	return &options, nil
+	return parseConfigContent(ctx, content, debug, nil, false)
 }
 
-func ParseConfigContent(contentstr string, debug bool, configOpt *HiddifyOptions, fullConfig bool) ([]byte, error) {
+func ParseConfigBytes(ctx context.Context, opt *ReadOptions, debug bool, configOpt *HiddifyOptions, fullConfig bool) ([]byte, error) {
+
+	options, err := ParseConfig(ctx, opt, debug, configOpt, fullConfig)
+	if err != nil {
+		return nil, err
+	}
+
+	return options.MarshalJSONContext(ctx)
+
+}
+func parseConfigContent(ctx context.Context, content []byte, debug bool, configOpt *HiddifyOptions, fullConfig bool) (*option.Options, error) {
 	if configOpt == nil {
 		configOpt = DefaultHiddifyOptions()
 	}
-	content := []byte(contentstr)
+
 	var jsonObj map[string]interface{} = make(map[string]interface{})
 
-	fmt.Printf("Convert using json\n")
 	var tmpJsonResult any
 	jsonDecoder := json.NewDecoder(SJ.NewCommentFilter(bytes.NewReader(content)))
 	if err := jsonDecoder.Decode(&tmpJsonResult); err == nil {
+		fmt.Printf("Convert using json\n")
 		if tmpJsonObj, ok := tmpJsonResult.(map[string]interface{}); ok {
 			if tmpJsonObj["outbounds"] == nil {
 				jsonObj["outbounds"] = []interface{}{jsonObj}
@@ -73,12 +79,13 @@ func ParseConfigContent(contentstr string, debug bool, configOpt *HiddifyOptions
 
 		newContent, _ := json.MarshalIndent(jsonObj, "", "  ")
 
-		return patchConfig(newContent, "SingboxParser", configOpt)
+		return patchConfigStr(ctx, newContent, "SingboxParser", configOpt)
 	}
 
-	v2rayStr, err := ray2sing.Ray2Singbox(string(content), configOpt.UseXrayCoreWhenPossible)
+	v2ray, err := ray2sing.Ray2SingboxOptions(ctx, string(content), configOpt.UseXrayCoreWhenPossible)
+
 	if err == nil {
-		return patchConfig([]byte(v2rayStr), "V2rayParser", configOpt)
+		return patchConfigOptions(ctx, v2ray, "V2rayParser", configOpt)
 	}
 	fmt.Printf("Convert using clash\n")
 	clashObj := clash.Clash{}
@@ -95,19 +102,24 @@ func ParseConfigContent(contentstr string, debug bool, configOpt *HiddifyOptions
 		if err != nil {
 			return nil, fmt.Errorf("[ClashParser] patching clash config error: %w", err)
 		}
-		return patchConfig(output, "ClashParser", configOpt)
+		return patchConfigStr(ctx, output, "ClashParser", configOpt)
 	}
 
 	return nil, fmt.Errorf("unable to determine config format")
 }
 
-func patchConfig(content []byte, name string, configOpt *HiddifyOptions) ([]byte, error) {
+func patchConfigStr(ctx context.Context, content []byte, name string, configOpt *HiddifyOptions) (*option.Options, error) {
 	options := option.Options{}
-	err := json.Unmarshal(content, &options)
+	err := options.UnmarshalJSONContext(ctx, content)
+
 	if err != nil {
 		return nil, fmt.Errorf("[SingboxParser] unmarshal error: %w", err)
 	}
-	b, _ := batch.New(context.Background(), batch.WithConcurrencyNum[*option.Outbound](2))
+
+	return patchConfigOptions(ctx, &options, name, configOpt)
+}
+func patchConfigOptions(ctx context.Context, options *option.Options, name string, configOpt *HiddifyOptions) (*option.Options, error) {
+	b, _ := batch.New(ctx, batch.WithConcurrencyNum[*option.Outbound](2))
 	for _, base := range options.Outbounds {
 		out := base
 		b.Go(base.Tag, func() (*option.Outbound, error) {
@@ -127,16 +139,14 @@ func patchConfig(content []byte, name string, configOpt *HiddifyOptions) ([]byte
 		}
 	}
 
-	content, _ = json.MarshalIndent(options, "", "  ")
-
 	// fmt.Printf("%s\n", content)
-	return validateResult(content, name)
+	return validateResult(ctx, options, name)
 }
 
-func validateResult(content []byte, name string) ([]byte, error) {
-	err := libbox.CheckConfig(string(content))
+func validateResult(ctx context.Context, options *option.Options, name string) (*option.Options, error) {
+	err := libbox.CheckConfigOptions(options)
 	if err != nil {
 		return nil, fmt.Errorf("[%s] invalid sing-box config: %w", name, err)
 	}
-	return content, nil
+	return options, nil
 }

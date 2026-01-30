@@ -8,10 +8,10 @@ import (
 )
 
 func (s *CoreService) Restart(ctx context.Context, in *StartRequest) (*CoreInfoResponse, error) {
-	return Restart(in)
+	return Restart(static.BaseContext, in)
 }
 
-func Restart(in *StartRequest) (coreResponse *CoreInfoResponse, err error) {
+func Restart(ctx context.Context, in *StartRequest) (coreResponse *CoreInfoResponse, err error) {
 	defer config.DeferPanicToError("startmobile", func(recovered_err error) {
 		coreResponse, err = errorWrapper(MessageType_UNEXPECTED_ERROR, recovered_err)
 	})
@@ -28,6 +28,6 @@ func Restart(in *StartRequest) (coreResponse *CoreInfoResponse, err error) {
 		return resp, err
 	}
 
-	resp, gErr := StartService(in)
+	resp, gErr := StartService(ctx, in)
 	return resp, gErr
 }

@@ -1,16 +1,18 @@
 package hcore
 
 import (
+	"context"
 	"sync"
 
 	"github.com/hiddify/hiddify-core/v2/config"
+	"github.com/sagernet/sing-box/daemon"
 	"github.com/sagernet/sing-box/experimental/libbox"
 	"github.com/sagernet/sing-box/log"
 	"github.com/sagernet/sing/common/observable"
 )
 
 type HiddifyInstance struct {
-	Box            *libbox.BoxService
+	StartedService *daemon.StartedService
 	HiddifyOptions *config.HiddifyOptions
 	// activeConfigPath string
 	CoreLogFactory            log.Factory
@@ -24,6 +26,8 @@ type HiddifyInstance struct {
 	globalPlatformInterface   libbox.PlatformInterface
 	previousStartRequest      *StartRequest
 	debug                     bool
+	ListenPort                uint16
+	BaseContext               context.Context
 }
 
 var static = &HiddifyInstance{

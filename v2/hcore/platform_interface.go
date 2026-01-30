@@ -12,6 +12,18 @@ type MobilePlatformInterface struct {
 	platform libbox.PlatformInterface
 }
 
+func (h *MobilePlatformInterface) SystemCertificates() libbox.StringIterator {
+	if h.platform == nil {
+		return nil
+	}
+	return h.platform.SystemCertificates()
+}
+func (h *MobilePlatformInterface) LocalDNSTransport() libbox.LocalDNSTransport {
+	if h.platform == nil {
+		return nil
+	}
+	return h.platform.LocalDNSTransport()
+}
 func (h *MobilePlatformInterface) UsePlatformAutoDetectInterfaceControl() bool {
 	if h.platform == nil {
 		return true
@@ -44,32 +56,11 @@ func (h *MobilePlatformInterface) UseProcFS() bool {
 	return h.platform.UseProcFS()
 }
 
-func (h *MobilePlatformInterface) FindConnectionOwner(ipProtocol int32, sourceAddress string, sourcePort int32, destinationAddress string, destinationPort int32) (int32, error) {
+func (h *MobilePlatformInterface) FindConnectionOwner(ipProtocol int32, sourceAddress string, sourcePort int32, destinationAddress string, destinationPort int32) (*libbox.ConnectionOwner, error) {
 	if h.platform == nil {
-		return 0, fmt.Errorf("platform is nil")
+		return nil, fmt.Errorf("platform is nil")
 	}
 	return h.platform.FindConnectionOwner(ipProtocol, sourceAddress, sourcePort, destinationAddress, destinationPort)
-}
-
-func (h *MobilePlatformInterface) PackageNameByUid(uid int32) (string, error) {
-	if h.platform == nil {
-		return "", fmt.Errorf("platform is nil")
-	}
-	return h.platform.PackageNameByUid(uid)
-}
-
-func (h *MobilePlatformInterface) UIDByPackageName(packageName string) (int32, error) {
-	if h.platform == nil {
-		return 0, fmt.Errorf("platform is nil")
-	}
-	return h.platform.UIDByPackageName(packageName)
-}
-
-func (h *MobilePlatformInterface) UsePlatformDefaultInterfaceMonitor() bool {
-	if h.platform == nil {
-		return false
-	}
-	return h.platform.UsePlatformDefaultInterfaceMonitor()
 }
 
 func (h *MobilePlatformInterface) StartDefaultInterfaceMonitor(listener libbox.InterfaceUpdateListener) error {
@@ -84,13 +75,6 @@ func (h *MobilePlatformInterface) CloseDefaultInterfaceMonitor(listener libbox.I
 		return fmt.Errorf("platform is nil")
 	}
 	return h.platform.CloseDefaultInterfaceMonitor(listener)
-}
-
-func (h *MobilePlatformInterface) UsePlatformInterfaceGetter() bool {
-	if h.platform == nil {
-		return false
-	}
-	return h.platform.UsePlatformInterfaceGetter()
 }
 
 func (h *MobilePlatformInterface) GetInterfaces() (libbox.NetworkInterfaceIterator, error) {

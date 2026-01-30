@@ -10,11 +10,14 @@ import "C"
 import (
 	// "os"
 	// "os/signal"
+
 	"runtime"
+
 	// "syscall"
 	"unsafe"
 
 	hcore "github.com/hiddify/hiddify-core/v2/hcore"
+	"github.com/sagernet/sing-box/experimental/libbox"
 	"github.com/sagernet/sing-box/log"
 )
 
@@ -105,8 +108,8 @@ func freeString(str *C.char) {
 func start(configPath *C.char, disableMemoryLimit bool) *C.char {
 	// runtime.LockOSThread()
 	// defer runtime.UnlockOSThread()
-
-	_, err := hcore.Start(&hcore.StartRequest{
+	ctx := libbox.BaseContext(nil)
+	_, err := hcore.Start(ctx, &hcore.StartRequest{
 		ConfigPath:             C.GoString(configPath),
 		EnableOldCommandServer: true,
 		DisableMemoryLimit:     bool(disableMemoryLimit),
@@ -127,8 +130,8 @@ func stop() *C.char {
 func restart(configPath *C.char, disableMemoryLimit bool) *C.char {
 	// runtime.LockOSThread()
 	// defer runtime.UnlockOSThread()
-
-	_, err := hcore.Restart(&hcore.StartRequest{
+	ctx := libbox.BaseContext(nil)
+	_, err := hcore.Restart(ctx, &hcore.StartRequest{
 		ConfigPath:             C.GoString(configPath),
 		EnableOldCommandServer: true,
 		DisableMemoryLimit:     bool(disableMemoryLimit),

@@ -42,7 +42,7 @@ type DNSOptions struct {
 	DirectDnsDomainStrategy option.DomainStrategy `json:"direct-dns-domain-strategy,omitempty" overridable:"true"`
 	IndependentDNSCache     bool                  `json:"independent-dns-cache,omitempty"`
 	EnableFakeDNS           bool                  `json:"enable-fake-dns,omitempty"`
-	EnableDNSRouting        bool                  `json:"enable-dns-routing,omitempty"`
+	// EnableDNSRouting        bool                  `json:"enable-dns-routing,omitempty"`
 }
 
 type InboundOptions struct {
@@ -112,7 +112,7 @@ func DefaultHiddifyOptions() *HiddifyOptions {
 			DirectDnsDomainStrategy: option.DomainStrategy(dns.DomainStrategyAsIS),
 			IndependentDNSCache:     false,
 			EnableFakeDNS:           false,
-			EnableDNSRouting:        false,
+			// EnableDNSRouting:        false,
 		},
 		InboundOptions: InboundOptions{
 			EnableTun:      false,

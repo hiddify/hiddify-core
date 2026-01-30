@@ -2,6 +2,7 @@ package cmd
 
 import (
 	hcore "github.com/hiddify/hiddify-core/v2/hcore"
+	"github.com/sagernet/sing-box/experimental/libbox"
 
 	"github.com/spf13/cobra"
 )
@@ -45,5 +46,6 @@ func runCommand(cmd *cobra.Command, args []string) {
 	// res, err := c.SayHello(ctx, &hello.HelloRequest{Name: "test"})
 	// fmt.Println(res, err)
 	// <-time.After(10 * time.Second)
-	hcore.RunStandalone(hiddifySettingPath, configPath, defaultConfigs)
+	ctx := libbox.BaseContext(nil)
+	hcore.RunStandalone(ctx, hiddifySettingPath, configPath, defaultConfigs)
 }

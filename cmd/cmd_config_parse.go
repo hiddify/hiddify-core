@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 
 	"github.com/hiddify/hiddify-core/v2/config"
+	"github.com/sagernet/sing-box/experimental/libbox"
 	"github.com/sagernet/sing-box/log"
 	"github.com/spf13/cobra"
 )
@@ -31,22 +32,22 @@ func init() {
 }
 
 func parse(path string) error {
-	if workingDir != "" {
-		path = filepath.Join(workingDir, path)
-	}
-	config, err := config.ParseConfig(path, true)
+	ctx := libbox.BaseContext(nil)
+
+	configStr, err := config.ParseConfigBytes(ctx, &config.ReadOptions{Path: path}, true, nil, false)
 	if err != nil {
 		return err
 	}
+
 	if commandParseOutputPath != "" {
 		outputPath, _ := filepath.Abs(filepath.Join(workingDir, commandParseOutputPath))
-		err = os.WriteFile(outputPath, config, 0o644)
+		err = os.WriteFile(outputPath, configStr, 0o644)
 		if err != nil {
 			return err
 		}
 		fmt.Println("result successfully written to ", outputPath)
 	} else {
-		os.Stdout.Write(config)
+		os.Stdout.Write(configStr)
 	}
 	return nil
 }

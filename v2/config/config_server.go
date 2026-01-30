@@ -6,9 +6,8 @@ import (
 	"log"
 	"net"
 	"os"
-	"path/filepath"
 
-	"github.com/sagernet/sing-box/option"
+	"github.com/sagernet/sing-box/experimental/libbox"
 	"google.golang.org/grpc"
 )
 
@@ -21,11 +20,16 @@ func String(s string) *string {
 }
 
 func (s *server) ParseConfig(ctx context.Context, in *ParseConfigRequest) (*ParseConfigResponse, error) {
-	config, err := ParseConfig(in.TempPath, in.Debug)
+	ctx = libbox.BaseContext(nil)
+	config, err := ParseConfig(ctx, &ReadOptions{Path: in.Path}, in.Debug, nil, false)
 	if err != nil {
 		return &ParseConfigResponse{Error: String(err.Error())}, nil
 	}
-	err = os.WriteFile(in.Path, config, 0o644)
+	configStr, err := config.MarshalJSONContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	err = os.WriteFile(in.Path, []byte(configStr), 0o644)
 	if err != nil {
 		return nil, err
 	}
@@ -33,25 +37,13 @@ func (s *server) ParseConfig(ctx context.Context, in *ParseConfigRequest) (*Pars
 }
 
 func (s *server) GenerateFullConfig(ctx context.Context, in *GenerateConfigRequest) (*GenerateConfigResponse, error) {
-	os.Chdir(filepath.Dir(in.Path))
-	content, err := os.ReadFile(in.Path)
-	if err != nil {
-		return nil, err
-	}
-	var options option.Options
-	err = options.UnmarshalJSON(content)
-	if err != nil {
-		return nil, err
-	}
-	if err != nil {
-		return nil, err
-	}
-	config, err := BuildConfigJson(*DefaultHiddifyOptions(), options)
+	ctx = libbox.BaseContext(nil)
+	config, err := BuildConfigJson(ctx, DefaultHiddifyOptions(), &ReadOptions{Path: in.Path})
 	if err != nil {
 		return nil, err
 	}
 	return &GenerateConfigResponse{
-		Config: config,
+		Config: string(config),
 	}, nil
 }
 

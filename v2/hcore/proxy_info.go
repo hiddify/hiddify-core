@@ -6,22 +6,23 @@ import (
 
 	hcommon "github.com/hiddify/hiddify-core/v2/hcommon"
 	"github.com/sagernet/sing-box/adapter"
-	"github.com/sagernet/sing-box/outbound"
+	G "github.com/sagernet/sing-box/protocol/group"
 	"github.com/sagernet/sing/service"
 	"google.golang.org/grpc"
 
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 )
 
-func GetProxyInfo(detour adapter.Outbound) *OutboundInfo {
-	if static.Box == nil {
+func (h *HiddifyInstance) GetProxyInfo(detour adapter.Outbound) *OutboundInfo {
+	historyStorage := h.UrlTestHistory()
+	if historyStorage == nil {
 		return nil
 	}
 	out := &OutboundInfo{
 		Tag:  detour.Tag(),
 		Type: detour.Type(),
 	}
-	url_test_history := static.Box.UrlTestHistory().LoadURLTestHistory(adapter.OutboundTag(detour))
+	url_test_history := historyStorage.LoadURLTestHistory(adapter.OutboundTag(detour))
 	if url_test_history != nil {
 		out.UrlTestTime = timestamppb.New(url_test_history.Time)
 		out.UrlTestDelay = int32(url_test_history.Delay)
@@ -47,13 +48,18 @@ func GetProxyInfo(detour adapter.Outbound) *OutboundInfo {
 	return out
 }
 
-func GetAllProxiesInfo(onlyGroupitems bool) *OutboundGroupList {
-	if static.Box == nil {
+func (h *HiddifyInstance) GetAllProxiesInfo(onlyGroupitems bool) *OutboundGroupList {
+	instance := h.StartedService.Instance()
+	if instance == nil {
+		return nil
+	}
+	box := instance.Box()
+	if box == nil {
 		return nil
 	}
 
-	cacheFile := service.FromContext[adapter.CacheFile](static.Box.Context())
-	outbounds := static.Box.GetInstance().Router().Outbounds()
+	cacheFile := service.FromContext[adapter.CacheFile](instance.Context())
+	outbounds := box.Outbound().Outbounds()
 	outbounds_converted := make(map[string]*OutboundInfo, 0)
 	var iGroups []adapter.OutboundGroup
 	for _, it := range outbounds {
@@ -61,7 +67,7 @@ func GetAllProxiesInfo(onlyGroupitems bool) *OutboundGroupList {
 			iGroups = append(iGroups, group)
 		}
 
-		outbounds_converted[it.Tag()] = GetProxyInfo(it)
+		outbounds_converted[it.Tag()] = h.GetProxyInfo(it)
 	}
 
 	var groups OutboundGroupList
@@ -69,7 +75,7 @@ func GetAllProxiesInfo(onlyGroupitems bool) *OutboundGroupList {
 		var group OutboundGroup
 		group.Tag = iGroup.Tag()
 		group.Type = iGroup.Type()
-		_, group.Selectable = iGroup.(*outbound.Selector)
+		_, group.Selectable = iGroup.(*G.Selector)
 		selectedTag := iGroup.Now()
 		group.Selected = outbounds_converted[selectedTag]
 		outbounds_converted[iGroup.Tag()].GroupSelectedOutbound = group.Selected
@@ -104,20 +110,25 @@ func TrimTagName(tag string) string {
 }
 
 func (s *CoreService) OutboundsInfo(req *hcommon.Empty, stream grpc.ServerStreamingServer[OutboundGroupList]) error {
-	return AllProxiesInfoStream(stream, false)
+	return static.AllProxiesInfoStream(stream, false)
 }
 
 func (s *CoreService) MainOutboundsInfo(req *hcommon.Empty, stream grpc.ServerStreamingServer[OutboundGroupList]) error {
-	return AllProxiesInfoStream(stream, true)
+	return static.AllProxiesInfoStream(stream, true)
 }
 
-func AllProxiesInfoStream(stream grpc.ServerStreamingServer[OutboundGroupList], onlyMain bool) error {
-	urltestch, done, err := static.Box.UrlTestHistory().Observer().Subscribe()
-	defer static.Box.UrlTestHistory().Observer().UnSubscribe(urltestch)
+func (h *HiddifyInstance) AllProxiesInfoStream(stream grpc.ServerStreamingServer[OutboundGroupList], onlyMain bool) error {
+	instance := static.StartedService.Instance()
+	if instance == nil {
+		return nil
+	}
+	urlTestHistory := instance.UrlTestHistory()
+	urltestch, done, err := urlTestHistory.Observer().Subscribe()
+	defer urlTestHistory.Observer().UnSubscribe(urltestch)
 	if err != nil {
 		return err
 	}
-	stream.Send(GetAllProxiesInfo(onlyMain))
+	stream.Send(h.GetAllProxiesInfo(onlyMain))
 	for {
 		select {
 		case <-stream.Context().Done():
@@ -133,7 +144,7 @@ func AllProxiesInfoStream(stream grpc.ServerStreamingServer[OutboundGroupList], 
 					break debounce
 				}
 			}
-			stream.Send(GetAllProxiesInfo(onlyMain))
+			stream.Send(h.GetAllProxiesInfo(onlyMain))
 		case <-time.After(500 * time.Millisecond):
 		}
 	}
