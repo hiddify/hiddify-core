@@ -61,7 +61,7 @@ func Setup(params *SetupRequest, platformInterface libbox.PlatformInterface) err
 			WorkingPath: params.WorkingDir,
 			TempPath:    params.TempDir,
 			// IsTVOS:          !tcpConn,
-			FixAndroidStack: true,
+			FixAndroidStack: params.FixAndroidStack,
 			LogMaxLines:     100,
 			Debug:           params.Debug,
 		})

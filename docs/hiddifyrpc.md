@@ -509,6 +509,7 @@ Define the message equivalent of SetupParameters
 | secret | [string](#string) |  |  |
 | debug | [bool](#bool) |  |  |
 | mode | [SetupMode](#hcore-SetupMode) |  |  |
+| fix_android_stack | [bool](#bool) |  |  |
 
 
 

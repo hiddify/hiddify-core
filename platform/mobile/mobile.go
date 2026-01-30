@@ -1,8 +1,6 @@
 package mobile
 
 import (
-	"context"
-
 	hcore "github.com/hiddify/hiddify-core/v2/hcore"
 
 	_ "github.com/sagernet/gomobile"
@@ -10,16 +8,28 @@ import (
 	"github.com/sagernet/sing-box/experimental/libbox"
 )
 
-func Setup(baseDir string, workingDir string, tempDir string, mode int, listen string, secret string, debug bool, platformInterface libbox.PlatformInterface) error {
+type SetupOptions struct {
+	BasePath        string
+	WorkingDir      string
+	TempDir         string
+	Listen          string
+	Secret          string
+	Debug           bool
+	Mode            int
+	FixAndroidStack bool
+}
+
+func Setup(opt *SetupOptions, platformInterface libbox.PlatformInterface) error {
 	return hcore.Setup(&hcore.SetupRequest{
-		BasePath:          baseDir,
-		WorkingDir:        workingDir,
-		TempDir:           tempDir,
+		BasePath:          opt.BasePath,
+		WorkingDir:        opt.WorkingDir,
+		TempDir:           opt.TempDir,
 		FlutterStatusPort: 0,
-		Listen:            listen,
-		Debug:             debug,
-		Mode:              hcore.SetupMode(mode),
-		Secret:            secret,
+		Listen:            opt.Listen,
+		Debug:             opt.Debug,
+		Mode:              hcore.SetupMode(opt.Mode),
+		Secret:            opt.Secret,
+		FixAndroidStack:   opt.FixAndroidStack,
 	}, platformInterface)
 
 	// return hcore.Start(17078)
@@ -33,8 +43,8 @@ func Setup(baseDir string, workingDir string, tempDir string, mode int, listen s
 // 	return state, err
 // }
 
-func Start(ctx context.Context, configPath string, configContent string) error {
-	_, err := hcore.StartService(ctx, &hcore.StartRequest{
+func Start(configPath string, configContent string) error {
+	_, err := hcore.StartService(libbox.BaseContext(nil), &hcore.StartRequest{
 		ConfigPath:    configPath,
 		ConfigContent: configContent,
 	})
@@ -60,4 +70,12 @@ func Close(mode int) {
 
 func Test() string {
 	return "Hello from mobile"
+}
+
+func Pause() {
+	hcore.Pause()
+}
+
+func Wake() {
+	hcore.Wake()
 }

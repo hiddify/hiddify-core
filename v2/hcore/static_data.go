@@ -3,6 +3,7 @@ package hcore
 import (
 	"context"
 	"sync"
+	"time"
 
 	"github.com/hiddify/hiddify-core/v2/config"
 	"github.com/sagernet/sing-box/daemon"
@@ -28,6 +29,7 @@ type HiddifyInstance struct {
 	debug                     bool
 	ListenPort                uint16
 	BaseContext               context.Context
+	endPauseTimer             *time.Timer // only for ios
 }
 
 var static = &HiddifyInstance{
