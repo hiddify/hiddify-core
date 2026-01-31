@@ -26,8 +26,8 @@ func readStatus(prev *SystemInfo) *SystemInfo {
 	message.Goroutines = int32(runtime.NumGoroutine())
 	message.ConnectionsOut = int32(conntrack.Count())
 
-	if static.StartedService != nil {
-		status := static.StartedService.ReadStatus()
+	if ss := static.StartedService; ss != nil {
+		status := ss.ReadStatus()
 		message.DownlinkTotal = status.DownlinkTotal
 		message.UplinkTotal = status.UplinkTotal
 		message.ConnectionsIn = status.ConnectionsIn
@@ -37,16 +37,17 @@ func readStatus(prev *SystemInfo) *SystemInfo {
 			message.Uplink = message.UplinkTotal - prev.UplinkTotal
 			message.Downlink = message.DownlinkTotal - prev.DownlinkTotal
 		}
-
-		if currentOutBound, ok := static.StartedService.Instance().Box().Outbound().Outbound(config.OutboundSelectTag); ok {
-			if selectOutBound, ok := currentOutBound.(*group.Selector); ok {
-				message.CurrentOutbound = TrimTagName(selectOutBound.Now())
+		if box := static.Box(); box != nil {
+			if currentOutBound, ok := box.Outbound().Outbound(config.OutboundSelectTag); ok {
+				if selectOutBound, ok := currentOutBound.(*group.Selector); ok {
+					message.CurrentOutbound = TrimTagName(selectOutBound.Now())
+				}
 			}
-		}
-		if message.CurrentOutbound == config.OutboundURLTestTag {
-			if currentOutBound, ok := static.StartedService.Instance().Box().Outbound().Outbound(config.OutboundURLTestTag); ok {
-				if urltest, ok := currentOutBound.(*group.URLTest); ok {
-					message.CurrentOutbound = fmt.Sprint(message.CurrentOutbound, "→", TrimTagName(urltest.Now()))
+			if message.CurrentOutbound == config.OutboundURLTestTag {
+				if currentOutBound, ok := box.Outbound().Outbound(config.OutboundURLTestTag); ok {
+					if urltest, ok := currentOutBound.(*group.URLTest); ok {
+						message.CurrentOutbound = fmt.Sprint(message.CurrentOutbound, "→", TrimTagName(urltest.Now()))
+					}
 				}
 			}
 		}
@@ -170,36 +171,38 @@ func (h *HiddifyInstance) SelectOutbound(in *SelectOutboundRequest) (*hcommon.Re
 	// 	Message: "",
 	// }, nil
 	Log(LogLevel_DEBUG, LogType_CORE, "select outbound: ", in.GroupTag, " -> ", in.OutboundTag)
-	outboundGroup, isLoaded := static.StartedService.Instance().Box().Outbound().Outbound(in.GroupTag)
-	if !isLoaded {
-		return &hcommon.Response{
-			Code:    hcommon.ResponseCode_FAILED,
-			Message: E.New("selector not found: ", in.GroupTag).Error(),
-		}, E.New("selector not found: ", in.GroupTag)
-	}
-	selector, isSelector := outboundGroup.(*group.Selector)
-	if !isSelector {
-		return &hcommon.Response{
-			Code:    hcommon.ResponseCode_FAILED,
-			Message: E.New("outbound is not a selector: ", in.GroupTag).Error(),
-		}, E.New("outbound is not a selector: ", in.GroupTag)
-	}
-	if !selector.SelectOutbound(in.OutboundTag) {
-		return &hcommon.Response{
-			Code:    hcommon.ResponseCode_FAILED,
-			Message: E.New("outbound not found in selector:: ", in.GroupTag).Error(),
-		}, E.New("outbound not found in selector: ", in.GroupTag)
-	}
-	Log(LogLevel_DEBUG, LogType_CORE, "Trying to ping outbound: ", in.OutboundTag)
-	go func() {
-		for _, detour := range static.StartedService.Instance().Box().Outbound().Outbounds() {
-			if urlTest, ok := detour.(*group.URLTest); ok {
-				if urlTest.ForceRecheckOutbound(in.OutboundTag) == nil {
-					break
+	if box := h.Box(); box != nil {
+		outboundGroup, isLoaded := box.Outbound().Outbound(in.GroupTag)
+		if !isLoaded {
+			return &hcommon.Response{
+				Code:    hcommon.ResponseCode_FAILED,
+				Message: E.New("selector not found: ", in.GroupTag).Error(),
+			}, E.New("selector not found: ", in.GroupTag)
+		}
+		selector, isSelector := outboundGroup.(*group.Selector)
+		if !isSelector {
+			return &hcommon.Response{
+				Code:    hcommon.ResponseCode_FAILED,
+				Message: E.New("outbound is not a selector: ", in.GroupTag).Error(),
+			}, E.New("outbound is not a selector: ", in.GroupTag)
+		}
+		if !selector.SelectOutbound(in.OutboundTag) {
+			return &hcommon.Response{
+				Code:    hcommon.ResponseCode_FAILED,
+				Message: E.New("outbound not found in selector:: ", in.GroupTag).Error(),
+			}, E.New("outbound not found in selector: ", in.GroupTag)
+		}
+		Log(LogLevel_DEBUG, LogType_CORE, "Trying to ping outbound: ", in.OutboundTag)
+		go func() {
+			for _, detour := range box.Outbound().Outbounds() {
+				if urlTest, ok := detour.(*group.URLTest); ok {
+					if urlTest.ForceRecheckOutbound(in.OutboundTag) == nil {
+						break
+					}
 				}
 			}
-		}
-	}()
+		}()
+	}
 	h.UrlTestHistory().Observer().Emit(2)
 	return &hcommon.Response{
 		Code:    hcommon.ResponseCode_OK,
@@ -226,11 +229,12 @@ func (h *HiddifyInstance) UrlTest(in *UrlTestRequest) (*hcommon.Response, error)
 	// }, nil
 
 	groupTag := in.GroupTag
-
-	if h.StartedService == nil {
+	box := h.Box()
+	if box == nil {
 		return nil, E.New("service not ready")
 	}
-	router := h.Box().Outbound()
+
+	router := box.Outbound()
 	abstractOutboundGroup, isLoaded := router.Outbound(groupTag)
 	if !isLoaded {
 		return &hcommon.Response{
@@ -275,7 +279,7 @@ func (h *HiddifyInstance) UrlTest(in *UrlTestRequest) (*hcommon.Response, error)
 			outboundToTest := detour
 			outboundTag := outboundToTest.Tag()
 			b.Go(outboundTag, func() (any, error) {
-				instance := h.Box()
+				instance := box
 
 				group.CheckOutbound(instance.Logger(), h.Context(), historyStorage, router, "", outboundToTest, nil)
 				return nil, nil

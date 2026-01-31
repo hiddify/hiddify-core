@@ -13,16 +13,26 @@ import (
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 )
 
-func (h *HiddifyInstance) GetProxyInfo(detour adapter.Outbound) *OutboundInfo {
+func (h *HiddifyInstance) GetProxyInfo(detour adapter.Outbound, endpoint adapter.Endpoint) *OutboundInfo {
 	historyStorage := h.UrlTestHistory()
 	if historyStorage == nil {
 		return nil
 	}
-	out := &OutboundInfo{
-		Tag:  detour.Tag(),
-		Type: detour.Type(),
+	out := &OutboundInfo{}
+	realTag := ""
+	if detour != nil {
+		out.Tag = detour.Tag()
+		out.Type = detour.Type()
+		if _, isGroup := detour.(adapter.OutboundGroup); isGroup {
+			out.IsGroup = true
+		}
+		realTag = adapter.OutboundTag(detour)
+	} else if endpoint != nil {
+		out.Tag = endpoint.Tag()
+		out.Type = endpoint.Type()
+		realTag = out.Tag
 	}
-	url_test_history := historyStorage.LoadURLTestHistory(adapter.OutboundTag(detour))
+	url_test_history := historyStorage.LoadURLTestHistory(realTag)
 	if url_test_history != nil {
 		out.UrlTestTime = timestamppb.New(url_test_history.Time)
 		out.UrlTestDelay = int32(url_test_history.Delay)
@@ -39,9 +49,6 @@ func (h *HiddifyInstance) GetProxyInfo(detour adapter.Outbound) *OutboundInfo {
 				PostalCode:  url_test_history.IpInfo.PostalCode,
 			}
 		}
-		if _, isGroup := detour.(adapter.OutboundGroup); isGroup {
-			out.IsGroup = true
-		}
 
 	}
 
@@ -49,25 +56,27 @@ func (h *HiddifyInstance) GetProxyInfo(detour adapter.Outbound) *OutboundInfo {
 }
 
 func (h *HiddifyInstance) GetAllProxiesInfo(onlyGroupitems bool) *OutboundGroupList {
-	instance := h.StartedService.Instance()
+	instance := h.Instance()
 	if instance == nil {
 		return nil
 	}
-	box := instance.Box()
+	box := h.Box()
 	if box == nil {
 		return nil
 	}
-
 	cacheFile := service.FromContext[adapter.CacheFile](instance.Context())
-	outbounds := box.Outbound().Outbounds()
+
 	outbounds_converted := make(map[string]*OutboundInfo, 0)
 	var iGroups []adapter.OutboundGroup
-	for _, it := range outbounds {
+	for _, it := range box.Outbound().Outbounds() {
 		if group, isGroup := it.(adapter.OutboundGroup); isGroup {
 			iGroups = append(iGroups, group)
 		}
 
-		outbounds_converted[it.Tag()] = h.GetProxyInfo(it)
+		outbounds_converted[it.Tag()] = h.GetProxyInfo(it, nil)
+	}
+	for _, it := range box.Endpoint().Endpoints() {
+		outbounds_converted[it.Tag()] = h.GetProxyInfo(nil, it)
 	}
 
 	var groups OutboundGroupList
@@ -118,34 +127,32 @@ func (s *CoreService) MainOutboundsInfo(req *hcommon.Empty, stream grpc.ServerSt
 }
 
 func (h *HiddifyInstance) AllProxiesInfoStream(stream grpc.ServerStreamingServer[OutboundGroupList], onlyMain bool) error {
-	instance := static.StartedService.Instance()
-	if instance == nil {
-		return nil
-	}
-	urlTestHistory := instance.UrlTestHistory()
-	urltestch, done, err := urlTestHistory.Observer().Subscribe()
-	defer urlTestHistory.Observer().UnSubscribe(urltestch)
-	if err != nil {
-		return err
-	}
-	stream.Send(h.GetAllProxiesInfo(onlyMain))
-	for {
-		select {
-		case <-stream.Context().Done():
-			return nil
-		case <-done:
-			return nil
-		case <-urltestch:
-		debounce:
-			for {
-				select {
-				case <-urltestch:
-				default:
-					break debounce
+	if urlTestHistory := h.UrlTestHistory(); urlTestHistory != nil {
+		urltestch, done, err := urlTestHistory.Observer().Subscribe()
+		defer urlTestHistory.Observer().UnSubscribe(urltestch)
+		if err != nil {
+			return err
+		}
+		stream.Send(h.GetAllProxiesInfo(onlyMain))
+		for {
+			select {
+			case <-stream.Context().Done():
+				return nil
+			case <-done:
+				return nil
+			case <-urltestch:
+			debounce:
+				for {
+					select {
+					case <-urltestch:
+					default:
+						break debounce
+					}
 				}
+				stream.Send(h.GetAllProxiesInfo(onlyMain))
+			case <-time.After(500 * time.Millisecond):
 			}
-			stream.Send(h.GetAllProxiesInfo(onlyMain))
-		case <-time.After(500 * time.Millisecond):
 		}
 	}
+	return nil
 }

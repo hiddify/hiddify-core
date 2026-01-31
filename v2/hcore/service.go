@@ -73,7 +73,7 @@ func (h *HiddifyInstance) Instance() *daemon.Instance {
 	if ss == nil {
 		return nil
 	}
-	return h.StartedService.Instance()
+	return ss.Instance()
 
 }
 

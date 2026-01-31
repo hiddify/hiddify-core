@@ -119,10 +119,10 @@ func patchConfigStr(ctx context.Context, content []byte, name string, configOpt 
 	return patchConfigOptions(ctx, &options, name, configOpt)
 }
 func patchConfigOptions(ctx context.Context, options *option.Options, name string, configOpt *HiddifyOptions) (*option.Options, error) {
-	b, _ := batch.New(ctx, batch.WithConcurrencyNum[*option.Outbound](2))
-	for _, base := range options.Outbounds {
+	b, _ := batch.New(ctx, batch.WithConcurrencyNum[*option.Endpoint](2))
+	for _, base := range options.Endpoints {
 		out := base
-		b.Go(base.Tag, func() (*option.Outbound, error) {
+		b.Go(base.Tag, func() (*option.Endpoint, error) {
 			err := patchWarp(&out, configOpt, false, nil)
 			if err != nil {
 				return nil, fmt.Errorf("[Warp] patch warp error: %w", err)
@@ -134,8 +134,8 @@ func patchConfigOptions(ctx context.Context, options *option.Options, name strin
 	if res, err := b.WaitAndGetResult(); err != nil {
 		return nil, err
 	} else {
-		for i, base := range options.Outbounds {
-			options.Outbounds[i] = *res[base.Tag].Value
+		for i, base := range options.Endpoints {
+			options.Endpoints[i] = *res[base.Tag].Value
 		}
 	}
 

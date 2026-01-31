@@ -13,6 +13,7 @@ import (
 	"net"
 	"strconv"
 	"strings"
+	sync "sync"
 	"time"
 
 	"github.com/hiddify/hiddify-core/v2/config"
@@ -69,10 +70,15 @@ var (
 	certpair   *hutils.CertificatePair
 	grpcServer map[SetupMode]*grpc.Server = make(map[SetupMode]*grpc.Server)
 	caCertPool                            = x509.NewCertPool()
+	mu                                    = sync.Mutex{}
 )
 
 // StartGrpcServerByMode starts a gRPC server on the specified address with mTLS.
 func StartGrpcServerByMode(listenAddressG string, mode SetupMode) (*grpc.Server, error) {
+	mu.Lock()
+	defer mu.Unlock()
+
+	// Validate the listen address
 	if !strings.Contains(listenAddressG, ":") {
 		return nil, fmt.Errorf("invalid listen address (no port): %s", listenAddressG)
 	}
@@ -189,6 +195,8 @@ func AddGrpcClientPublicKey(clientPublicKey []byte) error {
 }
 
 func CloseGrpcServer(mode SetupMode) {
+	mu.Lock()
+	defer mu.Unlock()
 	if server, ok := grpcServer[mode]; ok && server != nil {
 		server.Stop()
 		delete(grpcServer, mode)

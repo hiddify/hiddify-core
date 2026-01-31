@@ -65,7 +65,7 @@ func patchOutboundTLSTricks(base option.Outbound, configOpt HiddifyOptions) opti
 	}
 	tls.TLSTricks.MixedCaseSNI = tls.TLSTricks.MixedCaseSNI || configOpt.TLSTricks.MixedSNICase
 
-	if configOpt.TLSTricks.EnablePadding {
+	if false && configOpt.TLSTricks.EnablePadding {
 		tls.TLSTricks.PaddingMode = "random"
 		tls.TLSTricks.PaddingSize = configOpt.TLSTricks.PaddingSize
 		tls.UTLS = &option.OutboundUTLSOptions{
@@ -124,7 +124,7 @@ func isOutboundReality(base option.Outbound) bool {
 	return tls.Reality.Enabled
 }
 
-func patchOutbound(base option.Outbound, configOpt HiddifyOptions, staticIPs *map[string][]string) (*option.Outbound, error) {
+func patchEndpoint(base option.Endpoint, configOpt HiddifyOptions, staticIPs *map[string][]string) (*option.Endpoint, error) {
 	formatErr := func(err error) error {
 		return fmt.Errorf("error patching outbound[%s][%s]: %w", base.Tag, base.Type, err)
 	}
@@ -132,6 +132,9 @@ func patchOutbound(base option.Outbound, configOpt HiddifyOptions, staticIPs *ma
 	if err != nil {
 		return nil, formatErr(err)
 	}
+	return &base, nil
+}
+func patchOutbound(base option.Outbound, configOpt HiddifyOptions, staticIPs *map[string][]string) (*option.Outbound, error) {
 
 	base = patchOutboundTLSTricks(base, configOpt)
 

@@ -52,7 +52,7 @@ require (
 	github.com/dgryski/go-farm v0.0.0-20190423205320-6a90982ecee2 // indirect
 	github.com/dustin/go-humanize v1.0.0 // indirect
 	github.com/ebitengine/purego v0.9.1 // indirect
-	github.com/enfein/mieru/v3 v3.17.1 // indirect
+	github.com/enfein/mieru/v3 v3.27.0 // indirect
 	github.com/florianl/go-nfqueue/v2 v2.0.2 // indirect
 	github.com/fxamacker/cbor/v2 v2.7.0 // indirect
 	github.com/gaissmai/bart v0.18.0 // indirect
@@ -173,7 +173,7 @@ require (
 	github.com/sagernet/sing-shadowsocks v0.2.8 // indirect
 	github.com/sagernet/sing-shadowsocks2 v0.2.1 // indirect
 	github.com/sagernet/sing-shadowtls v0.2.1-0.20250503051639-fcd445d33c11 // indirect
-	github.com/sagernet/sing-tun v0.8.0-beta.12 // indirect
+	github.com/sagernet/sing-tun v0.8.0-beta.12
 	github.com/sagernet/sing-vmess v0.2.8-0.20250909125414-3aed155119a1 // indirect
 	github.com/sagernet/smux v1.5.50-sing-box-mod.1 // indirect
 	github.com/sagernet/wireguard-go v0.0.2-beta.1.0.20250917110311-16510ac47288 // indirect
@@ -203,11 +203,11 @@ require (
 )
 
 require (
-	github.com/hiddify/ray2sing v0.0.0-20260130174649-d7749fb915f8
+	github.com/hiddify/ray2sing v0.0.0-20260131164420-b2c6a6892ca6
 	github.com/sagernet/sing-box v1.13.0
 )
 
-replace github.com/sagernet/sing-box => github.com/hiddify/hiddify-sing-box v1.8.9-0.20260130182859-20bac4443a70
+replace github.com/sagernet/sing-box => github.com/hiddify/hiddify-sing-box v1.8.9-0.20260131205637-f075aba2dbc7
 
 // replace github.com/sagernet/sing-box => ../../h-sing-box
 

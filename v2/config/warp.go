@@ -29,7 +29,7 @@ type SingboxConfig struct {
 	MTU           int      `json:"mtu"`
 }
 
-func wireGuardToSingbox(wgConfig WarpWireguardConfig, server string, port uint16) (*T.Outbound, error) {
+func wireGuardToSingbox(wgConfig WarpWireguardConfig, server string, port uint16) (*T.Endpoint, error) {
 	clientID, _ := base64.StdEncoding.DecodeString(wgConfig.ClientID)
 	if len(clientID) < 2 {
 		clientID = []byte{0, 0, 0}
@@ -47,12 +47,15 @@ func wireGuardToSingbox(wgConfig WarpWireguardConfig, server string, port uint16
 		}
 		localsaddrs = append(localsaddrs, prefix)
 	}
-	out := T.Outbound{
-		Type: "wireguard",
+	out := T.Endpoint{
+		Type: C.TypeWireGuard,
 		Tag:  "WARP",
-		Options: T.WireGuardEndpointOptions{
+		Options: &T.WireGuardEndpointOptions{
 			Peers: []T.WireGuardPeer{
 				{
+					AllowedIPs: []netip.Prefix{
+						netip.MustParsePrefix("0.0.0.0/0"), netip.MustParsePrefix("::/0"),
+					},
 					Address:   server,
 					Port:      port,
 					PublicKey: wgConfig.PeerPublicKey,
@@ -76,7 +79,7 @@ func getRandomIP() string {
 	return "engage.cloudflareclient.com"
 }
 
-func generateWarp(license string, host string, port uint16, fakePackets string, fakePacketsSize string, fakePacketsDelay string, fakePacketsMode string) (*T.Outbound, error) {
+func generateWarp(license string, host string, port uint16, noise *option.WireGuardHiddify) (*T.Endpoint, error) {
 	_, _, wgConfig, err := GenerateWarpInfo(license, "", "")
 	if err != nil {
 		return nil, err
@@ -85,34 +88,31 @@ func generateWarp(license string, host string, port uint16, fakePackets string, 
 		return nil, fmt.Errorf("invalid warp config")
 	}
 
-	return GenerateWarpSingbox(*wgConfig, host, port, fakePackets, fakePacketsSize, fakePacketsDelay, fakePacketsMode)
+	return GenerateWarpSingbox(*wgConfig, host, port, noise)
 }
 
-func GenerateWarpSingbox(wgConfig WarpWireguardConfig, host string, port uint16, fakePackets string, fakePacketsSize string, fakePacketsDelay string, fakePacketMode string) (*T.Outbound, error) {
+func GenerateWarpSingbox(wgConfig WarpWireguardConfig, host string, port uint16, noise *option.WireGuardHiddify) (*T.Endpoint, error) {
 	if host == "" {
 		host = "auto4"
 	}
 
-	if (host == "auto" || host == "auto4" || host == "auto6") && fakePackets == "" {
-		fakePackets = "1-3"
+	if (host == "auto" || host == "auto4" || host == "auto6") && noise.FakePackets == "" {
+		noise.FakePackets = "1-3"
 	}
-	if fakePackets != "" && fakePacketsSize == "" {
-		fakePacketsSize = "10-30"
+	if noise.FakePackets != "" && noise.FakePacketsSize == "" {
+		noise.FakePacketsSize = "10-30"
 	}
-	if fakePackets != "" && fakePacketsDelay == "" {
-		fakePacketsDelay = "10-30"
+	if noise.FakePackets != "" && noise.FakePacketsDelay == "" {
+		noise.FakePacketsDelay = "10-30"
 	}
 	singboxConfig, err := wireGuardToSingbox(wgConfig, host, port)
 	if err != nil {
 		fmt.Printf("%v %v", singboxConfig, err)
 		return nil, err
 	}
-	if opts, ok := singboxConfig.Options.(T.WireGuardEndpointOptions); ok {
+	if opts, ok := singboxConfig.Options.(*T.WireGuardEndpointOptions); ok {
 
-		opts.Peers[0].FakePackets = fakePackets
-		opts.Peers[0].FakePacketsSize = fakePacketsSize
-		opts.Peers[0].FakePacketsDelay = fakePacketsDelay
-		opts.Peers[0].FakePacketsMode = fakePacketMode
+		opts.Peers[0].WireGuardHiddify = *noise
 	}
 	return singboxConfig, nil
 }
@@ -176,65 +176,79 @@ func getOrGenerateWarpLocallyIfNeeded(warpOptions *WarpOptions) WarpWireguardCon
 	return *wireguardConfig
 }
 
-func patchWarp(base *option.Outbound, configOpt *HiddifyOptions, final bool, staticIpsDns map[string][]string) error {
-	if base.Type == C.TypeCustom {
-		if opts, ok := base.Options.(map[string]any); ok {
-			if warp, ok := opts["warp"].(map[string]any); ok {
-				key, _ := warp["key"].(string)
-				host, _ := warp["host"].(string)
-				port, _ := warp["port"].(uint16)
-				detour, _ := warp["detour"].(string)
-				fakePackets, _ := warp["fake_packets"].(string)
-				fakePacketsSize, _ := warp["fake_packets_size"].(string)
-				fakePacketsDelay, _ := warp["fake_packets_delay"].(string)
-				fakePacketsMode, _ := warp["fake_packets_mode"].(string)
-				var warpOutbound *T.Outbound
-				var err error
+func GenerateWarpSingboxNew(uniqueIdentifier string, noise *option.WireGuardHiddify) (*T.Endpoint, error) {
+	// if host=="auto4" || host=="auto6" || host=="auto"{
+	// }
+	// host=""
+	// port=0
 
-				is_saved_key := len(key) > 1 && key[0] == 'p'
+	out := T.Endpoint{
+		Type: C.TypeWARP,
+		Tag:  "WARP",
+		Options: &T.WireGuardWARPEndpointOptions{
+			// ServerOptions: T.ServerOptions{
+			// 	Server:     server,
+			// 	ServerPort: port,
+			// },
+			UniqueIdentifier: uniqueIdentifier,
+			Profile: T.WARPProfile{
+				Detour: OutboundSelectTag,
+			},
+			WireGuardHiddify: *noise,
+		},
+	}
+	return &out, nil
+}
 
-				if (configOpt == nil || !final) && is_saved_key {
-					return nil
-				}
-				var wireguardConfig WarpWireguardConfig
-				if is_saved_key {
-					var warpOpt *WarpOptions
-					if key == "p1" {
-						warpOpt = &configOpt.Warp
-					} else if key == "p2" {
-						warpOpt = &configOpt.Warp2
-					} else {
-						warpOpt = &WarpOptions{
-							Id: key,
-						}
-					}
-					warpOpt.Id = key
+func patchWarp(base *option.Endpoint, configOpt *HiddifyOptions, final bool, staticIpsDns map[string][]string) error {
+	if base.Type == C.TypeWARP {
+		if opts, ok := base.Options.(*option.WireGuardWARPEndpointOptions); ok {
+			opts.ServerOptions.Server = ""
+			opts.ServerOptions.ServerPort = 0
+			return nil
+			is_saved_key := len(opts.UniqueIdentifier) > 1 && opts.UniqueIdentifier[0] == 'p'
 
-					wireguardConfig = getOrGenerateWarpLocallyIfNeeded(warpOpt)
+			if (configOpt == nil || !final) && is_saved_key {
+				return nil
+			}
+			var wireguardConfig WarpWireguardConfig
+			if is_saved_key {
+				var warpOpt *WarpOptions
+				if opts.UniqueIdentifier == "p1" {
+					warpOpt = &configOpt.Warp
+				} else if opts.UniqueIdentifier == "p2" {
+					warpOpt = &configOpt.Warp2
 				} else {
-					_, _, wgConfig, err := GenerateWarpInfo(key, "", "")
-					if err != nil {
-						return err
+					warpOpt = &WarpOptions{
+						Id: opts.UniqueIdentifier,
 					}
-					wireguardConfig = *wgConfig
 				}
-				warpOutbound, err = GenerateWarpSingbox(wireguardConfig, host, port, fakePackets, fakePacketsSize, fakePacketsDelay, fakePacketsMode)
+				warpOpt.Id = opts.UniqueIdentifier
+
+				wireguardConfig = getOrGenerateWarpLocallyIfNeeded(warpOpt)
+			} else {
+				_, _, wgConfig, err := GenerateWarpInfo(opts.UniqueIdentifier, "", "")
 				if err != nil {
-					fmt.Printf("Error generating warp config: %v", err)
 					return err
 				}
-				base.Type = C.TypeWireGuard
-				if opts, ok := warpOutbound.Options.(option.WireGuardEndpointOptions); ok {
-					opts.Detour = detour
-					base.Options = opts
-				}
-
+				wireguardConfig = *wgConfig
 			}
+			warpOutbound, err := GenerateWarpSingbox(wireguardConfig, opts.Server, opts.ServerPort, &opts.WireGuardHiddify)
+			if err != nil {
+				fmt.Printf("Error generating warp config: %v", err)
+				return err
+			}
+			base.Type = C.TypeWireGuard
+			if wopts, ok := warpOutbound.Options.(*option.WireGuardEndpointOptions); ok {
+				wopts.Detour = opts.Detour
+				base.Options = wopts
+			}
+
 		}
 	}
 
 	if final && base.Type == C.TypeWireGuard {
-		if opts, ok := base.Options.(option.WireGuardEndpointOptions); ok {
+		if opts, ok := base.Options.(*option.WireGuardEndpointOptions); ok {
 			host := "auto"
 			if len(opts.Peers) == 0 {
 				opts.Peers = append(opts.Peers, T.WireGuardPeer{Address: "auto"})
@@ -273,10 +287,8 @@ func patchWarp(base *option.Outbound, configOpt *HiddifyOptions, final bool, sta
 				if opts.MTU < 100 {
 					opts.MTU = 1280
 				}
-				opts.Peers[0].FakePackets = ""
-				opts.Peers[0].FakePacketsMode = ""
-				opts.Peers[0].FakePacketsDelay = ""
-				opts.Peers[0].FakePacketsSize = ""
+				opts.Peers[0].WireGuardHiddify = option.WireGuardHiddify{}
+
 			}
 			// if base.WireGuardOptions.Detour == "" {
 			// 	base.WireGuardOptions.GSO = runtime.GOOS != "windows"

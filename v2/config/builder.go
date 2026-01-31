@@ -14,6 +14,7 @@ import (
 
 	C "github.com/sagernet/sing-box/constant"
 	mdns "github.com/sagernet/sing-box/dns"
+	"github.com/sagernet/sing-box/hiddify/ipinfo"
 	"github.com/sagernet/sing-box/option"
 	dns "github.com/sagernet/sing-dns"
 	"github.com/sagernet/sing/common/json/badoption"
@@ -62,11 +63,6 @@ func BuildConfig(ctx context.Context, hopts *HiddifyOptions, inputOpt *ReadOptio
 		options.Route = input.Route
 	}
 
-	if hopts.Warp.EnableWarp && hopts.Warp.Mode == "warp_over_proxy" {
-		OutboundMainProxyTag = WARPConfigTag
-	} else {
-		OutboundMainProxyTag = OutboundSelectTag
-	}
 	setClashAPI(&options, hopts)
 	setLog(&options, hopts)
 	setInbound(&options, hopts)
@@ -107,46 +103,37 @@ func getHostnameIfNotIP(inp string) (string, error) {
 
 func setOutbounds(options *option.Options, input *option.Options, opt *HiddifyOptions, staticIPs *map[string][]string) error {
 	var outbounds []option.Outbound
+	var endpoints []option.Endpoint
 	var tags []string
 	// OutboundMainProxyTag = OutboundSelectTag
 	// inbound==warp over proxies
 	// outbound==proxies over warp
-	if opt.Warp.EnableWarp {
-		for _, out := range input.Outbounds {
-			if out.Type == C.TypeCustom {
-				opts := out.Options.(map[string]any)
-				if warp, ok := opts["warp"].(map[string]any); ok {
-					key, _ := warp["key"].(string)
-					if key == "p1" {
-						opt.Warp.EnableWarp = false
-						break
-					}
-				}
-			}
-			if out.Type == C.TypeWireGuard {
-				opts := out.Options.(option.WireGuardEndpointOptions)
-				if opts.PrivateKey == opt.Warp.WireguardConfig.PrivateKey || opts.PrivateKey == "p1" {
-					opt.Warp.EnableWarp = false
-					break
-				}
-			}
-		}
-	}
+	OutboundMainProxyTag = OutboundSelectTag
 	if opt.Warp.EnableWarp && (opt.Warp.Mode == "warp_over_proxy" || opt.Warp.Mode == "proxy_over_warp") {
-		wg := getOrGenerateWarpLocallyIfNeeded(&opt.Warp)
-		out, err := GenerateWarpSingbox(wg, opt.Warp.CleanIP, opt.Warp.CleanPort, opt.Warp.FakePackets, opt.Warp.FakePacketSize, opt.Warp.FakePacketDelay, opt.Warp.FakePacketMode)
+		// wg := getOrGenerateWarpLocallyIfNeeded(&opt.Warp)
+
+		// out, err := GenerateWarpSingbox(wg, opt.Warp.CleanIP, opt.Warp.CleanPort, &option.WireGuardHiddify{
+		// 	FakePackets:      opt.Warp.FakePackets,
+		// 	FakePacketsSize:  opt.Warp.FakePacketSize,
+		// 	FakePacketsDelay: opt.Warp.FakePacketDelay,
+		// 	FakePacketsMode:  opt.Warp.FakePacketMode,
+		// })
+		out, err := GenerateWarpSingboxNew("p1", &option.WireGuardHiddify{})
 		if err != nil {
 			return fmt.Errorf("failed to generate warp config: %v", err)
 		}
 		out.Tag = WARPConfigTag
-		opts := out.Options.(option.WireGuardEndpointOptions)
-		if opt.Warp.Mode == "warp_over_proxy" {
-			opts.Detour = OutboundSelectTag
-		} else {
-			opts.Detour = OutboundDirectTag
+		if opts, ok := out.Options.(*option.WireGuardEndpointOptions); ok {
+			if opt.Warp.Mode == "warp_over_proxy" {
+				opts.Detour = OutboundSelectTag
+			} else {
+				opts.Detour = OutboundDirectTag
+			}
 		}
-		patchWarp(out, opt, true, nil)
-		outbounds = append(outbounds, *out)
+
+		OutboundMainProxyTag = WARPConfigTag
+		// patchWarp(out, opt, true, nil)
+		endpoints = append(endpoints, *out)
 	}
 	for _, out := range input.Outbounds {
 		if contains(PredefinedOutboundTags, out.Tag) {
@@ -166,22 +153,54 @@ func setOutbounds(options *option.Options, input *option.Options, opt *HiddifyOp
 		case C.TypeCustom:
 			continue
 		default:
-			if opt.Warp.EnableWarp && opt.Warp.Mode == "warp_over_proxy" && out.Tag == WARPConfigTag {
-				continue
-			}
+
 			if contains([]string{"direct", "bypass", "block"}, out.Tag) {
 				continue
 			}
 			if !strings.Contains(out.Tag, "§hide§") {
 				tags = append(tags, out.Tag)
 			}
-			out = patchHiddifyWarpFromConfig(out, *opt)
+			out = *patchHiddifyWarpFromConfig(&out, *opt)
 			outbounds = append(outbounds, out)
 		}
 	}
-	testurls := []string{opt.ConnectionTestUrl, "http://captive.apple.com/generate_204", "https://cp.cloudflare.com", "https://google.com/generate_204"}
-	if isBlockedConnectionTestUrl(opt.ConnectionTestUrl) {
-		testurls = []string{opt.ConnectionTestUrl}
+	for _, end := range input.Endpoints {
+		if opt.Warp.EnableWarp {
+			if end.Type == C.TypeWARP {
+				if opts, ok := end.Options.(*option.WireGuardWARPEndpointOptions); ok {
+					if opts.UniqueIdentifier == "p1" {
+						continue
+					}
+				}
+			}
+			if end.Type == C.TypeWireGuard {
+				if opts, ok := end.Options.(*option.WireGuardEndpointOptions); ok {
+					if opts.PrivateKey == opt.Warp.WireguardConfig.PrivateKey {
+						continue
+					}
+				}
+			}
+			if opt.Warp.Mode == "warp_over_proxy" && end.Tag == WARPConfigTag {
+				continue
+			}
+		}
+
+		out, err := patchEndpoint(end, *opt, staticIPs)
+		if err != nil {
+			return err
+		}
+
+		if !strings.Contains(out.Tag, "§hide§") {
+			tags = append(tags, out.Tag)
+		}
+
+		endpoints = append(endpoints, *out)
+	}
+	if len(opt.ConnectionTestUrls) == 0 {
+		opt.ConnectionTestUrls = []string{opt.ConnectionTestUrl, "http://captive.apple.com/generate_204", "https://cp.cloudflare.com", "https://google.com/generate_204"}
+		if isBlockedConnectionTestUrl(opt.ConnectionTestUrl) {
+			opt.ConnectionTestUrls = []string{opt.ConnectionTestUrl}
+		}
 	}
 	urlTest := option.Outbound{
 		Type: C.TypeURLTest,
@@ -189,7 +208,7 @@ func setOutbounds(options *option.Options, input *option.Options, opt *HiddifyOp
 		Options: &option.URLTestOutboundOptions{
 			Outbounds: tags,
 			URL:       opt.ConnectionTestUrl,
-			URLs:      testurls,
+			URLs:      opt.ConnectionTestUrls,
 			Interval:  badoption.Duration(opt.URLTestInterval.Duration()),
 			// IdleTimeout: badoption.Duration(opt.URLTestIdleTimeout.Duration()),
 			Tolerance:                 1,
@@ -215,7 +234,7 @@ func setOutbounds(options *option.Options, input *option.Options, opt *HiddifyOp
 	}
 
 	outbounds = append([]option.Outbound{selector, urlTest}, outbounds...)
-
+	options.Endpoints = endpoints
 	options.Outbounds = append(
 		outbounds,
 		[]option.Outbound{
@@ -277,8 +296,9 @@ func setClashAPI(options *option.Options, opt *HiddifyOptions) {
 			},
 
 			CacheFile: &option.CacheFileOptions{
-				Enabled: true,
-				Path:    "data/clash.db",
+				Enabled:         true,
+				StoreWARPConfig: true,
+				Path:            "data/clash.db",
 			},
 		}
 	}
@@ -418,21 +438,56 @@ func setRoutingOptions(options *option.Options, hopt *HiddifyOptions) error {
 	// 	// )
 	// }
 
-	dnsRules = append(dnsRules, option.DefaultDNSRule{
-		RawDefaultDNSRule: option.RawDefaultDNSRule{},
-		DNSRuleAction: option.DNSRuleAction{
-			Action: C.RuleActionTypeRoute,
-			RouteOptions: option.DNSRouteActionOptions{
-				Server: DNSStaticTag,
-			},
-		},
-	},
-	)
+	// dnsRules = append(dnsRules, option.DefaultDNSRule{
+	// 	RawDefaultDNSRule: option.RawDefaultDNSRule{},
+	// 	DNSRuleAction: option.DNSRuleAction{
+	// 		Action: C.RuleActionTypeRoute,
+	// 		RouteOptions: option.DNSRouteActionOptions{
+	// 			Server: DNSStaticTag,
+	// 		},
+	// 	},
+	// },
+	// )
 	forceDirectRules, err := addForceDirect(options, hopt)
 	if err != nil {
 		return err
 	}
 	dnsRules = append(dnsRules, forceDirectRules...)
+
+	if len(hopt.ConnectionTestUrls) > 0 { //To avoid dns bug when using urltest
+		domains := []string{}
+		for _, url := range hopt.ConnectionTestUrls {
+			if host, err := getHostnameIfNotIP(url); err == nil {
+				domains = append(domains, host)
+			}
+		}
+		if len(domains) > 0 {
+			dnsRules = append(dnsRules, option.DefaultDNSRule{
+				RawDefaultDNSRule: option.RawDefaultDNSRule{
+					Domain: domains,
+				},
+				DNSRuleAction: option.DNSRuleAction{
+					Action: C.RuleActionTypeRoute,
+					RouteOptions: option.DNSRouteActionOptions{
+						Server: DNSDirectTag,
+					},
+				},
+			})
+		}
+	}
+	if ipinfoDomains := ipinfo.GetAllIPCheckerDomainsDomains(); len(ipinfoDomains) > 0 { //To avoid dns bug when using urltest
+		dnsRules = append(dnsRules, option.DefaultDNSRule{
+			RawDefaultDNSRule: option.RawDefaultDNSRule{
+				Domain: ipinfoDomains,
+			},
+			DNSRuleAction: option.DNSRuleAction{
+				Action: C.RuleActionTypeRoute,
+				RouteOptions: option.DNSRouteActionOptions{
+					Server: DNSDirectTag,
+				},
+			},
+		})
+	}
 
 	routeRules = append(routeRules, option.Rule{
 		Type: C.RuleTypeDefault,
@@ -871,7 +926,7 @@ func setRoutingOptions(options *option.Options, hopt *HiddifyOptions) error {
 	return nil
 }
 
-func patchHiddifyWarpFromConfig(out option.Outbound, opt HiddifyOptions) option.Outbound {
+func patchHiddifyWarpFromConfig(out *option.Outbound, opt HiddifyOptions) *option.Outbound {
 	if opt.Warp.EnableWarp && opt.Warp.Mode == "proxy_over_warp" {
 		if opts, ok := out.Options.(option.DialerOptionsWrapper); ok {
 			dialer := opts.TakeDialerOptions()
