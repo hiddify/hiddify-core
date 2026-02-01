@@ -2,7 +2,6 @@ package hcore
 
 import (
 	"strings"
-	"time"
 
 	hcommon "github.com/hiddify/hiddify-core/v2/hcommon"
 	"github.com/sagernet/sing-box/adapter"
@@ -56,15 +55,11 @@ func (h *HiddifyInstance) GetProxyInfo(detour adapter.Outbound, endpoint adapter
 }
 
 func (h *HiddifyInstance) GetAllProxiesInfo(onlyGroupitems bool) *OutboundGroupList {
-	instance := h.Instance()
-	if instance == nil {
+	ctx, box := h.Context(), h.Box()
+	if ctx == nil || box == nil {
 		return nil
 	}
-	box := h.Box()
-	if box == nil {
-		return nil
-	}
-	cacheFile := service.FromContext[adapter.CacheFile](instance.Context())
+	cacheFile := service.FromContext[adapter.CacheFile](ctx)
 
 	outbounds_converted := make(map[string]*OutboundInfo, 0)
 	var iGroups []adapter.OutboundGroup
@@ -127,7 +122,8 @@ func (s *CoreService) MainOutboundsInfo(req *hcommon.Empty, stream grpc.ServerSt
 }
 
 func (h *HiddifyInstance) AllProxiesInfoStream(stream grpc.ServerStreamingServer[OutboundGroupList], onlyMain bool) error {
-	if urlTestHistory := h.UrlTestHistory(); urlTestHistory != nil {
+
+	if ctx, urlTestHistory := h.Context(), h.UrlTestHistory(); ctx != nil && urlTestHistory != nil {
 		urltestch, done, err := urlTestHistory.Observer().Subscribe()
 		defer urlTestHistory.Observer().UnSubscribe(urltestch)
 		if err != nil {
@@ -135,24 +131,28 @@ func (h *HiddifyInstance) AllProxiesInfoStream(stream grpc.ServerStreamingServer
 		}
 		stream.Send(h.GetAllProxiesInfo(onlyMain))
 		for {
+		debounce:
+			for {
+				select {
+				case <-urltestch:
+				default:
+					break debounce
+				}
+			}
+
 			select {
 			case <-stream.Context().Done():
 				return nil
+			case <-ctx.Done():
+				return nil
 			case <-done:
 				return nil
+			// case <-time.After(5000 * time.Millisecond):
 			case <-urltestch:
-			debounce:
-				for {
-					select {
-					case <-urltestch:
-					default:
-						break debounce
-					}
-				}
 				stream.Send(h.GetAllProxiesInfo(onlyMain))
-			case <-time.After(500 * time.Millisecond):
 			}
 		}
+
 	}
 	return nil
 }

@@ -476,7 +476,7 @@ func (x *StartRequest) GetConfigName() string {
 	return ""
 }
 
-type PauseRequest struct {
+type CloseRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
@@ -484,8 +484,8 @@ type PauseRequest struct {
 	Mode SetupMode `protobuf:"varint,1,opt,name=mode,proto3,enum=hcore.SetupMode" json:"mode,omitempty"`
 }
 
-func (x *PauseRequest) Reset() {
-	*x = PauseRequest{}
+func (x *CloseRequest) Reset() {
+	*x = CloseRequest{}
 	if protoimpl.UnsafeEnabled {
 		mi := &file_v2_hcore_hcore_proto_msgTypes[2]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -493,13 +493,13 @@ func (x *PauseRequest) Reset() {
 	}
 }
 
-func (x *PauseRequest) String() string {
+func (x *CloseRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*PauseRequest) ProtoMessage() {}
+func (*CloseRequest) ProtoMessage() {}
 
-func (x *PauseRequest) ProtoReflect() protoreflect.Message {
+func (x *CloseRequest) ProtoReflect() protoreflect.Message {
 	mi := &file_v2_hcore_hcore_proto_msgTypes[2]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -511,12 +511,12 @@ func (x *PauseRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use PauseRequest.ProtoReflect.Descriptor instead.
-func (*PauseRequest) Descriptor() ([]byte, []int) {
+// Deprecated: Use CloseRequest.ProtoReflect.Descriptor instead.
+func (*CloseRequest) Descriptor() ([]byte, []int) {
 	return file_v2_hcore_hcore_proto_rawDescGZIP(), []int{2}
 }
 
-func (x *PauseRequest) GetMode() SetupMode {
+func (x *CloseRequest) GetMode() SetupMode {
 	if x != nil {
 		return x.Mode
 	}
@@ -2051,7 +2051,7 @@ var file_v2_hcore_hcore_proto_rawDesc = []byte{
 	0x08, 0x52, 0x0f, 0x65, 0x6e, 0x61, 0x62, 0x6c, 0x65, 0x52, 0x61, 0x77, 0x43, 0x6f, 0x6e, 0x66,
 	0x69, 0x67, 0x12, 0x1f, 0x0a, 0x0b, 0x63, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x5f, 0x6e, 0x61, 0x6d,
 	0x65, 0x18, 0x07, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0a, 0x63, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x4e,
-	0x61, 0x6d, 0x65, 0x22, 0x34, 0x0a, 0x0c, 0x50, 0x61, 0x75, 0x73, 0x65, 0x52, 0x65, 0x71, 0x75,
+	0x61, 0x6d, 0x65, 0x22, 0x34, 0x0a, 0x0c, 0x43, 0x6c, 0x6f, 0x73, 0x65, 0x52, 0x65, 0x71, 0x75,
 	0x65, 0x73, 0x74, 0x12, 0x24, 0x0a, 0x04, 0x6d, 0x6f, 0x64, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28,
 	0x0e, 0x32, 0x10, 0x2e, 0x68, 0x63, 0x6f, 0x72, 0x65, 0x2e, 0x53, 0x65, 0x74, 0x75, 0x70, 0x4d,
 	0x6f, 0x64, 0x65, 0x52, 0x04, 0x6d, 0x6f, 0x64, 0x65, 0x22, 0xaf, 0x02, 0x0a, 0x0c, 0x53, 0x65,
@@ -2329,7 +2329,7 @@ var file_v2_hcore_hcore_proto_goTypes = []any{
 	(LogType)(0),                         // 4: hcore.LogType
 	(*CoreInfoResponse)(nil),             // 5: hcore.CoreInfoResponse
 	(*StartRequest)(nil),                 // 6: hcore.StartRequest
-	(*PauseRequest)(nil),                 // 7: hcore.PauseRequest
+	(*CloseRequest)(nil),                 // 7: hcore.CloseRequest
 	(*SetupRequest)(nil),                 // 8: hcore.SetupRequest
 	(*SystemInfo)(nil),                   // 9: hcore.SystemInfo
 	(*OutboundInfo)(nil),                 // 10: hcore.OutboundInfo
@@ -2357,7 +2357,7 @@ var file_v2_hcore_hcore_proto_goTypes = []any{
 var file_v2_hcore_hcore_proto_depIdxs = []int32{
 	0,  // 0: hcore.CoreInfoResponse.core_state:type_name -> hcore.CoreStates
 	1,  // 1: hcore.CoreInfoResponse.message_type:type_name -> hcore.MessageType
-	2,  // 2: hcore.PauseRequest.mode:type_name -> hcore.SetupMode
+	2,  // 2: hcore.CloseRequest.mode:type_name -> hcore.SetupMode
 	2,  // 3: hcore.SetupRequest.mode:type_name -> hcore.SetupMode
 	29, // 4: hcore.OutboundInfo.url_test_time:type_name -> google.protobuf.Timestamp
 	11, // 5: hcore.OutboundInfo.ipinfo:type_name -> hcore.IpInfo
@@ -2409,7 +2409,7 @@ func file_v2_hcore_hcore_proto_init() {
 			}
 		}
 		file_v2_hcore_hcore_proto_msgTypes[2].Exporter = func(v any, i int) any {
-			switch v := v.(*PauseRequest); i {
+			switch v := v.(*CloseRequest); i {
 			case 0:
 				return &v.state
 			case 1:

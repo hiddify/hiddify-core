@@ -194,7 +194,11 @@ func getStaticDNSServerOptions(tag string, staticIps *map[string][]string) (*opt
 	return &o, nil
 }
 func setDns(options *option.Options, opt *HiddifyOptions, staticIps *map[string][]string) error {
-	remote_dns, err := getDNSServerOptions(DNSRemoteTag, opt.RemoteDnsAddress, DNSDirectTag, OutboundMainProxyTag)
+	remote_dns, err := getDNSServerOptions(DNSRemoteTag, opt.RemoteDnsAddress, DNSDirectTag, OutboundMainDetour)
+	if err != nil {
+		return err
+	}
+	remote_no_warp_dns, err := getDNSServerOptions(DNSRemoteNoWarpTag, opt.RemoteDnsAddress, DNSDirectTag, OutboundWARPConfigDetour)
 	if err != nil {
 		return err
 	}
@@ -232,6 +236,7 @@ func setDns(options *option.Options, opt *HiddifyOptions, staticIps *map[string]
 				*trick_dns,
 				*direct_dns,
 				*local_dns,
+				*remote_no_warp_dns,
 				// *block_dns,
 			},
 			Rules: []option.DNSRule{},

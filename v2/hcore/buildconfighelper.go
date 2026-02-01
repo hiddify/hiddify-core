@@ -21,15 +21,14 @@ func BuildConfigJson(ctx context.Context, in *StartRequest) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	res, err := parsedContent.MarshalJSONContext(libbox.BaseContext(nil))
+	res, err := parsedContent.MarshalJSONContext(ctx)
 	return string(res), err
 }
 
 func BuildConfig(ctx context.Context, in *StartRequest) (*option.Options, error) {
 	Log(LogLevel_DEBUG, LogType_CORE, "Building Config...")
 
-	readOpt := &config.ReadOptions{Content: in.ConfigContent,
-		Path: in.ConfigPath}
+	readOpt := &config.ReadOptions{Content: in.ConfigContent, Path: in.ConfigPath}
 	if !in.EnableRawConfig {
 		// hcontent, err := json.MarshalIndent(static.HiddifyOptions, "", " ")
 		// if err != nil {

@@ -13,6 +13,7 @@
   
 - [v2/hcore/hcore.proto](#v2_hcore_hcore-proto)
     - [ChangeHiddifySettingsRequest](#hcore-ChangeHiddifySettingsRequest)
+    - [CloseRequest](#hcore-CloseRequest)
     - [CoreInfoResponse](#hcore-CoreInfoResponse)
     - [GenerateConfigRequest](#hcore-GenerateConfigRequest)
     - [GenerateConfigResponse](#hcore-GenerateConfigResponse)
@@ -24,7 +25,6 @@
     - [OutboundInfo](#hcore-OutboundInfo)
     - [ParseRequest](#hcore-ParseRequest)
     - [ParseResponse](#hcore-ParseResponse)
-    - [PauseRequest](#hcore-PauseRequest)
     - [SelectOutboundRequest](#hcore-SelectOutboundRequest)
     - [SetSystemProxyEnabledRequest](#hcore-SetSystemProxyEnabledRequest)
     - [SetupRequest](#hcore-SetupRequest)
@@ -243,6 +243,21 @@
 
 
 
+<a name="hcore-CloseRequest"></a>
+
+### CloseRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| mode | [SetupMode](#hcore-SetupMode) |  |  |
+
+
+
+
+
+
 <a name="hcore-CoreInfoResponse"></a>
 
 ### CoreInfoResponse
@@ -441,21 +456,6 @@
 | response_code | [hcommon.ResponseCode](#hcommon-ResponseCode) |  |  |
 | content | [string](#string) |  |  |
 | message | [string](#string) |  |  |
-
-
-
-
-
-
-<a name="hcore-PauseRequest"></a>
-
-### PauseRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| mode | [SetupMode](#hcore-SetupMode) |  |  |
 
 
 
@@ -783,7 +783,7 @@ Define the message equivalent of SetupParameters
 | GetSystemProxyStatus | [.hcommon.Empty](#hcommon-Empty) | [SystemProxyStatus](#hcore-SystemProxyStatus) |  |
 | SetSystemProxyEnabled | [SetSystemProxyEnabledRequest](#hcore-SetSystemProxyEnabledRequest) | [.hcommon.Response](#hcommon-Response) |  |
 | LogListener | [.hcommon.Empty](#hcommon-Empty) | [LogMessage](#hcore-LogMessage) stream |  |
-| Pause | [PauseRequest](#hcore-PauseRequest) | [.hcommon.Empty](#hcommon-Empty) |  |
+| Close | [CloseRequest](#hcore-CloseRequest) | [.hcommon.Empty](#hcommon-Empty) |  |
 
  
 

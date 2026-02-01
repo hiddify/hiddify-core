@@ -21,10 +21,11 @@ import (
 )
 
 const (
-	DNSRemoteTag = "dns-remote"
-	DNSLocalTag  = "dns-local"
-	DNSStaticTag = "dns-static"
-	DNSDirectTag = "dns-direct"
+	DNSRemoteTag       = "dns-remote"
+	DNSLocalTag        = "dns-local"
+	DNSStaticTag       = "dns-static"
+	DNSDirectTag       = "dns-direct"
+	DNSRemoteNoWarpTag = "dns-remote-no-warp"
 	// DNSBlockTag        = "dns-block"
 	DNSFakeTag         = "dns-fake"
 	DNSTricksDirectTag = "dns-trick-direct"
@@ -36,7 +37,8 @@ const (
 	OutboundURLTestTag        = "auto"
 	OutboundDNSTag            = "dns-out §hide§"
 	OutboundDirectFragmentTag = "direct-fragment §hide§"
-	WARPConfigTag             = "Hiddify Warp ✅"
+
+	WARPConfigTag = "Hiddify Warp ✅"
 
 	InboundTUNTag   = "tun-in"
 	InboundMixedTag = "mixed-in"
@@ -44,8 +46,9 @@ const (
 )
 
 var (
-	OutboundMainProxyTag   = OutboundSelectTag
-	PredefinedOutboundTags = []string{OutboundDirectTag, OutboundBypassTag, OutboundSelectTag, OutboundURLTestTag, OutboundDNSTag, OutboundDirectFragmentTag}
+	OutboundMainDetour       = OutboundSelectTag
+	OutboundWARPConfigDetour = OutboundDirectTag
+	PredefinedOutboundTags   = []string{OutboundDirectTag, OutboundBypassTag, OutboundSelectTag, OutboundURLTestTag, OutboundDNSTag, OutboundDirectFragmentTag, WARPConfigTag}
 )
 
 // TODO include selectors
@@ -67,6 +70,7 @@ func BuildConfig(ctx context.Context, hopts *HiddifyOptions, inputOpt *ReadOptio
 	setLog(&options, hopts)
 	setInbound(&options, hopts)
 	staticIPs := make(map[string][]string)
+	// staticIPs["api.cloudflareclient.com"] = []string{"104.16.192.82", "2606:4700::6810:1854", getRandomWarpIP()}
 	// setNTP(&options)
 	if err := setOutbounds(&options, input, hopts, &staticIPs); err != nil {
 		return nil, err
@@ -87,7 +91,9 @@ func setNTP(options *option.Options) {
 		Enabled:       true,
 		ServerOptions: option.ServerOptions{ServerPort: 123, Server: "time.apple.com"},
 		Interval:      badoption.Duration(12 * time.Hour),
-		DialerOptions: option.DialerOptions{},
+		DialerOptions: option.DialerOptions{
+			Detour: OutboundDirectTag,
+		},
 	}
 }
 
@@ -108,33 +114,9 @@ func setOutbounds(options *option.Options, input *option.Options, opt *HiddifyOp
 	// OutboundMainProxyTag = OutboundSelectTag
 	// inbound==warp over proxies
 	// outbound==proxies over warp
-	OutboundMainProxyTag = OutboundSelectTag
-	if opt.Warp.EnableWarp && (opt.Warp.Mode == "warp_over_proxy" || opt.Warp.Mode == "proxy_over_warp") {
-		// wg := getOrGenerateWarpLocallyIfNeeded(&opt.Warp)
+	OutboundMainDetour = OutboundSelectTag
+	OutboundWARPConfigDetour = OutboundDirectFragmentTag
 
-		// out, err := GenerateWarpSingbox(wg, opt.Warp.CleanIP, opt.Warp.CleanPort, &option.WireGuardHiddify{
-		// 	FakePackets:      opt.Warp.FakePackets,
-		// 	FakePacketsSize:  opt.Warp.FakePacketSize,
-		// 	FakePacketsDelay: opt.Warp.FakePacketDelay,
-		// 	FakePacketsMode:  opt.Warp.FakePacketMode,
-		// })
-		out, err := GenerateWarpSingboxNew("p1", &option.WireGuardHiddify{})
-		if err != nil {
-			return fmt.Errorf("failed to generate warp config: %v", err)
-		}
-		out.Tag = WARPConfigTag
-		if opts, ok := out.Options.(*option.WireGuardEndpointOptions); ok {
-			if opt.Warp.Mode == "warp_over_proxy" {
-				opts.Detour = OutboundSelectTag
-			} else {
-				opts.Detour = OutboundDirectTag
-			}
-		}
-
-		OutboundMainProxyTag = WARPConfigTag
-		// patchWarp(out, opt, true, nil)
-		endpoints = append(endpoints, *out)
-	}
 	for _, out := range input.Outbounds {
 		if contains(PredefinedOutboundTags, out.Tag) {
 			continue
@@ -160,11 +142,47 @@ func setOutbounds(options *option.Options, input *option.Options, opt *HiddifyOp
 			if !strings.Contains(out.Tag, "§hide§") {
 				tags = append(tags, out.Tag)
 			}
+			OutboundWARPConfigDetour = OutboundSelectTag
 			out = *patchHiddifyWarpFromConfig(&out, *opt)
 			outbounds = append(outbounds, out)
 		}
 	}
+
+	if opt.Warp.EnableWarp {
+		// wg := getOrGenerateWarpLocallyIfNeeded(&opt.Warp)
+
+		// out, err := GenerateWarpSingbox(wg, opt.Warp.CleanIP, opt.Warp.CleanPort, &option.WireGuardHiddify{
+		// 	FakePackets:      opt.Warp.FakePackets,
+		// 	FakePacketsSize:  opt.Warp.FakePacketSize,
+		// 	FakePacketsDelay: opt.Warp.FakePacketDelay,
+		// 	FakePacketsMode:  opt.Warp.FakePacketMode,
+		// })
+		out, err := GenerateWarpSingboxNew("p1", &option.WireGuardHiddify{})
+		if err != nil {
+			return fmt.Errorf("failed to generate warp config: %v", err)
+		}
+		out.Tag = WARPConfigTag
+		if opts, ok := out.Options.(*option.WireGuardWARPEndpointOptions); ok {
+			if opt.Warp.Mode == "warp_over_proxy" {
+				opts.Detour = OutboundSelectTag
+			} else {
+				opts.Detour = OutboundDirectTag
+			}
+
+		}
+
+		OutboundMainDetour = WARPConfigTag
+		// patchWarp(out, opt, true, nil)
+		out, err = patchEndpoint(out, *opt, staticIPs)
+		if err != nil {
+			return err
+		}
+		endpoints = append(endpoints, *out)
+	}
 	for _, end := range input.Endpoints {
+		if contains(PredefinedOutboundTags, end.Tag) {
+			continue
+		}
 		if opt.Warp.EnableWarp {
 			if end.Type == C.TypeWARP {
 				if opts, ok := end.Options.(*option.WireGuardWARPEndpointOptions); ok {
@@ -180,12 +198,9 @@ func setOutbounds(options *option.Options, input *option.Options, opt *HiddifyOp
 					}
 				}
 			}
-			if opt.Warp.Mode == "warp_over_proxy" && end.Tag == WARPConfigTag {
-				continue
-			}
 		}
 
-		out, err := patchEndpoint(end, *opt, staticIPs)
+		out, err := patchEndpoint(&end, *opt, staticIPs)
 		if err != nil {
 			return err
 		}
@@ -314,26 +329,23 @@ func setLog(options *option.Options, opt *HiddifyOptions) {
 	}
 }
 
-func setInbound(options *option.Options, opt *HiddifyOptions) {
-	var inboundDomainStrategy option.DomainStrategy
-	if !opt.ResolveDestination {
-		inboundDomainStrategy = option.DomainStrategy(dns.DomainStrategyAsIS)
-	} else {
-		inboundDomainStrategy = opt.IPv6Mode
-	}
-	if opt.EnableTun {
+func setInbound(options *option.Options, hopt *HiddifyOptions) {
+	// var inboundDomainStrategy option.DomainStrategy
+	// if !opt.ResolveDestination {
+	// 	inboundDomainStrategy = option.DomainStrategy(dns.DomainStrategyAsIS)
+	// } else {
+	// 	inboundDomainStrategy = opt.IPv6Mode
+	// }
+
+	if hopt.EnableTun {
 		opts := option.TunInboundOptions{
-			Stack:                  opt.TUNStack,
-			MTU:                    opt.MTU,
-			AutoRoute:              true,
-			StrictRoute:            opt.StrictRoute,
-			EndpointIndependentNat: true,
+			Stack:       hopt.TUNStack,
+			MTU:         hopt.MTU,
+			AutoRoute:   true,
+			StrictRoute: hopt.StrictRoute,
+			// EndpointIndependentNat: true,
 			// GSO:                    runtime.GOOS != "windows",
-			InboundOptions: option.InboundOptions{
-				SniffEnabled:             true,
-				SniffOverrideDestination: false,
-				DomainStrategy:           inboundDomainStrategy,
-			},
+
 		}
 		tunInbound := option.Inbound{
 			Type: C.TypeTun,
@@ -341,7 +353,7 @@ func setInbound(options *option.Options, opt *HiddifyOptions) {
 
 			Options: &opts,
 		}
-		switch opt.IPv6Mode {
+		switch hopt.IPv6Mode {
 		case option.DomainStrategy(dns.DomainStrategyUseIPv4):
 			opts.Address = []netip.Prefix{
 				netip.MustParsePrefix("172.19.0.1/28"),
@@ -362,7 +374,7 @@ func setInbound(options *option.Options, opt *HiddifyOptions) {
 	}
 
 	var bind string
-	if opt.AllowConnectionFromLAN {
+	if hopt.AllowConnectionFromLAN {
 		bind = "0.0.0.0"
 	} else {
 		bind = "127.0.0.1"
@@ -377,14 +389,14 @@ func setInbound(options *option.Options, opt *HiddifyOptions) {
 			Options: &option.HTTPMixedInboundOptions{
 				ListenOptions: option.ListenOptions{
 					Listen:     &addr,
-					ListenPort: opt.MixedPort,
+					ListenPort: hopt.MixedPort,
 					// InboundOptions: option.InboundOptions{
 					// 	SniffEnabled:             true,
 					// 	SniffOverrideDestination: true,
 					// 	DomainStrategy:           inboundDomainStrategy,
 					// },
 				},
-				SetSystemProxy: opt.SetSystemProxy,
+				SetSystemProxy: hopt.SetSystemProxy,
 			},
 		},
 	)
@@ -397,7 +409,7 @@ func setInbound(options *option.Options, opt *HiddifyOptions) {
 			Options: &option.DirectInboundOptions{
 				ListenOptions: option.ListenOptions{
 					Listen:     &addr,
-					ListenPort: opt.LocalDnsPort,
+					ListenPort: hopt.LocalDnsPort,
 				},
 				// OverrideAddress: "1.1.1.1",
 				// OverridePort:    53,
@@ -452,6 +464,7 @@ func setRoutingOptions(options *option.Options, hopt *HiddifyOptions) error {
 	if err != nil {
 		return err
 	}
+
 	dnsRules = append(dnsRules, forceDirectRules...)
 
 	if len(hopt.ConnectionTestUrls) > 0 { //To avoid dns bug when using urltest
@@ -475,6 +488,17 @@ func setRoutingOptions(options *option.Options, hopt *HiddifyOptions) error {
 			})
 		}
 	}
+	dnsRules = append(dnsRules, option.DefaultDNSRule{
+		RawDefaultDNSRule: option.RawDefaultDNSRule{
+			Domain: []string{"api.cloudflareclient.com"},
+		},
+		DNSRuleAction: option.DNSRuleAction{
+			Action: C.RuleActionTypeRoute,
+			RouteOptions: option.DNSRouteActionOptions{
+				Server: DNSRemoteNoWarpTag,
+			},
+		},
+	})
 	if ipinfoDomains := ipinfo.GetAllIPCheckerDomainsDomains(); len(ipinfoDomains) > 0 { //To avoid dns bug when using urltest
 		dnsRules = append(dnsRules, option.DefaultDNSRule{
 			RawDefaultDNSRule: option.RawDefaultDNSRule{
@@ -522,7 +546,7 @@ func setRoutingOptions(options *option.Options, hopt *HiddifyOptions) error {
 			RuleAction: option.RuleAction{
 				Action: C.RuleActionTypeRoute,
 				RouteOptions: option.RouteActionOptions{
-					Outbound: OutboundMainProxyTag,
+					Outbound: OutboundMainDetour,
 				},
 			},
 		},
@@ -835,14 +859,15 @@ func setRoutingOptions(options *option.Options, hopt *HiddifyOptions) error {
 	}
 	options.Route = &option.RouteOptions{
 		Rules:               routeRules,
-		Final:               OutboundMainProxyTag,
-		AutoDetectInterface: hopt.EnableTun || hopt.EnableTunService,
+		Final:               OutboundMainDetour,
+		AutoDetectInterface: (!C.IsAndroid) && (hopt.EnableTun || hopt.EnableTunService),
 		DefaultDomainResolver: &option.DomainResolveOptions{
 			Server:   DNSDirectTag,
 			Strategy: hopt.DirectDnsDomainStrategy,
 		},
-		// OverrideAndroidVPN:  true,
-		RuleSet: rulesets,
+		// OverrideAndroidVPN: hopt.EnableTun && C.IsAndroid,
+		RuleSet:     rulesets,
+		FindProcess: false,
 		// GeoIP: &option.GeoIPOptions{
 		// 	Path: opt.GeoIPPath,
 		// },

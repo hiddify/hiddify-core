@@ -8,11 +8,11 @@ import (
 	C "github.com/sagernet/sing-box/constant"
 )
 
-func (s *CoreService) Pause(ctx context.Context, pauseReq *PauseRequest) (*hcommon.Empty, error) {
-	if pauseReq == nil {
+func (s *CoreService) Close(ctx context.Context, closeReq *CloseRequest) (*hcommon.Empty, error) {
+	if closeReq == nil {
 		return nil, nil
 	}
-	mode := (*pauseReq).Mode
+	mode := closeReq.Mode
 	if grpcServer[mode] == nil {
 		Log(LogLevel_WARNING, LogType_CORE, "grpcServer already stoped")
 		return nil, nil

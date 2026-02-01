@@ -71,7 +71,7 @@ func wireGuardToSingbox(wgConfig WarpWireguardConfig, server string, port uint16
 	return &out, nil
 }
 
-func getRandomIP() string {
+func getRandomWarpIP() string {
 	ipPort, err := warp.RandomWarpEndpoint(true, true)
 	if err == nil {
 		return ipPort.Addr().String()
@@ -205,6 +205,7 @@ func patchWarp(base *option.Endpoint, configOpt *HiddifyOptions, final bool, sta
 		if opts, ok := base.Options.(*option.WireGuardWARPEndpointOptions); ok {
 			opts.ServerOptions.Server = ""
 			opts.ServerOptions.ServerPort = 0
+			opts.Profile.Detour = OutboundWARPConfigDetour
 			return nil
 			is_saved_key := len(opts.UniqueIdentifier) > 1 && opts.UniqueIdentifier[0] == 'p'
 

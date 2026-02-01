@@ -57,7 +57,7 @@ enum SetupMode {
     GRPC_BACKGROUND_INSECURE = 4;
 }
 
-message PauseRequest {
+message CloseRequest {
   SetupMode mode = 1;
 }
 // Define the message equivalent of SetupParameters

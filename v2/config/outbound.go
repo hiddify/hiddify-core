@@ -124,15 +124,15 @@ func isOutboundReality(base option.Outbound) bool {
 	return tls.Reality.Enabled
 }
 
-func patchEndpoint(base option.Endpoint, configOpt HiddifyOptions, staticIPs *map[string][]string) (*option.Endpoint, error) {
+func patchEndpoint(base *option.Endpoint, configOpt HiddifyOptions, staticIPs *map[string][]string) (*option.Endpoint, error) {
 	formatErr := func(err error) error {
 		return fmt.Errorf("error patching outbound[%s][%s]: %w", base.Tag, base.Type, err)
 	}
-	err := patchWarp(&base, &configOpt, true, *staticIPs)
+	err := patchWarp(base, &configOpt, true, *staticIPs)
 	if err != nil {
 		return nil, formatErr(err)
 	}
-	return &base, nil
+	return base, nil
 }
 func patchOutbound(base option.Outbound, configOpt HiddifyOptions, staticIPs *map[string][]string) (*option.Outbound, error) {
 

@@ -20,13 +20,13 @@ import (
 	"google.golang.org/grpc"
 )
 
-func readStatus(prev *SystemInfo) *SystemInfo {
+func (h *HiddifyInstance) readStatus(prev *SystemInfo) *SystemInfo {
 	var message SystemInfo
 	message.Memory = int64(memory.Inuse())
 	message.Goroutines = int32(runtime.NumGoroutine())
 	message.ConnectionsOut = int32(conntrack.Count())
 
-	if ss := static.StartedService; ss != nil {
+	if ss := h.StartedService; ss != nil {
 		status := ss.ReadStatus()
 		message.DownlinkTotal = status.DownlinkTotal
 		message.UplinkTotal = status.UplinkTotal
@@ -37,7 +37,7 @@ func readStatus(prev *SystemInfo) *SystemInfo {
 			message.Uplink = message.UplinkTotal - prev.UplinkTotal
 			message.Downlink = message.DownlinkTotal - prev.DownlinkTotal
 		}
-		if box := static.Box(); box != nil {
+		if box := h.Box(); box != nil {
 			if currentOutBound, ok := box.Outbound().Outbound(config.OutboundSelectTag); ok {
 				if selectOutBound, ok := currentOutBound.(*group.Selector); ok {
 					message.CurrentOutbound = TrimTagName(selectOutBound.Now())
@@ -69,17 +69,22 @@ func readStatus(prev *SystemInfo) *SystemInfo {
 func (s *CoreService) GetSystemInfo(req *hcommon.Empty, stream grpc.ServerStreamingServer[SystemInfo]) error {
 	// return fmt.Errorf("not implemented yet")
 	ticker := time.NewTicker(time.Duration(1 * time.Second))
-
-	current_status := readStatus(nil)
-	for {
-		select {
-		case <-stream.Context().Done():
-			return nil
-		case <-ticker.C:
-			current_status = readStatus(current_status)
-			stream.Send(current_status)
+	h := static
+	if ctx := h.Context(); ctx != nil {
+		current_status := h.readStatus(nil)
+		for {
+			select {
+			case <-stream.Context().Done():
+				return nil
+			case <-ctx.Done():
+				return ctx.Err()
+			case <-ticker.C:
+				current_status = h.readStatus(current_status)
+				stream.Send(current_status)
+			}
 		}
 	}
+	return nil
 }
 
 // func (s *CoreService) OutboundsInfo(req *hcommon.Empty, stream grpc.ServerStreamingServer[OutboundGroupList]) error {
@@ -202,8 +207,10 @@ func (h *HiddifyInstance) SelectOutbound(in *SelectOutboundRequest) (*hcommon.Re
 				}
 			}
 		}()
+		if urltesHistory := h.UrlTestHistory(); urltesHistory != nil {
+			urltesHistory.Observer().Emit(2)
+		}
 	}
-	h.UrlTestHistory().Observer().Emit(2)
 	return &hcommon.Response{
 		Code:    hcommon.ResponseCode_OK,
 		Message: "",
