@@ -218,6 +218,10 @@ message LogMessage {
   google.protobuf.Timestamp time = 4;
 }
 
+message LogRequest {
+  LogLevel level = 1;
+}
+
 message StopRequest{
 }
 

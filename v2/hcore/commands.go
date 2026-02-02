@@ -66,25 +66,57 @@ func (h *HiddifyInstance) readStatus(prev *SystemInfo) *SystemInfo {
 	return &message
 }
 
-func (s *CoreService) GetSystemInfo(req *hcommon.Empty, stream grpc.ServerStreamingServer[SystemInfo]) error {
+func (s *CoreService) GetSystemInfo(ctx context.Context, req *hcommon.Empty) (*SystemInfo, error) {
+	return static.readStatus(nil), nil
+
+}
+func (s *CoreService) GetSystemInfoStream(req *hcommon.Empty, stream grpc.ServerStreamingServer[SystemInfo]) error {
+	return static.GetSystemInfo(stream)
+
+}
+func (h *HiddifyInstance) GetSystemInfo(stream grpc.ServerStreamingServer[SystemInfo]) error {
 	// return fmt.Errorf("not implemented yet")
-	ticker := time.NewTicker(time.Duration(1 * time.Second))
-	h := static
-	if ctx := h.Context(); ctx != nil {
-		current_status := h.readStatus(nil)
-		for {
-			select {
-			case <-stream.Context().Done():
-				return nil
-			case <-ctx.Done():
-				return ctx.Err()
-			case <-ticker.C:
-				current_status = h.readStatus(current_status)
-				stream.Send(current_status)
+
+	ticker := time.NewTicker(1 * time.Second)
+	defer ticker.Stop()
+
+	deadline := time.NewTimer(10 * time.Second)
+	defer deadline.Stop()
+
+	ctx := h.Context()
+
+	for ctx == nil {
+		if err := stream.Send(h.readStatus(nil)); err != nil {
+			return err
+		}
+		select {
+		case <-stream.Context().Done():
+			return nil
+		case <-deadline.C:
+			return fmt.Errorf("no box service found")
+		case <-ticker.C:
+			ctx = h.Context()
+		}
+	}
+
+	current_status := h.readStatus(nil)
+	if err := stream.Send(current_status); err != nil {
+		return err
+	}
+	for {
+		select {
+		case <-stream.Context().Done():
+			return nil
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-ticker.C:
+			current_status = h.readStatus(current_status)
+			if err := stream.Send(current_status); err != nil {
+				return err
 			}
 		}
 	}
-	return nil
+
 }
 
 // func (s *CoreService) OutboundsInfo(req *hcommon.Empty, stream grpc.ServerStreamingServer[OutboundGroupList]) error {

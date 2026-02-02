@@ -80,7 +80,7 @@ func (h *HiddifyInstance) Instance() *daemon.Instance {
 func (h *HiddifyInstance) Context() context.Context {
 	ins := h.Instance()
 	if ins == nil {
-		return static.BaseContext
+		return nil
 	}
 	return ins.Context()
 }

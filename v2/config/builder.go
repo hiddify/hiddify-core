@@ -860,7 +860,7 @@ func setRoutingOptions(options *option.Options, hopt *HiddifyOptions) error {
 	options.Route = &option.RouteOptions{
 		Rules:               routeRules,
 		Final:               OutboundMainDetour,
-		AutoDetectInterface: (!C.IsAndroid) && (hopt.EnableTun || hopt.EnableTunService),
+		AutoDetectInterface: (!C.IsAndroid && !C.IsIos) && (hopt.EnableTun || hopt.EnableTunService),
 		DefaultDomainResolver: &option.DomainResolveOptions{
 			Server:   DNSDirectTag,
 			Strategy: hopt.DirectDnsDomainStrategy,

@@ -20,6 +20,7 @@
     - [GenerateWarpConfigRequest](#hcore-GenerateWarpConfigRequest)
     - [IpInfo](#hcore-IpInfo)
     - [LogMessage](#hcore-LogMessage)
+    - [LogRequest](#hcore-LogRequest)
     - [OutboundGroup](#hcore-OutboundGroup)
     - [OutboundGroupList](#hcore-OutboundGroupList)
     - [OutboundInfo](#hcore-OutboundInfo)
@@ -359,6 +360,21 @@
 | type | [LogType](#hcore-LogType) |  |  |
 | message | [string](#string) |  |  |
 | time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
+
+
+
+
+
+
+<a name="hcore-LogRequest"></a>
+
+### LogRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| level | [LogLevel](#hcore-LogLevel) |  |  |
 
 
 
@@ -770,7 +786,8 @@ Define the message equivalent of SetupParameters
 | CoreInfoListener | [.hcommon.Empty](#hcommon-Empty) | [CoreInfoResponse](#hcore-CoreInfoResponse) stream |  |
 | OutboundsInfo | [.hcommon.Empty](#hcommon-Empty) | [OutboundGroupList](#hcore-OutboundGroupList) stream |  |
 | MainOutboundsInfo | [.hcommon.Empty](#hcommon-Empty) | [OutboundGroupList](#hcore-OutboundGroupList) stream |  |
-| GetSystemInfo | [.hcommon.Empty](#hcommon-Empty) | [SystemInfo](#hcore-SystemInfo) stream |  |
+| GetSystemInfo | [.hcommon.Empty](#hcommon-Empty) | [SystemInfo](#hcore-SystemInfo) |  |
+| GetSystemInfoStream | [.hcommon.Empty](#hcommon-Empty) | [SystemInfo](#hcore-SystemInfo) stream |  |
 | Setup | [SetupRequest](#hcore-SetupRequest) | [.hcommon.Response](#hcommon-Response) |  |
 | Parse | [ParseRequest](#hcore-ParseRequest) | [ParseResponse](#hcore-ParseResponse) |  |
 | ChangeHiddifySettings | [ChangeHiddifySettingsRequest](#hcore-ChangeHiddifySettingsRequest) | [CoreInfoResponse](#hcore-CoreInfoResponse) |  |
@@ -782,7 +799,7 @@ Define the message equivalent of SetupParameters
 | GenerateWarpConfig | [GenerateWarpConfigRequest](#hcore-GenerateWarpConfigRequest) | [WarpGenerationResponse](#hcore-WarpGenerationResponse) |  |
 | GetSystemProxyStatus | [.hcommon.Empty](#hcommon-Empty) | [SystemProxyStatus](#hcore-SystemProxyStatus) |  |
 | SetSystemProxyEnabled | [SetSystemProxyEnabledRequest](#hcore-SetSystemProxyEnabledRequest) | [.hcommon.Response](#hcommon-Response) |  |
-| LogListener | [.hcommon.Empty](#hcommon-Empty) | [LogMessage](#hcore-LogMessage) stream |  |
+| LogListener | [LogRequest](#hcore-LogRequest) | [LogMessage](#hcore-LogMessage) stream |  |
 | Close | [CloseRequest](#hcore-CloseRequest) | [.hcommon.Empty](#hcommon-Empty) |  |
 
  

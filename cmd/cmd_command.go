@@ -39,7 +39,7 @@ func execCommandgrpc(cmd *cobra.Command, args []string) {
 	tream, err := c.CoreInfoListener(ctx, &hcommon.Empty{})
 	stream2, err := c.OutboundsInfo(ctx, &hcommon.Empty{})
 	stream, err := c.MainOutboundsInfo(ctx, &hcommon.Empty{})
-	logstream, err := c.LogListener(ctx, &hcommon.Empty{})
+	logstream, err := c.LogListener(ctx, &hcore.LogRequest{Level: hcore.LogLevel_DEBUG})
 	if err != nil {
 		log.Fatalf("could not stream: %v", err)
 	}
