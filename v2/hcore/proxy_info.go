@@ -2,6 +2,7 @@ package hcore
 
 import (
 	"strings"
+	"time"
 
 	hcommon "github.com/hiddify/hiddify-core/v2/hcommon"
 	"github.com/sagernet/sing-box/adapter"
@@ -130,29 +131,31 @@ func (h *HiddifyInstance) AllProxiesInfoStream(stream grpc.ServerStreamingServer
 			return err
 		}
 		stream.Send(h.GetAllProxiesInfo(onlyMain))
-		for {
-		debounce:
-			for {
-				select {
-				case <-urltestch:
-				default:
-					break debounce
-				}
-			}
+		debouncer := NewDebouncer(500 * time.Millisecond)
+		defer debouncer.Stop()
 
+		for {
 			select {
+			case u := <-urltestch:
+				if u == 2 {
+					stream.Send(h.GetAllProxiesInfo(onlyMain))
+				} else {
+					debouncer.Hit()
+				}
+
+			case <-debouncer.C():
+				if err := stream.Send(h.GetAllProxiesInfo(onlyMain)); err != nil {
+					return err
+				}
+
 			case <-stream.Context().Done():
 				return nil
 			case <-ctx.Done():
 				return nil
 			case <-done:
 				return nil
-			// case <-time.After(5000 * time.Millisecond):
-			case <-urltestch:
-				stream.Send(h.GetAllProxiesInfo(onlyMain))
 			}
 		}
-
 	}
 	return nil
 }
