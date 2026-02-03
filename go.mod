@@ -192,7 +192,7 @@ require (
 )
 
 require (
-	github.com/hiddify/ray2sing v0.0.0-20260203000647-46f6f2ce6367
+	github.com/hiddify/ray2sing v0.0.0-20260203105423-c6f13a150723
 	github.com/sagernet/sing-box v1.13.0
 )
 

@@ -281,8 +281,8 @@ github.com/hectane/go-acl v0.0.0-20230122075934-ca0b05cb1adb h1:PGufWXXDq9yaev6x
 github.com/hectane/go-acl v0.0.0-20230122075934-ca0b05cb1adb/go.mod h1:QiyDdbZLaJ/mZP4Zwc9g2QsfaEA4o7XvvgZegSci5/E=
 github.com/hiddify/hiddify-sing-box v1.8.9-0.20260202224159-b45f64cc236d h1:hwFMN4tNmaB/quCQw3s4xUul2kx8oQvUBimaKp9prB4=
 github.com/hiddify/hiddify-sing-box v1.8.9-0.20260202224159-b45f64cc236d/go.mod h1:zNbauSedGJwsraWyJkMtwhsKO2AuTX4PaQzFJG5XIhc=
-github.com/hiddify/ray2sing v0.0.0-20260203000647-46f6f2ce6367 h1:wNWrgrSnERtoW5vPikQfT7JW3Vii87O/08hMZi/V020=
-github.com/hiddify/ray2sing v0.0.0-20260203000647-46f6f2ce6367/go.mod h1:1o5oQt67IukfyA0ixZe+3ri4sVE/uVsYci062ZwCee8=
+github.com/hiddify/ray2sing v0.0.0-20260203105423-c6f13a150723 h1:Nwn5XDfsWPjFOp4letA5hF0FkgPz/i26vrhQ1zpdXF4=
+github.com/hiddify/ray2sing v0.0.0-20260203105423-c6f13a150723/go.mod h1:1o5oQt67IukfyA0ixZe+3ri4sVE/uVsYci062ZwCee8=
 github.com/hiddify/tailscale v1.92.4-sing-box-1.13-mod.6.0.20260202223641-788aa623edeb h1:eh+X2WCTfbXdNz5A6k44kWkl9KJbKlVQOfkgZjk3eZs=
 github.com/hiddify/tailscale v1.92.4-sing-box-1.13-mod.6.0.20260202223641-788aa623edeb/go.mod h1:m87GAn4UcesHQF3leaPFEINZETO5za1LGn1GJdNDgNc=
 github.com/hiddify/warp-plus v0.0.0-20240717223357-4f3122e0d11d h1:vRGKh9ou+/vQGfVYa8MczhbIVjHxlP52OWwrDWO77RA=
