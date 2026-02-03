@@ -9,6 +9,7 @@ import (
 
 	"github.com/bepass-org/warp-plus/warp"
 	C "github.com/sagernet/sing-box/constant"
+	"github.com/sagernet/wireguard-go/hiddify"
 
 	// "github.com/bepass-org/wireguard-go/warp"
 	"github.com/hiddify/hiddify-core/v2/db"
@@ -79,7 +80,7 @@ func getRandomWarpIP() string {
 	return "engage.cloudflareclient.com"
 }
 
-func generateWarp(license string, host string, port uint16, noise *option.WireGuardHiddify) (*T.Endpoint, error) {
+func generateWarp(license string, host string, port uint16, noise *hiddify.NoiseOptions) (*T.Endpoint, error) {
 	_, _, wgConfig, err := GenerateWarpInfo(license, "", "")
 	if err != nil {
 		return nil, err
@@ -91,20 +92,20 @@ func generateWarp(license string, host string, port uint16, noise *option.WireGu
 	return GenerateWarpSingbox(*wgConfig, host, port, noise)
 }
 
-func GenerateWarpSingbox(wgConfig WarpWireguardConfig, host string, port uint16, noise *option.WireGuardHiddify) (*T.Endpoint, error) {
+func GenerateWarpSingbox(wgConfig WarpWireguardConfig, host string, port uint16, noise *hiddify.NoiseOptions) (*T.Endpoint, error) {
 	if host == "" {
 		host = "auto4"
 	}
 
-	if (host == "auto" || host == "auto4" || host == "auto6") && noise.FakePackets == "" {
-		noise.FakePackets = "1-3"
-	}
-	if noise.FakePackets != "" && noise.FakePacketsSize == "" {
-		noise.FakePacketsSize = "10-30"
-	}
-	if noise.FakePackets != "" && noise.FakePacketsDelay == "" {
-		noise.FakePacketsDelay = "10-30"
-	}
+	// if (host == "auto" || host == "auto4" || host == "auto6") && noise.FakePacket.Count.To == 0 {
+	// 	noise.FakePackets = "1-3"
+	// }
+	// if noise.FakePackets != "" && noise.FakePacketsSize == "" {
+	// 	noise.FakePacketsSize = "10-30"
+	// }
+	// if noise.FakePackets != "" && noise.FakePacketsDelay == "" {
+	// 	noise.FakePacketsDelay = "10-30"
+	// }
 	singboxConfig, err := wireGuardToSingbox(wgConfig, host, port)
 	if err != nil {
 		fmt.Printf("%v %v", singboxConfig, err)
@@ -112,7 +113,7 @@ func GenerateWarpSingbox(wgConfig WarpWireguardConfig, host string, port uint16,
 	}
 	if opts, ok := singboxConfig.Options.(*T.WireGuardEndpointOptions); ok {
 
-		opts.Peers[0].WireGuardHiddify = *noise
+		opts.Noise = *noise
 	}
 	return singboxConfig, nil
 }
@@ -176,7 +177,7 @@ func getOrGenerateWarpLocallyIfNeeded(warpOptions *WarpOptions) WarpWireguardCon
 	return *wireguardConfig
 }
 
-func GenerateWarpSingboxNew(uniqueIdentifier string, noise *option.WireGuardHiddify) (*T.Endpoint, error) {
+func GenerateWarpSingboxNew(uniqueIdentifier string, noise *hiddify.NoiseOptions) (*T.Endpoint, error) {
 	// if host=="auto4" || host=="auto6" || host=="auto"{
 	// }
 	// host=""
@@ -194,7 +195,7 @@ func GenerateWarpSingboxNew(uniqueIdentifier string, noise *option.WireGuardHidd
 			Profile: T.WARPProfile{
 				Detour: OutboundSelectTag,
 			},
-			WireGuardHiddify: *noise,
+			Noise: *noise,
 		},
 	}
 	return &out, nil
@@ -234,7 +235,7 @@ func patchWarp(base *option.Endpoint, configOpt *HiddifyOptions, final bool, sta
 				}
 				wireguardConfig = *wgConfig
 			}
-			warpOutbound, err := GenerateWarpSingbox(wireguardConfig, opts.Server, opts.ServerPort, &opts.WireGuardHiddify)
+			warpOutbound, err := GenerateWarpSingbox(wireguardConfig, opts.Server, opts.ServerPort, &opts.Noise)
 			if err != nil {
 				fmt.Printf("Error generating warp config: %v", err)
 				return err
@@ -288,7 +289,7 @@ func patchWarp(base *option.Endpoint, configOpt *HiddifyOptions, final bool, sta
 				if opts.MTU < 100 {
 					opts.MTU = 1280
 				}
-				opts.Peers[0].WireGuardHiddify = option.WireGuardHiddify{}
+				opts.Noise = hiddify.NoiseOptions{}
 
 			}
 			// if base.WireGuardOptions.Detour == "" {

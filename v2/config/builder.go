@@ -18,6 +18,7 @@ import (
 	"github.com/sagernet/sing-box/option"
 	dns "github.com/sagernet/sing-dns"
 	"github.com/sagernet/sing/common/json/badoption"
+	"github.com/sagernet/wireguard-go/hiddify"
 )
 
 const (
@@ -157,7 +158,7 @@ func setOutbounds(options *option.Options, input *option.Options, opt *HiddifyOp
 		// 	FakePacketsDelay: opt.Warp.FakePacketDelay,
 		// 	FakePacketsMode:  opt.Warp.FakePacketMode,
 		// })
-		out, err := GenerateWarpSingboxNew("p1", &option.WireGuardHiddify{})
+		out, err := GenerateWarpSingboxNew("p1", &hiddify.NoiseOptions{})
 		if err != nil {
 			return fmt.Errorf("failed to generate warp config: %v", err)
 		}

@@ -3,7 +3,7 @@ module github.com/hiddify/hiddify-core
 go 1.25.6
 
 require (
-	github.com/bepass-org/warp-plus v1.2.4
+	github.com/bepass-org/warp-plus v1.2.6
 	github.com/improbable-eng/grpc-web v0.15.0
 	github.com/jellydator/validation v1.1.0
 	github.com/kardianos/service v1.2.2
@@ -33,6 +33,7 @@ require (
 	github.com/alexbrainman/sspi v0.0.0-20231016080023-1a75b4708caa // indirect
 	github.com/ameshkov/dnscrypt/v2 v2.4.0 // indirect
 	github.com/ameshkov/dnsstamps v1.0.3 // indirect
+	github.com/amnezia-vpn/amneziawg-go v0.2.16 // indirect
 	github.com/anthropics/anthropic-sdk-go v1.19.0 // indirect
 	github.com/anytls/sing-anytls v0.0.11 // indirect
 	github.com/biter777/countries v1.7.5 // indirect
@@ -48,7 +49,7 @@ require (
 	github.com/desertbit/timer v0.0.0-20180107155436-c41aec40b27f // indirect
 	github.com/dgraph-io/badger/v2 v2.2007.2 // indirect
 	github.com/dgraph-io/ristretto v0.0.3-0.20200630154024-f66de99634de // indirect
-	github.com/dgryski/go-farm v0.0.0-20190423205320-6a90982ecee2 // indirect
+	github.com/dgryski/go-farm v0.0.0-20200201041132-a6ae2369ad13 // indirect
 	github.com/dustin/go-humanize v1.0.0 // indirect
 	github.com/ebitengine/purego v0.9.1 // indirect
 	github.com/enfein/mieru/v3 v3.27.0 // indirect
@@ -65,7 +66,6 @@ require (
 	github.com/hdevalence/ed25519consensus v0.2.0 // indirect
 	github.com/jmhodges/levigo v1.0.0 // indirect
 	github.com/jsimonetti/rtnetlink v1.4.0 // indirect
-	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/keybase/go-keychain v0.0.1 // indirect
 	github.com/mdlayher/netlink v1.7.3-0.20250113171957-fbb4dce95f42 // indirect
 	github.com/mdlayher/socket v0.5.1 // indirect
@@ -126,6 +126,7 @@ require (
 	golang.zx2c4.com/wireguard/wgctrl v0.0.0-20241231184526-a9ab2273dd10 // indirect
 	golang.zx2c4.com/wireguard/windows v0.5.3 // indirect
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
+	gvisor.dev/gvisor v0.0.0-20240503213918-b7c924bc64f8 // indirect
 	nhooyr.io/websocket v1.8.6 // indirect
 )
 
@@ -169,7 +170,7 @@ require (
 	github.com/sagernet/sing-tun v0.8.0-beta.12 // indirect
 	github.com/sagernet/sing-vmess v0.2.8-0.20250909125414-3aed155119a1 // indirect
 	github.com/sagernet/smux v1.5.50-sing-box-mod.1 // indirect
-	github.com/sagernet/wireguard-go v0.0.2-beta.1.0.20250917110311-16510ac47288 // indirect
+	github.com/sagernet/wireguard-go v0.0.2-beta.1.0.20250917110311-16510ac47288
 	github.com/sagernet/ws v0.0.0-20231204124109-acfe8907c854 // indirect
 	github.com/spf13/pflag v1.0.9 // indirect
 	github.com/u-root/uio v0.0.0-20240224005618-d2acac8f3701 // indirect
@@ -187,22 +188,23 @@ require (
 	golang.org/x/time v0.12.0 // indirect
 	golang.org/x/tools v0.40.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20251029180050-ab9386a59fda // indirect
-	gopkg.in/yaml.v2 v2.4.0 // indirect
 	lukechampine.com/blake3 v1.4.1 // indirect
 )
 
 require (
-	github.com/hiddify/ray2sing v0.0.0-20260202154355-447cfb494000
+	github.com/hiddify/ray2sing v0.0.0-20260203000647-46f6f2ce6367
 	github.com/sagernet/sing-box v1.13.0
 )
 
-replace github.com/sagernet/sing-box => github.com/hiddify/hiddify-sing-box v1.8.9-0.20260201231246-98f27edbe59d
+replace github.com/sagernet/sing-box => github.com/hiddify/hiddify-sing-box v1.8.9-0.20260202224159-b45f64cc236d
 
 // replace github.com/sagernet/sing-box => ../../h-sing-box
 
-replace github.com/xtls/xray-core => github.com/hiddify/xray-core v0.0.0-20260124181826-59e6569c13e9
+// replace github.com/xtls/xray-core => github.com/hiddify/xray-core v0.0.0-20260124181826-59e6569c13e9
 
-// replace github.com/sagernet/wireguard-go => github.com/hiddify/wireguard-go v0.0.0-20250427083853-fa9271bf7486
+replace github.com/sagernet/wireguard-go => github.com/hiddify/wireguard-go v0.0.0-20260202221310-b94beca5cb72
+
+replace github.com/sagernet/tailscale => github.com/hiddify/tailscale v1.92.4-sing-box-1.13-mod.6.0.20260202223641-788aa623edeb
 
 replace github.com/bepass-org/warp-plus => github.com/hiddify/warp-plus v0.0.0-20240717223357-4f3122e0d11d
 
