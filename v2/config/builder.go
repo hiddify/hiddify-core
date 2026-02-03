@@ -16,7 +16,6 @@ import (
 	mdns "github.com/sagernet/sing-box/dns"
 	"github.com/sagernet/sing-box/hiddify/ipinfo"
 	"github.com/sagernet/sing-box/option"
-	dns "github.com/sagernet/sing-dns"
 	"github.com/sagernet/sing/common/json/badoption"
 	"github.com/sagernet/wireguard-go/hiddify"
 )
@@ -329,7 +328,15 @@ func setLog(options *option.Options, opt *HiddifyOptions) {
 		DisableColor: true,
 	}
 }
-
+func isIPv6Supported() bool {
+	// Try to listen on IPv6 loopback
+	conn, err := net.ListenPacket("udp6", "[::1]:0")
+	if err != nil {
+		return false
+	}
+	_ = conn.Close()
+	return true
+}
 func setInbound(options *option.Options, hopt *HiddifyOptions) {
 	// var inboundDomainStrategy option.DomainStrategy
 	// if !opt.ResolveDestination {
@@ -339,11 +346,13 @@ func setInbound(options *option.Options, hopt *HiddifyOptions) {
 	// }
 
 	if hopt.EnableTun {
+
 		opts := option.TunInboundOptions{
 			Stack:       hopt.TUNStack,
 			MTU:         hopt.MTU,
 			AutoRoute:   true,
 			StrictRoute: hopt.StrictRoute,
+
 			// EndpointIndependentNat: true,
 			// GSO:                    runtime.GOOS != "windows",
 
@@ -354,22 +363,23 @@ func setInbound(options *option.Options, hopt *HiddifyOptions) {
 
 			Options: &opts,
 		}
-		switch hopt.IPv6Mode {
-		case option.DomainStrategy(dns.DomainStrategyUseIPv4):
-			opts.Address = []netip.Prefix{
-				netip.MustParsePrefix("172.19.0.1/28"),
-			}
-		case option.DomainStrategy(dns.DomainStrategyUseIPv6):
-			opts.Address = []netip.Prefix{
-				netip.MustParsePrefix("fdfe:dcba:9876::1/126"),
-			}
-		default:
-			opts.Address = []netip.Prefix{
-				netip.MustParsePrefix("172.19.0.1/28"),
-				netip.MustParsePrefix("fdfe:dcba:9876::1/126"),
-			}
+		// switch hopt.IPv6Mode {
+		// case option.DomainStrategy(dns.DomainStrategyUseIPv4):
+		// 	opts.Address = []netip.Prefix{
+		// 		netip.MustParsePrefix("172.19.0.1/28"),
+		// 	}
+		// case option.DomainStrategy(dns.DomainStrategyUseIPv6):
+		// 	opts.Address = []netip.Prefix{
+		// 		netip.MustParsePrefix("fdfe:dcba:9876::1/126"),
+		// 	}
+		// default:
 
+		// }
+		opts.Address = []netip.Prefix{netip.MustParsePrefix("172.19.0.1/28")}
+		if isIPv6Supported() {
+			opts.Address = append(opts.Address, netip.MustParsePrefix("fdfe:dcba:9876::1/126"))
 		}
+
 		options.Inbounds = append(options.Inbounds, tunInbound)
 
 	}

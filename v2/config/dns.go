@@ -226,7 +226,7 @@ func setDns(options *option.Options, opt *HiddifyOptions, staticIps *map[string]
 	dnsOptions := option.DNSOptions{
 		RawDNSOptions: option.RawDNSOptions{
 			DNSClientOptions: option.DNSClientOptions{
-				IndependentCache: opt.IndependentDNSCache,
+				IndependentCache: opt.IndependentDNSCache && !C.IsIos,
 			},
 			Final: DNSRemoteTag,
 
