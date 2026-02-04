@@ -15,7 +15,6 @@ import (
 	"github.com/sagernet/sing-box/common/monitoring"
 	E "github.com/sagernet/sing/common/exceptions"
 	"github.com/sagernet/sing/common/memory"
-	"github.com/sagernet/sing/service"
 	"google.golang.org/grpc"
 )
 
@@ -266,7 +265,7 @@ func (h *HiddifyInstance) UrlTest(in *UrlTestRequest) (*hcommon.Response, error)
 	if box == nil {
 		return nil, E.New("service not ready")
 	}
-	monitor := service.FromContext[monitoring.OutboundMonitoring](h.Context())
+	monitor := monitoring.Get(h.Context())
 	monitor.TestNow(groupTag)
 	// router := box.Outbound()
 	// abstractOutboundGroup, isLoaded := router.Outbound(groupTag)
