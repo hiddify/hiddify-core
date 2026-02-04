@@ -391,7 +391,7 @@
 | ----- | ---- | ----- | ----------- |
 | tag | [string](#string) |  |  |
 | type | [string](#string) |  |  |
-| selected | [OutboundInfo](#hcore-OutboundInfo) |  |  |
+| selected | [string](#string) |  |  |
 | selectable | [bool](#bool) |  |  |
 | Is_expand | [bool](#bool) |  |  |
 | items | [OutboundInfo](#hcore-OutboundInfo) | repeated |  |
@@ -431,7 +431,8 @@
 | ipinfo | [IpInfo](#hcore-IpInfo) | optional |  |
 | is_selected | [bool](#bool) |  |  |
 | is_group | [bool](#bool) |  |  |
-| group_selected_outbound | [OutboundInfo](#hcore-OutboundInfo) | optional |  |
+| group_selected_tag | [string](#string) | optional |  |
+| group_selected_tag_display | [string](#string) | optional |  |
 | is_secure | [bool](#bool) |  |  |
 | is_visible | [bool](#bool) |  |  |
 | port | [uint32](#uint32) |  |  |

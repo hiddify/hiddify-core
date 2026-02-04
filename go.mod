@@ -192,11 +192,11 @@ require (
 )
 
 require (
-	github.com/hiddify/ray2sing v0.0.0-20260203105423-c6f13a150723
+	github.com/hiddify/ray2sing v0.0.0-20260203121606-5c3b2015b61f
 	github.com/sagernet/sing-box v1.13.0
 )
 
-replace github.com/sagernet/sing-box => github.com/hiddify/hiddify-sing-box v1.8.9-0.20260202224159-b45f64cc236d
+replace github.com/sagernet/sing-box => github.com/hiddify/hiddify-sing-box e94ba2d9..681667db
 
 // replace github.com/sagernet/sing-box => ../../h-sing-box
 

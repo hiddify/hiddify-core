@@ -9,14 +9,13 @@ import (
 	"github.com/hiddify/hiddify-core/v2/config"
 	"github.com/hiddify/hiddify-core/v2/db"
 	hcommon "github.com/hiddify/hiddify-core/v2/hcommon"
-	adapter "github.com/sagernet/sing-box/adapter"
 	"github.com/sagernet/sing-box/common/conntrack"
 	"github.com/sagernet/sing-box/protocol/group"
 
-	common "github.com/sagernet/sing/common"
-	"github.com/sagernet/sing/common/batch"
+	"github.com/sagernet/sing-box/common/monitoring"
 	E "github.com/sagernet/sing/common/exceptions"
 	"github.com/sagernet/sing/common/memory"
+	"github.com/sagernet/sing/service"
 	"google.golang.org/grpc"
 )
 
@@ -231,17 +230,12 @@ func (h *HiddifyInstance) SelectOutbound(in *SelectOutboundRequest) (*hcommon.Re
 		}
 		Log(LogLevel_DEBUG, LogType_CORE, "Trying to ping outbound: ", in.OutboundTag)
 		go func() {
-			for _, detour := range box.Outbound().Outbounds() {
-				if urlTest, ok := detour.(*group.URLTest); ok {
-					if urlTest.ForceRecheckOutbound(in.OutboundTag) == nil {
-						break
-					}
-				}
-			}
+			monitor := monitoring.Get(h.Context())
+			monitor.TestNow(in.OutboundTag)
 		}()
-		if urltesHistory := h.UrlTestHistory(); urltesHistory != nil {
-			urltesHistory.Observer().Emit(2)
-		}
+		// if urltesHistory := h.UrlTestHistory(); urltesHistory != nil {
+		// 	urltesHistory.Observer().Emit(2)
+		// }
 	}
 	return &hcommon.Response{
 		Code:    hcommon.ResponseCode_OK,
@@ -272,59 +266,60 @@ func (h *HiddifyInstance) UrlTest(in *UrlTestRequest) (*hcommon.Response, error)
 	if box == nil {
 		return nil, E.New("service not ready")
 	}
+	monitor := service.FromContext[monitoring.OutboundMonitoring](h.Context())
+	monitor.TestNow(groupTag)
+	// router := box.Outbound()
+	// abstractOutboundGroup, isLoaded := router.Outbound(groupTag)
+	// if !isLoaded {
+	// 	return &hcommon.Response{
+	// 		Code:    hcommon.ResponseCode_FAILED,
+	// 		Message: E.New("outbound group not found: ", in.GroupTag).Error(),
+	// 	}, E.New("outbound group not found: ", groupTag)
+	// }
+	// outboundGroup, isOutboundGroup := abstractOutboundGroup.(adapter.OutboundGroup)
+	// if !isOutboundGroup {
+	// 	return &hcommon.Response{
+	// 		Code:    hcommon.ResponseCode_FAILED,
+	// 		Message: E.New("outbound is not a group: ", in.GroupTag).Error(),
+	// 	}, E.New("outbound is not a group: ", groupTag)
+	// }
 
-	router := box.Outbound()
-	abstractOutboundGroup, isLoaded := router.Outbound(groupTag)
-	if !isLoaded {
-		return &hcommon.Response{
-			Code:    hcommon.ResponseCode_FAILED,
-			Message: E.New("outbound group not found: ", in.GroupTag).Error(),
-		}, E.New("outbound group not found: ", groupTag)
-	}
-	outboundGroup, isOutboundGroup := abstractOutboundGroup.(adapter.OutboundGroup)
-	if !isOutboundGroup {
-		return &hcommon.Response{
-			Code:    hcommon.ResponseCode_FAILED,
-			Message: E.New("outbound is not a group: ", in.GroupTag).Error(),
-		}, E.New("outbound is not a group: ", groupTag)
-	}
+	// if urlTest, isURLTest := abstractOutboundGroup.(*group.URLTest); isURLTest {
+	// 	go func() {
+	// 		for _, p := range router.Outbounds() {
+	// 			if p.Tag() == groupTag {
+	// 				continue
+	// 			}
+	// 			if group, isGroup := p.(adapter.OutboundGroup); isGroup {
+	// 				urlTest.ForceRecheckOutbound(group.Now())
+	// 			}
+	// 		}
+	// 		urlTest.CheckOutbounds()
+	// 	}()
+	// } else {
+	// 	historyStorage := h.UrlTestHistory()
+	// 	outbounds := common.Filter(common.Map(outboundGroup.All(), func(it string) adapter.Outbound {
+	// 		itOutbound, _ := router.Outbound(it)
+	// 		return itOutbound
+	// 	}), func(it adapter.Outbound) bool {
+	// 		if it == nil {
+	// 			return false
+	// 		}
+	// 		_, isGroup := it.(adapter.OutboundGroup)
+	// 		return !isGroup
+	// 	})
+	// 	b, _ := batch.New(h.Context(), batch.WithConcurrencyNum[any](10))
+	// 	for _, detour := range outbounds {
+	// 		outboundToTest := detour
+	// 		outboundTag := outboundToTest.Tag()
+	// 		b.Go(outboundTag, func() (any, error) {
+	// 			instance := box
 
-	if urlTest, isURLTest := abstractOutboundGroup.(*group.URLTest); isURLTest {
-		go func() {
-			for _, p := range router.Outbounds() {
-				if p.Tag() == groupTag {
-					continue
-				}
-				if group, isGroup := p.(adapter.OutboundGroup); isGroup {
-					urlTest.ForceRecheckOutbound(group.Now())
-				}
-			}
-			urlTest.CheckOutbounds()
-		}()
-	} else {
-		historyStorage := h.UrlTestHistory()
-		outbounds := common.Filter(common.Map(outboundGroup.All(), func(it string) adapter.Outbound {
-			itOutbound, _ := router.Outbound(it)
-			return itOutbound
-		}), func(it adapter.Outbound) bool {
-			if it == nil {
-				return false
-			}
-			_, isGroup := it.(adapter.OutboundGroup)
-			return !isGroup
-		})
-		b, _ := batch.New(h.Context(), batch.WithConcurrencyNum[any](10))
-		for _, detour := range outbounds {
-			outboundToTest := detour
-			outboundTag := outboundToTest.Tag()
-			b.Go(outboundTag, func() (any, error) {
-				instance := box
-
-				group.CheckOutbound(instance.Logger(), h.Context(), historyStorage, router, "", outboundToTest, nil)
-				return nil, nil
-			})
-		}
-	}
+	// 			group.CheckOutbound(instance.Logger(), h.Context(), historyStorage, router, "", outboundToTest, nil)
+	// 			return nil, nil
+	// 		})
+	// 	}
+	// }
 
 	return &hcommon.Response{
 		Code:    hcommon.ResponseCode_OK,

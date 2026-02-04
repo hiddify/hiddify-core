@@ -4,8 +4,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/hiddify/hiddify-core/v2/config"
 	hcommon "github.com/hiddify/hiddify-core/v2/hcommon"
 	"github.com/sagernet/sing-box/adapter"
+	"github.com/sagernet/sing-box/common/monitoring"
 	G "github.com/sagernet/sing-box/protocol/group"
 	"github.com/sagernet/sing/service"
 	"google.golang.org/grpc"
@@ -13,26 +15,33 @@ import (
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 )
 
-func (h *HiddifyInstance) GetProxyInfo(detour adapter.Outbound, endpoint adapter.Endpoint) *OutboundInfo {
-	historyStorage := h.UrlTestHistory()
-	if historyStorage == nil {
-		return nil
-	}
+func (h *HiddifyInstance) GetProxyInfo(url_test_history *adapter.URLTestHistory, detour adapter.Outbound) *OutboundInfo {
+	// historyStorage := h.UrlTestHistory()
+	// if historyStorage == nil {
+	// 	return nil
+	// }
 	out := &OutboundInfo{}
-	realTag := ""
-	if detour != nil {
-		out.Tag = detour.Tag()
-		out.Type = detour.Type()
-		if _, isGroup := detour.(adapter.OutboundGroup); isGroup {
-			out.IsGroup = true
-		}
-		realTag = adapter.OutboundTag(detour)
-	} else if endpoint != nil {
-		out.Tag = endpoint.Tag()
-		out.Type = endpoint.Type()
-		realTag = out.Tag
+	// realTag := ""
+
+	out.Tag = detour.Tag()
+	out.Type = detour.Type()
+	if group, isGroup := detour.(adapter.OutboundGroup); isGroup {
+		out.IsGroup = true
+		gnow := group.Now()
+		out.GroupSelectedTag = &gnow
 	}
-	url_test_history := historyStorage.LoadURLTestHistory(realTag)
+	out.TagDisplay = TrimTagName(out.Tag)
+
+	if tag := monitoring.RealTag(detour); tag != "" {
+		dtag := TrimTagName(tag)
+		out.GroupSelectedTagDisplay = &dtag
+	}
+	// realTag = adapter.OutboundTag(detour)
+
+	// realTag = out.Tag
+
+	// url_test_history := historyStorage.LoadURLTestHistory(realTag)
+
 	if url_test_history != nil {
 		out.UrlTestTime = timestamppb.New(url_test_history.Time)
 		out.UrlTestDelay = int32(url_test_history.Delay)
@@ -55,7 +64,7 @@ func (h *HiddifyInstance) GetProxyInfo(detour adapter.Outbound, endpoint adapter
 	return out
 }
 
-func (h *HiddifyInstance) GetAllProxiesInfo(onlyGroupitems bool) *OutboundGroupList {
+func (h *HiddifyInstance) GetAllProxiesInfo(hismap map[string]*adapter.URLTestHistory, onlyGroupitems bool) *OutboundGroupList {
 	ctx, box := h.Context(), h.Box()
 	if ctx == nil || box == nil {
 		return nil
@@ -65,14 +74,16 @@ func (h *HiddifyInstance) GetAllProxiesInfo(onlyGroupitems bool) *OutboundGroupL
 	outbounds_converted := make(map[string]*OutboundInfo, 0)
 	var iGroups []adapter.OutboundGroup
 	for _, it := range box.Outbound().Outbounds() {
+		his, _ := hismap[it.Tag()]
+		outbounds_converted[it.Tag()] = h.GetProxyInfo(his, it)
 		if group, isGroup := it.(adapter.OutboundGroup); isGroup {
 			iGroups = append(iGroups, group)
+			// h.Box().Logger().Info("Outbound group found: ", group.Tag(), outbounds_converted[it.Tag()], fmt.Sprint("his", his))
 		}
-
-		outbounds_converted[it.Tag()] = h.GetProxyInfo(it, nil)
 	}
 	for _, it := range box.Endpoint().Endpoints() {
-		outbounds_converted[it.Tag()] = h.GetProxyInfo(nil, it)
+		his, _ := hismap[it.Tag()]
+		outbounds_converted[it.Tag()] = h.GetProxyInfo(his, it)
 	}
 
 	var groups OutboundGroupList
@@ -82,8 +93,9 @@ func (h *HiddifyInstance) GetAllProxiesInfo(onlyGroupitems bool) *OutboundGroupL
 		group.Type = iGroup.Type()
 		_, group.Selectable = iGroup.(*G.Selector)
 		selectedTag := iGroup.Now()
-		group.Selected = outbounds_converted[selectedTag]
-		outbounds_converted[iGroup.Tag()].GroupSelectedOutbound = group.Selected
+		group.Selected = selectedTag
+
+		// outbounds_converted[iGroup.Tag()].GroupSelectedOutbound = &group.Selected
 		if cacheFile != nil {
 			if isExpand, loaded := cacheFile.LoadGroupExpand(group.Tag); loaded {
 				group.IsExpand = isExpand
@@ -99,7 +111,7 @@ func (h *HiddifyInstance) GetAllProxiesInfo(onlyGroupitems bool) *OutboundGroupL
 
 			group.Items = append(group.Items, pinfo)
 			pinfo.IsVisible = !strings.Contains(itemTag, "§hide§")
-			pinfo.TagDisplay = TrimTagName(itemTag)
+
 		}
 		if len(group.Items) == 0 {
 			continue
@@ -125,26 +137,28 @@ func (s *CoreService) MainOutboundsInfo(req *hcommon.Empty, stream grpc.ServerSt
 func (h *HiddifyInstance) AllProxiesInfoStream(stream grpc.ServerStreamingServer[OutboundGroupList], onlyMain bool) error {
 
 	if ctx, urlTestHistory := h.Context(), h.UrlTestHistory(); ctx != nil && urlTestHistory != nil {
-		urltestch, done, err := urlTestHistory.Observer().Subscribe()
-		defer urlTestHistory.Observer().UnSubscribe(urltestch)
+		monitor := monitoring.Get(h.Context())
+		observer, err := monitor.GroupObserver(config.OutboundSelectTag)
 		if err != nil {
 			return err
 		}
-		stream.Send(h.GetAllProxiesInfo(onlyMain))
+		urltestch, done, err := observer.Subscribe()
+		defer observer.UnSubscribe(urltestch)
+		if err != nil {
+			return err
+		}
+		stream.Send(h.GetAllProxiesInfo(monitor.OutboundsHistory(config.OutboundSelectTag), onlyMain))
 		debouncer := NewDebouncer(500 * time.Millisecond)
 		defer debouncer.Stop()
 
 		for {
 			select {
-			case u := <-urltestch:
-				if u == 2 {
-					stream.Send(h.GetAllProxiesInfo(onlyMain))
-				} else {
-					debouncer.Hit()
-				}
+			case <-urltestch:
+
+				debouncer.Hit()
 
 			case <-debouncer.C():
-				if err := stream.Send(h.GetAllProxiesInfo(onlyMain)); err != nil {
+				if err := stream.Send(h.GetAllProxiesInfo(monitor.OutboundsHistory(config.OutboundSelectTag), onlyMain)); err != nil {
 					return err
 				}
 

@@ -34,7 +34,8 @@ const (
 	OutboundBypassTag = "bypass §hide§"
 	// OutboundBlockTag          = "block §hide§"
 	OutboundSelectTag         = "select"
-	OutboundURLTestTag        = "auto"
+	OutboundURLTestTag        = "lowest"
+	OutboundRoundRobinTag     = "parallel"
 	OutboundDNSTag            = "dns-out §hide§"
 	OutboundDirectFragmentTag = "direct-fragment §hide§"
 
@@ -66,7 +67,8 @@ func BuildConfig(ctx context.Context, hopts *HiddifyOptions, inputOpt *ReadOptio
 		options.Route = input.Route
 	}
 
-	setClashAPI(&options, hopts)
+	setExperimental(&options, hopts)
+
 	setLog(&options, hopts)
 	setInbound(&options, hopts)
 	staticIPs := make(map[string][]string)
@@ -217,21 +219,54 @@ func setOutbounds(options *option.Options, input *option.Options, opt *HiddifyOp
 			opt.ConnectionTestUrls = []string{opt.ConnectionTestUrl}
 		}
 	}
+	// urlTest := option.Outbound{
+	// 	Type: C.TypeURLTest,
+	// 	Tag:  OutboundURLTestTag,
+	// 	Options: &option.URLTestOutboundOptions{
+	// 		Outbounds: tags,
+	// 		URL:       opt.ConnectionTestUrl,
+	// 		URLs:      opt.ConnectionTestUrls,
+	// 		Interval:  badoption.Duration(opt.URLTestInterval.Duration()),
+	// 		// IdleTimeout: badoption.Duration(opt.URLTestIdleTimeout.Duration()),
+	// 		Tolerance:                 1,
+	// 		IdleTimeout:               badoption.Duration(opt.URLTestInterval.Duration().Nanoseconds() * 3),
+	// 		InterruptExistConnections: true,
+	// 	},
+	// }
 	urlTest := option.Outbound{
-		Type: C.TypeURLTest,
+		Type: C.TypeBalancer,
 		Tag:  OutboundURLTestTag,
-		Options: &option.URLTestOutboundOptions{
-			Outbounds: tags,
-			URL:       opt.ConnectionTestUrl,
-			URLs:      opt.ConnectionTestUrls,
-			Interval:  badoption.Duration(opt.URLTestInterval.Duration()),
+		Options: &option.BalancerOutboundOptions{
+			Outbounds:            tags,
+			Strategy:             "lowest-delay",
+			DelayAcceptableRatio: 2,
+			// URL:       opt.ConnectionTestUrl,
+			// URLs:      opt.ConnectionTestUrls,
+			// Interval:  badoption.Duration(opt.URLTestInterval.Duration()),
 			// IdleTimeout: badoption.Duration(opt.URLTestIdleTimeout.Duration()),
-			Tolerance:                 1,
-			IdleTimeout:               badoption.Duration(opt.URLTestInterval.Duration().Nanoseconds() * 3),
+			Tolerance: 1,
+			// IdleTimeout:               badoption.Duration(opt.URLTestInterval.Duration().Nanoseconds() * 3),
 			InterruptExistConnections: true,
 		},
 	}
-	defaultSelect := urlTest.Tag
+
+	balancer := option.Outbound{
+		Type: C.TypeBalancer,
+		Tag:  OutboundRoundRobinTag,
+		Options: &option.BalancerOutboundOptions{
+			Outbounds:            tags,
+			Strategy:             "round-robin",
+			DelayAcceptableRatio: 2,
+			// URL:       opt.ConnectionTestUrl,
+			// URLs:      opt.ConnectionTestUrls,
+			// Interval:  badoption.Duration(opt.URLTestInterval.Duration()),
+			// IdleTimeout: badoption.Duration(opt.URLTestIdleTimeout.Duration()),
+			Tolerance: 1,
+			// IdleTimeout:               badoption.Duration(opt.URLTestInterval.Duration().Nanoseconds() * 3),
+			InterruptExistConnections: true,
+		},
+	}
+	defaultSelect := balancer.Tag
 
 	for _, tag := range tags {
 		if strings.Contains(tag, "§default§") {
@@ -242,13 +277,13 @@ func setOutbounds(options *option.Options, input *option.Options, opt *HiddifyOp
 		Type: C.TypeSelector,
 		Tag:  OutboundSelectTag,
 		Options: &option.SelectorOutboundOptions{
-			Outbounds:                 append([]string{urlTest.Tag}, tags...),
+			Outbounds:                 append([]string{urlTest.Tag, balancer.Tag}, tags...),
 			Default:                   defaultSelect,
 			InterruptExistConnections: true,
 		},
 	}
 
-	outbounds = append([]option.Outbound{selector, urlTest}, outbounds...)
+	outbounds = append([]option.Outbound{selector, balancer, urlTest}, outbounds...)
 	options.Endpoints = endpoints
 	options.Outbounds = append(
 		outbounds,
@@ -296,24 +331,37 @@ func contains(slice []string, item string) bool {
 	return false
 }
 
-func setClashAPI(options *option.Options, opt *HiddifyOptions) {
-	if opt.EnableClashApi {
-		if opt.ClashApiSecret == "" {
-			opt.ClashApiSecret = generateRandomString(16)
+func setExperimental(options *option.Options, hopt *HiddifyOptions) {
+	if len(hopt.ConnectionTestUrls) == 0 {
+		hopt.ConnectionTestUrls = []string{hopt.ConnectionTestUrl, "http://captive.apple.com/generate_204", "https://cp.cloudflare.com", "https://google.com/generate_204"}
+		if isBlockedConnectionTestUrl(hopt.ConnectionTestUrl) {
+			hopt.ConnectionTestUrls = []string{hopt.ConnectionTestUrl}
+		}
+	}
+	if hopt.EnableClashApi {
+		if hopt.ClashApiSecret == "" {
+			hopt.ClashApiSecret = generateRandomString(16)
 		}
 		options.Experimental = &option.ExperimentalOptions{
 			UnifiedDelay: &option.UnifiedDelayOptions{
 				Enabled: true,
 			},
 			ClashAPI: &option.ClashAPIOptions{
-				ExternalController: fmt.Sprintf("%s:%d", "127.0.0.1", opt.ClashApiPort),
-				Secret:             opt.ClashApiSecret,
+				ExternalController: fmt.Sprintf("%s:%d", "127.0.0.1", hopt.ClashApiPort),
+				Secret:             hopt.ClashApiSecret,
 			},
 
 			CacheFile: &option.CacheFileOptions{
 				Enabled:         true,
 				StoreWARPConfig: true,
 				Path:            "data/clash.db",
+			},
+
+			Monitoring: &option.MonitoringOptions{
+				URLs:           hopt.ConnectionTestUrls,
+				Interval:       badoption.Duration(hopt.URLTestInterval.Duration()),
+				DebounceWindow: badoption.Duration(time.Millisecond * 500),
+				IdleTimeout:    badoption.Duration(hopt.URLTestInterval.Duration().Milliseconds() * 3),
 			},
 		}
 	}
