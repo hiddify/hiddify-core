@@ -9,6 +9,7 @@ import (
 	"github.com/hiddify/hiddify-core/v2/config"
 	"github.com/hiddify/hiddify-core/v2/db"
 	hcommon "github.com/hiddify/hiddify-core/v2/hcommon"
+	"github.com/sagernet/sing-box/adapter"
 	"github.com/sagernet/sing-box/common/conntrack"
 	"github.com/sagernet/sing-box/protocol/group"
 
@@ -36,18 +37,22 @@ func (h *HiddifyInstance) readStatus(prev *SystemInfo) *SystemInfo {
 			message.Downlink = message.DownlinkTotal - prev.DownlinkTotal
 		}
 		if box := h.Box(); box != nil {
+			current := ""
 			if currentOutBound, ok := box.Outbound().Outbound(config.OutboundSelectTag); ok {
 				if selectOutBound, ok := currentOutBound.(*group.Selector); ok {
-					message.CurrentOutbound = TrimTagName(selectOutBound.Now())
+					current = selectOutBound.Now()
+					message.CurrentOutbound = TrimTagName(current)
 				}
 			}
-			if message.CurrentOutbound == config.OutboundURLTestTag {
-				if currentOutBound, ok := box.Outbound().Outbound(config.OutboundURLTestTag); ok {
-					if urltest, ok := currentOutBound.(*group.URLTest); ok {
-						message.CurrentOutbound = fmt.Sprint(message.CurrentOutbound, "→", TrimTagName(urltest.Now()))
+			// if message.CurrentOutbound == config.OutboundURLTestTag {
+			if currentOutBound, ok := box.Outbound().Outbound(current); ok {
+				if g, ok := currentOutBound.(adapter.OutboundGroup); ok {
+					if now := g.Now(); now != "" {
+						message.CurrentOutbound = fmt.Sprint(message.CurrentOutbound, "→", TrimTagName(now))
 					}
 				}
 			}
+			// }
 		}
 
 		if prev == nil || prev.CurrentProfile == "" || message.UplinkTotal < 1000000 {
