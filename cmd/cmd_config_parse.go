@@ -38,6 +38,9 @@ func parse(path string) error {
 	if err != nil {
 		return err
 	}
+	if err := libbox.CheckConfig(string(configStr)); err != nil {
+		return fmt.Errorf("config check failed: %w", err)
+	}
 
 	if commandParseOutputPath != "" {
 		outputPath, _ := filepath.Abs(filepath.Join(workingDir, commandParseOutputPath))

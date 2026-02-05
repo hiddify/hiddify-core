@@ -48,7 +48,7 @@ const (
 
 var (
 	OutboundMainDetour       = OutboundSelectTag
-	OutboundWARPConfigDetour = OutboundDirectTag
+	OutboundWARPConfigDetour = OutboundDirectFragmentTag
 	PredefinedOutboundTags   = []string{OutboundDirectTag, OutboundBypassTag, OutboundSelectTag, OutboundURLTestTag, OutboundDNSTag, OutboundDirectFragmentTag, WARPConfigTag}
 )
 
@@ -144,7 +144,7 @@ func setOutbounds(options *option.Options, input *option.Options, opt *HiddifyOp
 			if !strings.Contains(out.Tag, "§hide§") {
 				tags = append(tags, out.Tag)
 			}
-			OutboundWARPConfigDetour = OutboundSelectTag
+			// OutboundWARPConfigDetour = OutboundSelectTag
 			out = *patchHiddifyWarpFromConfig(&out, *opt)
 			outbounds = append(outbounds, out)
 		}
@@ -266,24 +266,31 @@ func setOutbounds(options *option.Options, input *option.Options, opt *HiddifyOp
 			InterruptExistConnections: true,
 		},
 	}
-	defaultSelect := balancer.Tag
+	defaultSelect := tags[0]
 
 	for _, tag := range tags {
 		if strings.Contains(tag, "§default§") {
 			defaultSelect = "§default§"
 		}
 	}
+
+	selectorTags := tags
+	if len(tags) > 1 {
+		outbounds = append([]option.Outbound{balancer, urlTest}, outbounds...)
+		selectorTags = append([]string{urlTest.Tag, balancer.Tag}, selectorTags...)
+		defaultSelect = balancer.Tag
+	}
 	selector := option.Outbound{
 		Type: C.TypeSelector,
 		Tag:  OutboundSelectTag,
 		Options: &option.SelectorOutboundOptions{
-			Outbounds:                 append([]string{urlTest.Tag, balancer.Tag}, tags...),
+			Outbounds:                 selectorTags,
 			Default:                   defaultSelect,
 			InterruptExistConnections: true,
 		},
 	}
+	outbounds = append([]option.Outbound{selector}, outbounds...)
 
-	outbounds = append([]option.Outbound{selector, balancer, urlTest}, outbounds...)
 	options.Endpoints = endpoints
 	options.Outbounds = append(
 		outbounds,

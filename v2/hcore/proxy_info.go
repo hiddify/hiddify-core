@@ -1,6 +1,7 @@
 package hcore
 
 import (
+	"fmt"
 	"strings"
 	"time"
 
@@ -9,6 +10,7 @@ import (
 	"github.com/sagernet/sing-box/adapter"
 	"github.com/sagernet/sing-box/common/monitoring"
 	G "github.com/sagernet/sing-box/protocol/group"
+	"github.com/sagernet/sing-box/protocol/group/balancer"
 	"github.com/sagernet/sing/service"
 	"google.golang.org/grpc"
 
@@ -20,11 +22,12 @@ func (h *HiddifyInstance) GetProxyInfo(url_test_history *adapter.URLTestHistory,
 	// if historyStorage == nil {
 	// 	return nil
 	// }
+
 	out := &OutboundInfo{}
 	// realTag := ""
 
 	out.Tag = detour.Tag()
-	out.Type = detour.Type()
+	out.Type = detour.DisplayType()
 	if group, isGroup := detour.(adapter.OutboundGroup); isGroup {
 		out.IsGroup = true
 		gnow := group.Now()
@@ -35,16 +38,29 @@ func (h *HiddifyInstance) GetProxyInfo(url_test_history *adapter.URLTestHistory,
 	if tag := monitoring.RealTag(detour); tag != "" {
 		dtag := TrimTagName(tag)
 		out.GroupSelectedTagDisplay = &dtag
+		if balancer, ok := detour.(*balancer.Balancer); ok {
+			if stg := balancer.Strategy(); stg != "lowest-delay" {
+				out.GroupSelectedTagDisplay = &stg
+			}
+		}
 	}
 	// realTag = adapter.OutboundTag(detour)
 
 	// realTag = out.Tag
 
 	// url_test_history := historyStorage.LoadURLTestHistory(realTag)
+	if trafficManager := h.TrafficManager(); trafficManager != nil {
+		up, down := trafficManager.OutboundUsage(out.Tag)
+		out.Upload = up
+		out.Download = down
 
+	}
 	if url_test_history != nil {
 		out.UrlTestTime = timestamppb.New(url_test_history.Time)
 		out.UrlTestDelay = int32(url_test_history.Delay)
+		if url_test_history.IsFromCache {
+			out.UrlTestDelay = 0
+		}
 		if url_test_history.IpInfo != nil {
 			out.Ipinfo = &IpInfo{
 				Ip:          url_test_history.IpInfo.IP,
@@ -78,7 +94,9 @@ func (h *HiddifyInstance) GetAllProxiesInfo(hismap map[string]*adapter.URLTestHi
 		outbounds_converted[it.Tag()] = h.GetProxyInfo(his, it)
 		if group, isGroup := it.(adapter.OutboundGroup); isGroup {
 			iGroups = append(iGroups, group)
-			// h.Box().Logger().Info("Outbound group found: ", group.Tag(), outbounds_converted[it.Tag()], fmt.Sprint("his", his))
+
+			box.Logger().Info("Outbound  found: ", it.Tag(), outbounds_converted[it.Tag()], fmt.Sprint("his", his))
+
 		}
 	}
 	for _, it := range box.Endpoint().Endpoints() {
@@ -151,6 +169,9 @@ func (h *HiddifyInstance) AllProxiesInfoStream(stream grpc.ServerStreamingServer
 		debouncer := NewDebouncer(500 * time.Millisecond)
 		defer debouncer.Stop()
 
+		timer2 := time.NewTicker(10 * time.Second)
+		defer timer2.Stop()
+
 		for {
 			select {
 			case <-urltestch:
@@ -161,7 +182,10 @@ func (h *HiddifyInstance) AllProxiesInfoStream(stream grpc.ServerStreamingServer
 				if err := stream.Send(h.GetAllProxiesInfo(monitor.OutboundsHistory(config.OutboundSelectTag), onlyMain)); err != nil {
 					return err
 				}
-
+			case <-timer2.C:
+				if err := stream.Send(h.GetAllProxiesInfo(monitor.OutboundsHistory(config.OutboundSelectTag), onlyMain)); err != nil {
+					return err
+				}
 			case <-stream.Context().Done():
 				return nil
 			case <-ctx.Done():

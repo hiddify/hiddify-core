@@ -40,9 +40,9 @@ func Pause() {
 func Wake() {
 	if box := static.Instance(); box != nil {
 		if manager := box.PauseManager(); manager != nil {
-			if !C.IsIos {
-				manager.DeviceWake()
-			}
+			// if !C.IsIos {
+			manager.DeviceWake()
+			// }
 		}
 	}
 
