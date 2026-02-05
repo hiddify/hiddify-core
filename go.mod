@@ -196,7 +196,7 @@ require (
 	github.com/sagernet/sing-box v1.13.0
 )
 
-replace github.com/sagernet/sing-box => github.com/hiddify/hiddify-sing-box v1.8.9-0.20260204230442-681667db7c3a
+replace github.com/sagernet/sing-box => github.com/hiddify/hiddify-sing-box v1.8.9-0.20260205000817-0a968feb21fe
 
 // replace github.com/sagernet/sing-box => ../../h-sing-box
 

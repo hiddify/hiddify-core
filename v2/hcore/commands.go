@@ -260,13 +260,13 @@ func (h *HiddifyInstance) UrlTest(in *UrlTestRequest) (*hcommon.Response, error)
 	// 	Message: "",
 	// }, nil
 
-	groupTag := in.GroupTag
+	// groupTag := in.GroupTag
 	box := h.Box()
 	if box == nil {
 		return nil, E.New("service not ready")
 	}
 	monitor := monitoring.Get(h.Context())
-	monitor.TestNow(groupTag)
+	monitor.TestNow(config.OutboundSelectTag)
 	// router := box.Outbound()
 	// abstractOutboundGroup, isLoaded := router.Outbound(groupTag)
 	// if !isLoaded {
