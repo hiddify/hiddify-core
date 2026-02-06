@@ -1,7 +1,6 @@
 package hcore
 
 import (
-	"fmt"
 	"strings"
 	"time"
 
@@ -89,19 +88,29 @@ func (h *HiddifyInstance) GetAllProxiesInfo(hismap map[string]*adapter.URLTestHi
 
 	outbounds_converted := make(map[string]*OutboundInfo, 0)
 	var iGroups []adapter.OutboundGroup
-	for _, it := range box.Outbound().Outbounds() {
-		his, _ := hismap[it.Tag()]
-		outbounds_converted[it.Tag()] = h.GetProxyInfo(his, it)
-		if group, isGroup := it.(adapter.OutboundGroup); isGroup {
-			iGroups = append(iGroups, group)
-
-			box.Logger().Info("Outbound  found: ", it.Tag(), outbounds_converted[it.Tag()], fmt.Sprint("his", his))
-
-		}
-	}
 	for _, it := range box.Endpoint().Endpoints() {
 		his, _ := hismap[it.Tag()]
 		outbounds_converted[it.Tag()] = h.GetProxyInfo(his, it)
+	}
+	for _, it := range box.Outbound().Outbounds() {
+		his, _ := hismap[it.Tag()]
+		outbounds_converted[it.Tag()] = h.GetProxyInfo(his, it)
+
+	}
+	for _, it := range box.Outbound().Outbounds() {
+		if group, isGroup := it.(adapter.OutboundGroup); isGroup {
+			iGroups = append(iGroups, group)
+			// up := 0
+			// down := 0
+			// for _, itemTag := range group.All() {
+			// 	if pinfo, ok := outbounds_converted[itemTag]; ok {
+			// 		up += int(pinfo.Upload)
+			// 		down += int(pinfo.Download)
+			// 	}
+			// }
+			// outbounds_converted[it.Tag()].Upload += int64(up)
+			// outbounds_converted[it.Tag()].Download += int64(down)
+		}
 	}
 
 	var groups OutboundGroupList
@@ -134,6 +143,7 @@ func (h *HiddifyInstance) GetAllProxiesInfo(hismap map[string]*adapter.URLTestHi
 		if len(group.Items) == 0 {
 			continue
 		}
+
 		groups.Items = append(groups.Items, &group)
 	}
 

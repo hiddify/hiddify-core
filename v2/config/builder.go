@@ -14,18 +14,18 @@ import (
 
 	C "github.com/sagernet/sing-box/constant"
 	mdns "github.com/sagernet/sing-box/dns"
-	"github.com/sagernet/sing-box/hiddify/ipinfo"
 	"github.com/sagernet/sing-box/option"
 	"github.com/sagernet/sing/common/json/badoption"
 	"github.com/sagernet/wireguard-go/hiddify"
 )
 
 const (
-	DNSRemoteTag       = "dns-remote"
-	DNSLocalTag        = "dns-local"
-	DNSStaticTag       = "dns-static"
-	DNSDirectTag       = "dns-direct"
-	DNSRemoteNoWarpTag = "dns-remote-no-warp"
+	DNSRemoteTag         = "dns-remote"
+	DNSRemoteTagFallback = "dns-remote-fallback"
+	DNSLocalTag          = "dns-local"
+	DNSStaticTag         = "dns-static"
+	DNSDirectTag         = "dns-direct"
+	DNSRemoteNoWarpTag   = "dns-remote-no-warp"
 	// DNSBlockTag        = "dns-block"
 	DNSFakeTag         = "dns-fake"
 	DNSTricksDirectTag = "dns-trick-direct"
@@ -35,7 +35,7 @@ const (
 	// OutboundBlockTag          = "block §hide§"
 	OutboundSelectTag         = "select"
 	OutboundURLTestTag        = "lowest"
-	OutboundRoundRobinTag     = "parallel"
+	OutboundRoundRobinTag     = "balance"
 	OutboundDNSTag            = "dns-out §hide§"
 	OutboundDirectFragmentTag = "direct-fragment §hide§"
 
@@ -104,7 +104,11 @@ func getHostnameIfNotIP(inp string) (string, error) {
 		return "", fmt.Errorf("empty hostname: %s", inp)
 	}
 	if net.ParseIP(strings.Trim(inp, "[]")) == nil {
-		return inp, nil
+		u, err := url.Parse(inp)
+		if err != nil {
+			return inp, err
+		}
+		return u.Host, nil
 	}
 	return "", fmt.Errorf("not a hostname: %s", inp)
 }
@@ -516,68 +520,23 @@ func setRoutingOptions(options *option.Options, hopt *HiddifyOptions) error {
 	// 	// )
 	// }
 
-	// dnsRules = append(dnsRules, option.DefaultDNSRule{
-	// 	RawDefaultDNSRule: option.RawDefaultDNSRule{},
-	// 	DNSRuleAction: option.DNSRuleAction{
-	// 		Action: C.RuleActionTypeRoute,
-	// 		RouteOptions: option.DNSRouteActionOptions{
-	// 			Server: DNSStaticTag,
-	// 		},
-	// 	},
-	// },
-	// )
+	dnsRules = append(dnsRules, option.DefaultDNSRule{
+		RawDefaultDNSRule: option.RawDefaultDNSRule{},
+		DNSRuleAction: option.DNSRuleAction{
+			Action: C.RuleActionTypeRoute,
+			RouteOptions: option.DNSRouteActionOptions{
+				Server:         DNSStaticTag,
+				BypassIfFailed: true,
+			},
+		},
+	},
+	)
 	forceDirectRules, err := addForceDirect(options, hopt)
 	if err != nil {
 		return err
 	}
 
 	dnsRules = append(dnsRules, forceDirectRules...)
-
-	if len(hopt.ConnectionTestUrls) > 0 { //To avoid dns bug when using urltest
-		domains := []string{}
-		for _, url := range hopt.ConnectionTestUrls {
-			if host, err := getHostnameIfNotIP(url); err == nil {
-				domains = append(domains, host)
-			}
-		}
-		if len(domains) > 0 {
-			dnsRules = append(dnsRules, option.DefaultDNSRule{
-				RawDefaultDNSRule: option.RawDefaultDNSRule{
-					Domain: domains,
-				},
-				DNSRuleAction: option.DNSRuleAction{
-					Action: C.RuleActionTypeRoute,
-					RouteOptions: option.DNSRouteActionOptions{
-						Server: DNSDirectTag,
-					},
-				},
-			})
-		}
-	}
-	dnsRules = append(dnsRules, option.DefaultDNSRule{
-		RawDefaultDNSRule: option.RawDefaultDNSRule{
-			Domain: []string{"api.cloudflareclient.com"},
-		},
-		DNSRuleAction: option.DNSRuleAction{
-			Action: C.RuleActionTypeRoute,
-			RouteOptions: option.DNSRouteActionOptions{
-				Server: DNSRemoteNoWarpTag,
-			},
-		},
-	})
-	if ipinfoDomains := ipinfo.GetAllIPCheckerDomainsDomains(); len(ipinfoDomains) > 0 { //To avoid dns bug when using urltest
-		dnsRules = append(dnsRules, option.DefaultDNSRule{
-			RawDefaultDNSRule: option.RawDefaultDNSRule{
-				Domain: ipinfoDomains,
-			},
-			DNSRuleAction: option.DNSRuleAction{
-				Action: C.RuleActionTypeRoute,
-				RouteOptions: option.DNSRouteActionOptions{
-					Server: DNSDirectTag,
-				},
-			},
-		})
-	}
 
 	routeRules = append(routeRules, option.Rule{
 		Type: C.RuleTypeDefault,
@@ -716,9 +675,10 @@ func setRoutingOptions(options *option.Options, hopt *HiddifyOptions) error {
 			DNSRuleAction: option.DNSRuleAction{
 				Action: C.RuleActionTypeRoute,
 				RouteOptions: option.DNSRouteActionOptions{
-					Server:       DNSDirectTag,
-					RewriteTTL:   &dnsCPttl,
-					DisableCache: false,
+					Server:         DNSDirectTag,
+					RewriteTTL:     &dnsCPttl,
+					DisableCache:   false,
+					BypassIfFailed: true,
 				},
 			},
 		})
@@ -839,7 +799,8 @@ func setRoutingOptions(options *option.Options, hopt *HiddifyOptions) error {
 			DNSRuleAction: option.DNSRuleAction{
 				Action: C.RuleActionTypeRoute,
 				RouteOptions: option.DNSRouteActionOptions{
-					Server: DNSDirectTag,
+					Server:         DNSDirectTag,
+					BypassIfFailed: true,
 				},
 			},
 		})
@@ -868,7 +829,8 @@ func setRoutingOptions(options *option.Options, hopt *HiddifyOptions) error {
 			DNSRuleAction: option.DNSRuleAction{
 				Action: C.RuleActionTypeRoute,
 				RouteOptions: option.DNSRouteActionOptions{
-					Server: DNSDirectTag,
+					Server:         DNSDirectTag,
+					BypassIfFailed: true,
 				},
 			},
 		})
@@ -952,8 +914,9 @@ func setRoutingOptions(options *option.Options, hopt *HiddifyOptions) error {
 				DNSRuleAction: option.DNSRuleAction{
 					Action: C.RuleActionTypeRoute,
 					RouteOptions: option.DNSRouteActionOptions{
-						Server:       DNSFakeTag,
-						DisableCache: true,
+						Server:         DNSFakeTag,
+						DisableCache:   true,
+						BypassIfFailed: true,
 					},
 				},
 			})
@@ -965,42 +928,57 @@ func setRoutingOptions(options *option.Options, hopt *HiddifyOptions) error {
 		DNSRuleAction: option.DNSRuleAction{
 			Action: C.RuleActionTypeRoute,
 			RouteOptions: option.DNSRouteActionOptions{
-				Server: DNSRemoteTag,
+				Server:         DNSRemoteTag,
+				BypassIfFailed: true,
 			},
 		},
 	},
 	)
 	dnsRules = append(dnsRules, option.DefaultDNSRule{
+		RawDefaultDNSRule: option.RawDefaultDNSRule{},
+		DNSRuleAction: option.DNSRuleAction{
+			Action: C.RuleActionTypeRoute,
+			RouteOptions: option.DNSRouteActionOptions{
+				Server:         DNSRemoteTagFallback,
+				BypassIfFailed: false,
+			},
+		},
+	},
+	)
+	// dnsRules = append(dnsRules, option.DefaultDNSRule{
 
-		RawDefaultDNSRule: option.RawDefaultDNSRule{},
-		DNSRuleAction: option.DNSRuleAction{
-			Action: C.RuleActionTypeRoute,
-			RouteOptions: option.DNSRouteActionOptions{
-				Server: DNSTricksDirectTag,
-			},
-		},
-	},
-	)
-	dnsRules = append(dnsRules, option.DefaultDNSRule{
-		RawDefaultDNSRule: option.RawDefaultDNSRule{},
-		DNSRuleAction: option.DNSRuleAction{
-			Action: C.RuleActionTypeRoute,
-			RouteOptions: option.DNSRouteActionOptions{
-				Server: DNSDirectTag,
-			},
-		},
-	},
-	)
-	dnsRules = append(dnsRules, option.DefaultDNSRule{
-		RawDefaultDNSRule: option.RawDefaultDNSRule{},
-		DNSRuleAction: option.DNSRuleAction{
-			Action: C.RuleActionTypeRoute,
-			RouteOptions: option.DNSRouteActionOptions{
-				Server: DNSLocalTag,
-			},
-		},
-	},
-	)
+	// 	RawDefaultDNSRule: option.RawDefaultDNSRule{},
+	// 	DNSRuleAction: option.DNSRuleAction{
+	// 		Action: C.RuleActionTypeRoute,
+	// 		RouteOptions: option.DNSRouteActionOptions{
+	// 			Server:         DNSTricksDirectTag,
+	// 			BypassIfFailed: true,
+	// 		},
+	// 	},
+	// },
+	// )
+	// dnsRules = append(dnsRules, option.DefaultDNSRule{
+	// 	RawDefaultDNSRule: option.RawDefaultDNSRule{},
+	// 	DNSRuleAction: option.DNSRuleAction{
+	// 		Action: C.RuleActionTypeRoute,
+	// 		RouteOptions: option.DNSRouteActionOptions{
+	// 			Server:         DNSDirectTag,
+	// 			BypassIfFailed: true,
+	// 		},
+	// 	},
+	// },
+	// )
+	// dnsRules = append(dnsRules, option.DefaultDNSRule{
+	// 	RawDefaultDNSRule: option.RawDefaultDNSRule{},
+	// 	DNSRuleAction: option.DNSRuleAction{
+	// 		Action: C.RuleActionTypeRoute,
+	// 		RouteOptions: option.DNSRouteActionOptions{
+	// 			Server: DNSLocalTag,
+	// 			// BypassIfFailed: true,
+	// 		},
+	// 	},
+	// },
+	// )
 
 	for _, dnsRule := range dnsRules {
 		if dnsRule.IsValid() {

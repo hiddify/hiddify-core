@@ -2,7 +2,6 @@ package hcore
 
 import (
 	"context"
-	"fmt"
 	"path/filepath"
 	"time"
 
@@ -83,7 +82,12 @@ func StartService(ctx context.Context, in *StartRequest) (coreResponse *CoreInfo
 	defer static.lock.Unlock()
 
 	if static.CoreState != CoreStates_STOPPED {
-		return errorWrapper(MessageType_ALREADY_STARTED, fmt.Errorf("instance already started"))
+		// return errorWrapper(MessageType_ALREADY_STARTED, fmt.Errorf("instance already started"))
+		return &CoreInfoResponse{
+			CoreState:   static.CoreState,
+			MessageType: MessageType_ALREADY_STARTED,
+			Message:     "instance already started",
+		}, nil
 	}
 	SetCoreStatus(CoreStates_STARTING, MessageType_EMPTY, "")
 
