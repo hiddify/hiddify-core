@@ -16,6 +16,17 @@ import (
 	M "github.com/sagernet/sing/common/metadata"
 )
 
+var DnsDirectTags = []string{
+	DNSStaticTag,
+	DNSDirectTag,
+	DNSLocalTag,
+	DNSTricksDirectTag,
+}
+var DnsRemoteTags = []string{
+	DNSRemoteTag,
+	DNSRemoteTagFallback,
+}
+
 func setDns(options *option.Options, opt *HiddifyOptions, staticIps *map[string][]string) error {
 	remote_dns, err := getDNSServerOptions(DNSRemoteTag, opt.RemoteDnsAddress, DNSDirectTag, OutboundMainDetour)
 	if err != nil {
@@ -58,12 +69,22 @@ func setDns(options *option.Options, opt *HiddifyOptions, staticIps *map[string]
 	// 	return err
 	// }
 
+	multi_dns_direct, err := getMultiDnsServerOptions(DNSMultiDirectTag, DnsDirectTags, false)
+	if err != nil {
+		return err
+	}
+
+	multi_dns_remote, err := getMultiDnsServerOptions(DNSMultiRemoteTag, DnsRemoteTags, true)
+	if err != nil {
+		return err
+	}
+
 	dnsOptions := option.DNSOptions{
 		RawDNSOptions: option.RawDNSOptions{
 			DNSClientOptions: option.DNSClientOptions{
 				IndependentCache: opt.IndependentDNSCache && !C.IsIos,
 			},
-			Final: DNSRemoteTag,
+			Final: DNSMultiRemoteTag,
 
 			Servers: []option.DNSServerOptions{
 				*static_dns,
@@ -73,6 +94,8 @@ func setDns(options *option.Options, opt *HiddifyOptions, staticIps *map[string]
 				*direct_dns,
 				*local_dns,
 				*remote_no_warp_dns,
+				*multi_dns_direct,
+				*multi_dns_remote,
 				// *block_dns,
 			},
 			Rules: []option.DNSRule{},
@@ -116,75 +139,74 @@ func getAllOutboundsOptions(options *option.Options) []any {
 }
 func addForceDirect(options *option.Options, hopt *HiddifyOptions) ([]option.DefaultDNSRule, error) {
 	dnsMap := make(map[string]string)
-	outbounds := getAllOutboundsOptions(options)
+	// outbounds := getAllOutboundsOptions(options)
 
-	for _, outbound := range outbounds {
+	// for _, outbound := range outbounds {
+	// 	// fmt.Println("out", outbound)
+	// 	if server, ok := outbound.(option.ServerOptionsWrapper); ok {
+	// 		serverDomain := server.TakeServerOptions().Server
+	// 		detour := OutboundDirectTag
+	// 		if dialer, ok := outbound.(option.DialerOptionsWrapper); ok {
+	// 			if server_detour := dialer.TakeDialerOptions().Detour; server_detour != "" {
+	// 				detour = server_detour
+	// 			}
+	// 		}
+	// 		fmt.Println("serverDomain", serverDomain, "detour", detour)
 
-		if server, ok := outbound.(option.ServerOptionsWrapper); ok {
-			serverDomain := server.TakeServerOptions().Server
-			detour := OutboundDirectTag
-			if dialer, ok := outbound.(option.DialerOptionsWrapper); ok {
-				if server_detour := dialer.TakeDialerOptions().Detour; server_detour != "" {
-					detour = server_detour
-				}
-			}
+	// 		if host, err := getHostnameIfNotIP(serverDomain); err == nil && host != "" {
+	// 			fmt.Println("serverDomain", serverDomain, "host", host, "detour", detour)
+	// 			if _, ok := dnsMap[host]; !ok || detour == OutboundDirectTag {
+	// 				dnsMap[host] = detour
+	// 			}
+	// 		}
+	// 	}
+	// }
 
-			if host, err := getHostnameIfNotIP(serverDomain); err == nil {
-				if _, ok := dnsMap[host]; !ok || detour == OutboundDirectTag {
-					dnsMap[host] = detour
-				}
-			}
-		}
-	}
-
-	// dnsMap[]
+	// // dnsMap[]
 	forceDirectRules := []option.DefaultDNSRule{}
-	if len(dnsMap) > 0 {
-		unique_dns_detours := make(map[string]bool)
-		for _, detour := range dnsMap {
-			unique_dns_detours[detour] = true
-		}
+	// if len(dnsMap) > 0 {
+	// 	unique_dns_detours := make(map[string]bool)
+	// 	for _, detour := range dnsMap {
+	// 		unique_dns_detours[detour] = true
+	// 	}
 
-		for detour := range unique_dns_detours {
-			domains := []string{}
-			for domain, d := range dnsMap {
-				if d == detour {
-					domains = append(domains, domain)
-				}
-			}
-			if len(domains) == 0 {
-				continue
-			}
-			dns_detour := DNSDirectTag
-			if detour != OutboundDirectTag {
-				dns_detour = "dns-" + detour
-				remote_dns, err := getDNSServerOptions(dns_detour, hopt.RemoteDnsAddress, DNSDirectTag, detour)
-				if err != nil {
-					return nil, err
-				}
-				options.DNS.Servers = append(options.DNS.Servers, *remote_dns)
-				if err != nil {
-					return nil, err
-				}
+	// 	for detour := range unique_dns_detours {
+	// 		domains := []string{}
+	// 		for domain, d := range dnsMap {
+	// 			if d == detour {
+	// 				domains = append(domains, domain)
+	// 			}
+	// 		}
+	// 		if len(domains) == 0 {
+	// 			continue
+	// 		}
+	// 		dns_detour := DNSMultiDirectTag
+	// 		if detour != OutboundDirectTag {
+	// 			dns_detour = "dns-" + detour
+	// 			remote_dns, err := getDNSServerOptions(dns_detour, hopt.RemoteDnsAddress, DNSDirectTag, detour)
+	// 			if err != nil {
+	// 				return nil, err
+	// 			}
+	// 			options.DNS.Servers = append(options.DNS.Servers, *remote_dns)
 
-			}
+	// 		}
 
-			forceDirectRules = append(forceDirectRules,
-				option.DefaultDNSRule{
-					RawDefaultDNSRule: option.RawDefaultDNSRule{
-						Domain: domains,
-					},
-					DNSRuleAction: option.DNSRuleAction{
-						Action: C.RuleActionTypeRoute,
-						RouteOptions: option.DNSRouteActionOptions{
-							Server:         dns_detour,
-							BypassIfFailed: true,
-						},
-					},
-				},
-			)
-		}
-	}
+	// 		forceDirectRules = append(forceDirectRules,
+	// 			option.DefaultDNSRule{
+	// 				RawDefaultDNSRule: option.RawDefaultDNSRule{
+	// 					Domain: domains,
+	// 				},
+	// 				DNSRuleAction: option.DNSRuleAction{
+	// 					Action: C.RuleActionTypeRoute,
+	// 					RouteOptions: option.DNSRouteActionOptions{
+	// 						Server:         dns_detour,
+	// 						BypassIfFailed: true,
+	// 					},
+	// 				},
+	// 			},
+	// 		)
+	// 	}
+	// }
 	domains := []string{}
 
 	forceDirectRules = append(forceDirectRules,
@@ -226,7 +248,7 @@ func addForceDirect(options *option.Options, hopt *HiddifyOptions) ([]option.Def
 				DNSRuleAction: option.DNSRuleAction{
 					Action: C.RuleActionTypeRoute,
 					RouteOptions: option.DNSRouteActionOptions{
-						Server:         DNSDirectTag,
+						Server:         DNSMultiDirectTag,
 						BypassIfFailed: true,
 					},
 				},
@@ -440,6 +462,21 @@ func getStaticDNSServerOptions(tag string, staticIps *map[string][]string) (*opt
 		Type: C.DNSTypeHosts,
 		Options: &option.HostsDNSServerOptions{
 			Predefined: &domain_ips,
+		},
+	}
+	return &o, nil
+}
+func getMultiDnsServerOptions(tag string, servers []string, parallel bool) (*option.DNSServerOptions, error) {
+	o := option.DNSServerOptions{
+		Tag:  tag,
+		Type: C.DNSTypeMulti,
+		Options: &option.MultiDNSServerOptions{
+			Servers:  servers,
+			Parallel: parallel,
+			IgnoreRanges: []badoption.Prefix{
+				badoption.Prefix(netip.MustParsePrefix("10.10.34.0/24")),
+				badoption.Prefix(netip.MustParsePrefix("001:4188:2:600::/64")),
+			},
 		},
 	}
 	return &o, nil

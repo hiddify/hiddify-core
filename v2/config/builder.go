@@ -29,6 +29,8 @@ const (
 	// DNSBlockTag        = "dns-block"
 	DNSFakeTag         = "dns-fake"
 	DNSTricksDirectTag = "dns-trick-direct"
+	DNSMultiDirectTag  = "dns-multi-direct"
+	DNSMultiRemoteTag  = "dns-multi-remote"
 
 	OutboundDirectTag = "direct §hide§"
 	OutboundBypassTag = "bypass §hide§"
@@ -105,8 +107,8 @@ func getHostnameIfNotIP(inp string) (string, error) {
 	}
 	if net.ParseIP(strings.Trim(inp, "[]")) == nil {
 		u, err := url.Parse(inp)
-		if err != nil {
-			return inp, err
+		if err != nil || u.Host == "" {
+			return inp, nil
 		}
 		return u.Host, nil
 	}
@@ -520,17 +522,17 @@ func setRoutingOptions(options *option.Options, hopt *HiddifyOptions) error {
 	// 	// )
 	// }
 
-	dnsRules = append(dnsRules, option.DefaultDNSRule{
-		RawDefaultDNSRule: option.RawDefaultDNSRule{},
-		DNSRuleAction: option.DNSRuleAction{
-			Action: C.RuleActionTypeRoute,
-			RouteOptions: option.DNSRouteActionOptions{
-				Server:         DNSStaticTag,
-				BypassIfFailed: true,
-			},
-		},
-	},
-	)
+	// dnsRules = append(dnsRules, option.DefaultDNSRule{
+	// 	RawDefaultDNSRule: option.RawDefaultDNSRule{},
+	// 	DNSRuleAction: option.DNSRuleAction{
+	// 		Action: C.RuleActionTypeRoute,
+	// 		RouteOptions: option.DNSRouteActionOptions{
+	// 			Server:         DNSStaticTag,
+	// 			BypassIfFailed: true,
+	// 		},
+	// 	},
+	// },
+	// )
 	forceDirectRules, err := addForceDirect(options, hopt)
 	if err != nil {
 		return err
@@ -675,7 +677,7 @@ func setRoutingOptions(options *option.Options, hopt *HiddifyOptions) error {
 			DNSRuleAction: option.DNSRuleAction{
 				Action: C.RuleActionTypeRoute,
 				RouteOptions: option.DNSRouteActionOptions{
-					Server:         DNSDirectTag,
+					Server:         DNSMultiDirectTag,
 					RewriteTTL:     &dnsCPttl,
 					DisableCache:   false,
 					BypassIfFailed: true,
@@ -799,7 +801,7 @@ func setRoutingOptions(options *option.Options, hopt *HiddifyOptions) error {
 			DNSRuleAction: option.DNSRuleAction{
 				Action: C.RuleActionTypeRoute,
 				RouteOptions: option.DNSRouteActionOptions{
-					Server:         DNSDirectTag,
+					Server:         DNSMultiDirectTag,
 					BypassIfFailed: true,
 				},
 			},
@@ -829,7 +831,7 @@ func setRoutingOptions(options *option.Options, hopt *HiddifyOptions) error {
 			DNSRuleAction: option.DNSRuleAction{
 				Action: C.RuleActionTypeRoute,
 				RouteOptions: option.DNSRouteActionOptions{
-					Server:         DNSDirectTag,
+					Server:         DNSMultiDirectTag,
 					BypassIfFailed: true,
 				},
 			},
@@ -890,7 +892,7 @@ func setRoutingOptions(options *option.Options, hopt *HiddifyOptions) error {
 		Final:               OutboundMainDetour,
 		AutoDetectInterface: (!C.IsAndroid && !C.IsIos) && (hopt.EnableTun || hopt.EnableTunService),
 		DefaultDomainResolver: &option.DomainResolveOptions{
-			Server:   DNSDirectTag,
+			Server:   DNSMultiDirectTag,
 			Strategy: hopt.DirectDnsDomainStrategy,
 		},
 		// OverrideAndroidVPN: hopt.EnableTun && C.IsAndroid,
@@ -928,23 +930,13 @@ func setRoutingOptions(options *option.Options, hopt *HiddifyOptions) error {
 		DNSRuleAction: option.DNSRuleAction{
 			Action: C.RuleActionTypeRoute,
 			RouteOptions: option.DNSRouteActionOptions{
-				Server:         DNSRemoteTag,
-				BypassIfFailed: true,
-			},
-		},
-	},
-	)
-	dnsRules = append(dnsRules, option.DefaultDNSRule{
-		RawDefaultDNSRule: option.RawDefaultDNSRule{},
-		DNSRuleAction: option.DNSRuleAction{
-			Action: C.RuleActionTypeRoute,
-			RouteOptions: option.DNSRouteActionOptions{
-				Server:         DNSRemoteTagFallback,
+				Server:         DNSMultiRemoteTag,
 				BypassIfFailed: false,
 			},
 		},
 	},
 	)
+
 	// dnsRules = append(dnsRules, option.DefaultDNSRule{
 
 	// 	RawDefaultDNSRule: option.RawDefaultDNSRule{},

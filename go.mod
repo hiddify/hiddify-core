@@ -257,7 +257,7 @@ require (
 	gopkg.in/yaml.v3 v3.0.1
 )
 
-replace github.com/sagernet/sing-box => github.com/hiddify/hiddify-sing-box v1.8.9-0.20260206122724-dbbfefeeff07
+replace github.com/sagernet/sing-box => github.com/hiddify/hiddify-sing-box v1.8.9-0.20260206153433-7beb59f0b1dd
 
 // replace github.com/sagernet/sing-box => ../../h-sing-box
 
