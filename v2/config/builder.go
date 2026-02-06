@@ -124,8 +124,9 @@ func setOutbounds(options *option.Options, input *option.Options, opt *HiddifyOp
 	// outbound==proxies over warp
 	OutboundMainDetour = OutboundSelectTag
 	OutboundWARPConfigDetour = OutboundDirectFragmentTag
-
+	hasPsiphon := false
 	for _, out := range input.Outbounds {
+
 		if contains(PredefinedOutboundTags, out.Tag) {
 			continue
 		}
@@ -146,6 +147,12 @@ func setOutbounds(options *option.Options, input *option.Options, opt *HiddifyOp
 
 			if contains([]string{"direct", "bypass", "block"}, out.Tag) {
 				continue
+			}
+			if out.Type == C.TypePsiphon {
+				if hasPsiphon {
+					continue
+				}
+				hasPsiphon = true
 			}
 			if !strings.Contains(out.Tag, "§hide§") {
 				tags = append(tags, out.Tag)
@@ -390,13 +397,11 @@ func setLog(options *option.Options, opt *HiddifyOptions) {
 	}
 }
 func isIPv6Supported() bool {
-	// Try to listen on IPv6 loopback
-	conn, err := net.ListenPacket("udp6", "[::1]:0")
-	if err != nil {
-		return false
+	if C.IsIos || C.IsDarwin {
+		return true
 	}
-	_ = conn.Close()
-	return true
+	_, err := net.ResolveIPAddr("ip6", "::1")
+	return err == nil
 }
 func setInbound(options *option.Options, hopt *HiddifyOptions) {
 	// var inboundDomainStrategy option.DomainStrategy
@@ -405,7 +410,7 @@ func setInbound(options *option.Options, hopt *HiddifyOptions) {
 	// } else {
 	// 	inboundDomainStrategy = opt.IPv6Mode
 	// }
-
+	ipv6Enable := isIPv6Supported()
 	if hopt.EnableTun {
 
 		opts := option.TunInboundOptions{
@@ -437,7 +442,7 @@ func setInbound(options *option.Options, hopt *HiddifyOptions) {
 
 		// }
 		opts.Address = []netip.Prefix{netip.MustParsePrefix("172.19.0.1/28")}
-		if isIPv6Supported() {
+		if ipv6Enable {
 			opts.Address = append(opts.Address, netip.MustParsePrefix("fdfe:dcba:9876::1/126"))
 		}
 
@@ -445,49 +450,59 @@ func setInbound(options *option.Options, hopt *HiddifyOptions) {
 
 	}
 
-	var bind string
-	if hopt.AllowConnectionFromLAN {
-		bind = "0.0.0.0"
-	} else {
-		bind = "127.0.0.1"
+	binds := []string{}
+	if ipv6Enable {
+		if hopt.AllowConnectionFromLAN {
+			binds = append(binds, "::")
+		} else {
+			binds = append(binds, "::1")
+		}
 	}
-	addr := badoption.Addr(netip.MustParseAddr(bind))
+	if hopt.AllowConnectionFromLAN {
+		binds = append(binds, "0.0.0.0")
+	} else {
+		binds = append(binds, "127.0.0.1")
+	}
 
-	options.Inbounds = append(
-		options.Inbounds,
-		option.Inbound{
-			Type: C.TypeMixed,
-			Tag:  InboundMixedTag,
-			Options: &option.HTTPMixedInboundOptions{
-				ListenOptions: option.ListenOptions{
-					Listen:     &addr,
-					ListenPort: hopt.MixedPort,
-					// InboundOptions: option.InboundOptions{
-					// 	SniffEnabled:             true,
-					// 	SniffOverrideDestination: true,
-					// 	DomainStrategy:           inboundDomainStrategy,
-					// },
-				},
-				SetSystemProxy: hopt.SetSystemProxy,
-			},
-		},
-	)
+	for _, bind := range binds {
+		addr := badoption.Addr(netip.MustParseAddr(bind))
 
-	options.Inbounds = append(
-		options.Inbounds,
-		option.Inbound{
-			Type: C.TypeDirect,
-			Tag:  InboundDNSTag,
-			Options: &option.DirectInboundOptions{
-				ListenOptions: option.ListenOptions{
-					Listen:     &addr,
-					ListenPort: hopt.LocalDnsPort,
+		options.Inbounds = append(
+			options.Inbounds,
+			option.Inbound{
+				Type: C.TypeMixed,
+				Tag:  InboundMixedTag + bind,
+				Options: &option.HTTPMixedInboundOptions{
+					ListenOptions: option.ListenOptions{
+						Listen:     &addr,
+						ListenPort: hopt.MixedPort,
+						// InboundOptions: option.InboundOptions{
+						// 	SniffEnabled:             true,
+						// 	SniffOverrideDestination: true,
+						// 	DomainStrategy:           inboundDomainStrategy,
+						// },
+					},
+					SetSystemProxy: hopt.SetSystemProxy,
 				},
-				// OverrideAddress: "1.1.1.1",
-				// OverridePort:    53,
 			},
-		},
-	)
+		)
+
+		options.Inbounds = append(
+			options.Inbounds,
+			option.Inbound{
+				Type: C.TypeDirect,
+				Tag:  InboundDNSTag + bind,
+				Options: &option.DirectInboundOptions{
+					ListenOptions: option.ListenOptions{
+						Listen:     &addr,
+						ListenPort: hopt.LocalDnsPort,
+					},
+					// OverrideAddress: "1.1.1.1",
+					// OverridePort:    53,
+				},
+			},
+		)
+	}
 }
 
 func setRoutingOptions(options *option.Options, hopt *HiddifyOptions) error {
