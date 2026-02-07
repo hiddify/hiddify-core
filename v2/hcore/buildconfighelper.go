@@ -87,6 +87,26 @@ func (s *CoreService) ChangeHiddifySettings(ctx context.Context, in *ChangeHiddi
 
 func ChangeHiddifySettings(in *ChangeHiddifySettingsRequest, insert bool) (*CoreInfoResponse, error) {
 	static.HiddifyOptions = config.DefaultHiddifyOptions()
+	defer func() {
+		switch static.HiddifyOptions.LogLevel {
+		case "debug":
+			static.logLevel = LogLevel_DEBUG
+		case "info":
+			static.logLevel = LogLevel_INFO
+		case "warn":
+			static.logLevel = LogLevel_WARNING
+		case "error":
+			static.logLevel = LogLevel_ERROR
+		case "fatal":
+			static.logLevel = LogLevel_FATAL
+		case "trace":
+			static.logLevel = LogLevel_TRACE
+		default:
+			static.logLevel = LogLevel_INFO
+		}
+		static.debug = static.debug || static.logLevel <= LogLevel_DEBUG
+	}()
+
 	if in.HiddifySettingsJson == "" {
 		return &CoreInfoResponse{}, nil
 	}
@@ -97,10 +117,12 @@ func ChangeHiddifySettings(in *ChangeHiddifySettingsRequest, insert bool) (*Core
 			Value: in.HiddifySettingsJson,
 		})
 	}
+
 	err := json.Unmarshal([]byte(in.HiddifySettingsJson), static.HiddifyOptions)
 	if err != nil {
 		return nil, err
 	}
+
 	if static.HiddifyOptions.Warp.WireguardConfigStr != "" {
 		err := json.Unmarshal([]byte(static.HiddifyOptions.Warp.WireguardConfigStr), &static.HiddifyOptions.Warp.WireguardConfig)
 		if err != nil {

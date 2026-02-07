@@ -19,17 +19,14 @@ func SetCoreStatus(state CoreStates, msgType MessageType, message string) *CoreI
 		MessageType: msgType,
 		Message:     message,
 	}
-	static.coreInfoObserver.Emit(&info)
+	static.coreInfoObserver.Publish(&info)
 
 	return &info
 }
 
 func (s *CoreService) CoreInfoListener(req *hcommon.Empty, stream grpc.ServerStreamingServer[CoreInfoResponse]) error {
-	coreSub, done, err := static.coreInfoObserver.Subscribe()
-	if err != nil {
-		return err
-	}
-	defer static.coreInfoObserver.UnSubscribe(coreSub)
+	coreSub := static.coreInfoObserver.Subscribe(1)
+	defer static.coreInfoObserver.Unsubscribe(coreSub)
 	stream.Send(&CoreInfoResponse{
 		CoreState:   static.CoreState,
 		MessageType: MessageType_EMPTY,
@@ -38,8 +35,6 @@ func (s *CoreService) CoreInfoListener(req *hcommon.Empty, stream grpc.ServerStr
 	for {
 		select {
 		case <-stream.Context().Done():
-			return nil
-		case <-done:
 			return nil
 		case info := <-coreSub:
 			stream.Send(info)

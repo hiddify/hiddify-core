@@ -34,6 +34,7 @@ const (
 	Core_Restart_FullMethodName               = "/hcore.Core/Restart"
 	Core_SelectOutbound_FullMethodName        = "/hcore.Core/SelectOutbound"
 	Core_UrlTest_FullMethodName               = "/hcore.Core/UrlTest"
+	Core_UrlTestActive_FullMethodName         = "/hcore.Core/UrlTestActive"
 	Core_GenerateWarpConfig_FullMethodName    = "/hcore.Core/GenerateWarpConfig"
 	Core_GetSystemProxyStatus_FullMethodName  = "/hcore.Core/GetSystemProxyStatus"
 	Core_SetSystemProxyEnabled_FullMethodName = "/hcore.Core/SetSystemProxyEnabled"
@@ -60,6 +61,7 @@ type CoreClient interface {
 	Restart(ctx context.Context, in *StartRequest, opts ...grpc.CallOption) (*CoreInfoResponse, error)
 	SelectOutbound(ctx context.Context, in *SelectOutboundRequest, opts ...grpc.CallOption) (*hcommon.Response, error)
 	UrlTest(ctx context.Context, in *UrlTestRequest, opts ...grpc.CallOption) (*hcommon.Response, error)
+	UrlTestActive(ctx context.Context, in *hcommon.Empty, opts ...grpc.CallOption) (*hcommon.Response, error)
 	GenerateWarpConfig(ctx context.Context, in *GenerateWarpConfigRequest, opts ...grpc.CallOption) (*WarpGenerationResponse, error)
 	GetSystemProxyStatus(ctx context.Context, in *hcommon.Empty, opts ...grpc.CallOption) (*SystemProxyStatus, error)
 	SetSystemProxyEnabled(ctx context.Context, in *SetSystemProxyEnabledRequest, opts ...grpc.CallOption) (*hcommon.Response, error)
@@ -251,6 +253,16 @@ func (c *coreClient) UrlTest(ctx context.Context, in *UrlTestRequest, opts ...gr
 	return out, nil
 }
 
+func (c *coreClient) UrlTestActive(ctx context.Context, in *hcommon.Empty, opts ...grpc.CallOption) (*hcommon.Response, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(hcommon.Response)
+	err := c.cc.Invoke(ctx, Core_UrlTestActive_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *coreClient) GenerateWarpConfig(ctx context.Context, in *GenerateWarpConfigRequest, opts ...grpc.CallOption) (*WarpGenerationResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(WarpGenerationResponse)
@@ -329,6 +341,7 @@ type CoreServer interface {
 	Restart(context.Context, *StartRequest) (*CoreInfoResponse, error)
 	SelectOutbound(context.Context, *SelectOutboundRequest) (*hcommon.Response, error)
 	UrlTest(context.Context, *UrlTestRequest) (*hcommon.Response, error)
+	UrlTestActive(context.Context, *hcommon.Empty) (*hcommon.Response, error)
 	GenerateWarpConfig(context.Context, *GenerateWarpConfigRequest) (*WarpGenerationResponse, error)
 	GetSystemProxyStatus(context.Context, *hcommon.Empty) (*SystemProxyStatus, error)
 	SetSystemProxyEnabled(context.Context, *SetSystemProxyEnabledRequest) (*hcommon.Response, error)
@@ -385,6 +398,9 @@ func (UnimplementedCoreServer) SelectOutbound(context.Context, *SelectOutboundRe
 }
 func (UnimplementedCoreServer) UrlTest(context.Context, *UrlTestRequest) (*hcommon.Response, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UrlTest not implemented")
+}
+func (UnimplementedCoreServer) UrlTestActive(context.Context, *hcommon.Empty) (*hcommon.Response, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UrlTestActive not implemented")
 }
 func (UnimplementedCoreServer) GenerateWarpConfig(context.Context, *GenerateWarpConfigRequest) (*WarpGenerationResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GenerateWarpConfig not implemented")
@@ -646,6 +662,24 @@ func _Core_UrlTest_Handler(srv interface{}, ctx context.Context, dec func(interf
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Core_UrlTestActive_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(hcommon.Empty)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CoreServer).UrlTestActive(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Core_UrlTestActive_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CoreServer).UrlTestActive(ctx, req.(*hcommon.Empty))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _Core_GenerateWarpConfig_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(GenerateWarpConfigRequest)
 	if err := dec(in); err != nil {
@@ -775,6 +809,10 @@ var Core_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "UrlTest",
 			Handler:    _Core_UrlTest_Handler,
+		},
+		{
+			MethodName: "UrlTestActive",
+			Handler:    _Core_UrlTestActive_Handler,
 		},
 		{
 			MethodName: "GenerateWarpConfig",

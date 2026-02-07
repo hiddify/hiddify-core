@@ -233,10 +233,7 @@ func (h *HiddifyInstance) SelectOutbound(in *SelectOutboundRequest) (*hcommon.Re
 			}, E.New("outbound not found in selector: ", in.GroupTag)
 		}
 		Log(LogLevel_DEBUG, LogType_CORE, "Trying to ping outbound: ", in.OutboundTag)
-		go func() {
-			monitor := monitoring.Get(h.Context())
-			monitor.TestNow(in.OutboundTag)
-		}()
+
 		// if urltesHistory := h.UrlTestHistory(); urltesHistory != nil {
 		// 	urltesHistory.Observer().Emit(2)
 		// }
@@ -251,7 +248,48 @@ func (s *CoreService) UrlTest(ctx context.Context, in *UrlTestRequest) (*hcommon
 	return static.UrlTest(in)
 }
 
+func (s *CoreService) UrlTestActive(ctx context.Context, in *hcommon.Empty) (*hcommon.Response, error) {
+
+	return static.UrlTestActive()
+}
+
+func (h *HiddifyInstance) UrlTestActive() (*hcommon.Response, error) {
+	if box := h.Box(); box != nil {
+		outboundGroup, isLoaded := box.Outbound().Outbound(config.OutboundSelectTag)
+		if !isLoaded {
+			return &hcommon.Response{
+				Code:    hcommon.ResponseCode_FAILED,
+				Message: E.New("selector not found: ", config.OutboundSelectTag).Error(),
+			}, E.New("selector not found: ", config.OutboundSelectTag)
+		}
+		selector, isSelector := outboundGroup.(adapter.OutboundGroup)
+		if !isSelector {
+			return &hcommon.Response{
+				Code:    hcommon.ResponseCode_FAILED,
+				Message: E.New("outbound is not a selector: ", config.OutboundSelectTag).Error(),
+			}, E.New("outbound is not a selector: ", config.OutboundSelectTag)
+		}
+		now := selector.Now()
+		if now == "" {
+			return &hcommon.Response{
+				Code:    hcommon.ResponseCode_FAILED,
+				Message: E.New("outbound not found in selector: ", config.OutboundSelectTag).Error(),
+			}, E.New("outbound not found in selector: ", config.OutboundSelectTag)
+		}
+		return h.UrlTest(&UrlTestRequest{
+			Tag: now,
+		})
+	}
+	return &hcommon.Response{
+		Code:    hcommon.ResponseCode_OK,
+		Message: "",
+	}, nil
+}
+
 func (h *HiddifyInstance) UrlTest(in *UrlTestRequest) (*hcommon.Response, error) {
+	if in.Tag == "" {
+		return h.UrlTestActive()
+	}
 	// err := libbox.NewStandaloneCommandClient().URLTest(in.GroupTag)
 	// if err != nil {
 	// 	return &hcommon.Response{
@@ -271,7 +309,7 @@ func (h *HiddifyInstance) UrlTest(in *UrlTestRequest) (*hcommon.Response, error)
 		return nil, E.New("service not ready")
 	}
 	monitor := monitoring.Get(h.Context())
-	monitor.TestNow(config.OutboundSelectTag)
+	monitor.TestNow(in.Tag)
 	// router := box.Outbound()
 	// abstractOutboundGroup, isLoaded := router.Outbound(groupTag)
 	// if !isLoaded {

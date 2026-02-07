@@ -5,16 +5,16 @@ import (
 	"time"
 
 	"github.com/sagernet/sing-box/log"
-	"github.com/sagernet/sing/common/observable"
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-func NewObserver[T any](listenerBufferSize int) *observable.Observer[T] {
-	return observable.NewObserver(observable.NewSubscriber[T](listenerBufferSize), listenerBufferSize)
-}
 func logLevel(level LogLevel, msg string) {
 	switch level {
+	case LogLevel_FATAL:
+		log.Error(msg)
+	case LogLevel_TRACE:
+		log.Trace(msg)
 	case LogLevel_DEBUG:
 		log.Debug(msg)
 	case LogLevel_INFO:
@@ -28,14 +28,17 @@ func logLevel(level LogLevel, msg string) {
 	}
 }
 func Log(level LogLevel, typ LogType, message ...any) {
-	if static.debug || level != LogLevel_DEBUG {
-		msg := fmt.Sprintf("H %v %v", typ, fmt.Sprint(message...))
-		logLevel(level, msg)
-		// fmt.Printf("%v %v %v\n", level, typ, fmt.Sprint(message...))
-		// os.Stderr.WriteString(fmt.Sprintf("%v %v %v\n", level, typ, fmt.Sprint(message...)))
+	if level < static.logLevel {
+		return
 	}
+	// if static.debug {
+	msg := fmt.Sprintf("H %v %v", typ, fmt.Sprint(message...))
+	logLevel(level, msg)
+	// fmt.Printf("%v %v %v\n", level, typ, fmt.Sprint(message...))
+	// os.Stderr.WriteString(fmt.Sprintf("%v %v %v\n", level, typ, fmt.Sprint(message...)))
+	// }
 
-	static.logObserver.Emit(&LogMessage{
+	static.logObserver.Publish(&LogMessage{
 		Level:   level,
 		Type:    typ,
 		Time:    timestamppb.New(time.Now()),
@@ -44,14 +47,12 @@ func Log(level LogLevel, typ LogType, message ...any) {
 }
 
 func (s *CoreService) LogListener(req *LogRequest, stream grpc.ServerStreamingServer[LogMessage]) error {
-	logSub, stopch, _ := static.logObserver.Subscribe()
-	defer static.logObserver.UnSubscribe(logSub)
+	logSub := static.logObserver.Subscribe(1)
+	defer static.logObserver.Unsubscribe(logSub)
 
 	for {
 		select {
 		case <-stream.Context().Done():
-			return nil
-		case <-stopch:
 			return nil
 		case info := <-logSub:
 			if info.Level < req.Level {

@@ -3,8 +3,9 @@ package mobile
 import (
 	hcore "github.com/hiddify/hiddify-core/v2/hcore"
 
-	_ "github.com/sagernet/gomobile"
+	_ "net/http/pprof"
 
+	_ "github.com/sagernet/gomobile"
 	"github.com/sagernet/sing-box/experimental/libbox"
 )
 

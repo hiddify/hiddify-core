@@ -615,7 +615,7 @@ Define the message equivalent of SetupParameters
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| group_tag | [string](#string) |  |  |
+| tag | [string](#string) |  |  |
 
 
 
@@ -697,11 +697,12 @@ Define the message equivalent of SetupParameters
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
-| DEBUG | 0 |  |
-| INFO | 1 |  |
-| WARNING | 2 |  |
-| ERROR | 3 |  |
-| FATAL | 4 |  |
+| TRACE | 0 |  |
+| DEBUG | 1 |  |
+| INFO | 2 |  |
+| WARNING | 3 |  |
+| ERROR | 4 |  |
+| FATAL | 5 |  |
 
 
 
@@ -799,6 +800,7 @@ Define the message equivalent of SetupParameters
 | Restart | [StartRequest](#hcore-StartRequest) | [CoreInfoResponse](#hcore-CoreInfoResponse) |  |
 | SelectOutbound | [SelectOutboundRequest](#hcore-SelectOutboundRequest) | [.hcommon.Response](#hcommon-Response) |  |
 | UrlTest | [UrlTestRequest](#hcore-UrlTestRequest) | [.hcommon.Response](#hcommon-Response) |  |
+| UrlTestActive | [.hcommon.Empty](#hcommon-Empty) | [.hcommon.Response](#hcommon-Response) |  |
 | GenerateWarpConfig | [GenerateWarpConfigRequest](#hcore-GenerateWarpConfigRequest) | [WarpGenerationResponse](#hcore-WarpGenerationResponse) |  |
 | GetSystemProxyStatus | [.hcommon.Empty](#hcommon-Empty) | [SystemProxyStatus](#hcore-SystemProxyStatus) |  |
 | SetSystemProxyEnabled | [SetSystemProxyEnabledRequest](#hcore-SetSystemProxyEnabledRequest) | [.hcommon.Response](#hcommon-Response) |  |

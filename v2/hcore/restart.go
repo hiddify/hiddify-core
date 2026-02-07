@@ -28,6 +28,5 @@ func Restart(ctx context.Context, in *StartRequest) (coreResponse *CoreInfoRespo
 		return resp, err
 	}
 
-	resp, gErr := StartService(ctx, in)
-	return resp, gErr
+	return StartService(ctx, in)
 }

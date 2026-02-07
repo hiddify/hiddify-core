@@ -93,6 +93,7 @@ func setup(baseDir *C.char, workingDir *C.char, tempDir *C.char, mode C.int, lis
 		Listen:            C.GoString(listen),
 		Secret:            C.GoString(secret),
 	}
+
 	err := hcore.Setup(&params, nil)
 	return emptyOrErrorC(err)
 }

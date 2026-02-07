@@ -6,10 +6,10 @@ import (
 	"time"
 
 	"github.com/hiddify/hiddify-core/v2/config"
+	"github.com/sagernet/sing-box/common/monitoring"
 	"github.com/sagernet/sing-box/daemon"
 	"github.com/sagernet/sing-box/experimental/libbox"
 	"github.com/sagernet/sing-box/log"
-	"github.com/sagernet/sing/common/observable"
 )
 
 type HiddifyInstance struct {
@@ -17,12 +17,12 @@ type HiddifyInstance struct {
 	HiddifyOptions *config.HiddifyOptions
 	// activeConfigPath string
 	CoreLogFactory            log.Factory
-	coreInfoObserver          *observable.Observer[*CoreInfoResponse]
+	coreInfoObserver          *monitoring.Broadcaster[*CoreInfoResponse]
 	CoreState                 CoreStates
-	logObserver               *observable.Observer[*LogMessage]
-	systemInfoObserver        *observable.Observer[*SystemInfo]
-	outboundsInfoObserver     *observable.Observer[*OutboundGroupList]
-	mainOutboundsInfoObserver *observable.Observer[*OutboundGroupList]
+	logObserver               *monitoring.Broadcaster[*LogMessage]
+	systemInfoObserver        *monitoring.Broadcaster[*SystemInfo]
+	outboundsInfoObserver     *monitoring.Broadcaster[*OutboundGroupList]
+	mainOutboundsInfoObserver *monitoring.Broadcaster[*OutboundGroupList]
 	lock                      sync.Mutex
 	globalPlatformInterface   libbox.PlatformInterface
 	previousStartRequest      *StartRequest
@@ -30,13 +30,15 @@ type HiddifyInstance struct {
 	ListenPort                uint16
 	BaseContext               context.Context
 	endPauseTimer             *time.Timer // only for ios
+
+	logLevel LogLevel
 }
 
 var static = &HiddifyInstance{
-	coreInfoObserver:          NewObserver[*CoreInfoResponse](1),
 	CoreState:                 CoreStates_STOPPED,
-	logObserver:               NewObserver[*LogMessage](1),
-	systemInfoObserver:        NewObserver[*SystemInfo](1),
-	outboundsInfoObserver:     NewObserver[*OutboundGroupList](1),
-	mainOutboundsInfoObserver: NewObserver[*OutboundGroupList](1),
+	coreInfoObserver:          monitoring.NewBroadcaster[*CoreInfoResponse](context.Background()),
+	logObserver:               monitoring.NewBroadcaster[*LogMessage](context.Background()),
+	systemInfoObserver:        monitoring.NewBroadcaster[*SystemInfo](context.Background()),
+	outboundsInfoObserver:     monitoring.NewBroadcaster[*OutboundGroupList](context.Background()),
+	mainOutboundsInfoObserver: monitoring.NewBroadcaster[*OutboundGroupList](context.Background()),
 }

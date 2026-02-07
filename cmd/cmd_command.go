@@ -54,7 +54,7 @@ func execCommandgrpc(cmd *cobra.Command, args []string) {
 		"LocalIP § 2",
 		"WarpInWarp✅ § 3",
 	} {
-		c.UrlTest(ctx, &hcore.UrlTestRequest{GroupTag: "auto"})
+		c.UrlTest(ctx, &hcore.UrlTestRequest{Tag: "select"})
 		log.Printf("Sending: %s", x)
 		resp, err := c.SelectOutbound(ctx, &hcore.SelectOutboundRequest{
 			GroupTag:    "select",

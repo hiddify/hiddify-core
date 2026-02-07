@@ -30,12 +30,11 @@ func Stop() (coreResponse *CoreInfoResponse, err error) {
 	if ss == nil {
 		return SetCoreStatus(CoreStates_STOPPED, MessageType_ALREADY_STOPPED, ""), nil
 	}
-	ss.CloseService()
-	// err = common.Close(static.StartedService)
-	static.StartedService = nil
-	if err != nil {
+	if err := ss.CloseService(); err != nil {
 		return errorWrapper(MessageType_UNEXPECTED_ERROR, err)
 	}
+	// err = common.Close(static.StartedService)
+	static.StartedService = nil
 
 	return SetCoreStatus(CoreStates_STOPPED, MessageType_EMPTY, ""), nil
 }

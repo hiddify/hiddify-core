@@ -166,42 +166,53 @@ func (h *HiddifyInstance) AllProxiesInfoStream(stream grpc.ServerStreamingServer
 
 	if ctx, urlTestHistory := h.Context(), h.UrlTestHistory(); ctx != nil && urlTestHistory != nil {
 		monitor := monitoring.Get(h.Context())
-		observer, err := monitor.GroupObserver(config.OutboundSelectTag)
+		urltestch, err := monitor.SubscribeGroup(config.OutboundSelectTag)
 		if err != nil {
 			return err
 		}
-		urltestch, done, err := observer.Subscribe()
-		defer observer.UnSubscribe(urltestch)
-		if err != nil {
-			return err
-		}
+		defer monitor.UnsubscribeGroup(config.OutboundSelectTag, urltestch)
+
 		stream.Send(h.GetAllProxiesInfo(monitor.OutboundsHistory(config.OutboundSelectTag), onlyMain))
-		debouncer := NewDebouncer(500 * time.Millisecond)
-		defer debouncer.Stop()
 
-		timer2 := time.NewTicker(10 * time.Second)
-		defer timer2.Stop()
-
+		// timer2 := time.NewTicker(10 * time.Second)
+		// defer timer2.Stop()
+		debounceWindow := 1000 * time.Millisecond
+		var (
+			timer   *time.Timer
+			timerCh <-chan time.Time
+		)
+		defer func() {
+			if timer != nil {
+				timer.Stop()
+			}
+		}()
 		for {
 			select {
-			case <-urltestch:
-
-				debouncer.Hit()
-
-			case <-debouncer.C():
-				if err := stream.Send(h.GetAllProxiesInfo(monitor.OutboundsHistory(config.OutboundSelectTag), onlyMain)); err != nil {
-					return err
-				}
-			case <-timer2.C:
-				if err := stream.Send(h.GetAllProxiesInfo(monitor.OutboundsHistory(config.OutboundSelectTag), onlyMain)); err != nil {
-					return err
-				}
 			case <-stream.Context().Done():
 				return nil
 			case <-ctx.Done():
 				return nil
-			case <-done:
-				return nil
+			case _, ok := <-urltestch:
+				if !ok {
+					return nil
+				}
+				if timer == nil {
+					timer = time.NewTimer(debounceWindow)
+					timerCh = timer.C
+				}
+			case <-timerCh:
+				if err := stream.Send(h.GetAllProxiesInfo(monitor.OutboundsHistory(config.OutboundSelectTag), onlyMain)); err != nil {
+					return err
+				}
+				if !timer.Stop() {
+					select {
+					case <-timer.C:
+					default:
+					}
+				}
+				timer = nil
+				timerCh = nil
+
 			}
 		}
 	}
