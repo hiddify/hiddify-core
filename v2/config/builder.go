@@ -451,16 +451,17 @@ func setInbound(options *option.Options, hopt *HiddifyOptions) {
 	}
 
 	binds := []string{}
-	if ipv6Enable {
-		if hopt.AllowConnectionFromLAN {
+
+	if hopt.AllowConnectionFromLAN {
+		if ipv6Enable {
 			binds = append(binds, "::")
 		} else {
+			binds = append(binds, "0.0.0.0")
+		}
+	} else {
+		if ipv6Enable {
 			binds = append(binds, "::1")
 		}
-	}
-	if hopt.AllowConnectionFromLAN {
-		binds = append(binds, "0.0.0.0")
-	} else {
 		binds = append(binds, "127.0.0.1")
 	}
 
