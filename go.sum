@@ -364,8 +364,8 @@ github.com/hiddify/psiphon-quic-go v0.0.0-20260205155832-2164d1653824 h1:a5HGC6a
 github.com/hiddify/psiphon-quic-go v0.0.0-20260205155832-2164d1653824/go.mod h1:rONdWgPMbFjyyBai7gB1IBF4pT9r4l0GyiDst5XR1SY=
 github.com/hiddify/psiphon-tls v0.0.0-20260205181946-4af85c2fb9f2 h1:42YhXZ/qMbWOlH+AE6KZKpv96G60FXMaeQ+TYFUFwNU=
 github.com/hiddify/psiphon-tls v0.0.0-20260205181946-4af85c2fb9f2/go.mod h1:7ZUnPnWT5z8J8hxfsVjKHYK77Zme/Y0If1b/zeziiJs=
-github.com/hiddify/ray2sing v0.0.0-20260205190126-3d213aaf6c45 h1:uffui5lK+Y74RruMjQQUPsjcz1bcrCRzp5603idT4zk=
-github.com/hiddify/ray2sing v0.0.0-20260205190126-3d213aaf6c45/go.mod h1:Iy2uoeEruh+PevxML4u3d+rtakDL8sjFay8I2YWs5IU=
+github.com/hiddify/ray2sing v0.0.0-20260207183100-6cfd14194457 h1:NllwcSsMeltWUUXvq8rejyHiE3LfJIGnnhDqnIvMqOI=
+github.com/hiddify/ray2sing v0.0.0-20260207183100-6cfd14194457/go.mod h1:Iy2uoeEruh+PevxML4u3d+rtakDL8sjFay8I2YWs5IU=
 github.com/hiddify/tailscale v1.92.4-sing-box-1.13-mod.6.0.20260202223641-788aa623edeb h1:eh+X2WCTfbXdNz5A6k44kWkl9KJbKlVQOfkgZjk3eZs=
 github.com/hiddify/tailscale v1.92.4-sing-box-1.13-mod.6.0.20260202223641-788aa623edeb/go.mod h1:m87GAn4UcesHQF3leaPFEINZETO5za1LGn1GJdNDgNc=
 github.com/hiddify/warp-plus v0.0.0-20240717223357-4f3122e0d11d h1:vRGKh9ou+/vQGfVYa8MczhbIVjHxlP52OWwrDWO77RA=
