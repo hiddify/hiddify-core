@@ -48,7 +48,12 @@ func setDns(options *option.Options, opt *HiddifyOptions, staticIps *map[string]
 	if err != nil {
 		return err
 	}
-	direct_dns, err := getDNSServerOptions(DNSDirectTag, opt.DirectDnsAddress, DNSLocalTag, OutboundDirectFragmentTag)
+	direct_detour := OutboundDirectFragmentTag
+	if strings.HasPrefix(opt.DirectDnsAddress, "udp://") || !strings.Contains(opt.DirectDnsAddress, "://") {
+		direct_detour = ""
+	}
+
+	direct_dns, err := getDNSServerOptions(DNSDirectTag, opt.DirectDnsAddress, DNSLocalTag, direct_detour)
 	if err != nil {
 		return err
 	}
@@ -299,6 +304,9 @@ func getDNSServerOptions(tag string, dnsurl string, domain_resolver string, deto
 		default:
 			serverType = C.DNSTypeUDP
 		}
+	}
+	if res, _ := getHostnameIfNotIP(dnsurl); res == "" {
+		domain_resolver = ""
 	}
 	remoteOptions := option.RemoteDNSServerOptions{
 		RawLocalDNSServerOptions: option.RawLocalDNSServerOptions{

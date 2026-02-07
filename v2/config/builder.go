@@ -106,11 +106,17 @@ func getHostnameIfNotIP(inp string) (string, error) {
 		return "", fmt.Errorf("empty hostname: %s", inp)
 	}
 	if net.ParseIP(strings.Trim(inp, "[]")) == nil {
-		u, err := url.Parse(inp)
-		if err != nil || u.Host == "" {
+		inp2 := inp
+		if !strings.Contains(inp, "://") {
+			inp2 = "http://" + inp
+		}
+		u, err := url.Parse(inp2)
+		if err != nil {
 			return inp, nil
 		}
-		return u.Host, nil
+		if net.ParseIP(strings.Trim(u.Host, "[]")) == nil {
+			return u.Host, nil
+		}
 	}
 	return "", fmt.Errorf("not a hostname: %s", inp)
 }

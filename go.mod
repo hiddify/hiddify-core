@@ -258,13 +258,13 @@ require (
 	gopkg.in/yaml.v3 v3.0.1
 )
 
-replace github.com/sagernet/sing-box => github.com/hiddify/hiddify-sing-box v1.8.9-0.20260207180659-00df5d6d4ac6
+replace github.com/sagernet/sing-box => github.com/hiddify/hiddify-sing-box v1.13.0-rc.2.0.20260207222940-d6d7c425d361
 
 // replace github.com/sagernet/sing-box => ../../h-sing-box
 
 // replace github.com/xtls/xray-core => github.com/hiddify/xray-core v0.0.0-20260124181826-59e6569c13e9
 
-replace github.com/sagernet/wireguard-go => github.com/hiddify/wireguard-go v0.0.0-20260202221310-b94beca5cb72
+replace github.com/sagernet/wireguard-go => github.com/hiddify/wireguard-go v0.0.0-20260207195137-b12022450359
 
 replace github.com/sagernet/tailscale => github.com/hiddify/tailscale v1.92.4-sing-box-1.13-mod.6.0.20260202223641-788aa623edeb
 
