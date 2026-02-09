@@ -389,7 +389,7 @@ func setExperimental(options *option.Options, hopt *HiddifyOptions) {
 				URLs:           hopt.ConnectionTestUrls,
 				Interval:       badoption.Duration(hopt.URLTestInterval.Duration()),
 				DebounceWindow: badoption.Duration(time.Millisecond * 500),
-				IdleTimeout:    badoption.Duration(hopt.URLTestInterval.Duration().Milliseconds() * 3),
+				IdleTimeout:    badoption.Duration(hopt.URLTestInterval.Duration().Nanoseconds() * 3),
 			},
 		}
 	}
