@@ -29,8 +29,10 @@ const (
 	// DNSBlockTag        = "dns-block"
 	DNSFakeTag         = "dns-fake"
 	DNSTricksDirectTag = "dns-trick-direct"
-	DNSMultiDirectTag  = "dns-multi-direct"
-	DNSMultiRemoteTag  = "dns-multi-remote"
+	// DNSMultiDirectTag  = "dns-multi-direct"
+	// DNSMultiRemoteTag  = "dns-multi-remote"
+	DNSMultiDirectTag = "dns-direct"
+	DNSMultiRemoteTag = "dns-remote"
 
 	OutboundDirectTag = "direct §hide§"
 	OutboundBypassTag = "bypass §hide§"
@@ -233,7 +235,7 @@ func setOutbounds(options *option.Options, input *option.Options, opt *HiddifyOp
 		endpoints = append(endpoints, *out)
 	}
 	if len(opt.ConnectionTestUrls) == 0 {
-		opt.ConnectionTestUrls = []string{opt.ConnectionTestUrl, "http://captive.apple.com/generate_204", "https://cp.cloudflare.com", "https://google.com/generate_204"}
+		opt.ConnectionTestUrls = []string{opt.ConnectionTestUrl, "https://www.google.com/generate_204", "http://captive.apple.com/generate_204", "https://cp.cloudflare.com"}
 		if isBlockedConnectionTestUrl(opt.ConnectionTestUrl) {
 			opt.ConnectionTestUrls = []string{opt.ConnectionTestUrl}
 		}
@@ -550,7 +552,7 @@ func setRoutingOptions(options *option.Options, hopt *HiddifyOptions) error {
 	// 		Action: C.RuleActionTypeRoute,
 	// 		RouteOptions: option.DNSRouteActionOptions{
 	// 			Server:         DNSStaticTag,
-	// 			BypassIfFailed: true,
+	// 			BypassIfFailed: false,
 	// 		},
 	// 	},
 	// },
@@ -678,7 +680,6 @@ func setRoutingOptions(options *option.Options, hopt *HiddifyOptions) error {
 	if options.NTP != nil && options.NTP.Enabled {
 		forceDirectRoute = append(forceDirectRoute, options.NTP.Server)
 	}
-	var dnsCPttl uint32 = 30000
 
 	// parsedURL, err := url.Parse(opt.ConnectionTestUrl)
 	// if err == nil {
@@ -700,9 +701,10 @@ func setRoutingOptions(options *option.Options, hopt *HiddifyOptions) error {
 				Action: C.RuleActionTypeRoute,
 				RouteOptions: option.DNSRouteActionOptions{
 					Server:         DNSMultiDirectTag,
-					RewriteTTL:     &dnsCPttl,
+					Strategy:       hopt.DirectDnsDomainStrategy,
+					RewriteTTL:     &DEFAULT_DNS_TTL,
 					DisableCache:   false,
-					BypassIfFailed: true,
+					BypassIfFailed: false,
 				},
 			},
 		})
@@ -736,6 +738,7 @@ func setRoutingOptions(options *option.Options, hopt *HiddifyOptions) error {
 			RemoteOptions: option.RemoteRuleSet{
 				URL:            "https://raw.githubusercontent.com/hiddify/hiddify-geo/rule-set/block/geosite-category-ads-all.srs",
 				UpdateInterval: badoption.Duration(5 * time.Hour * 24),
+				DownloadDetour: OutboundSelectTag,
 			},
 		})
 		rulesets = append(rulesets, option.RuleSet{
@@ -745,6 +748,7 @@ func setRoutingOptions(options *option.Options, hopt *HiddifyOptions) error {
 			RemoteOptions: option.RemoteRuleSet{
 				URL:            "https://raw.githubusercontent.com/hiddify/hiddify-geo/rule-set/block/geosite-malware.srs",
 				UpdateInterval: badoption.Duration(5 * time.Hour * 24),
+				DownloadDetour: OutboundSelectTag,
 			},
 		})
 		rulesets = append(rulesets, option.RuleSet{
@@ -754,6 +758,7 @@ func setRoutingOptions(options *option.Options, hopt *HiddifyOptions) error {
 			RemoteOptions: option.RemoteRuleSet{
 				URL:            "https://raw.githubusercontent.com/hiddify/hiddify-geo/rule-set/block/geosite-phishing.srs",
 				UpdateInterval: badoption.Duration(5 * time.Hour * 24),
+				DownloadDetour: OutboundSelectTag,
 			},
 		})
 		rulesets = append(rulesets, option.RuleSet{
@@ -763,6 +768,7 @@ func setRoutingOptions(options *option.Options, hopt *HiddifyOptions) error {
 			RemoteOptions: option.RemoteRuleSet{
 				URL:            "https://raw.githubusercontent.com/hiddify/hiddify-geo/rule-set/block/geosite-cryptominers.srs",
 				UpdateInterval: badoption.Duration(5 * time.Hour * 24),
+				DownloadDetour: OutboundSelectTag,
 			},
 		})
 		rulesets = append(rulesets, option.RuleSet{
@@ -772,6 +778,7 @@ func setRoutingOptions(options *option.Options, hopt *HiddifyOptions) error {
 			RemoteOptions: option.RemoteRuleSet{
 				URL:            "https://raw.githubusercontent.com/hiddify/hiddify-geo/rule-set/block/geoip-phishing.srs",
 				UpdateInterval: badoption.Duration(5 * time.Hour * 24),
+				DownloadDetour: OutboundSelectTag,
 			},
 		})
 		rulesets = append(rulesets, option.RuleSet{
@@ -781,6 +788,7 @@ func setRoutingOptions(options *option.Options, hopt *HiddifyOptions) error {
 			RemoteOptions: option.RemoteRuleSet{
 				URL:            "https://raw.githubusercontent.com/hiddify/hiddify-geo/rule-set/block/geoip-malware.srs",
 				UpdateInterval: badoption.Duration(5 * time.Hour * 24),
+				DownloadDetour: OutboundSelectTag,
 			},
 		})
 
@@ -824,7 +832,9 @@ func setRoutingOptions(options *option.Options, hopt *HiddifyOptions) error {
 				Action: C.RuleActionTypeRoute,
 				RouteOptions: option.DNSRouteActionOptions{
 					Server:         DNSMultiDirectTag,
-					BypassIfFailed: true,
+					Strategy:       hopt.DirectDnsDomainStrategy,
+					RewriteTTL:     &DEFAULT_DNS_TTL,
+					BypassIfFailed: false,
 				},
 			},
 		})
@@ -854,7 +864,9 @@ func setRoutingOptions(options *option.Options, hopt *HiddifyOptions) error {
 				Action: C.RuleActionTypeRoute,
 				RouteOptions: option.DNSRouteActionOptions{
 					Server:         DNSMultiDirectTag,
-					BypassIfFailed: true,
+					Strategy:       hopt.DirectDnsDomainStrategy,
+					RewriteTTL:     &DEFAULT_DNS_TTL,
+					BypassIfFailed: false,
 				},
 			},
 		})
@@ -866,6 +878,7 @@ func setRoutingOptions(options *option.Options, hopt *HiddifyOptions) error {
 			RemoteOptions: option.RemoteRuleSet{
 				URL:            "https://raw.githubusercontent.com/hiddify/hiddify-geo/rule-set/country/geoip-" + hopt.Region + ".srs",
 				UpdateInterval: badoption.Duration(5 * time.Hour * 24),
+				DownloadDetour: OutboundSelectTag,
 			},
 		})
 		rulesets = append(rulesets, option.RuleSet{
@@ -875,6 +888,7 @@ func setRoutingOptions(options *option.Options, hopt *HiddifyOptions) error {
 			RemoteOptions: option.RemoteRuleSet{
 				URL:            "https://raw.githubusercontent.com/hiddify/hiddify-geo/rule-set/country/geosite-" + hopt.Region + ".srs",
 				UpdateInterval: badoption.Duration(5 * time.Hour * 24),
+				DownloadDetour: OutboundSelectTag,
 			},
 		})
 
@@ -939,8 +953,10 @@ func setRoutingOptions(options *option.Options, hopt *HiddifyOptions) error {
 					Action: C.RuleActionTypeRoute,
 					RouteOptions: option.DNSRouteActionOptions{
 						Server:         DNSFakeTag,
+						Strategy:       hopt.RemoteDnsDomainStrategy,
+						RewriteTTL:     &DEFAULT_DNS_TTL,
 						DisableCache:   true,
-						BypassIfFailed: true,
+						BypassIfFailed: false,
 					},
 				},
 			})
@@ -953,11 +969,26 @@ func setRoutingOptions(options *option.Options, hopt *HiddifyOptions) error {
 			Action: C.RuleActionTypeRoute,
 			RouteOptions: option.DNSRouteActionOptions{
 				Server:         DNSMultiRemoteTag,
+				Strategy:       hopt.RemoteDnsDomainStrategy,
+				RewriteTTL:     &DEFAULT_DNS_TTL,
 				BypassIfFailed: false,
 			},
 		},
 	},
 	)
+	// dnsRules = append(dnsRules, option.DefaultDNSRule{
+	// 	RawDefaultDNSRule: option.RawDefaultDNSRule{},
+	// 	DNSRuleAction: option.DNSRuleAction{
+	// 		Action: C.RuleActionTypeRoute,
+	// 		RouteOptions: option.DNSRouteActionOptions{
+	// 			Server:         DNSRemoteTagFallback,
+	// 			Strategy:       hopt.RemoteDnsDomainStrategy,
+	// 			RewriteTTL:     &DEFAULT_DNS_TTL,
+	// 			BypassIfFailed: false,
+	// 		},
+	// 	},
+	// },
+	// )
 
 	// dnsRules = append(dnsRules, option.DefaultDNSRule{
 
@@ -966,7 +997,7 @@ func setRoutingOptions(options *option.Options, hopt *HiddifyOptions) error {
 	// 		Action: C.RuleActionTypeRoute,
 	// 		RouteOptions: option.DNSRouteActionOptions{
 	// 			Server:         DNSTricksDirectTag,
-	// 			BypassIfFailed: true,
+	// 			BypassIfFailed: false,
 	// 		},
 	// 	},
 	// },
@@ -977,7 +1008,7 @@ func setRoutingOptions(options *option.Options, hopt *HiddifyOptions) error {
 	// 		Action: C.RuleActionTypeRoute,
 	// 		RouteOptions: option.DNSRouteActionOptions{
 	// 			Server:         DNSDirectTag,
-	// 			BypassIfFailed: true,
+	// 			BypassIfFailed: false,
 	// 		},
 	// 	},
 	// },
@@ -988,7 +1019,7 @@ func setRoutingOptions(options *option.Options, hopt *HiddifyOptions) error {
 	// 		Action: C.RuleActionTypeRoute,
 	// 		RouteOptions: option.DNSRouteActionOptions{
 	// 			Server: DNSLocalTag,
-	// 			// BypassIfFailed: true,
+	// 			// BypassIfFailed: false,
 	// 		},
 	// 	},
 	// },
@@ -1010,6 +1041,9 @@ func setRoutingOptions(options *option.Options, hopt *HiddifyOptions) error {
 }
 
 func patchHiddifyWarpFromConfig(out *option.Outbound, opt HiddifyOptions) *option.Outbound {
+	if out.Type == C.TypePsiphon {
+		return out
+	}
 	if opt.Warp.EnableWarp && opt.Warp.Mode == "proxy_over_warp" {
 		if opts, ok := out.Options.(option.DialerOptionsWrapper); ok {
 			dialer := opts.TakeDialerOptions()

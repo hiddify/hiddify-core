@@ -2,6 +2,8 @@ package hcore
 
 import (
 	"fmt"
+	"os"
+	"runtime/pprof"
 	"time"
 
 	"github.com/sagernet/sing-box/log"
@@ -62,4 +64,14 @@ func (s *CoreService) LogListener(req *LogRequest, stream grpc.ServerStreamingSe
 			// case <-time.After(500 * time.Millisecond):
 		}
 	}
+}
+
+func dumpGoroutinesToFile(path string) error {
+	f, err := os.Create(path)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	return pprof.Lookup("goroutine").WriteTo(f, 2)
 }

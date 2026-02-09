@@ -8,7 +8,7 @@ require (
 	github.com/jellydator/validation v1.1.0
 	github.com/kardianos/service v1.2.2
 	github.com/sagernet/gomobile v0.1.11
-	github.com/sagernet/sing v0.8.0-beta.16
+	github.com/sagernet/sing v0.8.0-beta.11
 	github.com/sagernet/sing-dns v0.3.0
 	github.com/spf13/cobra v1.10.2
 	golang.org/x/sys v0.40.0
@@ -252,13 +252,13 @@ require (
 )
 
 require (
-	github.com/hiddify/ray2sing v0.0.0-20260207183100-6cfd14194457
+	github.com/hiddify/ray2sing v0.0.0-20260209182827-c816bc8c4a69
 	github.com/sagernet/sing-box v1.13.0
 	github.com/xmdhs/clash2singbox v0.1.4
 	gopkg.in/yaml.v3 v3.0.1
 )
 
-replace github.com/sagernet/sing-box => github.com/hiddify/hiddify-sing-box v1.13.0-rc.2.0.20260207222940-d6d7c425d361
+replace github.com/sagernet/sing-box => github.com/hiddify/hiddify-sing-box v1.13.0-rc.2.0.20260209183951-57f101d6e22f
 
 // replace github.com/sagernet/sing-box => ../../h-sing-box
 

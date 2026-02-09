@@ -77,8 +77,25 @@ func (s *CoreService) GetSystemInfoStream(req *hcommon.Empty, stream grpc.Server
 	return static.GetSystemInfo(stream)
 
 }
+func (h *HiddifyInstance) MakeSureContextIsNew(streamContext context.Context) {
+	for range 10 {
+		if ctx := h.Context(); ctx != nil {
+			select {
+			case <-ctx.Done(): //if old context is done waiting for new context
+			default:
+				return
+			}
+		}
+		select {
+		case <-streamContext.Done():
+			return
+		case <-time.After(time.Millisecond * 500):
+		}
+	}
+}
 func (h *HiddifyInstance) GetSystemInfo(stream grpc.ServerStreamingServer[SystemInfo]) error {
 	// return fmt.Errorf("not implemented yet")
+	h.MakeSureContextIsNew(stream.Context())
 
 	ticker := time.NewTicker(1 * time.Second)
 	defer ticker.Stop()
@@ -87,21 +104,9 @@ func (h *HiddifyInstance) GetSystemInfo(stream grpc.ServerStreamingServer[System
 	defer deadline.Stop()
 
 	ctx := h.Context()
-
-	for ctx == nil {
-		if err := stream.Send(h.readStatus(nil)); err != nil {
-			return err
-		}
-		select {
-		case <-stream.Context().Done():
-			return nil
-		case <-deadline.C:
-			return fmt.Errorf("no box service found")
-		case <-ticker.C:
-			ctx = h.Context()
-		}
+	if ctx == nil {
+		return E.New("service not ready")
 	}
-
 	current_status := h.readStatus(nil)
 	if err := stream.Send(current_status); err != nil {
 		return err

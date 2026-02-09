@@ -164,15 +164,17 @@ func (s *CoreService) MainOutboundsInfo(req *hcommon.Empty, stream grpc.ServerSt
 
 func (h *HiddifyInstance) AllProxiesInfoStream(stream grpc.ServerStreamingServer[OutboundGroupList], onlyMain bool) error {
 
+	h.MakeSureContextIsNew(stream.Context())
 	if ctx, urlTestHistory := h.Context(), h.UrlTestHistory(); ctx != nil && urlTestHistory != nil {
-		monitor := monitoring.Get(h.Context())
+		monitor := monitoring.Get(ctx)
+
+		stream.Send(h.GetAllProxiesInfo(monitor.OutboundsHistory(config.OutboundSelectTag), onlyMain))
+
 		urltestch, err := monitor.SubscribeGroup(config.OutboundSelectTag)
 		if err != nil {
 			return err
 		}
 		defer monitor.UnsubscribeGroup(config.OutboundSelectTag, urltestch)
-
-		stream.Send(h.GetAllProxiesInfo(monitor.OutboundsHistory(config.OutboundSelectTag), onlyMain))
 
 		// timer2 := time.NewTicker(10 * time.Second)
 		// defer timer2.Stop()

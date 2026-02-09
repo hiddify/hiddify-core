@@ -2,6 +2,7 @@ package hcore
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/hiddify/hiddify-core/v2/config"
 	hcommon "github.com/hiddify/hiddify-core/v2/hcommon"
@@ -30,7 +31,10 @@ func Stop() (coreResponse *CoreInfoResponse, err error) {
 	if ss == nil {
 		return SetCoreStatus(CoreStates_STOPPED, MessageType_ALREADY_STOPPED, ""), nil
 	}
+
 	if err := ss.CloseService(); err != nil {
+		static.StartedService = nil
+		dumpGoroutinesToFile(fmt.Sprint(sWorkingPath, "/data/goroutine-stop.log"))
 		return errorWrapper(MessageType_UNEXPECTED_ERROR, err)
 	}
 	// err = common.Close(static.StartedService)

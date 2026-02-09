@@ -2,8 +2,10 @@ package hcore
 
 import (
 	"context"
+	"time"
 
 	"github.com/hiddify/hiddify-core/v2/config"
+	C "github.com/sagernet/sing-box/constant"
 	"github.com/sagernet/sing-box/log"
 )
 
@@ -28,5 +30,13 @@ func Restart(ctx context.Context, in *StartRequest) (coreResponse *CoreInfoRespo
 		return resp, err
 	}
 
-	return StartService(ctx, in)
+	if C.IsAndroid && static.HiddifyOptions.EnableTun {
+		select {
+		case <-ctx.Done():
+			return SetCoreStatus(CoreStates_STOPPED, MessageType_INSTANCE_NOT_STARTED, "restart cancelled"), nil
+		case <-time.After(time.Second):
+		}
+	}
+	c, err := StartService(ctx, in)
+	return c, nil
 }

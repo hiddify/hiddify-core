@@ -2,6 +2,7 @@ package hcore
 
 import (
 	"context"
+	"fmt"
 	"path/filepath"
 	"time"
 
@@ -135,6 +136,9 @@ func StartService(ctx context.Context, in *StartRequest) (coreResponse *CoreInfo
 		return errorWrapper(MessageType_START_SERVICE, err)
 	}
 	static.StartedService = instance
+	if static.debug {
+		dumpGoroutinesToFile(fmt.Sprint(sWorkingPath, "/data/goroutine-start.log"))
+	}
 	for inb := range options.Inbounds {
 		if opts, ok := options.Inbounds[inb].Options.(option.SocksInboundOptions); ok {
 			static.ListenPort = opts.ListenPort

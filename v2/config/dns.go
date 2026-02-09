@@ -8,7 +8,6 @@ import (
 
 	dnscode "github.com/miekg/dns"
 	C "github.com/sagernet/sing-box/constant"
-	"github.com/sagernet/sing-box/hiddify/ipinfo"
 	"github.com/sagernet/sing-box/option"
 	E "github.com/sagernet/sing/common/exceptions"
 	"github.com/sagernet/sing/common/json/badjson"
@@ -20,25 +19,36 @@ var DnsDirectTags = []string{
 	DNSStaticTag,
 	DNSDirectTag,
 	DNSLocalTag,
-	DNSTricksDirectTag,
 }
 var DnsRemoteTags = []string{
 	DNSRemoteTag,
 	DNSRemoteTagFallback,
+	DNSTricksDirectTag,
+}
+
+var DEFAULT_DNS_TTL = uint32(60 * 60 * 24)
+
+func getDnsAddress(d string) string {
+	if !strings.Contains(d, "://") {
+		return "udp://" + d
+	}
+	return d
 }
 
 func setDns(options *option.Options, opt *HiddifyOptions, staticIps *map[string][]string) error {
-	remote_dns, err := getDNSServerOptions(DNSRemoteTag, opt.RemoteDnsAddress, DNSDirectTag, OutboundMainDetour)
+	remoteAddr := getDnsAddress(opt.RemoteDnsAddress)
+	fallbackAddr := "https://8.8.8.8/dns-query"
+	if remoteAddr == fallbackAddr {
+		fallbackAddr = "https://1.0.0.1/dns-query"
+	}
+
+	// if strings.HasPrefix(remoteAddr, "udp://") {
+	// 	remoteAddr = strings.Replace(remoteAddr, "udp://", "tcp://", 1)
+	// }
+
+	remote_dns, err := getDNSServerOptions(DNSRemoteTag, remoteAddr, DNSDirectTag, OutboundMainDetour)
 	if err != nil {
 		return err
-	}
-	fallbackAddr := "tcp://8.8.8.8"
-	if !strings.Contains(opt.RemoteDnsAddress, "://") {
-		fallbackAddr = "tcp://" + opt.RemoteDnsAddress
-	} else if strings.HasPrefix(opt.RemoteDnsAddress, "udp://") {
-		fallbackAddr = strings.Replace(fallbackAddr, "udp://", "tcp://", 1)
-	} else if strings.HasPrefix(opt.RemoteDnsAddress, "tcp://") {
-		fallbackAddr = strings.Replace(fallbackAddr, "tcp://", "udp://", 1)
 	}
 	remote_dns_fallback, err := getDNSServerOptions(DNSRemoteTagFallback, fallbackAddr, DNSDirectTag, OutboundMainDetour)
 	if err != nil {
@@ -48,6 +58,7 @@ func setDns(options *option.Options, opt *HiddifyOptions, staticIps *map[string]
 	if err != nil {
 		return err
 	}
+
 	direct_detour := OutboundDirectFragmentTag
 	if strings.HasPrefix(opt.DirectDnsAddress, "udp://") || !strings.Contains(opt.DirectDnsAddress, "://") {
 		direct_detour = ""
@@ -74,20 +85,21 @@ func setDns(options *option.Options, opt *HiddifyOptions, staticIps *map[string]
 	// 	return err
 	// }
 
-	multi_dns_direct, err := getMultiDnsServerOptions(DNSMultiDirectTag, DnsDirectTags, false)
-	if err != nil {
-		return err
-	}
+	// multi_dns_direct, err := getMultiDnsServerOptions(DNSMultiDirectTag, DnsDirectTags, false)
+	// if err != nil {
+	// 	return err
+	// }
 
-	multi_dns_remote, err := getMultiDnsServerOptions(DNSMultiRemoteTag, DnsRemoteTags, true)
-	if err != nil {
-		return err
-	}
+	// multi_dns_remote, err := getMultiDnsServerOptions(DNSMultiRemoteTag, DnsRemoteTags, true)
+	// if err != nil {
+	// 	return err
+	// }
 
 	dnsOptions := option.DNSOptions{
 		RawDNSOptions: option.RawDNSOptions{
 			DNSClientOptions: option.DNSClientOptions{
 				IndependentCache: opt.IndependentDNSCache && !C.IsIos,
+				DisableExpire:    true,
 			},
 			Final: DNSMultiRemoteTag,
 
@@ -99,8 +111,8 @@ func setDns(options *option.Options, opt *HiddifyOptions, staticIps *map[string]
 				*direct_dns,
 				*local_dns,
 				*remote_no_warp_dns,
-				*multi_dns_direct,
-				*multi_dns_remote,
+				// *multi_dns_direct,
+				// *multi_dns_remote,
 				// *block_dns,
 			},
 			Rules: []option.DNSRule{},
@@ -205,14 +217,13 @@ func addForceDirect(options *option.Options, hopt *HiddifyOptions) ([]option.Def
 	// 					Action: C.RuleActionTypeRoute,
 	// 					RouteOptions: option.DNSRouteActionOptions{
 	// 						Server:         dns_detour,
-	// 						BypassIfFailed: true,
+	// 						BypassIfFailed: false,
 	// 					},
 	// 				},
 	// 			},
 	// 		)
 	// 	}
 	// }
-	domains := []string{}
 
 	forceDirectRules = append(forceDirectRules,
 		option.DefaultDNSRule{
@@ -223,27 +234,27 @@ func addForceDirect(options *option.Options, hopt *HiddifyOptions) ([]option.Def
 				Action: C.RuleActionTypeRoute,
 				RouteOptions: option.DNSRouteActionOptions{
 					Server:         DNSRemoteNoWarpTag,
-					BypassIfFailed: true,
+					Strategy:       hopt.DirectDnsDomainStrategy,
+					BypassIfFailed: false,
+					RewriteTTL:     &DEFAULT_DNS_TTL,
 				},
 			},
 		},
 	)
 
-	domains = append(domains, "api.cloudflareclient.com")
-	for domain, _ := range dnsMap {
-		domains = append(domains, domain)
-	}
-
+	dnsMap["api.cloudflareclient.com"] = ""
 	for _, url := range hopt.ConnectionTestUrls { //To avoid dns bug when using urltest
 		if host, err := getHostnameIfNotIP(url); err == nil {
-			domains = append(domains, host)
+			dnsMap[host] = ""
 		}
 	}
-
-	for _, d := range ipinfo.GetAllIPCheckerDomainsDomains() {
-		domains = append(domains, d)
+	// for _, d := range ipinfo.GetAllIPCheckerDomainsDomains() {
+	// 	dnsMap[d] = ""
+	// }
+	domains := []string{}
+	for domain := range dnsMap {
+		domains = append(domains, domain)
 	}
-
 	if len(domains) > 0 {
 		forceDirectRules = append(forceDirectRules,
 			option.DefaultDNSRule{
@@ -254,39 +265,43 @@ func addForceDirect(options *option.Options, hopt *HiddifyOptions) ([]option.Def
 					Action: C.RuleActionTypeRoute,
 					RouteOptions: option.DNSRouteActionOptions{
 						Server:         DNSMultiDirectTag,
-						BypassIfFailed: true,
+						Strategy:       hopt.DirectDnsDomainStrategy,
+						RewriteTTL:     &DEFAULT_DNS_TTL,
+						BypassIfFailed: false,
 					},
 				},
 			},
 		)
-		forceDirectRules = append(forceDirectRules,
-			option.DefaultDNSRule{
-				RawDefaultDNSRule: option.RawDefaultDNSRule{
-					Domain: domains,
-				},
-				DNSRuleAction: option.DNSRuleAction{
-					Action: C.RuleActionTypeRoute,
-					RouteOptions: option.DNSRouteActionOptions{
-						Server:         DNSTricksDirectTag,
-						BypassIfFailed: true,
-					},
-				},
-			},
-		)
-		forceDirectRules = append(forceDirectRules,
-			option.DefaultDNSRule{
-				RawDefaultDNSRule: option.RawDefaultDNSRule{
-					Domain: domains,
-				},
-				DNSRuleAction: option.DNSRuleAction{
-					Action: C.RuleActionTypeRoute,
-					RouteOptions: option.DNSRouteActionOptions{
-						Server:         DNSLocalTag,
-						BypassIfFailed: true,
-					},
-				},
-			},
-		)
+		// forceDirectRules = append(forceDirectRules,
+		// 	option.DefaultDNSRule{
+		// 		RawDefaultDNSRule: option.RawDefaultDNSRule{
+		// 			Domain: domains,
+		// 		},
+		// 		DNSRuleAction: option.DNSRuleAction{
+		// 			Action: C.RuleActionTypeRoute,
+		// 			RouteOptions: option.DNSRouteActionOptions{
+		// 				Server:         DNSTricksDirectTag,
+		// 				Strategy:       hopt.DirectDnsDomainStrategy,
+		// 				BypassIfFailed: false,
+		// 			},
+		// 		},
+		// 	},
+		// )
+		// forceDirectRules = append(forceDirectRules,
+		// 	option.DefaultDNSRule{
+		// 		RawDefaultDNSRule: option.RawDefaultDNSRule{
+		// 			Domain: domains,
+		// 		},
+		// 		DNSRuleAction: option.DNSRuleAction{
+		// 			Action: C.RuleActionTypeRoute,
+		// 			RouteOptions: option.DNSRouteActionOptions{
+		// 				Server:         DNSLocalTag,
+		// 				Strategy:       hopt.DirectDnsDomainStrategy,
+		// 				BypassIfFailed: false,
+		// 			},
+		// 		},
+		// 	},
+		// )
 	}
 	return forceDirectRules, nil
 
@@ -327,6 +342,7 @@ func getDNSServerOptions(tag string, dnsurl string, domain_resolver string, deto
 		o.Type = C.DNSTypeLocal
 		o.Options = &option.LocalDNSServerOptions{
 			RawLocalDNSServerOptions: remoteOptions.RawLocalDNSServerOptions,
+			PreferGo:                 true,
 		}
 	case C.DNSTypeUDP:
 		o.Type = C.DNSTypeUDP
@@ -344,6 +360,8 @@ func getDNSServerOptions(tag string, dnsurl string, domain_resolver string, deto
 		if serverAddr.Port != 0 && serverAddr.Port != 53 {
 			remoteOptions.ServerPort = serverAddr.Port
 		}
+		remoteOptions.ConnectTimeout = badoption.Duration(5 * time.Second)
+		remoteOptions.DisableTCPKeepAlive = true
 	case C.DNSTypeTCP:
 		o.Type = C.DNSTypeTCP
 		o.Options = &remoteOptions
