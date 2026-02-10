@@ -37,6 +37,5 @@ func Restart(ctx context.Context, in *StartRequest) (coreResponse *CoreInfoRespo
 		case <-time.After(time.Second):
 		}
 	}
-	c, err := StartService(ctx, in)
-	return c, nil
+	return StartService(ctx, in)
 }
