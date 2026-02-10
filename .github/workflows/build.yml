@@ -46,8 +46,8 @@ jobs:
           - { name: 'hiddify-core-linux-amd64', os: 'ubuntu-22.04', target: 'linux-amd64', naive: true , corenet: 'windows/amd64' }
           - { name: 'hiddify-core-linux-arm64', os: 'ubuntu-24.04-arm', target: 'linux-arm64', naive: true , corenet: 'linux/arm64' }
           - { name: "hiddify-core-windows-amd64", os: 'ubuntu-latest', target: 'windows-amd64', aarch: 'x64', naive: true, corenet: 'windows/amd64' }
-          - { name: "hiddify-core-macos", os: 'macos-15', target: 'macos'  }
-          - { name: "hiddify-core-ios", os: "macos-15", target: "ios" }
+          # - { name: "hiddify-core-macos", os: 'macos-15', target: 'macos'  }
+          # - { name: "hiddify-core-ios", os: "macos-15", target: "ios" }
           # # linux custom
           # - {name: hiddify-cli-linux-amd64, goos: linux, goarch: amd64, goamd64: v1, target: 'linux-custom', os: 'ubuntu-22.04', naive: true }
           # - {name: hiddify-cli-linux-amd64-v3, goos: linux, goarch: amd64, goamd64: v3, target: 'linux-custom', os: 'ubuntu-22.04', naive: true }
@@ -96,9 +96,9 @@ jobs:
         uses: nttld/setup-ndk@v1.4.0
         id: setup-ndk
         with:
-          ndk-version: r26b
+          ndk-version: r28
           add-to-path: true
-          local-cache: false
+          local-cache: true
           link-to-sdk: true
 
       - name: Setup MinGW
