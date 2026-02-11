@@ -92,11 +92,11 @@ build-cronet:
 	git checkout FETCH_HEAD && \
 	git submodule update --init --recursive --depth=1 && \
 	if [ "$(VARIANT)" = "musl" ]; then \
-		go run ./cmd/build-naive --target=linux/$(ARCH) --libc=musl download-toolchain && \
-		go run ./cmd/build-naive --target=linux/$(ARCH) --libc=musl env > cronet.env; \
+		GOOS=linux GOARCH=$(ARCH) go run ./cmd/build-naive --target=linux/$(ARCH) --libc=musl download-toolchain && \
+		GOOS=linux GOARCH=$(ARCH) go run ./cmd/build-naive --target=linux/$(ARCH) --libc=musl env > cronet.env; \
 	else \
-		go run ./cmd/build-naive --target=linux/$(ARCH) download-toolchain && \
-		go run ./cmd/build-naive --target=linux/$(ARCH) env > cronet.env; \
+		GOOS=linux GOARCH=$(ARCH) go run ./cmd/build-naive --target=linux/$(ARCH) download-toolchain && \
+		GOOS=linux GOARCH=$(ARCH) go run ./cmd/build-naive --target=linux/$(ARCH) env > cronet.env; \
 	fi
 
 ################################
