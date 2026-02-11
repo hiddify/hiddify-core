@@ -13,9 +13,11 @@ endif
 CRONET_GO_VERSION := $(shell cat hiddify-sing-box/.github/CRONET_GO_VERSION)
 TAGS=with_gvisor,with_quic,with_wireguard,with_utls,with_clash_api,with_grpc,with_awg,with_naive_outbound
 IOS_ADD_TAGS=with_dhcp,with_low_memory,with_conntrack
-GOBUILDLIB=CGO_ENABLED=1 go build -trimpath -tags $(TAGS) -ldflags="-w -s" -buildmode=c-shared
+GOBUILDLIB=CGO_ENABLED=1 go build -trimpath -tags $(TAGS) -ldflags="-w -s -checklinkname=0" -buildmode=c-shared
+GOBUILDLIBWINDOWS=CGO_ENABLED=1 go build -trimpath -tags $(TAGS),with_purego,badlinkname,tfogo_checklinkname0 -ldflags="-w -s -checklinkname=0" -buildmode=c-shared
 GOBUILDSRV=CGO_ENABLED=1 go build -ldflags "-s -w" -trimpath -tags $(TAGS)
 
+CRONET_DIR=./cronet
 .PHONY: protos
 protos:
 	go install github.com/pseudomuto/protoc-gen-doc/cmd/protoc-gen-doc@latest
@@ -64,47 +66,69 @@ webui:
 windows-amd64: prepare
 	rm -rf $(BINDIR)/*
 	go run -v "github.com/sagernet/cronet-go/cmd/build-naive@$(CRONET_GO_VERSION)" extract-lib --target windows/amd64 -o $(BINDIR)/
-	cp $(BINDIR)/libcronet.dll ./libcronet.dll
-	env GOOS=windows GOARCH=amd64 CC=x86_64-w64-mingw32-gcc CGO_LDFLAGS="libcronet.dll" $(GOBUILDLIB)  -o $(BINDIR)/$(LIBNAME).dll ./platform/desktop
+	env GOOS=windows GOARCH=amd64 CC=x86_64-w64-mingw32-gcc  $(GOBUILDLIBWINDOWS)  -o $(BINDIR)/$(LIBNAME).dll ./platform/desktop
 	go install -mod=readonly github.com/akavel/rsrc@latest ||echo "rsrc error in installation"
 	go run ./cli tunnel exit
 	cp $(BINDIR)/$(LIBNAME).dll ./$(LIBNAME).dll
 	$$(go env GOPATH)/bin/rsrc -ico ./assets/hiddify-cli.ico -o ./cmd/bydll/cli.syso ||echo "rsrc error in syso"
-	env GOOS=windows GOARCH=amd64 CC=x86_64-w64-mingw32-gcc CGO_LDFLAGS="$(LIBNAME).dll libcronet.dll" $(GOBUILDSRV) -o $(BINDIR)/$(CLINAME).exe ./cmd/bydll
+	env GOOS=windows GOARCH=amd64 CC=x86_64-w64-mingw32-gcc CGO_LDFLAGS="$(LIBNAME).dll" $(GOBUILDSRV) -o $(BINDIR)/$(CLINAME).exe ./cmd/bydll
 	rm ./*.dll
 	make webui
 	
 
-linux-amd64: prepare	
+
+################################
+# Install Cronet + Generate Env
+################################
+install_cronet:
+# 	rm -rf $(CRONET_DIR)
+	git init $(CRONET_DIR) || echo "dir exist"
+	cd $(CRONET_DIR) && \
+	git remote add origin https://github.com/sagernet/cronet-go.git ||echo "remote exist"; \
+	git fetch --depth=1 origin $(CRONET_GO_VERSION) && \
+	git checkout FETCH_HEAD && \
+	git submodule update --init --recursive --depth=1 && \
+	if [ "$(VARIANT)" = "musl" ]; then \
+		go run ./cmd/build-naive --target=linux/$(ARCH) --libc=musl download-toolchain && \
+		go run ./cmd/build-naive --target=linux/$(ARCH) --libc=musl env > cronet.env; \
+	else \
+		go run ./cmd/build-naive --target=linux/$(ARCH) download-toolchain && \
+		go run ./cmd/build-naive --target=linux/$(ARCH) env > cronet.env; \
+	fi
+
+################################
+# Generic Linux Builder
+################################
+linux-%:
+	$(MAKE) ARCH=$* build-linux
+
+define load_cronet_env
+set -a; \
+while IFS= read -r line; do \
+    key=$${line%%=*}; \
+    value=$${line#*=}; \
+    export "$$key=$$value"; \
+done < $(CRONET_DIR)/cronet.env; \
+set +a;
+endef
+build-linux: prepare install_cronet
 	mkdir -p $(BINDIR)/lib
-	rm -rf $(BINDIR)/lib/*
-	go run -v "github.com/sagernet/cronet-go/cmd/build-naive@$(CRONET_GO_VERSION)" extract-lib --target linux/amd64 -o $(BINDIR)/lib/
-	mkdir -p lib
-	cp $(BINDIR)/lib/libcronet.so ./lib/libcronet.so
-	env GOOS=linux GOARCH=amd64 CGO_LDFLAGS="./lib/libcronet.so" $(GOBUILDLIB) -o $(BINDIR)/lib/$(LIBNAME).so ./platform/desktop
+	$(load_cronet_env)
+	GOOS=linux GOARCH=$(ARCH) CGO_ENABLED=1 $(GOBUILDLIB) -o $(BINDIR)/lib/$(LIBNAME).so ./platform/desktop
+
 	cp $(BINDIR)/lib/$(LIBNAME).so ./lib/$(LIBNAME).so
-	env GOOS=linux GOARCH=amd64  CGO_LDFLAGS="./lib/$(LIBNAME).so ./lib/libcronet.so" $(GOBUILDSRV) -o $(BINDIR)/$(CLINAME) ./cmd/bydll
-	rm -rf ./lib
+
+	GOOS=linux GOARCH=$(ARCH) CGO_ENABLED=1 CGO_LDFLAGS="./lib/$(LIBNAME).so -Wl,-rpath,\$$ORIGIN/lib -fuse-ld=lld" \
+	$(GOBUILDSRV) -o $(BINDIR)/$(CLINAME) ./cmd/bydll
+
 	chmod +x $(BINDIR)/$(CLINAME)
 	make webui
 
-linux-arm64: prepare
-	mkdir -p $(BINDIR)/lib
-	rm -rf $(BINDIR)/lib/*
-	go run -v "github.com/sagernet/cronet-go/cmd/build-naive@$(CRONET_GO_VERSION)" extract-lib --target linux/arm64 -o $(BINDIR)/lib/
-	mkdir -p lib
-	cp $(BINDIR)/lib/libcronet.so ./lib/libcronet.so
-	env GOOS=linux GOARCH=arm64 $(GOBUILDLIB) -o $(BINDIR)/lib/$(LIBNAME).so ./platform/desktop
-	cp $(BINDIR)/lib/$(LIBNAME).so ./lib/$(LIBNAME).so
-	env GOOS=linux GOARCH=arm64  CGO_LDFLAGS="./lib/$(LIBNAME).so ./lib/libcronet.so" $(GOBUILDSRV) -o $(BINDIR)/$(CLINAME) ./cmd/bydll
-	rm -rf ./lib
-	chmod +x $(BINDIR)/$(CLINAME)
-	make webui
 
-
-linux-custom: prepare
+linux-custom: prepare  install_cronet
 	mkdir -p $(BINDIR)/
 	#env GOARCH=mips $(GOBUILDSRV) -o $(BINDIR)/$(CLINAME) ./cmd/
+	$(load_cronet_env)
 	go build -ldflags "-s -w" -trimpath -tags $(TAGS) -o $(BINDIR)/$(CLINAME) ./cmd/main
 	chmod +x $(BINDIR)/$(CLINAME)
 	make webui
