@@ -243,10 +243,10 @@ jobs:
           - { os: linux, arch: s390x, debian: s390x, rpm: s390x }
           - { os: linux, arch: ppc64le, debian: ppc64el, rpm: ppc64le }
           - { os: linux, arch: riscv64, debian: riscv64, rpm: riscv64, openwrt: "riscv64_generic" }
-          - { os: linux, arch: loong64, debian: loongarch64, rpm: loongarch64, openwrt: "loongarch64_generic" }
+          # - { os: linux, arch: loong64, debian: loongarch64, rpm: loongarch64, openwrt: "loongarch64_generic" }
 
-          - { os: windows, arch: amd64, legacy_win7: true, legacy_name: "windows-7" }
-          - { os: windows, arch: "386", legacy_win7: true, legacy_name: "windows-7" }
+          # - { os: windows, arch: amd64, legacy_win7: true, legacy_name: "windows-7" }
+          # - { os: windows, arch: "386", legacy_win7: true, legacy_name: "windows-7" }
 
           # - { os: android, arch: arm64, ndk: "aarch64-linux-android23" }
           # - { os: android, arch: arm, ndk: "armv7a-linux-androideabi23" }
