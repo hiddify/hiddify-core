@@ -525,7 +525,7 @@ jobs:
           set -xeuo pipefail
           cd dist
           mkdir -p "${DIR_NAME}"
-          cp ../LICENSE "${DIR_NAME}"
+          cp ../LICENSE.md "${DIR_NAME}"
           if [ '${{ matrix.os }}' = 'windows' ]; then
             cp hiddify-core "${DIR_NAME}/hiddify-core.exe"
             zip -r "${DIR_NAME}.zip" "${DIR_NAME}"
