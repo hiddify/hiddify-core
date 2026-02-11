@@ -11,9 +11,9 @@ ifeq ($(OS),Windows_NT)
 Not available for Windows! use bash in WSL
 endif
 CRONET_GO_VERSION := $(shell cat hiddify-sing-box/.github/CRONET_GO_VERSION)
-TAGS=with_gvisor,with_quic,with_wireguard,with_utls,with_clash_api,with_grpc,with_awg,with_naive_outbound
+TAGS=with_gvisor,with_quic,with_wireguard,with_utls,with_clash_api,with_grpc,with_awg,with_naive_outbound,badlinkname,tfogo_checklinkname0
 IOS_ADD_TAGS=with_dhcp,with_low_memory,with_conntrack
-WINDOWS_ADD_TAGS=with_purego,badlinkname,tfogo_checklinkname0
+WINDOWS_ADD_TAGS=with_purego
 GOBUILDLIB=CGO_ENABLED=1 go build -trimpath -ldflags="-w -s -checklinkname=0" -buildmode=c-shared
 GOBUILDSRV=CGO_ENABLED=1 go build -ldflags "-s -w" -trimpath -tags $(TAGS)
 
@@ -119,16 +119,20 @@ build-linux: prepare
 	mkdir -p $(BINDIR)/lib
 
 	$(load_cronet_env)
+	FINAL_TAGS=$(TAGS); \
 	if [ "$(VARIANT)" = "musl" ]; then \
-		GOOS=linux GOARCH=$(ARCH) CGO_ENABLED=1 $(GOBUILDLIB) -tags $(TAGS),with_musl -o $(BINDIR)/lib/$(LIBNAME).so ./platform/desktop ;\
-	else \
-		GOOS=linux GOARCH=$(ARCH) CGO_ENABLED=1 $(GOBUILDLIB) -tags $(TAGS) -o $(BINDIR)/lib/$(LIBNAME).so ./platform/desktop ;\
-	fi
+		FINAL_TAGS=$${FINAL_TAGS},with_musl; \
+	elif [[ "$(VARIANT)" == "purego" ]]; then \
+		FINAL_TAGS="$${FINAL_TAGS},with_purego"; \
+	fi; \
+	echo "FinalTags: $$FINAL_TAGS"; \
+	GOOS=linux GOARCH=$(ARCH) $(GOBUILDLIB) -tags $${FINAL_TAGS} -o $(BINDIR)/lib/$(LIBNAME).so ./platform/desktop ;\
+	
 	echo "Core library built, now building CLI with CGO linking to core library"
 	mkdir lib
 	cp $(BINDIR)/lib/$(LIBNAME).so ./lib/$(LIBNAME).so
 
-	GOOS=linux GOARCH=$(ARCH) CGO_ENABLED=1 CGO_LDFLAGS="./lib/$(LIBNAME).so -Wl,-rpath,\$$ORIGIN/lib -fuse-ld=lld" \
+	GOOS=linux GOARCH=$(ARCH) CGO_LDFLAGS="./lib/$(LIBNAME).so -Wl,-rpath,\$$ORIGIN/lib -fuse-ld=lld" \
 	$(GOBUILDSRV) -o $(BINDIR)/$(CLINAME) ./cmd/bydll
 	
 	rm -rf ./lib/*.so

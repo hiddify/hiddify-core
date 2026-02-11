@@ -265,6 +265,8 @@ require (
 
 // replace github.com/sagernet/sing-box => github.com/hiddify/hiddify-sing-box v1.13.0-rc.2.0.20260209222802-dd10a2129de7
 
+replace github.com/hiddify/ray2sing => ./ray2sing
+
 replace github.com/sagernet/sing-box => ./hiddify-sing-box
 
 // replace github.com/xtls/xray-core => github.com/hiddify/xray-core v0.0.0-20260124181826-59e6569c13e9

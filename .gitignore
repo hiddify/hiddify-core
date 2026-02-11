@@ -1,3 +1,4 @@
+*cronet*
 /bin/*
 !/bin/.gitkeep
 .build
