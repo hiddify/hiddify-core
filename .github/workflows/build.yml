@@ -43,8 +43,8 @@ jobs:
       matrix:
         job:
           - { name: 'hiddify-core-android', os: 'ubuntu-latest', target: 'android'}
-          - { name: 'hiddify-core-linux-amd64', os: 'ubuntu-22.04', target: 'linux-amd64', naive: true , corenet: 'linux/amd64', build_corenet: true }
-          - { name: 'hiddify-core-linux-arm64', os: 'ubuntu-24.04-arm', target: 'linux-arm64', naive: true , corenet: 'linux/arm64', build_corenet: true }
+          - { name: 'hiddify-core-linux-amd64', os: 'ubuntu-22.04', target: 'linux-amd64',  arch: 'amd64', naive: true , corenet: 'linux/amd64', build_corenet: true }
+          - { name: 'hiddify-core-linux-arm64', os: 'ubuntu-24.04-arm', target: 'linux-arm64', naive: true ,  arch: 'arm64', corenet: 'linux/arm64', build_corenet: true }
           - { name: "hiddify-core-windows-amd64", os: 'ubuntu-latest', target: 'windows-amd64', aarch: 'x64', naive: true, corenet: 'windows/amd64' }
           # - { name: "hiddify-core-macos", os: 'macos-15', target: 'macos'  }
           # - { name: "hiddify-core-ios", os: "macos-15", target: "ios" }
@@ -90,17 +90,13 @@ jobs:
         with:
           distribution: 'zulu'
           java-version: '17'
-
-      - name: Setup NDK
+      - name: Setup Android NDK
         if: startsWith(matrix.job.target,'android')
-        uses: nttld/setup-ndk@v1.4.0
         id: setup-ndk
+        uses: nttld/setup-ndk@v1
         with:
           ndk-version: r28
-          add-to-path: true
-          local-cache: true
-          link-to-sdk: true
-
+      
       - name: Setup MinGW
         if: startsWith(matrix.job.target,'windows')
         uses: egor-tensin/setup-mingw@v2
@@ -111,49 +107,13 @@ jobs:
         run: |
           brew install create-dmg tree coreutils
 
-      - name: Clone cronet-go
-        if: matrix.naive && matrix.build_corenet
+      - name: install_cronet
+        if: startsWith(matrix.job.target,'linux')
         run: |
-          set -xeuo pipefail
-          CRONET_GO_VERSION=$(cat .github/CRONET_GO_VERSION)
-          git init ~/cronet-go
-          git -C ~/cronet-go remote add origin https://github.com/sagernet/cronet-go.git
-          git -C ~/cronet-go fetch --depth=1 origin "$CRONET_GO_VERSION"
-          git -C ~/cronet-go checkout FETCH_HEAD
-          git -C ~/cronet-go submodule update --init --recursive --depth=1
-      - name: Cache Chromium toolchain
-        if: matrix.naive && matrix.build_corenet
-        id: cache-chromium-toolchain
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/cronet-go/naiveproxy/src/third_party/llvm-build/Release+Asserts
-            ~/cronet-go/naiveproxy/src/out/sysroot-build
-          key: chromium-toolchain-${{ matrix.arch }}-${{ matrix.variant }}-${{ hashFiles('.github/CRONET_GO_VERSION') }}
-      - name: Download Chromium toolchain
-        if: matrix.naive && matrix.build_corenet
-        run: |
-          set -xeuo pipefail
-          cd ~/cronet-go
-          if [[ "${{ matrix.variant }}" == "musl" ]]; then
-            go run ./cmd/build-naive --target=linux/${{ matrix.arch }} --libc=musl download-toolchain
-          else
-            go run ./cmd/build-naive --target=linux/${{ matrix.arch }} download-toolchain
-          fi
-      - name: Set Chromium toolchain environment
-        if: matrix.naive && matrix.build_corenet
-        run: |
-          set -xeuo pipefail
-          cd ~/cronet-go
-          if [[ "${{ matrix.variant }}" == "musl" ]]; then
-            go run ./cmd/build-naive --target=linux/${{ matrix.arch }} --libc=musl env >> $GITHUB_ENV
-          else
-            go run ./cmd/build-naive --target=linux/${{ matrix.arch }} env >> $GITHUB_ENV
-          fi
-
+          make ARCH=${{ matrix.job.arch }} install_cronet
       - name: Build
         run: |
-          make -j$(($(nproc) + 1)) ${{ matrix.job.target }}
+          make ${{ matrix.job.target }}
 
       - name: zip
         run: |

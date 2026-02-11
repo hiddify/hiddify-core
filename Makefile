@@ -13,8 +13,8 @@ endif
 CRONET_GO_VERSION := $(shell cat hiddify-sing-box/.github/CRONET_GO_VERSION)
 TAGS=with_gvisor,with_quic,with_wireguard,with_utls,with_clash_api,with_grpc,with_awg,with_naive_outbound
 IOS_ADD_TAGS=with_dhcp,with_low_memory,with_conntrack
-GOBUILDLIB=CGO_ENABLED=1 go build -trimpath -tags $(TAGS) -ldflags="-w -s -checklinkname=0" -buildmode=c-shared
-GOBUILDLIBWINDOWS=CGO_ENABLED=1 go build -trimpath -tags $(TAGS),with_purego,badlinkname,tfogo_checklinkname0 -ldflags="-w -s -checklinkname=0" -buildmode=c-shared
+WINDOWS_ADD_TAGS=with_purego,badlinkname,tfogo_checklinkname0
+GOBUILDLIB=CGO_ENABLED=1 go build -trimpath -ldflags="-w -s -checklinkname=0" -buildmode=c-shared
 GOBUILDSRV=CGO_ENABLED=1 go build -ldflags "-s -w" -trimpath -tags $(TAGS)
 
 CRONET_DIR=./cronet
@@ -66,7 +66,9 @@ webui:
 windows-amd64: prepare
 	rm -rf $(BINDIR)/*
 	go run -v "github.com/sagernet/cronet-go/cmd/build-naive@$(CRONET_GO_VERSION)" extract-lib --target windows/amd64 -o $(BINDIR)/
-	env GOOS=windows GOARCH=amd64 CC=x86_64-w64-mingw32-gcc  $(GOBUILDLIBWINDOWS)  -o $(BINDIR)/$(LIBNAME).dll ./platform/desktop
+	env GOOS=windows GOARCH=amd64 CC=x86_64-w64-mingw32-gcc  $(GOBUILDLIB) -tags $(TAGS),$(WINDOWS_ADD_TAGS)   -o $(BINDIR)/$(LIBNAME).dll ./platform/desktop
+	echo "core built, now building cli" 
+	ls -R $(BINDIR)/
 	go install -mod=readonly github.com/akavel/rsrc@latest ||echo "rsrc error in installation"
 	go run ./cli tunnel exit
 	cp $(BINDIR)/$(LIBNAME).dll ./$(LIBNAME).dll
@@ -111,11 +113,20 @@ while IFS= read -r line; do \
 done < $(CRONET_DIR)/cronet.env; \
 set +a;
 endef
-build-linux: prepare install_cronet
-	mkdir -p $(BINDIR)/lib
-	$(load_cronet_env)
-	GOOS=linux GOARCH=$(ARCH) CGO_ENABLED=1 $(GOBUILDLIB) -o $(BINDIR)/lib/$(LIBNAME).so ./platform/desktop
 
+
+build-linux: prepare
+	mkdir -p $(BINDIR)/lib
+	
+	go run -v "github.com/sagernet/cronet-go/cmd/build-naive@$(CRONET_GO_VERSION)" extract-lib --target linux/$(ARCH) -o $(BINDIR)/
+	echo "Cronet library extracted, now building core library with CGO"
+	$(load_cronet_env)
+	if [ "$(VARIANT)" = "musl" ]; then \
+		GOOS=linux GOARCH=$(ARCH) CGO_ENABLED=1 $(GOBUILDLIB) -tags $(TAGS),with_musl -o $(BINDIR)/lib/$(LIBNAME).so ./platform/desktop\;
+	else \
+		GOOS=linux GOARCH=$(ARCH) CGO_ENABLED=1 $(GOBUILDLIB) -tags $(TAGS) -o $(BINDIR)/lib/$(LIBNAME).so ./platform/desktop\;
+	fi
+	echo "Core library built, now building CLI with CGO linking to core library"
 	cp $(BINDIR)/lib/$(LIBNAME).so ./lib/$(LIBNAME).so
 
 	GOOS=linux GOARCH=$(ARCH) CGO_ENABLED=1 CGO_LDFLAGS="./lib/$(LIBNAME).so -Wl,-rpath,\$$ORIGIN/lib -fuse-ld=lld" \
