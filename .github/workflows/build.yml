@@ -108,17 +108,20 @@ jobs:
         run: |
           brew install create-dmg tree coreutils
 
+      - name: Cache Chromium toolchain
+        if: startsWith(matrix.job.target,'linux')
+        id: cache-chromium-toolchain
+        uses: actions/cache@v4
+        with:
+          path: |
+            ./cronet-go/naiveproxy/src/third_party/llvm-build/Release+Asserts
+            ./cronet-go/naiveproxy/src/out/sysroot-build
+          key: chromium-toolchain-${{ matrix.job.target }}-${{ matrix.job.arch }}-${{ matrix.job.variant }}-${{ hashFiles('hiddify-sing-box/.github/CRONET_GO_VERSION') }}
       - name: install_cronet
         if: startsWith(matrix.job.target,'linux')
         run: |
           make cronet-${{ matrix.job.arch }}
-        env:
-          GOOS: ${{ matrix.os }}
-          GOARCH: ${{ matrix.arch }}
-          GO386: ${{ matrix.go386 }}
-          GOARM: ${{ matrix.goarm }}
-          GOMIPS: ${{ matrix.gomips }}
-          GOMIPS64: ${{ matrix.gomips }}
+
       - name: Build
         run: |
           make ${{ matrix.job.target }}

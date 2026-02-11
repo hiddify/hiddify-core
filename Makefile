@@ -138,12 +138,11 @@ build-linux: prepare
 	mkdir lib
 	cp $(BINDIR)/lib/$(LIBNAME).so ./lib/$(LIBNAME).so
 
-	GOOS=linux GOARCH=$(ARCH) CGO_LDFLAGS="./lib/$(LIBNAME).so -Wl,-rpath,\$$ORIGIN/lib -fuse-ld=lld" \
-	$(GOBUILDSRV) -o $(BINDIR)/$(CLINAME) ./cmd/bydll
+	GOOS=linux GOARCH=$(ARCH) CGO_LDFLAGS="./lib/$(LIBNAME).so -Wl,-rpath,\$$ORIGIN/lib -fuse-ld=lld" $(GOBUILDSRV) -o $(BINDIR)/$(CLINAME) ./cmd/bydll
 	
 	rm -rf ./lib/*.so
 	chmod +x $(BINDIR)/$(CLINAME)
-	if [ ! -f $(BINDIR)/$(LIBNAME).so -o ! -f $(BINDIR)/$(CLINAME) ]; then \
+	if [ ! -f $(BINDIR)/lib/$(LIBNAME).so -o ! -f $(BINDIR)/$(CLINAME) ]; then \
 		echo "Error: $(LIBNAME).so or $(CLINAME) not built"; \
 		ls -R $(BINDIR); \
 		exit 1; \
