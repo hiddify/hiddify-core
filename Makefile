@@ -91,7 +91,7 @@ build-cronet:
 	git fetch --depth=1 origin $(CRONET_GO_VERSION) && \
 	git checkout FETCH_HEAD && \
 	git submodule update --init --recursive --depth=1 && \
-	if [ "$(VARIANT)" = "musl" ]; then \
+	if [ "$(VARIANT)" == "musl" ]; then \
 		GOOS=linux GOARCH=$(ARCH) go run ./cmd/build-naive --target=linux/$(ARCH) --libc=musl download-toolchain && \
 		GOOS=linux GOARCH=$(ARCH) go run ./cmd/build-naive --target=linux/$(ARCH) --libc=musl env > cronet.env; \
 	else \
@@ -111,6 +111,7 @@ while IFS= read -r line; do \
     key=$${line%%=*}; \
     value=$${line#*=}; \
     export "$$key=$$value"; \
+	echo "$$key=$$value"; \
 done < $(CRONET_DIR)/cronet.env; \
 set +a;
 endef
@@ -120,7 +121,7 @@ build-linux: prepare
 
 	$(load_cronet_env)
 	FINAL_TAGS=$(TAGS); \
-	if [ "$(VARIANT)" = "musl" ]; then \
+	if [ "$(VARIANT)" == "musl" ]; then \
 		FINAL_TAGS=$${FINAL_TAGS},with_musl; \
 	elif [[ "$(VARIANT)" == "purego" ]]; then \
 		FINAL_TAGS="$${FINAL_TAGS},with_purego"; \
@@ -136,8 +137,8 @@ build-linux: prepare
 	$(GOBUILDSRV) -o $(BINDIR)/$(CLINAME) ./cmd/bydll
 	
 	rm -rf ./lib/*.so
-#	chmod +x $(BINDIR)/$(CLINAME)
-#	make webui
+	chmod +x $(BINDIR)/$(CLINAME)
+	make webui
 
 
 linux-custom: prepare  install_cronet
