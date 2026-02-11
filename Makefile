@@ -75,7 +75,12 @@ windows-amd64: prepare
 	$$(go env GOPATH)/bin/rsrc -ico ./assets/hiddify-cli.ico -o ./cmd/bydll/cli.syso ||echo "rsrc error in syso"
 	env GOOS=windows GOARCH=amd64 CC=x86_64-w64-mingw32-gcc CGO_LDFLAGS="$(LIBNAME).dll" $(GOBUILDSRV) -o $(BINDIR)/$(CLINAME).exe ./cmd/bydll
 	rm ./*.dll
-	make webui
+	if [ ! -f $(BINDIR)/$(LIBNAME).dll -o ! -f $(BINDIR)/$(CLINAME).exe ]; then \
+		echo "Error: $(LIBNAME).dll or $(CLINAME).exe not built"; \
+		exit 1; \
+	fi
+
+# 	make webui
 	
 
 
@@ -91,7 +96,7 @@ build-cronet:
 	git fetch --depth=1 origin $(CRONET_GO_VERSION) && \
 	git checkout FETCH_HEAD && \
 	git submodule update --init --recursive --depth=1 && \
-	if [ "$(VARIANT)" == "musl" ]; then \
+	if [ "$(VARIANT)" = "musl" ]; then \
 		GOOS=linux GOARCH=$(ARCH) go run ./cmd/build-naive --target=linux/$(ARCH) --libc=musl download-toolchain && \
 		GOOS=linux GOARCH=$(ARCH) go run ./cmd/build-naive --target=linux/$(ARCH) --libc=musl env > cronet.env; \
 	else \
@@ -121,9 +126,9 @@ build-linux: prepare
 
 	$(load_cronet_env)
 	FINAL_TAGS=$(TAGS); \
-	if [ "$(VARIANT)" == "musl" ]; then \
+	if [ "$(VARIANT)" = "musl" ]; then \
 		FINAL_TAGS=$${FINAL_TAGS},with_musl; \
-	elif [[ "$(VARIANT)" == "purego" ]]; then \
+	elif [[ "$(VARIANT)" = "purego" ]]; then \
 		FINAL_TAGS="$${FINAL_TAGS},with_purego"; \
 	fi; \
 	echo "FinalTags: $$FINAL_TAGS"; \
@@ -138,7 +143,11 @@ build-linux: prepare
 	
 	rm -rf ./lib/*.so
 	chmod +x $(BINDIR)/$(CLINAME)
-	make webui
+	if [ ! -f $(BINDIR)/$(LIBNAME).so -o ! -f $(BINDIR)/$(CLINAME) ]; then \
+		echo "Error: $(LIBNAME).so or $(CLINAME) not built"; \
+		exit 1; \
+	fi
+# 	make webui
 
 
 linux-custom: prepare  install_cronet
