@@ -11,7 +11,7 @@ ifeq ($(OS),Windows_NT)
 Not available for Windows! use bash in WSL
 endif
 CRONET_GO_VERSION := $(shell cat hiddify-sing-box/.github/CRONET_GO_VERSION)
-TAGS=with_gvisor,with_quic,with_wireguard,with_utls,with_clash_api,with_grpc,with_awg,with_naive_outbound,badlinkname,tfogo_checklinkname0
+TAGS=with_gvisor,with_quic,with_wireguard,with_utls,with_clash_api,with_grpc,with_awg,with_naive_outbound,tfogo_checklinkname0
 IOS_ADD_TAGS=with_dhcp,with_low_memory,with_conntrack
 WINDOWS_ADD_TAGS=with_purego
 GOBUILDLIB=CGO_ENABLED=1 go build -trimpath -ldflags="-w -s -checklinkname=0 $${CODE_VERSION}" -buildmode=c-shared

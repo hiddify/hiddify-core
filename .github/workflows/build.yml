@@ -20,7 +20,8 @@ jobs:
     name: Calculate version
     runs-on: ubuntu-latest
     outputs:
-      version: ${{ steps.outputs.outputs.version }}
+      hiddify_version: ${{ steps.outputs.outputs.hiddify_version }}
+      singbox_version: ${{ steps.outputs.outputs.singbox_version }}
     steps:
       - name: Checkout
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
