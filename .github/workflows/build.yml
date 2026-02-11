@@ -26,6 +26,7 @@ jobs:
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
         with:
           fetch-depth: 0
+          submodules: 'recursive'
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
@@ -33,24 +34,30 @@ jobs:
       - name: Check input version
         if: github.event_name == 'workflow_dispatch'
         run: |-
-          echo "version=${{ inputs.version }}"
+          echo "hiddify_version=${{ inputs.version }}"
           echo "version=${{ inputs.version }}" >> "$GITHUB_ENV"
       
       - name: Check input version
         if: github.event_name != 'workflow_dispatch' && "${{ inputs.tag-name }}" != "draft"
         run: |-
-          echo "version=${{ inputs.tag-name }}"
-          echo "version=${{ inputs.tag-name }}" >> "$GITHUB_ENV"
+          echo "hiddify_version=${{ inputs.tag-name }}"
+          echo "hiddify_version=${{ inputs.tag-name }}" >> "$GITHUB_ENV"
               
       - name: Calculate version
         if: github.event_name != 'workflow_dispatch' && "${{ inputs.tag-name }}" == "draft"
         run: |-
-          echo "version=$(git describe --tags)" >> "$GITHUB_ENV"
+          echo "hiddify_version=$(git describe --tags)" >> "$GITHUB_ENV"
+      - name: Calculate singbox version
+        run: |-
+          cd hiddify-sing-box
+          go run -v ./cmd/internal/read_tag --ci --nightly
       - name: Set outputs
         id: outputs
         run: |-
-          echo "version=$version" >> "$GITHUB_OUTPUT"
-
+          echo "hiddify_version=${hiddify_version}" >> "$GITHUB_OUTPUT"
+          echo "singbox_version=$version" >> "$GITHUB_OUTPUT"
+  
+          
   update_wrt_hash:
     permissions: write-all
     runs-on: ubuntu-latest
@@ -72,6 +79,8 @@ jobs:
             branch: main
             # push_options: --force
   build:
+    needs:
+      - calculate_version
     permissions: write-all
     strategy:
       fail-fast: false
@@ -101,6 +110,7 @@ jobs:
     
     runs-on: ${{ matrix.job.os }}
     env:
+      CODE_VERSION: "-X github.com/hiddify/hiddify-core/v2/hcommon/constants.Version=${{ needs.calculate_version.outputs.hiddify_version }} -X github.com/sagernet/sing-box/constant.Version=${{ needs.calculate_version.outputs.singbox_version }}"
       GOOS: ${{ matrix.job.goos }}
       GOARCH: ${{ matrix.job.goarch }}
       GOAMD64: ${{ matrix.job.goamd64 }}
@@ -197,7 +207,8 @@ jobs:
     runs-on: ubuntu-latest
     needs:
       - calculate_version
-    
+    env:
+      CODE_VERSION: "-X github.com/hiddify/hiddify-core/v2/hcommon/constants.Version=${{ needs.calculate_version.outputs.hiddify_version }} -X github.com/sagernet/sing-box/constant.Version=${{ needs.calculate_version.outputs.singbox_version }}"
       
     strategy:
       fail-fast: false
@@ -245,7 +256,7 @@ jobs:
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
         with:
           fetch-depth: 0
-          recursive: true
+          submodules: 'recursive'
       - name: Setup Go
         if: ${{ ! (matrix.legacy_win7 || matrix.legacy_go124) }}
         uses: actions/setup-go@v5
@@ -318,10 +329,10 @@ jobs:
           else
             go run ./cmd/build-naive --target=linux/${{ matrix.arch }} env >> $GITHUB_ENV
           fi
-      - name: Set tag
-        run: |-
-          git ls-remote --exit-code --tags origin v${{ needs.calculate_version.outputs.version }} || echo "PUBLISHED=false" >> "$GITHUB_ENV"
-          git tag v${{ needs.calculate_version.outputs.version }} -f
+      # - name: Set tag
+      #   run: |-
+      #     git ls-remote --exit-code --tags origin v${{ needs.calculate_version.outputs.version }} || echo "PUBLISHED=false" >> "$GITHUB_ENV"
+      #     git tag v${{ needs.calculate_version.outputs.version }} -f
       - name: Set build tags
         run: |
           set -xeuo pipefail
@@ -341,7 +352,7 @@ jobs:
           set -xeuo pipefail
           mkdir -p dist
           go build -v -trimpath -o dist/hiddify-core -tags "${BUILD_TAGS}" \
-          -ldflags '-s -buildid= -X github.com/hiddify/hiddify-core/v2/hcommon/constants.Version${{ needs.calculate_version.outputs.version }} -X internal/godebug.defaultGODEBUG=multipathtcp=0 -checklinkname=0' \
+          -ldflags '-s -buildid= ${CODE_VERSION} -X internal/godebug.defaultGODEBUG=multipathtcp=0 -checklinkname=0' \
           ./cmd/
         env:
           CGO_ENABLED: "0"
@@ -363,7 +374,7 @@ jobs:
           set -xeuo pipefail
           mkdir -p dist
           go build -v -trimpath -o dist/hiddify-core -tags "${BUILD_TAGS}" \
-          -ldflags '-s -buildid= -X github.com/hiddify/hiddify-core/v2/hcommon/constants.Version${{ needs.calculate_version.outputs.version }} -X internal/godebug.defaultGODEBUG=multipathtcp=0 -checklinkname=0' \
+          -ldflags '-s -buildid= ${CODE_VERSION} -X internal/godebug.defaultGODEBUG=multipathtcp=0 -checklinkname=0' \
           ./cmd/
         env:
           CGO_ENABLED: "1"
@@ -378,7 +389,7 @@ jobs:
           set -xeuo pipefail
           mkdir -p dist
           go build -v -trimpath -o dist/hiddify-core -tags "${BUILD_TAGS}" \
-          -ldflags '-s -buildid= -X github.com/hiddify/hiddify-core/v2/hcommon/constants.Version${{ needs.calculate_version.outputs.version }} -X internal/godebug.defaultGODEBUG=multipathtcp=0 -checklinkname=0' \
+          -ldflags '-s -buildid= ${CODE_VERSION} -X internal/godebug.defaultGODEBUG=multipathtcp=0 -checklinkname=0' \
           ./cmd/
         env:
           CGO_ENABLED: "1"
@@ -393,7 +404,7 @@ jobs:
           set -xeuo pipefail
           mkdir -p dist
           go build -v -trimpath -o dist/hiddify-core -tags "${BUILD_TAGS}" \
-          -ldflags '-s -buildid= -X github.com/hiddify/hiddify-core/v2/hcommon/constants.Version${{ needs.calculate_version.outputs.version }} -X internal/godebug.defaultGODEBUG=multipathtcp=0 -checklinkname=0' \
+          -ldflags '-s -buildid= ${CODE_VERSION} -X internal/godebug.defaultGODEBUG=multipathtcp=0 -checklinkname=0' \
           ./cmd/
         env:
           CGO_ENABLED: "0"
@@ -413,7 +424,7 @@ jobs:
           export CXX="${CC}++"
           mkdir -p dist
           GOOS=$BUILD_GOOS GOARCH=$BUILD_GOARCH build go build -v -trimpath -o dist/hiddify-core -tags "${BUILD_TAGS}" \
-          -ldflags '-s -buildid= -X github.com/hiddify/hiddify-core/v2/hcommon/constants.Version${{ needs.calculate_version.outputs.version }} -X internal/godebug.defaultGODEBUG=multipathtcp=0 -checklinkname=0' \
+          -ldflags '-s -buildid= ${CODE_VERSION} -X internal/godebug.defaultGODEBUG=multipathtcp=0 -checklinkname=0' \
           ./cmd/
         env:
           CGO_ENABLED: "1"
