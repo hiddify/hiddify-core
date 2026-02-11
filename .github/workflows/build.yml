@@ -191,7 +191,7 @@ jobs:
           path: bin/*.tar.gz
           retention-days: 1
 
-  build:
+  build-binary:
     name: Build binary
     if: github.event_name != 'workflow_dispatch' || inputs.build == 'All' || inputs.build == 'Binary'
     runs-on: ubuntu-latest
