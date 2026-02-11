@@ -79,10 +79,11 @@ windows-amd64: prepare
 	
 
 
-################################
-# Install Cronet + Generate Env
-################################
-install_cronet:
+
+cronet-%:
+	$(MAKE) ARCH=$* build-cronet
+
+build-cronet:
 # 	rm -rf $(CRONET_DIR)
 	git init $(CRONET_DIR) || echo "dir exist"
 	cd $(CRONET_DIR) && \
@@ -114,26 +115,25 @@ done < $(CRONET_DIR)/cronet.env; \
 set +a;
 endef
 
-
 build-linux: prepare
 	mkdir -p $(BINDIR)/lib
-	
-	go run -v "github.com/sagernet/cronet-go/cmd/build-naive@$(CRONET_GO_VERSION)" extract-lib --target linux/$(ARCH) -o $(BINDIR)/
-	echo "Cronet library extracted, now building core library with CGO"
+
 	$(load_cronet_env)
 	if [ "$(VARIANT)" = "musl" ]; then \
-		GOOS=linux GOARCH=$(ARCH) CGO_ENABLED=1 $(GOBUILDLIB) -tags $(TAGS),with_musl -o $(BINDIR)/lib/$(LIBNAME).so ./platform/desktop\;
+		GOOS=linux GOARCH=$(ARCH) CGO_ENABLED=1 $(GOBUILDLIB) -tags $(TAGS),with_musl -o $(BINDIR)/lib/$(LIBNAME).so ./platform/desktop ;\
 	else \
-		GOOS=linux GOARCH=$(ARCH) CGO_ENABLED=1 $(GOBUILDLIB) -tags $(TAGS) -o $(BINDIR)/lib/$(LIBNAME).so ./platform/desktop\;
+		GOOS=linux GOARCH=$(ARCH) CGO_ENABLED=1 $(GOBUILDLIB) -tags $(TAGS) -o $(BINDIR)/lib/$(LIBNAME).so ./platform/desktop ;\
 	fi
 	echo "Core library built, now building CLI with CGO linking to core library"
+	mkdir lib
 	cp $(BINDIR)/lib/$(LIBNAME).so ./lib/$(LIBNAME).so
 
 	GOOS=linux GOARCH=$(ARCH) CGO_ENABLED=1 CGO_LDFLAGS="./lib/$(LIBNAME).so -Wl,-rpath,\$$ORIGIN/lib -fuse-ld=lld" \
 	$(GOBUILDSRV) -o $(BINDIR)/$(CLINAME) ./cmd/bydll
-
-	chmod +x $(BINDIR)/$(CLINAME)
-	make webui
+	
+	rm -rf ./lib/*.so
+#	chmod +x $(BINDIR)/$(CLINAME)
+#	make webui
 
 
 linux-custom: prepare  install_cronet
