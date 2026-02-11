@@ -44,7 +44,7 @@ jobs:
         job:
           # - { name: 'hiddify-core-android', os: 'ubuntu-latest', target: 'android'}
           # - { name: 'hiddify-core-linux-amd64', os: 'ubuntu-22.04', target: 'linux-amd64',  arch: 'amd64', naive: true , corenet: 'linux/amd64', build_corenet: true }
-          - { name: 'hiddify-core-linux-arm64', os: 'ubuntu-24.04', target: 'linux-arm64', naive: true ,  arch: 'arm64', corenet: 'linux/arm64', build_corenet: true }
+          - { name: 'hiddify-core-linux-arm64', os: 'ubuntu-latest', target: 'linux-arm64', naive: true ,  arch: 'arm64', corenet: 'linux/arm64', build_corenet: true }
           # - { name: "hiddify-core-windows-amd64", os: 'ubuntu-latest', target: 'windows-amd64', aarch: 'x64', naive: true, corenet: 'windows/amd64' }
           # - { name: "hiddify-core-macos", os: 'macos-15', target: 'macos'  }
           # - { name: "hiddify-core-ios", os: "macos-15", target: "ios" }
@@ -96,6 +96,7 @@ jobs:
         uses: nttld/setup-ndk@v1
         with:
           ndk-version: r28
+          local-cache: true
       
       - name: Setup MinGW
         if: startsWith(matrix.job.target,'windows')
