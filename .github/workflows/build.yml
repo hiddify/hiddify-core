@@ -110,10 +110,13 @@ jobs:
       - name: install_cronet
         if: startsWith(matrix.job.target,'linux')
         run: |
-          make ARCH=${{ matrix.job.arch }} install_cronet
+          make cronet-${{ matrix.job.arch }}
       - name: Build
         run: |
           make ${{ matrix.job.target }}
+        env:
+          ANDROID_NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
+          JAVA_HOME: /usr/lib/jvm/java-17-openjdk-amd64
 
       - name: zip
         run: |
@@ -121,7 +124,16 @@ jobs:
           rm -f /*.h */*.h
 
           rm ./hiddify-core-* || echo "no other files to zip"
-          files=$(find .  \( -name "hiddify-core.dll"  -name "libcorenet.dll" -o -name "libcorenet.so"  -o -name "hiddify-core.so" -o -name "hiddify-core.dylib" -o -name "hiddify-core.aar" -o -name "webui" -o -name "HiddifyCore.xcframework" -o -name "HiddifyCli" -o -name "HiddifyCli.exe" \))
+          files=$(find . \( -name "hiddify-core.dll" \
+                -o -name "libcronet.dll" \
+                -o -name "libcronet.so" \
+                -o -name "hiddify-core.so" \
+                -o -name "hiddify-core.dylib" \
+                -o -name "hiddify-core.aar" \
+                -o -name "webui" \
+                -o -name "HiddifyCore.xcframework" \
+                -o -name "HiddifyCli" \
+                -o -name "HiddifyCli.exe" \))
           echo tar -czvf ${{ matrix.job.name }}.tar.gz  $files
           tar -czvf ${{ matrix.job.name }}.tar.gz  $files
           
