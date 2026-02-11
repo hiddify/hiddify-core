@@ -128,7 +128,7 @@ build-linux: prepare
 	FINAL_TAGS=$(TAGS); \
 	if [ "$(VARIANT)" = "musl" ]; then \
 		FINAL_TAGS=$${FINAL_TAGS},with_musl; \
-	elif [[ "$(VARIANT)" = "purego" ]]; then \
+	elif [ "$(VARIANT)" = "purego" ]; then \
 		FINAL_TAGS="$${FINAL_TAGS},with_purego"; \
 	fi; \
 	echo "FinalTags: $$FINAL_TAGS"; \
@@ -145,6 +145,7 @@ build-linux: prepare
 	chmod +x $(BINDIR)/$(CLINAME)
 	if [ ! -f $(BINDIR)/$(LIBNAME).so -o ! -f $(BINDIR)/$(CLINAME) ]; then \
 		echo "Error: $(LIBNAME).so or $(CLINAME) not built"; \
+		ls -R $(BINDIR); \
 		exit 1; \
 	fi
 # 	make webui
