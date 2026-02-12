@@ -31,6 +31,7 @@ var (
 var commandRun = &cobra.Command{
 	Use:   "srun",
 	Short: "Run singbox service",
+
 	Run: func(cmd *cobra.Command, args []string) {
 		err := run()
 		if err != nil {

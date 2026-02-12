@@ -49,17 +49,6 @@ var generateConfig = &cobra.Command{
 	},
 }
 
-var commandCheck = &cobra.Command{
-	Use:   "check",
-	Short: "Check configuration",
-	Run: func(cmd *cobra.Command, args []string) {
-		err := check(configPath)
-		if err != nil {
-			log.Fatal(err)
-		}
-	},
-}
-
 func init() {
 	commandBuild.Flags().StringVarP(&commandBuildOutputPath, "output", "o", "", "write result to file path instead of stdout")
 	addHConfigFlags(commandBuild)
@@ -100,7 +89,7 @@ func build(path string, optionsPath string) error {
 	return nil
 }
 
-func check(path string) error {
+func checkConfig(path string) error {
 	content, err := os.ReadFile(path)
 	if err != nil {
 		return err
@@ -148,7 +137,7 @@ func readHiddifyOptionsAt(path string) (*config.HiddifyOptions, error) {
 }
 
 func addHConfigFlags(commandRun *cobra.Command) {
-	commandRun.Flags().StringVarP(&configPath, "config", "c", "", "proxy config path or url")
+
 	commandRun.MarkFlagRequired("config")
 	commandRun.Flags().StringVarP(&hiddifySettingPath, "hiddify", "d", "", "Hiddify Setting JSON Path")
 	commandRun.Flags().BoolVar(&defaultConfigs.EnableFullConfig, "full-config", false, "allows including tags other than output")
