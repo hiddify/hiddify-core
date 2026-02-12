@@ -97,7 +97,7 @@ build-cronet:
 	git fetch --depth=1 origin $(CRONET_GO_VERSION) && \
 	git checkout FETCH_HEAD && \
 	git submodule update --init --recursive --depth=1 && \
-	if [ "$(VARIANT)" = "musl" ]; then \
+	if [ "$${VARIANT}" = "musl" ]; then \
 		go run ./cmd/build-naive --target=linux/$(ARCH) --libc=musl download-toolchain && \
 		go run ./cmd/build-naive --target=linux/$(ARCH) --libc=musl env > cronet.env; \
 	else \
@@ -127,9 +127,9 @@ build-linux: prepare
 
 	$(load_cronet_env)
 	FINAL_TAGS=$(TAGS); \
-	if [ "$(VARIANT)" = "musl" ]; then \
+	if [ "$${VARIANT}" = "musl" ]; then \
 		FINAL_TAGS=$${FINAL_TAGS},with_musl; \
-	elif [ "$(VARIANT)" = "purego" ]; then \
+	elif [ "$${VARIANT}" = "purego" ]; then \
 		FINAL_TAGS="$${FINAL_TAGS},with_purego"; \
 	fi; \
 	echo "FinalTags: $$FINAL_TAGS"; \
