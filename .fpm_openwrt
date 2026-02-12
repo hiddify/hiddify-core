@@ -24,4 +24,4 @@ release/config/openwrt.conf=/etc/config/hiddify
 release/config/openwrt.init=/etc/init.d/hiddify
 release/config/openwrt.keep=/lib/upgrade/keep.d/hiddify 
 
-LICENSE=/usr/share/licenses/hiddify-core/LICENSE.md
+LICENSE.md=/usr/share/licenses/hiddify-core/LICENSE.md
