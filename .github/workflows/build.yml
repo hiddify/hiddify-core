@@ -92,8 +92,8 @@ jobs:
           - { name: 'hiddify-lib-android', os: 'ubuntu-latest', target: 'android'}
           - { name: 'hiddify-lib-linux-amd64', os: 'ubuntu-22.04', target: 'linux-amd64',  arch: 'amd64', naive: true , corenet: 'linux/amd64', build_corenet: true }
           - { name: 'hiddify-lib-linux-arm64', os: 'ubuntu-latest', target: 'linux-arm64', naive: true ,  arch: 'arm64', corenet: 'linux/arm64', build_corenet: true }
-          - { name: 'hiddify-lib-linux-amd64-musl', os: 'ubuntu-22.04', variant: 'musl', target: 'linux-amd64',  arch: 'amd64', naive: true , corenet: 'linux/amd64', build_corenet: true }
-          - { name: 'hiddify-lib-linux-arm64-musl', os: 'ubuntu-latest', variant: 'musl', target: 'linux-arm64', naive: true ,  arch: 'arm64', corenet: 'linux/arm64', build_corenet: true }
+          # - { name: 'hiddify-lib-linux-amd64-musl', os: 'ubuntu-22.04', variant: 'musl', target: 'linux-amd64',  arch: 'amd64', naive: true , corenet: 'linux/amd64', build_corenet: true }
+          # - { name: 'hiddify-lib-linux-arm64-musl', os: 'ubuntu-latest', variant: 'musl', target: 'linux-arm64', naive: true ,  arch: 'arm64', corenet: 'linux/arm64', build_corenet: true }
           - { name: "hiddify-lib-windows-amd64", os: 'ubuntu-latest', target: 'windows-amd64', aarch: 'x64', naive: true, corenet: 'windows/amd64' }
           - { name: "hiddify-lib-macos", os: 'macos-15', target: 'macos'  }
           - { name: "hiddify-lib-ios", os: "macos-15", target: "ios" }
