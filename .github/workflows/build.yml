@@ -516,7 +516,7 @@ jobs:
             --architecture all \
             dist/hiddify-core=/usr/bin/hiddify-core
           for architecture in ${{ matrix.openwrt }}; do
-            .github/deb2ipk.sh "$architecture" "dist/openwrt.deb" "dist/hiddify-core_openwrt_${architecture}.ipk"
+            hiddify-sing-box/.github/deb2ipk.sh "$architecture" "dist/openwrt.deb" "dist/hiddify-core_openwrt_${architecture}.ipk"
           done
           rm "dist/openwrt.deb"
       - name: Archive
