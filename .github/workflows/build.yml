@@ -206,7 +206,7 @@ jobs:
   build-binary:
     name: Build binary
     # if: github.event_name != 'workflow_dispatch' || inputs.build == 'All' || inputs.build == 'Binary'
-    if: true
+    if: ${{ inputs.channel=='prod' }}
     runs-on: ubuntu-latest
     needs:
       - calculate_version
