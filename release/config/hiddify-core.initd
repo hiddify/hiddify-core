@@ -1,0 +1,18 @@
+#!/sbin/openrc-run
+
+name=$RC_SVCNAME
+description="hiddify-core service"
+supervisor="supervise-daemon"
+command="/usr/bin/hiddify-core"
+command_args="-D /var/lib/hiddify-core -C /etc/hiddify-core run"
+extra_started_commands="reload"
+
+depend() {
+	after net dns
+}
+
+reload() {
+	ebegin "Reloading $RC_SVCNAME"
+        $supervisor "$RC_SVCNAME" --signal HUP
+	eend $?
+}
