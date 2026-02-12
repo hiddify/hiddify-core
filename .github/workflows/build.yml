@@ -20,11 +20,18 @@ jobs:
     name: Test
     runs-on: ubuntu-latest
     steps:
-      - name: X
-        run: |-
-          gpg --pinentry-mode loopback --passphrase "${{ secrets.GPG_PASSPHRASE }}" --import <<EOF
-          ${{ secrets.GPG_KEY }}
-          EOF
+      - name: Import GPG key
+        run: |
+          mkdir -p ~/.gnupg
+          chmod 700 ~/.gnupg
+
+          echo "${{ secrets.GPG_KEY }}" | base64 -d | \
+            gpg --batch --yes --pinentry-mode loopback --import
+            - name: X
+              run: |-
+                gpg --pinentry-mode loopback --passphrase "${{ secrets.GPG_PASSPHRASE }}" --import <<EOF
+                ${{ secrets.GPG_KEY }}
+                EOF
 
   calculate_version:
     name: Calculate version
