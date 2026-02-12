@@ -23,8 +23,8 @@ release/config/config.json=/etc/hiddify/config.json
 release/config/openwrt.conf=/etc/config/hiddify
 release/config/openwrt.init=/etc/init.d/hiddify
 release/config/openwrt.keep=/lib/upgrade/keep.d/hiddify 
-release/completions/hiddify-core.bash=/usr/share/bash-completion/completions/hiddify-core.bash
-release/completions/hiddify-core.fish=/usr/share/fish/vendor_completions.d/hiddify-core.fish
-release/completions/hiddify-core.zsh=/usr/share/zsh/site-functions/_hiddify-core
+# release/completions/hiddify-core.bash=/usr/share/bash-completion/completions/hiddify-core.bash
+# release/completions/hiddify-core.fish=/usr/share/fish/vendor_completions.d/hiddify-core.fish
+# release/completions/hiddify-core.zsh=/usr/share/zsh/site-functions/_hiddify-core
 
 LICENSE=/usr/share/licenses/hiddify-core/LICENSE.md
