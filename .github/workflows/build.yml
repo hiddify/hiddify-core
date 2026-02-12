@@ -144,7 +144,7 @@ jobs:
         uses: nttld/setup-ndk@v1
         with:
           ndk-version: r28
-          local-cache: true
+          # local-cache: true
       
       - name: Setup MinGW
         if: startsWith(matrix.job.target,'windows')
@@ -197,17 +197,28 @@ jobs:
           tar -czvf ${{ matrix.job.name }}.tar.gz  $files
           
         working-directory: bin
-      # - uses: actions/upload-artifact@v4
-      #   if: ${{ success() }}
-      #   with:
-      #     name: ${{ matrix.job.name }}
-      #     path: bin/*.tar.gz
-      #     retention-days: 1
+      - uses: actions/upload-artifact@v4
+        if: ${{ success() }}
+        with:
+          name: ${{ matrix.job.name }}
+          path: bin/*.tar.gz
+          retention-days: 1
+
+
+
+
+
+
+
+
+
+
+
 
   build-binary:
     name: Build binary
     # if: github.event_name != 'workflow_dispatch' || inputs.build == 'All' || inputs.build == 'Binary'
-    # if: ${{ inputs.channel=='prod' }}
+    if: ${{ inputs.channel=='prod' }}
     runs-on: ubuntu-latest
     needs:
       - calculate_version
@@ -215,7 +226,7 @@ jobs:
       CODE_VERSION: "-X github.com/hiddify/hiddify-core/v2/hcommon/constants.Version=${{ needs.calculate_version.outputs.hiddify_version }} -X github.com/sagernet/sing-box/constant.Version=${{ needs.calculate_version.outputs.singbox_version }}"
       
     strategy:
-      fail-fast: false
+      # fail-fast: false
       matrix:
         include:
           - { os: linux, arch: amd64, variant: purego, naive: true }
@@ -538,12 +549,12 @@ jobs:
           rm -r "${DIR_NAME}"
       - name: Cleanup
         run: rm -f dist/hiddify-core dist/libcronet.so
-      # - name: Upload artifact
-      #   uses: actions/upload-artifact@v4
-      #   with:
-      #     name: hiddify-core-${{ matrix.os }}_${{ matrix.arch }}${{ matrix.goarm && format('v{0}', matrix.goarm) }}${{ matrix.go386 && format('_{0}', matrix.go386) }}${{ matrix.gomips && format('_{0}', matrix.gomips) }}${{ matrix.legacy_name && format('-legacy-{0}', matrix.legacy_name) }}${{ matrix.variant && format('-{0}', matrix.variant) }}
-      #     path: "dist"
-      #     retention-days: 1
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: hiddify-core-${{ matrix.os }}_${{ matrix.arch }}${{ matrix.goarm && format('v{0}', matrix.goarm) }}${{ matrix.go386 && format('_{0}', matrix.go386) }}${{ matrix.gomips && format('_{0}', matrix.gomips) }}${{ matrix.legacy_name && format('-legacy-{0}', matrix.legacy_name) }}${{ matrix.variant && format('-{0}', matrix.variant) }}
+          path: "dist"
+          retention-days: 1
 
 
 
@@ -611,7 +622,16 @@ jobs:
 
 
 
-
+  delete-artifact:
+    runs-on: ubuntu-latest
+    needs: [upload-prerelease, upload-release]
+    if: success()   
+    steps:
+      - name: Delete artifact
+        uses: geekyeggo/delete-artifact@v3
+        with:
+          name: |
+            hiddify-*
 
 
 
@@ -718,3 +738,5 @@ jobs:
         run: |
           docker buildx imagetools inspect ${{ env.REGISTRY_IMAGE }}:${{ env.LATEST }}
           docker buildx imagetools inspect ${{ env.REGISTRY_IMAGE }}:${{ inputs.tag-name  }}
+
+
