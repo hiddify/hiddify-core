@@ -109,7 +109,7 @@ func (h *HiddifyInstance) GetSystemInfo(stream grpc.ServerStreamingServer[System
 	}
 	current_status := h.readStatus(nil)
 	if err := stream.Send(current_status); err != nil {
-		return err
+		Log(LogLevel_ERROR, LogType_CORE, "send System Info failed", err)
 	}
 	for {
 		select {
@@ -120,7 +120,8 @@ func (h *HiddifyInstance) GetSystemInfo(stream grpc.ServerStreamingServer[System
 		case <-ticker.C:
 			current_status = h.readStatus(current_status)
 			if err := stream.Send(current_status); err != nil {
-				return err
+				// return err
+				Log(LogLevel_ERROR, LogType_CORE, "send System Info failed", err)
 			}
 		}
 	}

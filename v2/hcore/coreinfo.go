@@ -39,8 +39,12 @@ func (s *CoreService) CoreInfoListener(req *hcommon.Empty, stream grpc.ServerStr
 		case info := <-coreSub:
 			stream.Send(info)
 			// case <-time.After(500 * time.Millisecond):
-			// 	info := SetCoreStatus(CoreStates_STOPPED, MessageType_EMPTY, "")
-			// 	stream.Send(info)
+			// 	// 	info := SetCoreStatus(CoreStates_STOPPED, MessageType_EMPTY, "")
+			// 	stream.Send(&CoreInfoResponse{
+			// 		CoreState:   static.CoreState,
+			// 		MessageType: MessageType_EMPTY,
+			// 		Message:     "",
+			// 	})
 		}
 	}
 }

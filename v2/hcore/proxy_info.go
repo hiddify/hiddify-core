@@ -10,6 +10,7 @@ import (
 	"github.com/sagernet/sing-box/common/monitoring"
 	G "github.com/sagernet/sing-box/protocol/group"
 	"github.com/sagernet/sing-box/protocol/group/balancer"
+	E "github.com/sagernet/sing/common/exceptions"
 	"github.com/sagernet/sing/service"
 	"google.golang.org/grpc"
 
@@ -163,8 +164,9 @@ func (s *CoreService) MainOutboundsInfo(req *hcommon.Empty, stream grpc.ServerSt
 }
 
 func (h *HiddifyInstance) AllProxiesInfoStream(stream grpc.ServerStreamingServer[OutboundGroupList], onlyMain bool) error {
-
+	// stream.Send(&OutboundGroupList{})
 	h.MakeSureContextIsNew(stream.Context())
+
 	if ctx, urlTestHistory := h.Context(), h.UrlTestHistory(); ctx != nil && urlTestHistory != nil {
 		monitor := monitoring.Get(ctx)
 
@@ -172,7 +174,8 @@ func (h *HiddifyInstance) AllProxiesInfoStream(stream grpc.ServerStreamingServer
 
 		urltestch, err := monitor.SubscribeGroup(config.OutboundSelectTag)
 		if err != nil {
-			return err
+			Log(LogLevel_ERROR, LogType_CORE, "failed to send outbounds info: ", err)
+			// return err
 		}
 		defer monitor.UnsubscribeGroup(config.OutboundSelectTag, urltestch)
 
@@ -204,7 +207,8 @@ func (h *HiddifyInstance) AllProxiesInfoStream(stream grpc.ServerStreamingServer
 				}
 			case <-timerCh:
 				if err := stream.Send(h.GetAllProxiesInfo(monitor.OutboundsHistory(config.OutboundSelectTag), onlyMain)); err != nil {
-					return err
+					Log(LogLevel_ERROR, LogType_CORE, "failed to send outbounds info: ", err)
+					// return err
 				}
 				if !timer.Stop() {
 					select {
@@ -218,5 +222,6 @@ func (h *HiddifyInstance) AllProxiesInfoStream(stream grpc.ServerStreamingServer
 			}
 		}
 	}
-	return nil
+
+	return E.New("hiddify service not found")
 }

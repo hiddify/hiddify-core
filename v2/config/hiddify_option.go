@@ -51,7 +51,8 @@ type InboundOptions struct {
 	SetSystemProxy   bool   `json:"set-system-proxy,omitempty"`
 	MixedPort        uint16 `json:"mixed-port,omitempty"`
 	TProxyPort       uint16 `json:"tproxy-port,omitempty"`
-	LocalDnsPort     uint16 `json:"local-dns-port,omitempty"`
+	RedirectPort     uint16 `json:"redirect-port,omitempty"`
+	DirectPort       uint16 `json:"direct-port,omitempty"`
 	MTU              uint32 `json:"mtu,omitempty"`
 	StrictRoute      bool   `json:"strict-route,omitempty"`
 	TUNStack         string `json:"tun-implementation,omitempty"`
@@ -120,7 +121,8 @@ func DefaultHiddifyOptions() *HiddifyOptions {
 			SetSystemProxy: false,
 			MixedPort:      12334,
 			TProxyPort:     12335,
-			LocalDnsPort:   16450,
+			RedirectPort:   12336,
+			DirectPort:     12337,
 			MTU:            9000,
 			StrictRoute:    true,
 			TUNStack:       "mixed",

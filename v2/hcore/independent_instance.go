@@ -46,7 +46,8 @@ func RunInstance(ctx context.Context, hiddifySettings *config.HiddifyOptions, si
 	hiddifySettings.InboundOptions.EnableTunService = false
 	hiddifySettings.InboundOptions.SetSystemProxy = false
 	hiddifySettings.InboundOptions.TProxyPort = 0
-	hiddifySettings.InboundOptions.LocalDnsPort = 0
+	hiddifySettings.InboundOptions.DirectPort = 0
+	hiddifySettings.InboundOptions.RedirectPort = 0
 	hiddifySettings.Region = "other"
 	hiddifySettings.BlockAds = false
 	hiddifySettings.LogFile = "/dev/null"

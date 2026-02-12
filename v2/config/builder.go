@@ -45,9 +45,11 @@ const (
 
 	WARPConfigTag = "Hiddify Warp ✅"
 
-	InboundTUNTag   = "tun-in"
-	InboundMixedTag = "mixed-in"
-	InboundDNSTag   = "dns-in"
+	InboundTUNTag    = "tun-in"
+	InboundMixedTag  = "mixed-in"
+	InboundTProxy    = "tproxy-in"
+	InboundRedirect  = "redirect-in"
+	InboundDirectTag = "dns-in"
 )
 
 var (
@@ -495,22 +497,51 @@ func setInbound(options *option.Options, hopt *HiddifyOptions) {
 				},
 			},
 		)
-
-		options.Inbounds = append(
-			options.Inbounds,
-			option.Inbound{
-				Type: C.TypeDirect,
-				Tag:  InboundDNSTag + bind,
-				Options: &option.DirectInboundOptions{
-					ListenOptions: option.ListenOptions{
-						Listen:     &addr,
-						ListenPort: hopt.LocalDnsPort,
+		if C.IsLinux && hopt.TProxyPort > 0 {
+			options.Inbounds = append(
+				options.Inbounds,
+				option.Inbound{
+					Type: C.TypeTProxy,
+					Tag:  InboundTProxy + bind,
+					Options: &option.TProxyInboundOptions{
+						ListenOptions: option.ListenOptions{
+							Listen:     &addr,
+							ListenPort: hopt.TProxyPort,
+						},
 					},
-					// OverrideAddress: "1.1.1.1",
-					// OverridePort:    53,
 				},
-			},
-		)
+			)
+		}
+		if (C.IsLinux || C.IsDarwin) && hopt.RedirectPort > 0 {
+			options.Inbounds = append(
+				options.Inbounds,
+				option.Inbound{
+					Type: C.TypeRedirect,
+					Tag:  InboundRedirect + bind,
+					Options: &option.RedirectInboundOptions{
+						ListenOptions: option.ListenOptions{
+							Listen:     &addr,
+							ListenPort: hopt.RedirectPort,
+						},
+					},
+				},
+			)
+		}
+		if hopt.DirectPort > 0 {
+			options.Inbounds = append(
+				options.Inbounds,
+				option.Inbound{
+					Type: C.TypeDirect,
+					Tag:  InboundDirectTag + bind,
+					Options: &option.DirectInboundOptions{
+						ListenOptions: option.ListenOptions{
+							Listen:     &addr,
+							ListenPort: hopt.DirectPort,
+						},
+					},
+				},
+			)
+		}
 	}
 }
 
@@ -807,6 +838,9 @@ func setRoutingOptions(options *option.Options, hopt *HiddifyOptions) error {
 				},
 				RuleAction: option.RuleAction{
 					Action: C.RuleActionTypeReject,
+					RejectOptions: option.RejectActionOptions{
+						Method: C.RuleActionRejectMethodDefault,
+					},
 				},
 			},
 		})
@@ -919,6 +953,9 @@ func setRoutingOptions(options *option.Options, hopt *HiddifyOptions) error {
 				},
 				RuleAction: option.RuleAction{
 					Action: C.RuleActionTypeReject,
+					RejectOptions: option.RejectActionOptions{
+						Method: C.RuleActionRejectMethodDefault,
+					},
 				},
 			},
 		})
@@ -943,11 +980,17 @@ func setRoutingOptions(options *option.Options, hopt *HiddifyOptions) error {
 	}
 	// if opt.EnableDNSRouting {
 	if hopt.EnableFakeDNS {
+		// inbounds := []string{InboundTUNTag}
+		// for _, inp := range options.Inbounds {
+		// 	if strings.Contains(inp.Tag, InboundDirectTag) || strings.Contains(inp.Tag, InboundRedirect) || strings.Contains(inp.Tag, InboundTProxy) {
+		// 		inbounds = append(inbounds, inp.Tag)
+		// 	}
+		// }
 		dnsRules = append(
 			dnsRules,
 			option.DefaultDNSRule{
 				RawDefaultDNSRule: option.RawDefaultDNSRule{
-					Inbound: []string{InboundTUNTag},
+					// Inbound: inbounds,
 				},
 				DNSRuleAction: option.DNSRuleAction{
 					Action: C.RuleActionTypeRoute,

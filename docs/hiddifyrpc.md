@@ -965,7 +965,8 @@ InboundOptions defines the configuration options for inbound connections.
 | set_system_proxy | [bool](#bool) |  | If true, sets the system proxy. |
 | mixed_port | [uint32](#uint32) |  | Port for mixed traffic (using uint32 for compatibility). |
 | tproxy_port | [uint32](#uint32) |  | Port for TProxy connections (using uint32 for compatibility). |
-| local_dns_port | [uint32](#uint32) |  | Port for local DNS service (using uint32 for compatibility). |
+| redirect_port | [uint32](#uint32) |  | Port for TProxy connections (using uint32 for compatibility). |
+| direct_port | [uint32](#uint32) |  | Port for local DNS service (using uint32 for compatibility). |
 | mtu | [uint32](#uint32) |  | Maximum Transmission Unit size (using uint32 for compatibility). |
 | strict_route | [bool](#bool) |  | If true, enforces strict routing. |
 | tun_stack | [string](#string) |  | Specifies the TUN stack to use. |

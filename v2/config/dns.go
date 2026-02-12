@@ -122,7 +122,8 @@ func setDns(options *option.Options, opt *HiddifyOptions, staticIps *map[string]
 		inet4Range := badoption.Prefix(netip.MustParsePrefix("198.18.0.0/15"))
 		inet6Range := badoption.Prefix(netip.MustParsePrefix("fc00::/18"))
 		dnsOptions.Servers = append(dnsOptions.Servers, option.DNSServerOptions{
-			Tag: DNSFakeTag,
+			Tag:  DNSFakeTag,
+			Type: C.DNSTypeFakeIP,
 			Options: &option.FakeIPDNSServerOptions{
 				Inet4Range: &inet4Range,
 				Inet6Range: &inet6Range,
