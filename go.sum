@@ -358,16 +358,8 @@ github.com/hdevalence/ed25519consensus v0.2.0 h1:37ICyZqdyj0lAZ8P4D1d1id3HqbbG1N
 github.com/hdevalence/ed25519consensus v0.2.0/go.mod h1:w3BHWjwJbFU29IRHL1Iqkw3sus+7FctEyM4RqDxYNzo=
 github.com/hectane/go-acl v0.0.0-20230122075934-ca0b05cb1adb h1:PGufWXXDq9yaev6xX1YQauaO1MV90e6Mpoq1I7Lz/VM=
 github.com/hectane/go-acl v0.0.0-20230122075934-ca0b05cb1adb/go.mod h1:QiyDdbZLaJ/mZP4Zwc9g2QsfaEA4o7XvvgZegSci5/E=
-github.com/hiddify/psiphon-quic-go v0.0.0-20260205155832-2164d1653824 h1:a5HGC6a/s4SmRvfqsYWBGd6ump3iploFoddqKpIyO7M=
-github.com/hiddify/psiphon-quic-go v0.0.0-20260205155832-2164d1653824/go.mod h1:rONdWgPMbFjyyBai7gB1IBF4pT9r4l0GyiDst5XR1SY=
-github.com/hiddify/psiphon-tls v0.0.0-20260205181946-4af85c2fb9f2 h1:42YhXZ/qMbWOlH+AE6KZKpv96G60FXMaeQ+TYFUFwNU=
-github.com/hiddify/psiphon-tls v0.0.0-20260205181946-4af85c2fb9f2/go.mod h1:7ZUnPnWT5z8J8hxfsVjKHYK77Zme/Y0If1b/zeziiJs=
-github.com/hiddify/tailscale v1.92.4-sing-box-1.13-mod.6.0.20260202223641-788aa623edeb h1:eh+X2WCTfbXdNz5A6k44kWkl9KJbKlVQOfkgZjk3eZs=
-github.com/hiddify/tailscale v1.92.4-sing-box-1.13-mod.6.0.20260202223641-788aa623edeb/go.mod h1:m87GAn4UcesHQF3leaPFEINZETO5za1LGn1GJdNDgNc=
 github.com/hiddify/warp-plus v0.0.0-20240717223357-4f3122e0d11d h1:vRGKh9ou+/vQGfVYa8MczhbIVjHxlP52OWwrDWO77RA=
 github.com/hiddify/warp-plus v0.0.0-20240717223357-4f3122e0d11d/go.mod h1:uSRUbr1CcvFrEV69FTvuJFwpzEmwO8N4knb6+Zq3Ys4=
-github.com/hiddify/wireguard-go v0.0.0-20260207195137-b12022450359 h1:Y3BZF9JkTfFEccxzO7uTXgDSIOELPNeXCw5hCCxJyJw=
-github.com/hiddify/wireguard-go v0.0.0-20260207195137-b12022450359/go.mod h1:hEqi4y5czEg6LYtX2Bpjg+lV0b/J1n+5rA885Z66Mx0=
 github.com/hpcloud/tail v1.0.0/go.mod h1:ab1qPbhIpdTxEkNHXyeSf5vhxWSCs/tWer42PpOxQnU=
 github.com/hudl/fargo v1.3.0/go.mod h1:y3CKSmjA+wD2gak7sUSXTAoopbhU08POFhmITJgmKTg=
 github.com/improbable-eng/grpc-web v0.15.0 h1:BN+7z6uNXZ1tQGcNAuaU1YjsLTApzkjt2tzCixLaUPQ=

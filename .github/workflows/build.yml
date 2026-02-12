@@ -197,12 +197,12 @@ jobs:
           tar -czvf ${{ matrix.job.name }}.tar.gz  $files
           
         working-directory: bin
-      - uses: actions/upload-artifact@v4
-        if: ${{ success() }}
-        with:
-          name: ${{ matrix.job.name }}
-          path: bin/*.tar.gz
-          retention-days: 1
+      # - uses: actions/upload-artifact@v4
+      #   if: ${{ success() }}
+      #   with:
+      #     name: ${{ matrix.job.name }}
+      #     path: bin/*.tar.gz
+      #     retention-days: 1
 
   build-binary:
     name: Build binary
@@ -215,7 +215,7 @@ jobs:
       CODE_VERSION: "-X github.com/hiddify/hiddify-core/v2/hcommon/constants.Version=${{ needs.calculate_version.outputs.hiddify_version }} -X github.com/sagernet/sing-box/constant.Version=${{ needs.calculate_version.outputs.singbox_version }}"
       
     strategy:
-      fail-fast: true
+      fail-fast: false
       matrix:
         include:
           - { os: linux, arch: amd64, variant: purego, naive: true }
@@ -356,7 +356,7 @@ jobs:
           set -xeuo pipefail
           mkdir -p dist
           go build -v -trimpath -o dist/hiddify-core -tags "${BUILD_TAGS}" \
-          -ldflags '-s -buildid= ${CODE_VERSION} -X internal/godebug.defaultGODEBUG=multipathtcp=0 -checklinkname=0' \
+          -ldflags "-s -buildid= ${CODE_VERSION} -X internal/godebug.defaultGODEBUG=multipathtcp=0 -checklinkname=0" \
           ./cmd/main/
         env:
           CGO_ENABLED: "0"
@@ -378,7 +378,7 @@ jobs:
           set -xeuo pipefail
           mkdir -p dist
           go build -v -trimpath -o dist/hiddify-core -tags "${BUILD_TAGS}" \
-          -ldflags '-s -buildid= ${CODE_VERSION} -X internal/godebug.defaultGODEBUG=multipathtcp=0 -checklinkname=0' \
+          -ldflags "-s -buildid= ${CODE_VERSION} -X internal/godebug.defaultGODEBUG=multipathtcp=0 -checklinkname=0" \
           ./cmd/main/
         env:
           CGO_ENABLED: "1"
@@ -393,7 +393,7 @@ jobs:
           set -xeuo pipefail
           mkdir -p dist
           go build -v -trimpath -o dist/hiddify-core -tags "${BUILD_TAGS}" \
-          -ldflags '-s -buildid= ${CODE_VERSION} -X internal/godebug.defaultGODEBUG=multipathtcp=0 -checklinkname=0' \
+          -ldflags "-s -buildid= ${CODE_VERSION} -X internal/godebug.defaultGODEBUG=multipathtcp=0 -checklinkname=0" \
           ./cmd/main/
         env:
           CGO_ENABLED: "1"
@@ -408,7 +408,7 @@ jobs:
           set -xeuo pipefail
           mkdir -p dist
           go build -v -trimpath -o dist/hiddify-core -tags "${BUILD_TAGS}" \
-          -ldflags '-s -buildid= ${CODE_VERSION} -X internal/godebug.defaultGODEBUG=multipathtcp=0 -checklinkname=0' \
+          -ldflags "-s -buildid= ${CODE_VERSION} -X internal/godebug.defaultGODEBUG=multipathtcp=0 -checklinkname=0" \
           ./cmd/main/
         env:
           CGO_ENABLED: "0"
@@ -428,7 +428,7 @@ jobs:
           export CXX="${CC}++"
           mkdir -p dist
           GOOS=$BUILD_GOOS GOARCH=$BUILD_GOARCH build go build -v -trimpath -o dist/hiddify-core -tags "${BUILD_TAGS}" \
-          -ldflags '-s -buildid= ${CODE_VERSION} -X internal/godebug.defaultGODEBUG=multipathtcp=0 -checklinkname=0' \
+          -ldflags "-s -buildid= ${CODE_VERSION} -X internal/godebug.defaultGODEBUG=multipathtcp=0 -checklinkname=0" \
           ./cmd/main/
         env:
           CGO_ENABLED: "1"
@@ -538,12 +538,12 @@ jobs:
           rm -r "${DIR_NAME}"
       - name: Cleanup
         run: rm -f dist/hiddify-core dist/libcronet.so
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: hiddify-core-${{ matrix.os }}_${{ matrix.arch }}${{ matrix.goarm && format('v{0}', matrix.goarm) }}${{ matrix.go386 && format('_{0}', matrix.go386) }}${{ matrix.gomips && format('_{0}', matrix.gomips) }}${{ matrix.legacy_name && format('-legacy-{0}', matrix.legacy_name) }}${{ matrix.variant && format('-{0}', matrix.variant) }}
-          path: "dist"
-          retention-days: 1
+      # - name: Upload artifact
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: hiddify-core-${{ matrix.os }}_${{ matrix.arch }}${{ matrix.goarm && format('v{0}', matrix.goarm) }}${{ matrix.go386 && format('_{0}', matrix.go386) }}${{ matrix.gomips && format('_{0}', matrix.gomips) }}${{ matrix.legacy_name && format('-legacy-{0}', matrix.legacy_name) }}${{ matrix.variant && format('-{0}', matrix.variant) }}
+      #     path: "dist"
+      #     retention-days: 1
 
 
 

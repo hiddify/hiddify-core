@@ -265,15 +265,7 @@ require (
 
 // replace github.com/sagernet/sing-box => github.com/hiddify/hiddify-sing-box v1.13.0-rc.2.0.20260209222802-dd10a2129de7
 
-replace github.com/hiddify/ray2sing => ./ray2sing
-
-replace github.com/sagernet/sing-box => ./hiddify-sing-box
-
 // replace github.com/xtls/xray-core => github.com/hiddify/xray-core v0.0.0-20260124181826-59e6569c13e9
-
-replace github.com/sagernet/wireguard-go => github.com/hiddify/wireguard-go v0.0.0-20260207195137-b12022450359
-
-replace github.com/sagernet/tailscale => github.com/hiddify/tailscale v1.92.4-sing-box-1.13-mod.6.0.20260202223641-788aa623edeb
 
 replace github.com/bepass-org/warp-plus => github.com/hiddify/warp-plus v0.0.0-20240717223357-4f3122e0d11d
 
@@ -281,6 +273,14 @@ replace github.com/sagernet/sing-dns => github.com/shtorm-7/sing-dns v0.4.6-exte
 
 replace github.com/ameshkov/dnscrypt/v2 => github.com/shtorm-7/dnscrypt/v2 v2.4.0-extended-1.0.0
 
-replace github.com/Psiphon-Labs/quic-go => github.com/hiddify/psiphon-quic-go v0.0.0-20260205155832-2164d1653824
+replace github.com/hiddify/ray2sing => ./ray2sing
 
-replace github.com/Psiphon-Labs/psiphon-tls => github.com/hiddify/psiphon-tls v0.0.0-20260205181946-4af85c2fb9f2
+replace github.com/sagernet/sing-box => ./hiddify-sing-box
+
+replace github.com/sagernet/wireguard-go => ./hiddify-sing-box/replace/wireguard-go
+
+replace github.com/sagernet/tailscale => ./hiddify-sing-box/replace/tailscale
+
+replace github.com/Psiphon-Labs/quic-go => ./hiddify-sing-box/replace/psiphon-quic-go
+
+replace github.com/Psiphon-Labs/psiphon-tls => ./hiddify-sing-box/replace/psiphon-tls
