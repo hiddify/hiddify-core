@@ -625,7 +625,12 @@ jobs:
   delete-artifact:
     runs-on: ubuntu-latest
     needs: [upload-prerelease, upload-release]
-    if: success()   
+    if: |
+      always() &&
+      (
+        needs.upload-prerelease.result == 'success' ||
+        needs.upload-release.result == 'success'
+      )
     steps:
       - name: Delete artifact
         uses: geekyeggo/delete-artifact@v3
