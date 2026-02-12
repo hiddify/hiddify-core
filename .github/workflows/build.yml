@@ -16,23 +16,7 @@ env:
 
 
 jobs:
-  test:
-    name: Test
-    runs-on: ubuntu-latest
-    steps:
-      - name: Import GPG key
-        run: |
-          mkdir -p ~/.gnupg
-          chmod 700 ~/.gnupg
-
-          echo "${{ secrets.GPG_KEY }}" | base64 -d | \
-            gpg --batch --yes --pinentry-mode loopback --import
-      - name: X
-        run: |-
-          gpg --pinentry-mode loopback --passphrase "${{ secrets.GPG_PASSPHRASE }}" --import <<EOF
-          ${{ secrets.GPG_KEY }}
-          EOF
-
+      
   calculate_version:
     name: Calculate version
     runs-on: ubuntu-latest
@@ -223,7 +207,7 @@ jobs:
   build-binary:
     name: Build binary
     # if: github.event_name != 'workflow_dispatch' || inputs.build == 'All' || inputs.build == 'Binary'
-    if: ${{ inputs.channel=='prod' }}
+    # if: ${{ inputs.channel=='prod' }}
     runs-on: ubuntu-latest
     needs:
       - calculate_version
@@ -488,9 +472,7 @@ jobs:
           curl -Lo '/tmp/debsigs.diff' 'https://gitlab.com/debsigs/debsigs/-/commit/160138f5de1ec110376d3c807b60a37388bc7c90.diff'
           sudo patch /usr/bin/debsigs < '/tmp/debsigs.diff'
           rm -rf $HOME/.gnupg
-          gpg --pinentry-mode loopback --passphrase "${{ secrets.GPG_PASSPHRASE }}" --import <<EOF
-          ${{ secrets.GPG_KEY }}
-          EOF
+          echo "${{ secrets.GPG_KEY }}" | base64 -d | gpg --batch --yes --pinentry-mode loopback --import
           debsigs --sign=origin -k ${{ secrets.GPG_KEY_ID }} --gpgopts '--pinentry-mode loopback --passphrase "${{ secrets.GPG_PASSPHRASE }}"' dist/*.deb
       - name: Package RPM
         if: matrix.rpm != ''
@@ -507,9 +489,7 @@ jobs:
           %_gpg_name ${{ secrets.GPG_KEY_ID }}
           %_gpg_sign_cmd_extra_args --pinentry-mode loopback --passphrase ${{ secrets.GPG_PASSPHRASE }}
           EOF
-          gpg --pinentry-mode loopback --passphrase "${{ secrets.GPG_PASSPHRASE }}" --import <<EOF
-          ${{ secrets.GPG_KEY }}
-          EOF
+          echo "${{ secrets.GPG_KEY }}" | base64 -d | gpg --batch --yes --pinentry-mode loopback --import
           rpmsign --addsign dist/*.rpm
       - name: Package Pacman
         if: matrix.pacman != ''
