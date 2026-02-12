@@ -7,7 +7,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var commandRun = &cobra.Command{
+var hcommandRun = &cobra.Command{
 	Use:   "run",
 	Short: "run",
 	Args:  cobra.OnlyValidArgs,
@@ -15,12 +15,12 @@ var commandRun = &cobra.Command{
 }
 
 func init() {
-	// commandRun.PersistentFlags().BoolP("help", "", false, "help for this command")
-	// commandRun.Flags().StringVarP(&hiddifySettingPath, "hiddify", "d", "", "Hiddify Setting JSON Path")
+	// hcommandRun.PersistentFlags().BoolP("help", "", false, "help for this command")
+	// hcommandRun.Flags().StringVarP(&hiddifySettingPath, "hiddify", "d", "", "Hiddify Setting JSON Path")
 
-	addHConfigFlags(commandRun)
+	addHConfigFlags(hcommandRun)
 
-	mainCommand.AddCommand(commandRun)
+	mainCommand.AddCommand(hcommandRun)
 }
 
 func runCommand(cmd *cobra.Command, args []string) {
