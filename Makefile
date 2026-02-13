@@ -182,6 +182,7 @@ clean:
 
 
 
+.PHONY: release
 release: # Create a new tag for release.	
 	@bash -c '.github/change_version.sh'
 	
