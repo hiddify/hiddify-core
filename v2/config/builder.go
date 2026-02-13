@@ -43,7 +43,7 @@ const (
 	OutboundDNSTag            = "dns-out §hide§"
 	OutboundDirectFragmentTag = "direct-fragment §hide§"
 
-	WARPConfigTag = "Hiddify Warp ✅"
+	WARPConfigTag = "🔒 WARP"
 
 	InboundTUNTag    = "tun-in"
 	InboundMixedTag  = "mixed-in"

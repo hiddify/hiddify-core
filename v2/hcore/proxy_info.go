@@ -96,11 +96,11 @@ func (h *HiddifyInstance) GetAllProxiesInfo(hismap map[string]*adapter.URLTestHi
 	for _, it := range box.Outbound().Outbounds() {
 		his, _ := hismap[it.Tag()]
 		outbounds_converted[it.Tag()] = h.GetProxyInfo(his, it)
-
 	}
 	for _, it := range box.Outbound().Outbounds() {
 		if group, isGroup := it.(adapter.OutboundGroup); isGroup {
 			iGroups = append(iGroups, group)
+
 			// up := 0
 			// down := 0
 			// for _, itemTag := range group.All() {
@@ -136,7 +136,9 @@ func (h *HiddifyInstance) GetAllProxiesInfo(hismap map[string]*adapter.URLTestHi
 			}
 			pinfo := outbounds_converted[itemTag]
 			pinfo.IsSelected = itemTag == selectedTag
-
+			if onlyGroupitems && pinfo.GroupSelectedTagDisplay != nil && pinfo.TagDisplay != *pinfo.GroupSelectedTagDisplay {
+				pinfo.TagDisplay = pinfo.TagDisplay + " → " + *pinfo.GroupSelectedTagDisplay
+			}
 			group.Items = append(group.Items, pinfo)
 			pinfo.IsVisible = !strings.Contains(itemTag, "§hide§")
 
@@ -146,6 +148,16 @@ func (h *HiddifyInstance) GetAllProxiesInfo(hismap map[string]*adapter.URLTestHi
 		}
 
 		groups.Items = append(groups.Items, &group)
+
+		if onlyGroupitems && group.Tag == config.OutboundSelectTag {
+			if warp_info, ok := outbounds_converted[config.WARPConfigTag]; ok {
+				warp_info.TagDisplay = config.WARPConfigTag + " → " + outbounds_converted[group.Selected].TagDisplay
+				group.Selected = warp_info.Tag
+				group.Items = append([]*OutboundInfo{warp_info}, group.Items...)
+			}
+
+		}
+
 	}
 
 	return &groups
@@ -170,9 +182,9 @@ func (h *HiddifyInstance) AllProxiesInfoStream(stream grpc.ServerStreamingServer
 	if ctx, urlTestHistory := h.Context(), h.UrlTestHistory(); ctx != nil && urlTestHistory != nil {
 		monitor := monitoring.Get(ctx)
 
-		stream.Send(h.GetAllProxiesInfo(monitor.OutboundsHistory(config.OutboundSelectTag), onlyMain))
+		stream.Send(h.GetAllProxiesInfo(monitor.OutboundsHistory(""), onlyMain))
 
-		urltestch, err := monitor.SubscribeGroup(config.OutboundSelectTag)
+		urltestch, err := monitor.SubscribeGroup("")
 		if err != nil {
 			Log(LogLevel_ERROR, LogType_CORE, "failed to send outbounds info: ", err)
 			// return err
@@ -206,7 +218,7 @@ func (h *HiddifyInstance) AllProxiesInfoStream(stream grpc.ServerStreamingServer
 					timerCh = timer.C
 				}
 			case <-timerCh:
-				if err := stream.Send(h.GetAllProxiesInfo(monitor.OutboundsHistory(config.OutboundSelectTag), onlyMain)); err != nil {
+				if err := stream.Send(h.GetAllProxiesInfo(monitor.OutboundsHistory(""), onlyMain)); err != nil {
 					Log(LogLevel_ERROR, LogType_CORE, "failed to send outbounds info: ", err)
 					// return err
 				}
