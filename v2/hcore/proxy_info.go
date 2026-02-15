@@ -189,7 +189,7 @@ func (h *HiddifyInstance) AllProxiesInfoStream(stream grpc.ServerStreamingServer
 			Log(LogLevel_ERROR, LogType_CORE, "failed to send outbounds info: ", err)
 			// return err
 		}
-		defer monitor.UnsubscribeGroup(config.OutboundSelectTag, urltestch)
+		defer monitor.UnsubscribeGroup("", urltestch)
 
 		// timer2 := time.NewTicker(10 * time.Second)
 		// defer timer2.Stop()
@@ -230,7 +230,6 @@ func (h *HiddifyInstance) AllProxiesInfoStream(stream grpc.ServerStreamingServer
 				}
 				timer = nil
 				timerCh = nil
-
 			}
 		}
 	}

@@ -1,0 +1,1 @@
+tag_filter_regexp = r'^v\d+\.\d+\.\d+$'

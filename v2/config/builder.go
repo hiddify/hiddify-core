@@ -299,9 +299,16 @@ func setOutbounds(options *option.Options, input *option.Options, opt *HiddifyOp
 
 	selectorTags := tags
 	if len(tags) > 1 {
-		outbounds = append([]option.Outbound{balancer, urlTest}, outbounds...)
-		selectorTags = append([]string{urlTest.Tag, balancer.Tag}, selectorTags...)
-		defaultSelect = balancer.Tag
+		if OutboundMainDetour == WARPConfigTag {
+			outbounds = append([]option.Outbound{urlTest}, outbounds...)
+			selectorTags = append([]string{urlTest.Tag}, selectorTags...)
+			defaultSelect = urlTest.Tag
+		} else {
+			outbounds = append([]option.Outbound{balancer, urlTest}, outbounds...)
+			selectorTags = append([]string{urlTest.Tag, balancer.Tag}, selectorTags...)
+			defaultSelect = balancer.Tag
+
+		}
 	}
 	selector := option.Outbound{
 		Type: C.TypeSelector,
@@ -497,7 +504,7 @@ func setInbound(options *option.Options, hopt *HiddifyOptions) {
 				},
 			},
 		)
-		if C.IsLinux && hopt.TProxyPort > 0 {
+		if C.IsLinux && !C.IsAndroid && hopt.TProxyPort > 0 {
 			options.Inbounds = append(
 				options.Inbounds,
 				option.Inbound{
@@ -512,7 +519,7 @@ func setInbound(options *option.Options, hopt *HiddifyOptions) {
 				},
 			)
 		}
-		if (C.IsLinux || C.IsDarwin) && hopt.RedirectPort > 0 {
+		if (C.IsLinux || C.IsDarwin) && !C.IsAndroid && hopt.RedirectPort > 0 {
 			options.Inbounds = append(
 				options.Inbounds,
 				option.Inbound{

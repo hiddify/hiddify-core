@@ -282,9 +282,18 @@ func (h *HiddifyInstance) UrlTestActive() (*hcommon.Response, error) {
 				Message: E.New("outbound not found in selector: ", config.OutboundSelectTag).Error(),
 			}, E.New("outbound not found in selector: ", config.OutboundSelectTag)
 		}
+		if outboundGroupInner, isLoaded := box.Outbound().Outbound(now); isLoaded {
+			if grp, isgrp := outboundGroupInner.(adapter.OutboundGroup); isgrp {
+				if n2 := grp.Now(); n2 != "" {
+					now = n2
+				}
+			}
+
+		}
 		return h.UrlTest(&UrlTestRequest{
 			Tag: now,
 		})
+
 	}
 	return &hcommon.Response{
 		Code:    hcommon.ResponseCode_OK,
