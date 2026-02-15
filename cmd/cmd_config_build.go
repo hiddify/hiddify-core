@@ -137,7 +137,7 @@ func readHiddifyOptionsAt(path string) (*config.HiddifyOptions, error) {
 }
 
 func addHConfigFlags(commandRun *cobra.Command) {
-
+	commandRun.Flags().StringVarP(&configPath, "config", "c", "", "proxy config path or url")
 	commandRun.MarkFlagRequired("config")
 	commandRun.Flags().StringVarP(&hiddifySettingPath, "hiddify", "d", "", "Hiddify Setting JSON Path")
 	commandRun.Flags().BoolVar(&defaultConfigs.EnableFullConfig, "full-config", false, "allows including tags other than output")
