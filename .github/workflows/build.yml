@@ -695,7 +695,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           platforms: ${{ matrix.platform }}
-          context: ./docker/
+          context: ./platform/docker/
           build-args: |
             BUILDKIT_CONTEXT_KEEP_GIT_DIR=1
           labels: ${{ steps.meta.outputs.labels }}

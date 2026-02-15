@@ -1,3 +1,7 @@
+*.dylib
+*.dll
+*.so
+
 *cronet*
 /bin/*
 !/bin/.gitkeep
