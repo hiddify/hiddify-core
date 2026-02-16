@@ -78,7 +78,7 @@ func readAndBuildConfig(ctx context.Context, hiddifySettingPath string, configPa
 	}
 
 	result.HiddifyHiddifyOptions = hiddifyconfig
-	result.Config, err = buildStandaloneConfig(ctx, &config.ReadOptions{Path: configPath}, result.HiddifyHiddifyOptions)
+	result.Config, err = buildStandaloneConfig(ctx, &config.ReadOptions{Content: result.Config}, result.HiddifyHiddifyOptions)
 	if err != nil {
 		return result, err
 	}
@@ -99,7 +99,7 @@ func readConfigContent(configPath string) (ConfigResult, error) {
 			fmt.Println("Error creating request:", err)
 			return ConfigResult{}, err
 		}
-		req.Header.Set("User-Agent", "HiddifyNext/2.3.1 ("+runtime.GOOS+") like ClashMeta v2ray sing-box")
+		req.Header.Set("User-Agent", "HiddifyNext/4.0.0("+runtime.GOOS+") like ClashMeta v2ray sing-box")
 		resp, err := client.Do(req)
 		if err != nil {
 			fmt.Println("Error making GET request:", err)
@@ -114,6 +114,7 @@ func readConfigContent(configPath string) (ConfigResult, error) {
 		content = string(body)
 		refreshInterval, _ = extractRefreshInterval(resp.Header, content)
 		fmt.Printf("Refresh interval: %d\n", refreshInterval)
+
 	} else {
 		data, err := ioutil.ReadFile(configPath)
 		if err != nil {
