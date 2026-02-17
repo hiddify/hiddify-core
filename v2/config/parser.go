@@ -62,13 +62,18 @@ func parseConfigContent(ctx context.Context, content []byte, debug bool, configO
 	if err := jsonDecoder.Decode(&tmpJsonResult); err == nil {
 		fmt.Printf("Convert using json\n")
 		if tmpJsonObj, ok := tmpJsonResult.(map[string]interface{}); ok {
-			if tmpJsonObj["outbounds"] == nil {
+			if tmpJsonObj["outbounds"] == nil && tmpJsonObj["endpoints"] == nil {
 				jsonObj["outbounds"] = []interface{}{jsonObj}
 			} else {
 				if fullConfig || (configOpt != nil && configOpt.EnableFullConfig) {
 					jsonObj = tmpJsonObj
 				} else {
-					jsonObj["outbounds"] = tmpJsonObj["outbounds"]
+					if tmpJsonObj["outbounds"] != nil {
+						jsonObj["outbounds"] = tmpJsonObj["outbounds"]
+					}
+					if tmpJsonObj["endpoints"] != nil {
+						jsonObj["endpoints"] = tmpJsonObj["endpoints"]
+					}
 				}
 			}
 		} else if jsonArray, ok := tmpJsonResult.([]map[string]interface{}); ok {
