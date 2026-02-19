@@ -1,5 +1,5 @@
 .ONESHELL:
-PRODUCT_NAME=libcore
+PRODUCT_NAME=hiddify-core
 BASENAME=$(PRODUCT_NAME)
 BINDIR=bin
 LIBNAME=$(PRODUCT_NAME)
@@ -10,38 +10,51 @@ VERSION=$(shell git describe --tags || echo "unknown version")
 ifeq ($(OS),Windows_NT)
 Not available for Windows! use bash in WSL
 endif
+CRONET_GO_VERSION := $(shell cat hiddify-sing-box/.github/CRONET_GO_VERSION)
+TAGS=with_gvisor,with_quic,with_wireguard,with_utls,with_clash_api,with_grpc,with_awg,tfogo_checklinkname0,with_naive_outbound,with_conntrack
+IOS_ADD_TAGS=with_dhcp,with_low_memory,with_purego
+MACOS_ADD_TAGS=with_dhcp
+WINDOWS_ADD_TAGS=with_purego
+LDFLAGS=-w -s -checklinkname=0 -buildid= $${CODE_VERSION}
+GOBUILDLIB=CGO_ENABLED=1 go build -trimpath -ldflags="$(LDFLAGS)" -buildmode=c-shared
+GOBUILDSRV=CGO_ENABLED=1 go build -ldflags="$(LDFLAGS)" -trimpath -tags $(TAGS)
 
-TAGS=with_gvisor,with_quic,with_wireguard,with_ech,with_utls,with_clash_api,with_grpc
-IOS_ADD_TAGS=with_dhcp,with_low_memory,with_conntrack
-GOBUILDLIB=CGO_ENABLED=1 go build -trimpath -tags $(TAGS) -ldflags="-w -s" -buildmode=c-shared
-GOBUILDSRV=CGO_ENABLED=1 go build -ldflags "-s -w" -trimpath -tags $(TAGS)
-
+CRONET_DIR=./cronet
 .PHONY: protos
 protos:
-	protoc --go_out=./ --go-grpc_out=./ --proto_path=hiddifyrpc hiddifyrpc/*.proto
-	protoc --js_out=import_style=commonjs,binary:./extension/html/rpc/ --grpc-web_out=import_style=commonjs,mode=grpcwebtext:./extension/html/rpc/ --proto_path=hiddifyrpc hiddifyrpc/*.proto
-	npx browserify extension/html/rpc/extension.js >extension/html/rpc.js
+	go install github.com/pseudomuto/protoc-gen-doc/cmd/protoc-gen-doc@latest
+	# protoc --go_out=./ --go-grpc_out=./ --proto_path=hiddifyrpc hiddifyrpc/*.proto
+	# for f in $(shell find v2 -name "*.proto"); do \
+	# 	protoc --go_opt=paths=source_relative --go-grpc_opt=paths=source_relative --go_out=./ --go-grpc_out=./  $$f; \
+	# done
+	# for f in $(shell find extension -name "*.proto"); do \
+	# 	protoc --go_opt=paths=source_relative --go-grpc_opt=paths=source_relative --go_out=./ --go-grpc_out=./  $$f; \
+	# done
+	protoc --go_opt=paths=source_relative --go-grpc_opt=paths=source_relative --go_out=./ --go-grpc_out=./  $(shell find v2 -name "*.proto") $(shell find extension -name "*.proto")
+	protoc --doc_out=./docs  --doc_opt=markdown,hiddifyrpc.md $(shell find v2 -name "*.proto") $(shell find extension -name "*.proto")
+	# protoc --js_out=import_style=commonjs,binary:./extension/html/rpc/ --grpc-web_out=import_style=commonjs,mode=grpcwebtext:./extension/html/rpc/ $(shell find v2 -name "*.proto") $(shell find extension -name "*.proto")
+	# npx browserify extension/html/rpc/extension.js >extension/html/rpc.js
 
 
-lib_install:
-	go install -v github.com/sagernet/gomobile/cmd/gomobile@v0.1.1
-	go install -v github.com/sagernet/gomobile/cmd/gobind@v0.1.1
+lib_install: prepare
+	go install -v github.com/sagernet/gomobile/cmd/gomobile@v0.1.11
+	go install -v github.com/sagernet/gomobile/cmd/gobind@v0.1.11
 	npm install
 
 headers:
-	go build -buildmode=c-archive -o $(BINDIR)/$(LIBNAME).h ./custom
+	go build -buildmode=c-archive -o $(BINDIR)/ ./platform/desktop2
 
 android: lib_install
-	gomobile bind -v -androidapi=21 -javapkg=io.nekohasekai -libname=box -tags=$(TAGS) -trimpath -target=android -o $(BINDIR)/$(LIBNAME).aar github.com/sagernet/sing-box/experimental/libbox ./mobile
+	gomobile bind -v -androidapi=21 -javapkg=com.hiddify.core -libname=hiddify-core -tags=$(TAGS) -trimpath -ldflags="$(LDFLAGS)" -target=android -gcflags "all=-N -l" -o $(BINDIR)/$(LIBNAME).aar github.com/sagernet/sing-box/experimental/libbox ./platform/mobile
 
 ios-full: lib_install
-	gomobile bind -v  -target ios,iossimulator,tvos,tvossimulator,macos -libname=box -tags=$(TAGS),$(IOS_ADD_TAGS) -trimpath -ldflags="-w -s" -o $(BINDIR)/$(PRODUCT_NAME).xcframework github.com/sagernet/sing-box/experimental/libbox ./mobile 
+	gomobile bind -v  -target ios,iossimulator,tvos,tvossimulator,macos -libname=hiddify-core -tags=$(TAGS),$(IOS_ADD_TAGS) -trimpath -ldflags="$(LDFLAGS)" -o $(BINDIR)/$(PRODUCT_NAME).xcframework github.com/sagernet/sing-box/experimental/libbox ./platform/mobile 
 	mv $(BINDIR)/$(PRODUCT_NAME).xcframework $(BINDIR)/$(LIBNAME).xcframework 
-	cp Libcore.podspec $(BINDIR)/$(LIBNAME).xcframework/
+	cp HiddifyCore.podspec $(BINDIR)/$(LIBNAME).xcframework/
 
 ios: lib_install
-	gomobile bind -v  -target ios -libname=box -tags=$(TAGS),$(IOS_ADD_TAGS) -trimpath -ldflags="-w -s" -o $(BINDIR)/Libcore.xcframework github.com/sagernet/sing-box/experimental/libbox ./mobile
-	cp Info.plist $(BINDIR)/Libcore.xcframework/
+	gomobile bind -v  -target ios -libname=hiddify-core -tags=$(TAGS),$(IOS_ADD_TAGS) -trimpath -ldflags="$(LDFLAGS)" -o $(BINDIR)/HiddifyCore.xcframework github.com/sagernet/sing-box/experimental/libbox ./platform/mobile
+	cp Info.plist $(BINDIR)/HiddifyCore.xcframework/
 
 
 webui:
@@ -52,47 +65,117 @@ webui:
 	mv Yacd-meta-gh-pages bin/webui
 
 .PHONY: build
-windows-amd64:
-	curl http://localhost:18020/exit || echo "exited"
-	env GOOS=windows GOARCH=amd64 CC=x86_64-w64-mingw32-gcc $(GOBUILDLIB) -o $(BINDIR)/$(LIBNAME).dll ./custom
+windows-amd64: prepare
+	rm -rf $(BINDIR)/*
+	go run -v "github.com/sagernet/cronet-go/cmd/build-naive@$(CRONET_GO_VERSION)" extract-lib --target windows/amd64 -o $(BINDIR)/
+	env GOOS=windows GOARCH=amd64 CC=x86_64-w64-mingw32-gcc  $(GOBUILDLIB) -tags $(TAGS),$(WINDOWS_ADD_TAGS)   -o $(BINDIR)/$(LIBNAME).dll ./platform/desktop
+	echo "core built, now building cli" 
+	ls -R $(BINDIR)/
 	go install -mod=readonly github.com/akavel/rsrc@latest ||echo "rsrc error in installation"
 	go run ./cli tunnel exit
-	cp $(BINDIR)/$(LIBNAME).dll ./$(LIBNAME).dll 
-	$$(go env GOPATH)/bin/rsrc -ico ./assets/hiddify-cli.ico -o ./cli/bydll/cli.syso ||echo "rsrc error in syso"
-	env GOOS=windows GOARCH=amd64 CC=x86_64-w64-mingw32-gcc CGO_LDFLAGS="$(LIBNAME).dll" $(GOBUILDSRV) -o $(BINDIR)/$(CLINAME).exe ./cli/bydll
-	rm ./$(LIBNAME).dll
-	make webui
+	cp $(BINDIR)/$(LIBNAME).dll ./$(LIBNAME).dll
+	$$(go env GOPATH)/bin/rsrc -ico ./assets/hiddify-cli.ico -o ./cmd/bydll/cli.syso ||echo "rsrc error in syso"
+	env GOOS=windows GOARCH=amd64 CC=x86_64-w64-mingw32-gcc CGO_LDFLAGS="$(LIBNAME).dll" $(GOBUILDSRV) -o $(BINDIR)/$(CLINAME).exe ./cmd/bydll
+	rm ./*.dll
+	if [ ! -f $(BINDIR)/$(LIBNAME).dll -o ! -f $(BINDIR)/$(CLINAME).exe ]; then \
+		echo "Error: $(LIBNAME).dll or $(CLINAME).exe not built"; \
+		exit 1; \
+	fi
+
+# 	make webui
 	
 
-linux-amd64:
+
+
+cronet-%:
+	$(MAKE) ARCH=$* build-cronet
+
+build-cronet:
+# 	rm -rf $(CRONET_DIR)
+	git init $(CRONET_DIR) || echo "dir exist"
+	cd $(CRONET_DIR) && \
+	git remote add origin https://github.com/sagernet/cronet-go.git ||echo "remote exist"; \
+	git fetch --depth=1 origin $(CRONET_GO_VERSION) && \
+	git checkout FETCH_HEAD && \
+	git submodule update --init --recursive --depth=1 && \
+	if [ "$${VARIANT}" = "musl" ]; then \
+		go run ./cmd/build-naive --target=linux/$(ARCH) --libc=musl download-toolchain && \
+		go run ./cmd/build-naive --target=linux/$(ARCH) --libc=musl env > cronet.env; \
+	else \
+		go run ./cmd/build-naive --target=linux/$(ARCH) download-toolchain && \
+		go run ./cmd/build-naive --target=linux/$(ARCH) env > cronet.env; \
+	fi
+
+################################
+# Generic Linux Builder
+################################
+linux-%:
+	$(MAKE) ARCH=$* build-linux
+
+define load_cronet_env
+set -a; \
+while IFS= read -r line; do \
+    key=$${line%%=*}; \
+    value=$${line#*=}; \
+    export "$$key=$$value"; \
+	echo "$$key=$$value"; \
+done < $(CRONET_DIR)/cronet.env; \
+set +a;
+endef
+
+build-linux: prepare
 	mkdir -p $(BINDIR)/lib
-	env GOOS=linux GOARCH=amd64 $(GOBUILDLIB) -o $(BINDIR)/lib/$(LIBNAME).so ./custom
+
+	$(load_cronet_env)
+	FINAL_TAGS=$(TAGS); \
+	if [ "$${VARIANT}" = "musl" ]; then \
+		FINAL_TAGS=$${FINAL_TAGS},with_musl; \
+	elif [ "$${VARIANT}" = "purego" ]; then \
+		FINAL_TAGS="$${FINAL_TAGS},with_purego"; \
+	fi; \
+	echo "FinalTags: $$FINAL_TAGS"; \
+	GOOS=linux GOARCH=$(ARCH) $(GOBUILDLIB) -tags $${FINAL_TAGS} -o $(BINDIR)/lib/$(LIBNAME).so ./platform/desktop ;\
+	
+	echo "Core library built, now building CLI with CGO linking to core library"
 	mkdir lib
 	cp $(BINDIR)/lib/$(LIBNAME).so ./lib/$(LIBNAME).so
-	env GOOS=linux GOARCH=amd64  CGO_LDFLAGS="./lib/$(LIBNAME).so" $(GOBUILDSRV) -o $(BINDIR)/$(CLINAME) ./cli/bydll
-	rm -rf ./lib
+
+	GOOS=linux GOARCH=$(ARCH) CGO_LDFLAGS="./lib/$(LIBNAME).so -Wl,-rpath,\$$ORIGIN/lib -fuse-ld=lld" $(GOBUILDSRV) -o $(BINDIR)/$(CLINAME) ./cmd/bydll
+	
+	rm -rf ./lib/*.so
 	chmod +x $(BINDIR)/$(CLINAME)
-	make webui
+	if [ ! -f $(BINDIR)/lib/$(LIBNAME).so -o ! -f $(BINDIR)/$(CLINAME) ]; then \
+		echo "Error: $(LIBNAME).so or $(CLINAME) not built"; \
+		ls -R $(BINDIR); \
+		exit 1; \
+	fi
+# 	make webui
 
 
-linux-custom:
+linux-custom: prepare  install_cronet
 	mkdir -p $(BINDIR)/
-	#env GOARCH=mips $(GOBUILDSRV) -o $(BINDIR)/$(CLINAME) ./cli/
-	go build -ldflags "-s -w" -trimpath -tags $(TAGS) -o $(BINDIR)/$(CLINAME) ./cli/
+	#env GOARCH=mips $(GOBUILDSRV) -o $(BINDIR)/$(CLINAME) ./cmd/
+	$(load_cronet_env)
+	go build -ldflags="$(LDFLAGS)" -trimpath -tags $(TAGS) -o $(BINDIR)/$(CLINAME) ./cmd/main
 	chmod +x $(BINDIR)/$(CLINAME)
 	make webui
 
 macos-amd64:
-	env GOOS=darwin GOARCH=amd64 CGO_CFLAGS="-mmacosx-version-min=10.11" CGO_LDFLAGS="-mmacosx-version-min=10.11" CGO_ENABLED=1 go build -trimpath -tags $(TAGS),$(IOS_ADD_TAGS) -buildmode=c-shared -o $(BINDIR)/$(LIBNAME)-amd64.dylib ./custom
+	env GOOS=darwin GOARCH=amd64 CGO_CFLAGS="-mmacosx-version-min=10.11 -O2" CGO_LDFLAGS="-mmacosx-version-min=10.11 -O2 -lpthread" CGO_ENABLED=1 go build -trimpath -tags $(TAGS),$(MACOS_ADD_TAGS) -buildmode=c-shared -o $(BINDIR)/$(LIBNAME)-amd64.dylib ./platform/desktop
 macos-arm64:
-	env GOOS=darwin GOARCH=arm64 CGO_CFLAGS="-mmacosx-version-min=10.11" CGO_LDFLAGS="-mmacosx-version-min=10.11" CGO_ENABLED=1 go build -trimpath -tags $(TAGS),$(IOS_ADD_TAGS) -buildmode=c-shared -o $(BINDIR)/$(LIBNAME)-arm64.dylib ./custom
+	env GOOS=darwin GOARCH=arm64 CGO_CFLAGS="-mmacosx-version-min=10.11 -O2" CGO_LDFLAGS="-mmacosx-version-min=10.11 -O2 -lpthread" CGO_ENABLED=1 go build -trimpath -tags $(TAGS),$(MACOS_ADD_TAGS) -buildmode=c-shared -o $(BINDIR)/$(LIBNAME)-arm64.dylib ./platform/desktop
 	
-macos-universal: macos-amd64 macos-arm64 
+macos: prepare macos-amd64 macos-arm64 
+	
 	lipo -create $(BINDIR)/$(LIBNAME)-amd64.dylib $(BINDIR)/$(LIBNAME)-arm64.dylib -output $(BINDIR)/$(LIBNAME).dylib
 	cp $(BINDIR)/$(LIBNAME).dylib ./$(LIBNAME).dylib 
-	env GOOS=darwin GOARCH=amd64 CGO_CFLAGS="-mmacosx-version-min=10.11" CGO_LDFLAGS="-mmacosx-version-min=10.11" CGO_LDFLAGS="bin/$(LIBNAME).dylib"  CGO_ENABLED=1 $(GOBUILDSRV)  -o $(BINDIR)/$(CLINAME) ./cli/bydll
-	rm ./$(LIBNAME).dylib
-	chmod +x $(BINDIR)/$(CLINAME)
+	mv $(BINDIR)/$(LIBNAME)-arm64.h $(BINDIR)/desktop.h 
+	# env GOOS=darwin GOARCH=amd64 CGO_CFLAGS="-mmacosx-version-min=10.15" CGO_LDFLAGS="-mmacosx-version-min=10.15" CGO_LDFLAGS="bin/$(LIBNAME).dylib"  CGO_ENABLED=1 $(GOBUILDSRV)  -o $(BINDIR)/$(CLINAME) ./cmd/bydll
+	# rm ./$(LIBNAME).dylib
+	# chmod +x $(BINDIR)/$(CLINAME)
+
+prepare: 
+	go mod tidy
 
 clean:
 	rm $(BINDIR)/*
@@ -100,6 +183,7 @@ clean:
 
 
 
+.PHONY: release
 release: # Create a new tag for release.	
 	@bash -c '.github/change_version.sh'
 	

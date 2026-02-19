@@ -5,8 +5,7 @@ import (
 	"log"
 	"time"
 
-	pb "github.com/hiddify/hiddify-core/hiddifyrpc"
-
+	"github.com/hiddify/hiddify-core/v2/hello"
 	"google.golang.org/grpc"
 )
 
@@ -21,13 +20,13 @@ func main() {
 		log.Fatalf("did not connect: %v", err)
 	}
 	defer conn.Close()
-	c := pb.NewHelloClient(conn)
+	c := hello.NewHelloClient(conn)
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
 
 	// SayHello
-	r, err := c.SayHello(ctx, &pb.HelloRequest{Name: defaultName})
+	r, err := c.SayHello(ctx, &hello.HelloRequest{Name: defaultName})
 	if err != nil {
 		log.Fatalf("could not greet: %v", err)
 	}
@@ -42,7 +41,7 @@ func main() {
 	names := []string{"Alice", "Bob", "Charlie"}
 
 	for _, name := range names {
-		err := stream.Send(&pb.HelloRequest{Name: name})
+		err := stream.Send(&hello.HelloRequest{Name: name})
 		if err != nil {
 			log.Fatalf("could not send: %v", err)
 		}
@@ -58,5 +57,4 @@ func main() {
 		log.Printf("Received: %s", r2.Message)
 		time.Sleep(1 * time.Second)
 	}
-
 }

@@ -14,10 +14,10 @@ echo "version: ${VERSION_STR}+${BUILD_NUMBER}"
 SED -e "s|<key>CFBundleVersion</key>\s*<string>[^<]*</string>|<key>CFBundleVersion</key><string>${VERSION_STR}</string>|" Info.plist 
 SED -e "s|<key>CFBundleShortVersionString</key>\s*<string>[^<]*</string>|<key>CFBundleShortVersionString</key><string>${VERSION_STR}</string>|" Info.plist 
 SED "s|ENV VERSION=.*|ENV VERSION=v${TAG}|g" docker/Dockerfile 
-git add Info.plist docker/Dockerfile 
+git add Info.plist platform/docker/Dockerfile 
 git commit -m "release: version ${TAG}" 
 echo "creating git tag : v${TAG}" 
 git push 
 git tag v${TAG} 
-git push -u origin HEAD --tags 
+git push --tags 
 echo "Github Actions will detect the new tag and release the new version."

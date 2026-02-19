@@ -1,22 +1,23 @@
 package sdk
 
 import (
+	"context"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"runtime"
 	"strings"
 
-	"github.com/hiddify/hiddify-core/config"
-	v2 "github.com/hiddify/hiddify-core/v2"
+	"github.com/hiddify/hiddify-core/v2/config"
+	hcore "github.com/hiddify/hiddify-core/v2/hcore"
 	"github.com/sagernet/sing-box/option"
 )
 
-func RunInstance(hiddifySettings *config.HiddifyOptions, singconfig *option.Options) (*v2.HiddifyService, error) {
-	return v2.RunInstance(hiddifySettings, singconfig)
+func RunInstance(ctx context.Context, hiddifySettings *config.HiddifyOptions, singconfig *option.Options) (*hcore.HiddifyInstance, error) {
+	return hcore.RunInstance(ctx, hiddifySettings, singconfig)
 }
 
-func ParseConfig(hiddifySettings *config.HiddifyOptions, configStr string) (*option.Options, error) {
+func ParseConfig(ctx context.Context, hiddifySettings *config.HiddifyOptions, configStr string) (*option.Options, error) {
 	if hiddifySettings == nil {
 		hiddifySettings = config.DefaultHiddifyOptions()
 	}
@@ -43,5 +44,5 @@ func ParseConfig(hiddifySettings *config.HiddifyOptions, configStr string) (*opt
 		}
 		configStr = string(body)
 	}
-	return config.ParseConfigContentToOptions(configStr, true, hiddifySettings, false)
+	return config.ParseBuildConfig(ctx, hiddifySettings, &config.ReadOptions{Content: configStr})
 }

@@ -1,0 +1,27 @@
+-s dir
+--name hiddify-core
+--category net
+--license GPL-3.0-or-later
+--description "The universal proxy platform."
+--url "https://hiddify.com/"
+--maintainer "hiddify <wrt@hiddify.com>"
+--no-deb-generate-changes
+
+--config-files /etc/config/hiddify
+--config-files /etc/hiddify/config.json
+
+--depends ca-bundle
+--depends kmod-inet-diag
+--depends kmod-tun
+--depends firewall4
+--depends kmod-nft-queue
+
+--before-remove release/config/openwrt.prerm
+
+release/config/config.json=/etc/hiddify/config.json
+
+release/config/openwrt.conf=/etc/config/hiddify
+release/config/openwrt.init=/etc/init.d/hiddify
+release/config/openwrt.keep=/lib/upgrade/keep.d/hiddify 
+
+LICENSE.md=/usr/share/licenses/hiddify-core/LICENSE.md

@@ -1,0 +1,11 @@
+version: '3.8'
+
+services:
+  hiddify:
+    image: ghcr.io/hiddify/hiddify-core:latest
+    network_mode: host
+    environment:
+      CONFIG: "https://github.com/hiddify/hiddify-app/raw/refs/heads/main/test.configs/warp"
+    volumes:
+      - ./hiddify.json:/hiddify/hiddify.json
+    command: ["/opt/hiddify.sh"]

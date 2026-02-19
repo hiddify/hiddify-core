@@ -1,8 +1,14 @@
+*.dylib
+*.dll
+*.so
+
+*cronet*
 /bin/*
 !/bin/.gitkeep
 .build
 .idea
 cert
+data
 **/*.log
 .DS_Store
 

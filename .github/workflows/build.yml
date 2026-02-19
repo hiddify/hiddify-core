@@ -16,6 +16,50 @@ env:
 
 
 jobs:
+      
+  calculate_version:
+    name: Calculate version
+    runs-on: ubuntu-latest
+    outputs:
+      hiddify_version: ${{ steps.outputs.outputs.hiddify_version }}
+      singbox_version: ${{ steps.outputs.outputs.singbox_version }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
+        with:
+          fetch-depth: 0
+          submodules: 'recursive'
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ^1.25.6
+      - name: Check input version
+        if: github.event_name == 'workflow_dispatch'
+        run: |-
+          echo "hiddify_version=${{ inputs.version }}"
+          echo "version=${{ inputs.version }}" >> "$GITHUB_ENV"
+      
+      - name: Check input version
+        if: github.event_name != 'workflow_dispatch' && "${{ inputs.tag-name }}" != "draft"
+        run: |-
+          echo "hiddify_version=${{ inputs.tag-name }}"
+          echo "hiddify_version=${{ inputs.tag-name }}" >> "$GITHUB_ENV"
+              
+      - name: Calculate version
+        if: github.event_name != 'workflow_dispatch' && "${{ inputs.tag-name }}" == "draft"
+        run: |-
+          echo "hiddify_version=$(git describe --tags)" >> "$GITHUB_ENV"
+      - name: Calculate singbox version
+        run: |-
+          cd hiddify-sing-box
+          go run -v ./cmd/internal/read_tag --ci --nightly
+      - name: Set outputs
+        id: outputs
+        run: |-
+          echo "hiddify_version=${hiddify_version}" >> "$GITHUB_OUTPUT"
+          echo "singbox_version=$version" >> "$GITHUB_OUTPUT"
+  
+          
   update_wrt_hash:
     permissions: write-all
     runs-on: ubuntu-latest
@@ -37,44 +81,53 @@ jobs:
             branch: main
             # push_options: --force
   build:
+    needs:
+      - calculate_version
     permissions: write-all
+    # if: false
     strategy:
       fail-fast: false
       matrix:
         job:
-          - { name: 'hiddify-core-android', os: 'ubuntu-latest', target: 'android' }
-          - { name: 'hiddify-core-linux-amd64', os: 'ubuntu-20.04', target: 'linux-amd64' }
-          - { name: "hiddify-core-windows-amd64", os: 'ubuntu-latest', target: 'windows-amd64', aarch: 'x64' }
-          - { name: "hiddify-core-macos-universal", os: 'macos-12', target: 'macos-universal' }
-          - { name: "hiddify-core-ios", os: "macos-12", target: "ios" }
-          # linux custom
-          - {name: hiddify-cli-linux-amd64, goos: linux, goarch: amd64, goamd64: v1, target: 'linux-custom', os: 'ubuntu-20.04'}
-          - {name: hiddify-cli-linux-amd64-v3, goos: linux, goarch: amd64, goamd64: v3, target: 'linux-custom', os: 'ubuntu-20.04'}
-          - {name: hiddify-cli-linux-386, goos: linux, goarch: 386, target: 'linux-custom', os: 'ubuntu-20.04'}
-          - {name: hiddify-cli-linux-arm64, goos: linux, goarch: arm64, target: 'linux-custom', os: 'ubuntu-20.04'}
-          - {name: hiddify-cli-linux-armv5, goos: linux, goarch: arm, goarm: 5, target: 'linux-custom', os: 'ubuntu-20.04'}
-          - {name: hiddify-cli-linux-armv6, goos: linux, goarch: arm, goarm: 6, target: 'linux-custom', os: 'ubuntu-20.04'}
-          - {name: hiddify-cli-linux-armv7, goos: linux, goarch: arm, goarm: 7, target: 'linux-custom', os: 'ubuntu-20.04'}
-          - {name: hiddify-cli-linux-mips-softfloat, goos: linux, goarch: mips, gomips: softfloat, target: 'linux-custom', os: 'ubuntu-20.04'}
-          - {name: hiddify-cli-linux-mips-hardfloat, goos: linux, goarch: mips, gomips: hardfloat, target: 'linux-custom', os: 'ubuntu-20.04'}
-          - {name: hiddify-cli-linux-mipsel-softfloat, goos: linux, goarch: mipsle, gomips: softfloat, target: 'linux-custom', os: 'ubuntu-20.04'}
-          - {name: hiddify-cli-linux-mipsel-hardfloat, goos: linux, goarch: mipsle, gomips: hardfloat, target: 'linux-custom', os: 'ubuntu-20.04'}
-          - {name: hiddify-cli-linux-mips64, goos: linux, goarch: mips64, target: 'linux-custom', os: 'ubuntu-20.04'}
-          - {name: hiddify-cli-linux-mips64el, goos: linux, goarch: mips64le, target: 'linux-custom', os: 'ubuntu-20.04'}
-          - {name: hiddify-cli-linux-s390x, goos: linux, goarch: s390x, target: 'linux-custom', os: 'ubuntu-20.04'}
+          - { name: 'hiddify-lib-android', os: 'ubuntu-latest', target: 'android'}
+          - { name: 'hiddify-lib-linux-amd64', os: 'ubuntu-22.04', target: 'linux-amd64',  arch: 'amd64', naive: true , corenet: 'linux/amd64', build_corenet: true }
+          - { name: 'hiddify-lib-linux-arm64', os: 'ubuntu-latest', target: 'linux-arm64', naive: true ,  arch: 'arm64', corenet: 'linux/arm64', build_corenet: true }
+          # - { name: 'hiddify-lib-linux-amd64-musl', os: 'ubuntu-22.04', variant: 'musl', target: 'linux-amd64',  arch: 'amd64', naive: true , corenet: 'linux/amd64', build_corenet: true }
+          # - { name: 'hiddify-lib-linux-arm64-musl', os: 'ubuntu-latest', variant: 'musl', target: 'linux-arm64', naive: true ,  arch: 'arm64', corenet: 'linux/arm64', build_corenet: true }
+          - { name: "hiddify-lib-windows-amd64", os: 'ubuntu-latest', target: 'windows-amd64', aarch: 'x64', naive: true, corenet: 'windows/amd64' }
+          - { name: "hiddify-lib-macos", os: 'macos-15', target: 'macos'  }
+          - { name: "hiddify-lib-ios", os: "macos-15", target: "ios" }
+          # # linux custom
+          # - {name: hiddify-core-linux-amd64, goos: linux, goarch: amd64, goamd64: v1, target: 'linux-custom', os: 'ubuntu-22.04', naive: true }
+          # - {name: hiddify-core-linux-amd64-v3, goos: linux, goarch: amd64, goamd64: v3, target: 'linux-custom', os: 'ubuntu-22.04', naive: true }
+          # - {name: hiddify-core-linux-386, goos: linux, goarch: 386, target: 'linux-custom', os: 'ubuntu-22.04', naive: true }
+          # - {name: hiddify-core-linux-arm64, goos: linux, goarch: arm64, target: 'linux-custom', os: 'ubuntu-22.04', naive: true }
+          # - {name: hiddify-core-linux-armv5, goos: linux, goarch: arm, goarm: 5, target: 'linux-custom', os: 'ubuntu-22.04', naive: true }
+          # - {name: hiddify-core-linux-armv6, goos: linux, goarch: arm, goarm: 6, target: 'linux-custom', os: 'ubuntu-22.04', naive: true }
+          # - {name: hiddify-core-linux-armv7, goos: linux, goarch: arm, goarm: 7, target: 'linux-custom', os: 'ubuntu-22.04', naive: true }
+          # - {name: hiddify-core-linux-mips-softfloat, goos: linux, goarch: mips, gomips: softfloat, target: 'linux-custom', os: 'ubuntu-22.04', naive: true }
+          # - {name: hiddify-core-linux-mips-hardfloat, goos: linux, goarch: mips, gomips: hardfloat, target: 'linux-custom', os: 'ubuntu-22.04', naive: true }
+          # - {name: hiddify-core-linux-mipsel-softfloat, goos: linux, goarch: mipsle, gomips: softfloat, target: 'linux-custom', os: 'ubuntu-22.04', naive: true }
+          # - {name: hiddify-core-linux-mipsel-hardfloat, goos: linux, goarch: mipsle, gomips: hardfloat, target: 'linux-custom', os: 'ubuntu-22.04', naive: true }
+          # - {name: hiddify-core-linux-mips64, goos: linux, goarch: mips64, target: 'linux-custom', os: 'ubuntu-22.04', naive: true }
+          # - {name: hiddify-core-linux-mips64el, goos: linux, goarch: mips64le, target: 'linux-custom', os: 'ubuntu-22.04', naive: true }
+          # - {name: hiddify-core-linux-s390x, goos: linux, goarch: s390x, target: 'linux-custom', os: 'ubuntu-22.04', naive: true }
     
     runs-on: ${{ matrix.job.os }}
     env:
+      CODE_VERSION: "-X github.com/hiddify/hiddify-core/v2/hcommon/constants.Version=${{ needs.calculate_version.outputs.hiddify_version }} -X github.com/sagernet/sing-box/constant.Version=${{ needs.calculate_version.outputs.singbox_version }}"
       GOOS: ${{ matrix.job.goos }}
       GOARCH: ${{ matrix.job.goarch }}
       GOAMD64: ${{ matrix.job.goamd64 }}
       GOARM: ${{ matrix.job.goarm }}
       GOMIPS: ${{ matrix.job.gomips }}
+      VARIANT: ${{ matrix.job.variant }}
     steps:
       - name: Checkout
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
+          submodules: 'recursive'
 
       - name: Setup Go
         uses: actions/setup-go@v5
@@ -88,17 +141,14 @@ jobs:
         with:
           distribution: 'zulu'
           java-version: '17'
-
-      - name: Setup NDK
+      - name: Setup Android NDK
         if: startsWith(matrix.job.target,'android')
-        uses: nttld/setup-ndk@v1.4.0
         id: setup-ndk
+        uses: nttld/setup-ndk@v1
         with:
-          ndk-version: r26b
-          add-to-path: true
-          local-cache: false
-          link-to-sdk: true
-
+          ndk-version: r28
+          # local-cache: true
+      
       - name: Setup MinGW
         if: startsWith(matrix.job.target,'windows')
         uses: egor-tensin/setup-mingw@v2
@@ -109,17 +159,43 @@ jobs:
         run: |
           brew install create-dmg tree coreutils
 
+      - name: Cache Chromium toolchain
+        if: startsWith(matrix.job.target,'linux')
+        id: cache-chromium-toolchain
+        uses: actions/cache@v4
+        with:
+          path: |
+            ./cronet-go/naiveproxy/src/third_party/llvm-build/Release+Asserts
+            ./cronet-go/naiveproxy/src/out/sysroot-build
+          key: chromium-toolchain-${{ matrix.job.target }}-${{ matrix.job.arch }}-${{ matrix.job.variant }}-${{ hashFiles('hiddify-sing-box/.github/CRONET_GO_VERSION') }}
+      - name: install_cronet
+        if: startsWith(matrix.job.target,'linux')
+        run: |
+          make cronet-${{ matrix.job.arch }}
+
       - name: Build
         run: |
-          make -j$(($(nproc) + 1)) ${{ matrix.job.target }}
+          make ${{ matrix.job.target }}
+        env:
+          ANDROID_NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
+          JAVA_HOME: /usr/lib/jvm/java-17-openjdk-amd64
 
       - name: zip
         run: |
           tree 
           rm -f /*.h */*.h
-          rm ./hiddify-libcore*sources* ||echo "no source"
-          rm ./hiddify-libcore-macos-a*.dylib || echo "no macos arm and amd"
-          files=$(ls | grep -E '^(libcore\.(dll|so|dylib|aar)|webui|Libcore.xcframework|lib|HiddifyCli(\.exe)?)$')
+
+          rm ./hiddify-core-* || echo "no other files to zip"
+          files=$(find . \( -name "hiddify-core.dll" \
+                -o -name "libcronet.dll" \
+                -o -name "libcronet.so" \
+                -o -name "hiddify-core.so" \
+                -o -name "hiddify-core.dylib" \
+                -o -name "hiddify-core.aar" \
+                -o -name "webui" \
+                -o -name "HiddifyCore.xcframework" \
+                -o -name "HiddifyCli" \
+                -o -name "HiddifyCli.exe" \))
           echo tar -czvf ${{ matrix.job.name }}.tar.gz  $files
           tar -czvf ${{ matrix.job.name }}.tar.gz  $files
           
@@ -130,6 +206,361 @@ jobs:
           name: ${{ matrix.job.name }}
           path: bin/*.tar.gz
           retention-days: 1
+
+
+
+
+
+
+
+
+
+
+
+
+  build-binary:
+    name: Build binary
+    # if: github.event_name != 'workflow_dispatch' || inputs.build == 'All' || inputs.build == 'Binary'
+    if: ${{ inputs.channel=='prod' }}
+    runs-on: ubuntu-latest
+    needs:
+      - calculate_version
+    env:
+      CODE_VERSION: "-X github.com/hiddify/hiddify-core/v2/hcommon/constants.Version=${{ needs.calculate_version.outputs.hiddify_version }} -X github.com/sagernet/sing-box/constant.Version=${{ needs.calculate_version.outputs.singbox_version }}"
+      
+    strategy:
+      # fail-fast: false
+      matrix:
+        include:
+          - { os: linux, arch: amd64, variant: purego, naive: true }
+          - { os: linux, arch: amd64, variant: glibc, naive: true }
+          - { os: linux, arch: amd64, variant: musl, naive: true, debian: amd64, rpm: x86_64, pacman: x86_64, openwrt: "x86_64" }
+
+          - { os: linux, arch: arm64, variant: purego, naive: true }
+          - { os: linux, arch: arm64, variant: glibc, naive: true }
+          - { os: linux, arch: arm64, variant: musl, naive: true, debian: arm64, rpm: aarch64, pacman: aarch64, openwrt: "aarch64_cortex-a53 aarch64_cortex-a72 aarch64_cortex-a76 aarch64_generic" }
+
+          - { os: linux, arch: "386", go386: sse2 }
+          - { os: linux, arch: "386", variant: glibc, naive: true, go386: sse2 }
+          - { os: linux, arch: "386", variant: musl, naive: true, go386: sse2, debian: i386, rpm: i386, openwrt: "i386_pentium4" }
+
+          - { os: linux, arch: arm, goarm: "7" }
+          - { os: linux, arch: arm, variant: glibc, naive: true, goarm: "7" }
+          - { os: linux, arch: arm, variant: musl, naive: true, goarm: "7", debian: armhf, rpm: armv7hl, pacman: armv7hl, openwrt: "arm_cortex-a5_vfpv4 arm_cortex-a7_neon-vfpv4 arm_cortex-a7_vfpv4 arm_cortex-a8_vfpv3 arm_cortex-a9_neon arm_cortex-a9_vfpv3-d16 arm_cortex-a15_neon-vfpv4" }
+
+          - { os: linux, arch: "386", go386: softfloat, openwrt: "i386_pentium-mmx" }
+          - { os: linux, arch: arm, goarm: "5", openwrt: "arm_arm926ej-s arm_cortex-a7 arm_cortex-a9 arm_fa526 arm_xscale" }
+          - { os: linux, arch: arm, goarm: "6", debian: armel, rpm: armv6hl, openwrt: "arm_arm1176jzf-s_vfp" }
+          - { os: linux, arch: mips, gomips: softfloat, openwrt: "mips_24kc mips_4kec mips_mips32" }
+          - { os: linux, arch: mipsle, gomips: hardfloat, debian: mipsel, rpm: mipsel, openwrt: "mipsel_24kc_24kf" }
+          - { os: linux, arch: mipsle, gomips: softfloat, openwrt: "mipsel_24kc mipsel_74kc mipsel_mips32" }
+          - { os: linux, arch: mips64, gomips: softfloat, openwrt: "mips64_mips64r2 mips64_octeonplus" }
+          - { os: linux, arch: mips64le, gomips: hardfloat, debian: mips64el, rpm: mips64el }
+          - { os: linux, arch: mips64le, gomips: softfloat, openwrt: "mips64el_mips64r2" }
+          - { os: linux, arch: s390x, debian: s390x, rpm: s390x }
+          - { os: linux, arch: ppc64le, debian: ppc64el, rpm: ppc64le }
+          - { os: linux, arch: riscv64, debian: riscv64, rpm: riscv64, openwrt: "riscv64_generic" }
+          # - { os: linux, arch: loong64, debian: loongarch64, rpm: loongarch64, openwrt: "loongarch64_generic" }
+
+          # - { os: windows, arch: amd64, legacy_win7: true, legacy_name: "windows-7" }
+          # - { os: windows, arch: "386", legacy_win7: true, legacy_name: "windows-7" }
+
+          # - { os: android, arch: arm64, ndk: "aarch64-linux-android23" }
+          # - { os: android, arch: arm, ndk: "armv7a-linux-androideabi23" }
+          # - { os: android, arch: amd64, ndk: "x86_64-linux-android23" }
+          # - { os: android, arch: "386", ndk: "i686-linux-android23" }
+    steps:
+      - name: Checkout
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
+        with:
+          fetch-depth: 0
+          submodules: 'recursive'
+      - name: Setup Go
+        if: ${{ ! (matrix.legacy_win7 || matrix.legacy_go124) }}
+        uses: actions/setup-go@v5
+        with:
+          go-version: ^1.25.6
+      - name: Setup Go 1.24
+        if: matrix.legacy_go124
+        uses: actions/setup-go@v5
+        with:
+          go-version: ~1.24.10
+      - name: Cache Go for Windows 7
+        if: matrix.legacy_win7
+        id: cache-go-for-windows7
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/go/go_win7
+          key: go_win7_1255
+      - name: Setup Go for Windows 7
+        if: matrix.legacy_win7 && steps.cache-go-for-windows7.outputs.cache-hit != 'true'
+        run: |-
+          .github/setup_go_for_windows7.sh
+      - name: Setup Go for Windows 7
+        if: matrix.legacy_win7
+        run: |-
+          echo "PATH=$HOME/go/go_win7/bin:$PATH" >> $GITHUB_ENV
+          echo "GOROOT=$HOME/go/go_win7" >> $GITHUB_ENV
+      - name: Setup Android NDK
+        if: matrix.os == 'android'
+        uses: nttld/setup-ndk@v1
+        with:
+          ndk-version: r28
+          local-cache: true
+      - name: Clone cronet-go
+        if: matrix.naive
+        run: |
+          set -xeuo pipefail
+          CRONET_GO_VERSION=$(cat hiddify-sing-box/.github/CRONET_GO_VERSION)
+          git init ~/cronet-go
+          git -C ~/cronet-go remote add origin https://github.com/sagernet/cronet-go.git
+          git -C ~/cronet-go fetch --depth=1 origin "$CRONET_GO_VERSION"
+          git -C ~/cronet-go checkout FETCH_HEAD
+          git -C ~/cronet-go submodule update --init --recursive --depth=1
+      - name: Cache Chromium toolchain
+        if: matrix.naive
+        id: cache-chromium-toolchain
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/cronet-go/naiveproxy/src/third_party/llvm-build/Release+Asserts
+            ~/cronet-go/naiveproxy/src/out/sysroot-build
+          key: chromium-toolchain-${{ matrix.arch }}-${{ matrix.variant }}-${{ hashFiles('hiddify-sing-box/.github/CRONET_GO_VERSION') }}
+      - name: Download Chromium toolchain
+        if: matrix.naive
+        run: |
+          set -xeuo pipefail
+          cd ~/cronet-go
+          if [[ "${{ matrix.variant }}" == "musl" ]]; then
+            go run ./cmd/build-naive --target=linux/${{ matrix.arch }} --libc=musl download-toolchain
+          else
+            go run ./cmd/build-naive --target=linux/${{ matrix.arch }} download-toolchain
+          fi
+      - name: Set Chromium toolchain environment
+        if: matrix.naive
+        run: |
+          set -xeuo pipefail
+          cd ~/cronet-go
+          if [[ "${{ matrix.variant }}" == "musl" ]]; then
+            go run ./cmd/build-naive --target=linux/${{ matrix.arch }} --libc=musl env >> $GITHUB_ENV
+          else
+            go run ./cmd/build-naive --target=linux/${{ matrix.arch }} env >> $GITHUB_ENV
+          fi
+      # - name: Set tag
+      #   run: |-
+      #     git ls-remote --exit-code --tags origin v${{ needs.calculate_version.outputs.version }} || echo "PUBLISHED=false" >> "$GITHUB_ENV"
+      #     git tag v${{ needs.calculate_version.outputs.version }} -f
+      - name: Set build tags
+        run: |
+          set -xeuo pipefail
+          TAGS='with_v2ray_api,with_gvisor,with_quic,with_dhcp,with_wireguard,with_utls,with_acme,with_clash_api,with_tailscale,with_ccm,with_ocm,tfogo_checklinkname0'
+          if [[ "${{ matrix.naive }}" == "true" ]]; then
+            TAGS="${TAGS},with_naive_outbound"
+          fi
+          if [[ "${{ matrix.variant }}" == "purego" ]]; then
+            TAGS="${TAGS},with_purego"
+          elif [[ "${{ matrix.variant }}" == "musl" ]]; then
+            TAGS="${TAGS},with_musl"
+          fi
+          echo "BUILD_TAGS=${TAGS}" >> "${GITHUB_ENV}"
+      - name: Build (purego)
+        if: matrix.variant == 'purego'
+        run: |
+          set -xeuo pipefail
+          mkdir -p dist
+          go build -v -trimpath -o dist/hiddify-core -tags "${BUILD_TAGS}" \
+          -ldflags "-s -buildid= ${CODE_VERSION} -X internal/godebug.defaultGODEBUG=multipathtcp=0 -checklinkname=0" \
+          ./cmd/main/
+        env:
+          CGO_ENABLED: "0"
+          GOOS: ${{ matrix.os }}
+          GOARCH: ${{ matrix.arch }}
+          GO386: ${{ matrix.go386 }}
+          GOARM: ${{ matrix.goarm }}
+          GOMIPS: ${{ matrix.gomips }}
+          GOMIPS64: ${{ matrix.gomips }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Extract libcronet.so
+        if: matrix.variant == 'purego' && matrix.naive
+        run: |
+          cd ~/cronet-go
+          CGO_ENABLED=0 go run -v ./cmd/build-naive extract-lib --target ${{ matrix.os }}/${{ matrix.arch }} -o $GITHUB_WORKSPACE/dist
+      - name: Build (glibc)
+        if: matrix.variant == 'glibc'
+        run: |
+          set -xeuo pipefail
+          mkdir -p dist
+          go build -v -trimpath -o dist/hiddify-core -tags "${BUILD_TAGS}" \
+          -ldflags "-s -buildid= ${CODE_VERSION} -X internal/godebug.defaultGODEBUG=multipathtcp=0 -checklinkname=0" \
+          ./cmd/main/
+        env:
+          CGO_ENABLED: "1"
+          GOOS: linux
+          GOARCH: ${{ matrix.arch }}
+          GO386: ${{ matrix.go386 }}
+          GOARM: ${{ matrix.goarm }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build (musl)
+        if: matrix.variant == 'musl'
+        run: |
+          set -xeuo pipefail
+          mkdir -p dist
+          go build -v -trimpath -o dist/hiddify-core -tags "${BUILD_TAGS}" \
+          -ldflags "-s -buildid= ${CODE_VERSION} -X internal/godebug.defaultGODEBUG=multipathtcp=0 -checklinkname=0" \
+          ./cmd/main/
+        env:
+          CGO_ENABLED: "1"
+          GOOS: linux
+          GOARCH: ${{ matrix.arch }}
+          GO386: ${{ matrix.go386 }}
+          GOARM: ${{ matrix.goarm }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build (non-variant)
+        if: matrix.os != 'android' && matrix.variant == ''
+        run: |
+          set -xeuo pipefail
+          mkdir -p dist
+          go build -v -trimpath -o dist/hiddify-core -tags "${BUILD_TAGS}" \
+          -ldflags "-s -buildid= ${CODE_VERSION} -X internal/godebug.defaultGODEBUG=multipathtcp=0 -checklinkname=0" \
+          ./cmd/main/
+        env:
+          CGO_ENABLED: "0"
+          GOOS: ${{ matrix.os }}
+          GOARCH: ${{ matrix.arch }}
+          GO386: ${{ matrix.go386 }}
+          GOARM: ${{ matrix.goarm }}
+          GOMIPS: ${{ matrix.gomips }}
+          GOMIPS64: ${{ matrix.gomips }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build Android
+        if: matrix.os == 'android'
+        run: |
+          set -xeuo pipefail
+          go install -v ./cmd/internal/build
+          export CC='${{ matrix.ndk }}-clang'
+          export CXX="${CC}++"
+          mkdir -p dist
+          GOOS=$BUILD_GOOS GOARCH=$BUILD_GOARCH build go build -v -trimpath -o dist/hiddify-core -tags "${BUILD_TAGS}" \
+          -ldflags "-s -buildid= ${CODE_VERSION} -X internal/godebug.defaultGODEBUG=multipathtcp=0 -checklinkname=0" \
+          ./cmd/main/
+        env:
+          CGO_ENABLED: "1"
+          BUILD_GOOS: ${{ matrix.os }}
+          BUILD_GOARCH: ${{ matrix.arch }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Set name
+        run: |-
+          DIR_NAME="hiddify-core-${{ matrix.os }}-${{ matrix.arch }}"
+          if [[ -n "${{ matrix.goarm }}" ]]; then
+            DIR_NAME="${DIR_NAME}v${{ matrix.goarm }}"
+          elif [[ -n "${{ matrix.go386 }}" && "${{ matrix.go386 }}" != 'sse2' ]]; then
+            DIR_NAME="${DIR_NAME}-${{ matrix.go386 }}"
+          elif [[ -n "${{ matrix.gomips }}" && "${{ matrix.gomips }}" != 'hardfloat' ]]; then
+            DIR_NAME="${DIR_NAME}-${{ matrix.gomips }}"
+          elif [[ -n "${{ matrix.legacy_name }}" ]]; then
+            DIR_NAME="${DIR_NAME}-legacy-${{ matrix.legacy_name }}"
+          fi
+          if [[ "${{ matrix.variant }}" == "glibc" ]]; then
+            DIR_NAME="${DIR_NAME}-glibc"
+          elif [[ "${{ matrix.variant }}" == "musl" ]]; then
+            DIR_NAME="${DIR_NAME}-musl"
+          fi
+          echo "DIR_NAME=${DIR_NAME}" >> "${GITHUB_ENV}"
+          PKG_VERSION="${{ needs.calculate_version.outputs.hiddify_version }}"
+          PKG_VERSION="${PKG_VERSION//-/\~}"
+          echo "PKG_VERSION=${PKG_VERSION}" >> "${GITHUB_ENV}"
+      - name: Package DEB
+        if: matrix.debian != ''
+        run: |
+          set -xeuo pipefail
+          sudo gem install fpm
+          sudo apt-get update
+          sudo apt-get install -y debsigs
+          cp .fpm_systemd .fpm
+          fpm -t deb \
+            -v "$PKG_VERSION" \
+            -p "dist/hiddify-core_${{ matrix.os }}_${{ matrix.debian }}.deb" \
+            --architecture ${{ matrix.debian }} \
+            dist/hiddify-core=/usr/bin/hiddify-core
+          curl -Lo '/tmp/debsigs.diff' 'https://gitlab.com/debsigs/debsigs/-/commit/160138f5de1ec110376d3c807b60a37388bc7c90.diff'
+          sudo patch /usr/bin/debsigs < '/tmp/debsigs.diff'
+          rm -rf $HOME/.gnupg
+          echo "${{ secrets.GPG_KEY }}" | base64 -d | gpg --batch --yes --pinentry-mode loopback --import
+          debsigs --sign=origin -k ${{ secrets.GPG_KEY_ID }} --gpgopts '--pinentry-mode loopback --passphrase "${{ secrets.GPG_PASSPHRASE }}"' dist/*.deb
+      - name: Package RPM
+        if: matrix.rpm != ''
+        run: |-
+          set -xeuo pipefail
+          sudo gem install fpm
+          cp .fpm_systemd .fpm
+          fpm -t rpm \
+            -v "$PKG_VERSION" \
+            -p "dist/hiddify-core_${{ matrix.os }}_${{ matrix.rpm }}.rpm" \
+            --architecture ${{ matrix.rpm }} \
+            dist/hiddify-core=/usr/bin/hiddify-core
+          cat > $HOME/.rpmmacros <<EOF
+          %_gpg_name ${{ secrets.GPG_KEY_ID }}
+          %_gpg_sign_cmd_extra_args --pinentry-mode loopback --passphrase ${{ secrets.GPG_PASSPHRASE }}
+          EOF
+          echo "${{ secrets.GPG_KEY }}" | base64 -d | gpg --batch --yes --pinentry-mode loopback --import
+          rpmsign --addsign dist/*.rpm
+      - name: Package Pacman
+        if: matrix.pacman != ''
+        run: |-
+          set -xeuo pipefail
+          sudo gem install fpm
+          sudo apt-get update
+          sudo apt-get install -y libarchive-tools
+          cp .fpm_systemd .fpm
+          fpm -t pacman \
+            -v "$PKG_VERSION" \
+            -p "dist/hiddify-core_${{ matrix.os }}_${{ matrix.pacman }}.pkg.tar.zst" \
+            --architecture ${{ matrix.pacman }} \
+            dist/hiddify-core=/usr/bin/hiddify-core
+      - name: Package OpenWrt
+        if: matrix.openwrt != ''
+        run: |-
+          set -xeuo pipefail
+          sudo gem install fpm
+          cp .fpm_openwrt .fpm
+          fpm -t deb \
+            -v "$PKG_VERSION" \
+            -p "dist/openwrt.deb" \
+            --architecture all \
+            dist/hiddify-core=/usr/bin/hiddify-core
+          for architecture in ${{ matrix.openwrt }}; do
+            hiddify-sing-box/.github/deb2ipk.sh "$architecture" "dist/openwrt.deb" "dist/hiddify-core_openwrt_${architecture}.ipk"
+          done
+          rm "dist/openwrt.deb"
+      - name: Archive
+        run: |
+          set -xeuo pipefail
+          cd dist
+          mkdir -p "${DIR_NAME}"
+          cp ../LICENSE.md "${DIR_NAME}"
+          if [ '${{ matrix.os }}' = 'windows' ]; then
+            cp hiddify-core "${DIR_NAME}/hiddify-core.exe"
+            zip -r "${DIR_NAME}.zip" "${DIR_NAME}"
+          else
+            cp hiddify-core "${DIR_NAME}"
+            if [ -f libcronet.so ]; then
+              cp libcronet.so "${DIR_NAME}"
+            fi
+            tar -czvf "${DIR_NAME}.tar.gz" "${DIR_NAME}"
+          fi
+          rm -r "${DIR_NAME}"
+      - name: Cleanup
+        run: rm -f dist/hiddify-core dist/libcronet.so
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: hiddify-core-${{ matrix.os }}_${{ matrix.arch }}${{ matrix.goarm && format('v{0}', matrix.goarm) }}${{ matrix.go386 && format('_{0}', matrix.go386) }}${{ matrix.gomips && format('_{0}', matrix.gomips) }}${{ matrix.legacy_name && format('-legacy-{0}', matrix.legacy_name) }}${{ matrix.variant && format('-{0}', matrix.variant) }}
+          path: "dist"
+          retention-days: 1
+
+
+
 
 
   upload-prerelease:
@@ -194,7 +625,21 @@ jobs:
 
 
 
-
+  delete-artifact:
+    runs-on: ubuntu-latest
+    needs: [upload-prerelease, upload-release]
+    if: |
+      always() &&
+      (
+        needs.upload-prerelease.result == 'success' ||
+        needs.upload-release.result == 'success'
+      )
+    steps:
+      - name: Delete artifact
+        uses: geekyeggo/delete-artifact@v5
+        with:
+          name: |
+            hiddify-*
 
 
 
@@ -209,7 +654,7 @@ jobs:
     
     runs-on: ubuntu-latest
     strategy:
-      fail-fast: true
+      fail-fast: false
       matrix:
         platform:
           - linux/amd64
@@ -250,7 +695,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           platforms: ${{ matrix.platform }}
-          context: ./docker/
+          context: ./platform/docker/
           build-args: |
             BUILDKIT_CONTEXT_KEEP_GIT_DIR=1
           labels: ${{ steps.meta.outputs.labels }}
@@ -301,3 +746,5 @@ jobs:
         run: |
           docker buildx imagetools inspect ${{ env.REGISTRY_IMAGE }}:${{ env.LATEST }}
           docker buildx imagetools inspect ${{ env.REGISTRY_IMAGE }}:${{ inputs.tag-name  }}
+
+

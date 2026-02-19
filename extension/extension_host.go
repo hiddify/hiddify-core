@@ -5,18 +5,18 @@ import (
 	"fmt"
 	"log"
 
-	pb "github.com/hiddify/hiddify-core/hiddifyrpc"
 	"github.com/hiddify/hiddify-core/v2/db"
+	hcommon "github.com/hiddify/hiddify-core/v2/hcommon"
 	"google.golang.org/grpc"
 )
 
 type ExtensionHostService struct {
-	pb.UnimplementedExtensionHostServiceServer
+	UnimplementedExtensionHostServiceServer
 }
 
-func (ExtensionHostService) ListExtensions(ctx context.Context, empty *pb.Empty) (*pb.ExtensionList, error) {
-	extensionList := &pb.ExtensionList{
-		Extensions: make([]*pb.Extension, 0),
+func (ExtensionHostService) ListExtensions(ctx context.Context, empty *hcommon.Empty) (*ExtensionList, error) {
+	extensionList := &ExtensionList{
+		Extensions: make([]*ExtensionMsg, 0),
 	}
 	allext, err := db.GetTable[extensionData]().All()
 	if err != nil {
@@ -24,7 +24,7 @@ func (ExtensionHostService) ListExtensions(ctx context.Context, empty *pb.Empty)
 	}
 	for _, dbext := range allext {
 		if ext, ok := allExtensionsMap[dbext.Id]; ok {
-			extensionList.Extensions = append(extensionList.Extensions, &pb.Extension{
+			extensionList.Extensions = append(extensionList.Extensions, &ExtensionMsg{
 				Id:          ext.Id,
 				Title:       ext.Title,
 				Description: ext.Description,
@@ -46,7 +46,7 @@ func getExtension(id string) (*Extension, error) {
 	return nil, fmt.Errorf("Extension with ID %s not found", id)
 }
 
-func (e ExtensionHostService) Connect(req *pb.ExtensionRequest, stream grpc.ServerStreamingServer[pb.ExtensionResponse]) error {
+func (e ExtensionHostService) Connect(req *ExtensionRequest, stream grpc.ServerStreamingServer[ExtensionResponse]) error {
 	extension, err := getExtension(req.GetExtensionId())
 	if err != nil {
 		log.Printf("Error connecting stream for extension %s: %v", req.GetExtensionId(), err)
@@ -56,7 +56,7 @@ func (e ExtensionHostService) Connect(req *pb.ExtensionRequest, stream grpc.Serv
 	log.Printf("Connecting stream for extension %s", req.GetExtensionId())
 	log.Printf("Extension data: %+v", extension)
 
-	if err := (*extension).UpdateUI((*extension).GetUI()); err != nil {
+	if err := (*extension).DoUpdateUI((*extension).OnUIOpen()); err != nil {
 		log.Printf("Error updating UI for extension %s: %v", req.GetExtensionId(), err)
 	}
 
@@ -66,57 +66,57 @@ func (e ExtensionHostService) Connect(req *pb.ExtensionRequest, stream grpc.Serv
 			return nil
 		case info := <-(*extension).getQueue():
 			stream.Send(info)
-			if info.GetType() == pb.ExtensionResponseType_END {
+			if info.GetType() == ExtensionResponseType_END {
 				return nil
 			}
 		}
 	}
 }
 
-func (e ExtensionHostService) SubmitForm(ctx context.Context, req *pb.SendExtensionDataRequest) (*pb.ExtensionActionResult, error) {
+func (e ExtensionHostService) SubmitForm(ctx context.Context, req *SendExtensionDataRequest) (*ExtensionActionResult, error) {
 	extension, err := getExtension(req.GetExtensionId())
 	if err != nil {
 		log.Println(err)
-		return &pb.ExtensionActionResult{
+		return &ExtensionActionResult{
 			ExtensionId: req.ExtensionId,
-			Code:        pb.ResponseCode_FAILED,
+			Code:        hcommon.ResponseCode_FAILED,
 			Message:     err.Error(),
 		}, err
 	}
-	(*extension).SubmitData(req.Button, req.GetData())
+	(*extension).OnDataSubmit(req.Button, req.GetData())
 
-	return &pb.ExtensionActionResult{
+	return &ExtensionActionResult{
 		ExtensionId: req.ExtensionId,
-		Code:        pb.ResponseCode_OK,
+		Code:        hcommon.ResponseCode_OK,
 		Message:     "Success",
 	}, nil
 }
 
-func (e ExtensionHostService) Close(ctx context.Context, req *pb.ExtensionRequest) (*pb.ExtensionActionResult, error) {
+func (e ExtensionHostService) Close(ctx context.Context, req *ExtensionRequest) (*ExtensionActionResult, error) {
 	extension, err := getExtension(req.GetExtensionId())
 	if err != nil {
 		log.Println(err)
-		return &pb.ExtensionActionResult{
+		return &ExtensionActionResult{
 			ExtensionId: req.ExtensionId,
-			Code:        pb.ResponseCode_FAILED,
+			Code:        hcommon.ResponseCode_FAILED,
 			Message:     err.Error(),
 		}, err
 	}
-	(*extension).Close()
-	(*extension).StoreData()
-	return &pb.ExtensionActionResult{
+	(*extension).OnUIClose()
+	(*extension).(*Base[any]).doStoreData()
+	return &ExtensionActionResult{
 		ExtensionId: req.ExtensionId,
-		Code:        pb.ResponseCode_OK,
+		Code:        hcommon.ResponseCode_OK,
 		Message:     "Success",
 	}, nil
 }
 
-func (e ExtensionHostService) EditExtension(ctx context.Context, req *pb.EditExtensionRequest) (*pb.ExtensionActionResult, error) {
+func (e ExtensionHostService) EditExtension(ctx context.Context, req *EditExtensionRequest) (*ExtensionActionResult, error) {
 	if !req.Enable {
 		extension, _ := getExtension(req.GetExtensionId())
 		if extension != nil {
-			(*extension).Close()
-			(*extension).StoreData()
+			(*extension).OnUIClose()
+			(*extension).(*Base[any]).doStoreData()
 		}
 		delete(enabledExtensionsMap, req.GetExtensionId())
 	}
@@ -132,9 +132,9 @@ func (e ExtensionHostService) EditExtension(ctx context.Context, req *pb.EditExt
 		loadExtension(allExtensionsMap[req.GetExtensionId()])
 	}
 
-	return &pb.ExtensionActionResult{
+	return &ExtensionActionResult{
 		ExtensionId: req.ExtensionId,
-		Code:        pb.ResponseCode_OK,
+		Code:        hcommon.ResponseCode_OK,
 		Message:     "Success",
 	}, nil
 }

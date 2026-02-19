@@ -4,12 +4,12 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
-
 	"os"
 	"strings"
 
-	"github.com/hiddify/hiddify-core/config"
+	"github.com/hiddify/hiddify-core/v2/config"
 	T "github.com/sagernet/sing-box/option"
+	"github.com/sagernet/wireguard-go/hiddify"
 	"github.com/spf13/cobra"
 )
 
@@ -111,11 +111,12 @@ func parsePeerConfig(peerConfig *PeerConfig, line string) {
 		peerConfig.Endpoint = strings.TrimSpace(strings.SplitN(line, "=", 2)[1])
 	}
 }
+
 func generateWarp() (*T.Outbound, error) {
 	_, _, wg, err := config.GenerateWarpInfo("", "", "")
 
 	// fmt.Printf("%v", wgConfig)
-	singboxConfig, err := config.GenerateWarpSingbox(*wg, "", 0, "", "", "", "")
+	singboxConfig, err := config.GenerateWarpSingbox(*wg, "", 0, &hiddify.NoiseOptions{})
 	singboxJSON, err := json.MarshalIndent(singboxConfig, "", "    ")
 	if err != nil {
 		fmt.Println("Error marshaling Singbox configuration:", err)

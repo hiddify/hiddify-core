@@ -1,0 +1,21 @@
+-s dir
+--name hiddify-core
+--category net
+--license GPL-3.0-or-later
+--description "The universal proxy platform."
+--url "https://hiddify.com/"
+--maintainer "hiddify <core@hiddify.com>"
+--deb-field "Bug: https://github.com/hiddify/hiddify-core/issues"
+--no-deb-generate-changes
+--config-files /etc/hiddify-core/config.json
+--after-install release/config/hiddify-core.postinst
+
+release/config/config.json=/etc/hiddify-core/config.json
+
+release/config/hiddify-core.service=/usr/lib/systemd/system/hiddify-core.service
+release/config/hiddify-core@.service=/usr/lib/systemd/system/hiddify-core@.service
+release/config/hiddify-core.sysusers=/usr/lib/sysusers.d/hiddify-core.conf
+release/config/hiddify-core.rules=usr/share/polkit-1/rules.d/hiddify-core.rules
+release/config/hiddify-core-split-dns.xml=/usr/share/dbus-1/system.d/hiddify-core-split-dns.conf
+
+LICENSE.md=/usr/share/licenses/hiddify-core/LICENSE.md
