@@ -196,6 +196,7 @@ func GenerateWarpSingboxNew(uniqueIdentifier string, noise *hiddify.NoiseOptions
 				Detour: OutboundSelectTag,
 			},
 			Noise: *noise,
+			MTU:   1280,
 		},
 	}
 	return &out, nil

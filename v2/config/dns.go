@@ -3,6 +3,7 @@ package config
 import (
 	"net/netip"
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 
@@ -68,7 +69,7 @@ func setDns(options *option.Options, opt *HiddifyOptions, staticIps *map[string]
 	if err != nil {
 		return err
 	}
-	trick_dns, err := getDNSServerOptions(DNSTricksDirectTag, "https://dns.cloudflare.com/dns-query", DNSDirectTag, OutboundDirectFragmentTag)
+	trick_dns, err := getDNSServerOptions(DNSTricksDirectTag, "https://dns.cloudflare.com/dns-query#fragment=300", DNSDirectTag, OutboundDirectFragmentTag)
 	if err != nil {
 		return err
 	}
@@ -415,13 +416,22 @@ func getDNSServerOptions(tag string, dnsurl string, domain_resolver string, deto
 		if serverURL.Path != "/dns-query" {
 			httpsOptions.Path = serverURL.Path
 		}
-		if detour == OutboundDirectFragmentTag {
-			httpsOptions.TLS = &option.OutboundTLSOptions{
-				Enabled:               true,
-				Fragment:              true,
-				FragmentFallbackDelay: badoption.Duration(30 * time.Millisecond),
-				RecordFragment:        true,
+		httpsOptions.TLS = &option.OutboundTLSOptions{
+			Enabled: true,
+		}
+		if strings.Contains(dnsurl, "#fragment=") {
+
+			httpsOptions.TLS.Fragment = true
+			httpsOptions.TLS.RecordFragment = true
+
+			splt := strings.Split(dnsurl, "#fragment=")
+			data := splt[len(splt)-1]
+			if delay, err := strconv.Atoi(data); err == nil && delay >= 0 {
+				httpsOptions.TLS.FragmentFallbackDelay = badoption.Duration(time.Duration(delay) * time.Millisecond)
+			} else {
+				// httpsOptions.TLS.FragmentFallbackDelay = badoption.Duration(30 * time.Millisecond)
 			}
+
 		}
 	case "rcode":
 		var rcode int

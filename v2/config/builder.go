@@ -12,8 +12,9 @@ import (
 	sync "sync"
 	"time"
 
+	mDNS "github.com/miekg/dns"
 	C "github.com/sagernet/sing-box/constant"
-	mdns "github.com/sagernet/sing-box/dns"
+	sdns "github.com/sagernet/sing-box/dns"
 	"github.com/sagernet/sing-box/option"
 	"github.com/sagernet/sing/common/json/badoption"
 	"github.com/sagernet/wireguard-go/hiddify"
@@ -190,8 +191,10 @@ func setOutbounds(options *option.Options, input *option.Options, opt *HiddifyOp
 		if opts, ok := out.Options.(*option.WireGuardWARPEndpointOptions); ok {
 			if opt.Warp.Mode == "warp_over_proxy" {
 				opts.Detour = OutboundSelectTag
+				opts.MTU = 1280
 			} else {
 				opts.Detour = OutboundDirectTag
+				opt.MTU = max(opt.MTU, 1340)
 			}
 
 		}
@@ -214,12 +217,18 @@ func setOutbounds(options *option.Options, input *option.Options, opt *HiddifyOp
 					if opts.UniqueIdentifier == "p1" {
 						continue
 					}
+					if opt.Warp.EnableWarp && opt.Warp.Mode == "warp_over_proxy" {
+						opt.MTU = max(opt.MTU, 1340)
+					}
 				}
 			}
 			if end.Type == C.TypeWireGuard {
 				if opts, ok := end.Options.(*option.WireGuardEndpointOptions); ok {
 					if opts.PrivateKey == opt.Warp.WireguardConfig.PrivateKey {
 						continue
+					}
+					if opt.Warp.EnableWarp && opt.Warp.Mode == "warp_over_proxy" {
+						opt.MTU = max(opt.MTU, 1340)
 					}
 				}
 			}
@@ -761,7 +770,7 @@ func setRoutingOptions(options *option.Options, hopt *HiddifyOptions) error {
 			},
 		})
 	}
-	rejectRCode := (option.DNSRCode(mdns.RcodeRefused))
+	rejectRCode := (option.DNSRCode(sdns.RcodeRefused))
 	rejectDnsAction := option.DNSRuleAction{
 		Action: C.RuleActionTypePredefined,
 		PredefinedOptions: option.DNSRouteActionPredefined{
@@ -998,6 +1007,10 @@ func setRoutingOptions(options *option.Options, hopt *HiddifyOptions) error {
 			option.DefaultDNSRule{
 				RawDefaultDNSRule: option.RawDefaultDNSRule{
 					// Inbound: inbounds,
+					QueryType: badoption.Listable[option.DNSQueryType]{
+						option.DNSQueryType(mDNS.StringToType["A"]),
+						option.DNSQueryType(mDNS.StringToType["AAAA"]),
+					},
 				},
 				DNSRuleAction: option.DNSRuleAction{
 					Action: C.RuleActionTypeRoute,
