@@ -12,6 +12,7 @@ import (
 	sync "sync"
 	"time"
 
+	"github.com/hiddify/hiddify-core/v2/hutils"
 	mDNS "github.com/miekg/dns"
 	C "github.com/sagernet/sing-box/constant"
 	sdns "github.com/sagernet/sing-box/dns"
@@ -513,7 +514,7 @@ func setInbound(options *option.Options, hopt *HiddifyOptions) {
 				},
 			},
 		)
-		if C.IsLinux && !C.IsAndroid && hopt.TProxyPort > 0 {
+		if C.IsLinux && !C.IsAndroid && hopt.TProxyPort > 0 && hutils.IsAdmin() {
 			options.Inbounds = append(
 				options.Inbounds,
 				option.Inbound{
