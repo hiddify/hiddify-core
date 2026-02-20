@@ -73,7 +73,7 @@ jobs:
           github_ref_name="${{ inputs.tag-name }}"
           IFS="." read -r -a VERSION_ARRAY <<< "${github_ref_name#v}"
           VERSION_STR="${VERSION_ARRAY[0]}.${VERSION_ARRAY[1]}.${VERSION_ARRAY[2]}"
-          sed -i "s|PKG_VERSION:=.*|PKG_VERSION:=${VERSION_STR}|g" wrt/Makefile
+          sed -i "s|PKG_VERSION:=.*|PKG_VERSION:=${VERSION_STR}|g" platform/wrt/Makefile
           sed -i "s|PKG_HASH:=.*|PKG_HASH:=${HIDDIFY_CORE_WRT_HASH}|g" wrt/Makefile 
       - uses: stefanzweifel/git-auto-commit-action@v5
         with:
@@ -84,7 +84,7 @@ jobs:
     needs:
       - calculate_version
     permissions: write-all
-    # if: false
+    if: false
     strategy:
       fail-fast: false
       matrix:
@@ -565,7 +565,8 @@ jobs:
 
   upload-prerelease:
     permissions: write-all
-    if: ${{ inputs.upload-artifact }}
+    # if: ${{ inputs.upload-artifact }}
+    if: false
     needs: [build]
     runs-on: ubuntu-latest
     steps:
@@ -649,7 +650,7 @@ jobs:
 
   make-upload-docker:
     permissions: write-all
-    if: ${{ inputs.channel=='prod' }}
+    # if: ${{ inputs.channel=='prod' }}
     needs: [upload-release]
     
     runs-on: ubuntu-latest
