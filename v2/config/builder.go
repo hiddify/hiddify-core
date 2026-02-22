@@ -288,7 +288,7 @@ func setOutbounds(options *option.Options, input *option.Options, opt *HiddifyOp
 		Tag:  OutboundRoundRobinTag,
 		Options: &option.BalancerOutboundOptions{
 			Outbounds:            tags,
-			Strategy:             "round-robin",
+			Strategy:             opt.BalancerStrategy,
 			DelayAcceptableRatio: 2,
 			// URL:       opt.ConnectionTestUrl,
 			// URLs:      opt.ConnectionTestUrls,

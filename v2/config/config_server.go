@@ -19,7 +19,11 @@ func String(s string) *string {
 	return &s
 }
 
-func (s *server) ParseConfig(ctx context.Context, in *ParseConfigRequest) (*ParseConfigResponse, error) {
+func (s *server) ParseConfig(ctx context.Context, in *ParseConfigRequest) (resp *ParseConfigResponse, err error) {
+	defer DeferPanicToError("ParseConfig", func(recovered_err error) {
+		resp = &ParseConfigResponse{Error: String(fmt.Sprintf("%v", recovered_err))}
+		err = nil
+	})
 	ctx = libbox.BaseContext(nil)
 	config, err := ParseConfig(ctx, &ReadOptions{Path: in.Path}, in.Debug, nil, false)
 	if err != nil {
@@ -36,7 +40,11 @@ func (s *server) ParseConfig(ctx context.Context, in *ParseConfigRequest) (*Pars
 	return &ParseConfigResponse{Error: String("")}, nil
 }
 
-func (s *server) GenerateFullConfig(ctx context.Context, in *GenerateConfigRequest) (*GenerateConfigResponse, error) {
+func (s *server) GenerateFullConfig(ctx context.Context, in *GenerateConfigRequest) (resp *GenerateConfigResponse, err error) {
+	defer DeferPanicToError("GenerateFullConfig", func(recovered_err error) {
+		resp = &GenerateConfigResponse{Error: String(fmt.Sprintf("%v", recovered_err))}
+		err = nil
+	})
 	ctx = libbox.BaseContext(nil)
 	config, err := BuildConfigJson(ctx, DefaultHiddifyOptions(), &ReadOptions{Path: in.Path})
 	if err != nil {
