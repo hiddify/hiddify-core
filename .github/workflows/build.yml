@@ -66,8 +66,9 @@ jobs:
     # if: ${{ inputs.channel=='prod' }}
     steps:
       - uses: actions/checkout@v4
+        with:
+            fetch-depth: 0
       - run: |
-          git checkout -b main
           curl -L -o hiddify-core.tar.gz https://codeload.github.com/hiddify/hiddify-core/tar.gz/${{ inputs.tag-name  }}
           HIDDIFY_CORE_WRT_HASH=$(sha256sum hiddify-core.tar.gz | cut -d' ' -f1)
           github_ref_name="${{ inputs.tag-name }}"
