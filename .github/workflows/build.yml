@@ -63,7 +63,7 @@ jobs:
   update_wrt_hash:
     permissions: write-all
     runs-on: ubuntu-latest
-    # if: ${{ inputs.channel=='prod' }}
+    if: ${{ inputs.channel=='prod' }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -85,7 +85,6 @@ jobs:
     needs:
       - calculate_version
     permissions: write-all
-    if: false
     strategy:
       fail-fast: false
       matrix:
@@ -566,8 +565,8 @@ jobs:
 
   upload-prerelease:
     permissions: write-all
-    # if: ${{ inputs.upload-artifact }}
-    if: false
+    if: ${{ inputs.upload-artifact }}
+    # if: false
     needs: [build]
     runs-on: ubuntu-latest
     steps:
@@ -651,8 +650,8 @@ jobs:
 
   make-upload-docker:
     permissions: write-all
-    # if: ${{ inputs.channel=='prod' }}
-    # needs: [upload-release]
+    if: ${{ inputs.channel=='prod' }}
+    needs: [upload-release]
     
     runs-on: ubuntu-latest
     strategy:
