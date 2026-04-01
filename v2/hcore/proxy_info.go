@@ -76,7 +76,9 @@ func (h *HiddifyInstance) GetProxyInfo(url_test_history *adapter.URLTestHistory,
 		}
 
 	}
-
+	if deps := detour.Dependencies(); len(deps) == 1 {
+		out.Detour = deps[0]
+	}
 	return out
 }
 
@@ -96,6 +98,15 @@ func (h *HiddifyInstance) GetAllProxiesInfo(hismap map[string]*adapter.URLTestHi
 	for _, it := range box.Outbound().Outbounds() {
 		his, _ := hismap[it.Tag()]
 		outbounds_converted[it.Tag()] = h.GetProxyInfo(his, it)
+	}
+	for _, it := range outbounds_converted {
+		if it.Detour == "" {
+			continue
+		}
+		if det, ok := outbounds_converted[it.Detour]; ok {
+			it.TagDisplay += " → " + det.TagDisplay
+			it.Type += " → " + det.Type
+		}
 	}
 	for _, it := range box.Outbound().Outbounds() {
 		if group, isGroup := it.(adapter.OutboundGroup); isGroup {

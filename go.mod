@@ -104,7 +104,7 @@ require (
 	github.com/mholt/acmez/v3 v3.1.4 // indirect
 	github.com/mitchellh/go-ps v1.0.0 // indirect
 	github.com/mroth/weightedrand v1.0.0 // indirect
-	github.com/net2share/vaydns v0.2.5 // indirect
+	github.com/net2share/vaydns v0.2.6 // indirect
 	github.com/openai/openai-go/v3 v3.15.0 // indirect
 	github.com/pelletier/go-toml v1.9.5 // indirect
 	github.com/pion/datachannel v1.5.5 // indirect
@@ -284,3 +284,5 @@ replace github.com/sagernet/tailscale => ./hiddify-sing-box/replace/tailscale
 replace github.com/Psiphon-Labs/quic-go => ./hiddify-sing-box/replace/psiphon-quic-go
 
 replace github.com/Psiphon-Labs/psiphon-tls => ./hiddify-sing-box/replace/psiphon-tls
+
+replace github.com/net2share/vaydns => github.com/hiddify/vaydns v0.0.0-20260401180616-890dc987a6a9
