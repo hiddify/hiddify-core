@@ -17,7 +17,7 @@ import (
 const tunnelServicePort uint16 = 18020
 
 var (
-	tunnelServiceAddress = fmt.Sprint("127.0.0.1:%d", tunnelServicePort)
+	tunnelServiceAddress = fmt.Sprintf("127.0.0.1:%d", tunnelServicePort)
 	tunnelServiceRunning = false
 )
 
