@@ -22,6 +22,7 @@ import (
 
 	"github.com/hiddify/hiddify-core/v2/config"
 	"github.com/hiddify/hiddify-core/v2/db"
+	"github.com/hiddify/hiddify-core/v2/ezytel"
 	hcommon "github.com/hiddify/hiddify-core/v2/hcommon"
 	"github.com/hiddify/hiddify-core/v2/hello"
 	hutils "github.com/hiddify/hiddify-core/v2/hutils"
@@ -143,6 +144,8 @@ func StartGrpcServer(listenAddressG string, service string) (*grpc.Server, error
 		// pb.RegisterExtensionHostServiceServer(s, &extension.ExtensionHostService{})
 	} else if service == "hello" {
 		// RegisterHelloServer(s, &hello.HelloService{})
+	} else if service == "ezytel" {
+		ezytel.RegisterEzytelServer(s, ezytel.NewEzytelService(""))
 	} else if service == "tunnel" {
 		// RegisterTunnelServiceServer(s, &TunnelService{})
 	}
@@ -240,6 +243,7 @@ func StartGrpcServerByMode(listenAddressG string, mode SetupMode) (*grpc.Server,
 	// Register your gRPC service here
 	RegisterCoreServer(grpcServer[mode], &CoreService{})
 	hello.RegisterHelloServer(grpcServer[mode], &hello.HelloService{})
+	ezytel.RegisterEzytelServer(grpcServer[mode], ezytel.NewEzytelService(""))
 	// Listen on the provided address
 	lis, err := net.Listen("tcp", listenAddressG)
 	if err != nil {
