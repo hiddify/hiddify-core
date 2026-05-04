@@ -12,14 +12,21 @@ message ChannelInfoRequest {
   // Last post id the client has already read; used to compute the
   // unread badge (newmsg). 0 means "everything is unread".
   int64 last_read = 2;
+  // By default avatar_path in the response carries a
+  // "data:image/jpeg;base64,…" URI ready to drop into <img src>.
+  // Set this to true to opt out and receive the legacy
+  // "cache/<md5>.jpg" server-side file path instead.
+  bool disable_inline_images = 3;
 }
 
 message ChannelInfo {
   string name = 1;
   // Plain-text preview of the most recent post, or "فایل" if it is a media post.
   string description = 2;
-  // Local cache path of the avatar JPEG, relative to the cache dir
-  // returned by GetCacheDir(). Empty if the avatar could not be fetched.
+  // By default this is a "data:image/jpeg;base64,…" URI ready for
+  // <img src>. When the request set disable_inline_images=true it is
+  // the legacy "cache/<md5>.jpg" file path relative to GetCacheDir().
+  // Empty if the avatar could not be fetched.
   string avatar_path = 3;
   // Unix epoch seconds of the most recent post.
   int64 date = 4;
@@ -40,14 +47,25 @@ message ChannelMessagesRequest {
   // 0 = latest page; otherwise the "before" cursor returned by Telegram
   // (the data-before attribute of messages_more_wrap).
   int64 before = 2;
+  // By default every image URL in the returned html and the
+  // channel_avatar field is a "data:image/jpeg;base64,…" URI ready
+  // to render. Set this to true to opt out: html and channel_avatar
+  // will both carry the legacy "proxy.php?url=<hex>" placeholder
+  // form, requiring per-image ProxyImage calls.
+  bool disable_inline_images = 3;
 }
 
 message ChannelMessagesResponse {
   // Pre-rendered HTML fragment ready to be injected into .main_block.
-  // Image URLs have been rewritten to call ProxyImage; dates have been
-  // converted to the Persian calendar.
+  // Dates have been converted to the Persian calendar. By default
+  // <img src> and background-image:url(...) carry inline
+  // "data:image/jpeg;base64,…" payloads; with
+  // disable_inline_images=true they carry "proxy.php?url=<hex>"
+  // placeholders.
   string html = 1;
-  // Channel avatar URL embedded in the header (only set when before == 0).
+  // Channel avatar embedded in the header (only set when before == 0).
+  // "data:image/jpeg;base64,…" by default, "proxy.php?url=<hex>"
+  // placeholder when disable_inline_images=true.
   string channel_avatar = 2;
   // Last post id seen on the page (mirrors the lastread_<chid> cookie).
   int64 last_post_id = 3;

@@ -1,8 +1,14 @@
 package ezytel
 
 import (
+	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/hex"
+	"io"
+	"net/http"
+	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 )
@@ -83,6 +89,109 @@ func TestProxyImageRejectsBadHex(t *testing.T) {
 func TestStripTags(t *testing.T) {
 	if got := stripTags(`<b>hi <i>there</i></b>`); got != "hi there" {
 		t.Fatalf("stripTags: got %q", got)
+	}
+}
+
+// minimal 1x1 jpeg used by the stub transport
+var fakeJPEG = []byte{
+	0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10, 'J', 'F', 'I', 'F', 0x00, 0x01, 0x01, 0x00, 0x00, 0x01,
+	0x00, 0x01, 0x00, 0x00, 0xff, 0xd9,
+}
+
+type stubRT struct {
+	body  []byte
+	count int32
+}
+
+func (s *stubRT) RoundTrip(_ *http.Request) (*http.Response, error) {
+	atomic.AddInt32(&s.count, 1)
+	return &http.Response{
+		StatusCode: 200,
+		Body:       io.NopCloser(bytes.NewReader(s.body)),
+		Header:     http.Header{},
+	}, nil
+}
+
+func TestDataURL(t *testing.T) {
+	got := dataURL([]byte{0xff, 0xd8, 0xff}, "")
+	want := "data:image/jpeg;base64," + base64.StdEncoding.EncodeToString([]byte{0xff, 0xd8, 0xff})
+	if got != want {
+		t.Fatalf("dataURL: got %q want %q", got, want)
+	}
+}
+
+func TestExtractProxyHexes(t *testing.T) {
+	html := `<img src="proxy.php?url=DEADbeef"> and url('proxy.php?url=cafe01') and proxy.php?url=` // trailing empty
+	hexes := extractProxyHexes(html)
+	if _, ok := hexes["deadbeef"]; !ok {
+		t.Fatalf("missing deadbeef in %v", hexes)
+	}
+	if _, ok := hexes["cafe01"]; !ok {
+		t.Fatalf("missing cafe01 in %v", hexes)
+	}
+	if len(hexes) != 2 {
+		t.Fatalf("unexpected entries: %v", hexes)
+	}
+}
+
+func TestInlineProxyPlaceholders(t *testing.T) {
+	s := NewEzytelService(t.TempDir())
+	rt := &stubRT{body: fakeJPEG}
+	s.client = &http.Client{Transport: rt}
+
+	hexedA := hex.EncodeToString([]byte("cdn.example.com/a.jpg"))
+	hexedB := hex.EncodeToString([]byte("cdn.example.com/b.jpg"))
+	html := `<img src="proxy.php?url=` + hexedA + `"><img src="proxy.php?url=` + hexedB + `">`
+
+	out := s.inlineProxyPlaceholders(context.Background(), html)
+	if strings.Contains(out, "proxy.php?url=") {
+		t.Fatalf("placeholders not replaced: %s", out)
+	}
+	want := "data:image/jpeg;base64," + base64.StdEncoding.EncodeToString(fakeJPEG)
+	if !strings.Contains(out, want) {
+		t.Fatalf("data URI missing in output: %s", out)
+	}
+	if got := atomic.LoadInt32(&rt.count); got != 2 {
+		t.Fatalf("expected 2 fetches, got %d", got)
+	}
+}
+
+func TestDisableInlineImagesNoFetch(t *testing.T) {
+	s := NewEzytelService(t.TempDir())
+	rt := &stubRT{body: fakeJPEG}
+	s.client = &http.Client{Transport: rt}
+	hexed := hex.EncodeToString([]byte("cdn.example.com/a.jpg"))
+	html := `<img src="proxy.php?url=` + hexed + `">`
+
+	// Mirror the legacy short-circuit in GetChannelMessages: when the
+	// flag is true, inlineProxyPlaceholders is not called at all and
+	// no fetches happen.
+	in := &ChannelMessagesRequest{ChannelId: "x", DisableInlineImages: true}
+	if !in.DisableInlineImages {
+		t.Fatal("flag setup wrong")
+	}
+	if got := atomic.LoadInt32(&rt.count); got != 0 {
+		t.Fatalf("unexpected fetch before any work: %d", got)
+	}
+	if !strings.Contains(html, "proxy.php?url="+hexed) {
+		t.Fatal("placeholder missing in fixture")
+	}
+	if strings.Contains(html, "data:image") {
+		t.Fatalf("legacy html should not contain data: URI: %s", html)
+	}
+}
+
+func TestInlineProxyPlaceholderSingle(t *testing.T) {
+	s := NewEzytelService(t.TempDir())
+	s.client = &http.Client{Transport: &stubRT{body: fakeJPEG}}
+	hexed := hex.EncodeToString([]byte("cdn.example.com/avatar.jpg"))
+	got := s.inlineProxyPlaceholder(context.Background(), "proxy.php?url="+hexed)
+	want := "data:image/jpeg;base64," + base64.StdEncoding.EncodeToString(fakeJPEG)
+	if got != want {
+		t.Fatalf("got %q want %q", got, want)
+	}
+	if got := s.inlineProxyPlaceholder(context.Background(), "https://no.placeholder/x"); got != "" {
+		t.Fatalf("expected empty for non-placeholder, got %q", got)
 	}
 }
 
