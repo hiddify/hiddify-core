@@ -29,9 +29,14 @@ type ChannelInfoRequest struct {
 	ChannelId string `protobuf:"bytes,1,opt,name=channel_id,json=channelId,proto3" json:"channel_id,omitempty"`
 	// Last post id the client has already read; used to compute the
 	// unread badge (newmsg). 0 means "everything is unread".
-	LastRead      int64 `protobuf:"varint,2,opt,name=last_read,json=lastRead,proto3" json:"last_read,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	LastRead int64 `protobuf:"varint,2,opt,name=last_read,json=lastRead,proto3" json:"last_read,omitempty"`
+	// By default avatar_path in the response carries a
+	// "data:image/jpeg;base64,…" URI ready to drop into <img src>.
+	// Set this to true to opt out and receive the legacy
+	// "cache/<md5>.jpg" server-side file path instead.
+	DisableInlineImages bool `protobuf:"varint,3,opt,name=disable_inline_images,json=disableInlineImages,proto3" json:"disable_inline_images,omitempty"`
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
 }
 
 func (x *ChannelInfoRequest) Reset() {
@@ -78,13 +83,22 @@ func (x *ChannelInfoRequest) GetLastRead() int64 {
 	return 0
 }
 
+func (x *ChannelInfoRequest) GetDisableInlineImages() bool {
+	if x != nil {
+		return x.DisableInlineImages
+	}
+	return false
+}
+
 type ChannelInfo struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	Name  string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	// Plain-text preview of the most recent post, or "فایل" if it is a media post.
 	Description string `protobuf:"bytes,2,opt,name=description,proto3" json:"description,omitempty"`
-	// Local cache path of the avatar JPEG, relative to the cache dir
-	// returned by GetCacheDir(). Empty if the avatar could not be fetched.
+	// By default this is a "data:image/jpeg;base64,…" URI ready for
+	// <img src>. When the request set disable_inline_images=true it is
+	// the legacy "cache/<md5>.jpg" file path relative to GetCacheDir().
+	// Empty if the avatar could not be fetched.
 	AvatarPath string `protobuf:"bytes,3,opt,name=avatar_path,json=avatarPath,proto3" json:"avatar_path,omitempty"`
 	// Unix epoch seconds of the most recent post.
 	Date int64 `protobuf:"varint,4,opt,name=date,proto3" json:"date,omitempty"`
@@ -193,9 +207,15 @@ type ChannelMessagesRequest struct {
 	ChannelId string                 `protobuf:"bytes,1,opt,name=channel_id,json=channelId,proto3" json:"channel_id,omitempty"`
 	// 0 = latest page; otherwise the "before" cursor returned by Telegram
 	// (the data-before attribute of messages_more_wrap).
-	Before        int64 `protobuf:"varint,2,opt,name=before,proto3" json:"before,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	Before int64 `protobuf:"varint,2,opt,name=before,proto3" json:"before,omitempty"`
+	// By default every image URL in the returned html and the
+	// channel_avatar field is a "data:image/jpeg;base64,…" URI ready
+	// to render. Set this to true to opt out: html and channel_avatar
+	// will both carry the legacy "proxy.php?url=<hex>" placeholder
+	// form, requiring per-image ProxyImage calls.
+	DisableInlineImages bool `protobuf:"varint,3,opt,name=disable_inline_images,json=disableInlineImages,proto3" json:"disable_inline_images,omitempty"`
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
 }
 
 func (x *ChannelMessagesRequest) Reset() {
@@ -242,13 +262,25 @@ func (x *ChannelMessagesRequest) GetBefore() int64 {
 	return 0
 }
 
+func (x *ChannelMessagesRequest) GetDisableInlineImages() bool {
+	if x != nil {
+		return x.DisableInlineImages
+	}
+	return false
+}
+
 type ChannelMessagesResponse struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Pre-rendered HTML fragment ready to be injected into .main_block.
-	// Image URLs have been rewritten to call ProxyImage; dates have been
-	// converted to the Persian calendar.
+	// Dates have been converted to the Persian calendar. By default
+	// <img src> and background-image:url(...) carry inline
+	// "data:image/jpeg;base64,…" payloads; with
+	// disable_inline_images=true they carry "proxy.php?url=<hex>"
+	// placeholders.
 	Html string `protobuf:"bytes,1,opt,name=html,proto3" json:"html,omitempty"`
-	// Channel avatar URL embedded in the header (only set when before == 0).
+	// Channel avatar embedded in the header (only set when before == 0).
+	// "data:image/jpeg;base64,…" by default, "proxy.php?url=<hex>"
+	// placeholder when disable_inline_images=true.
 	ChannelAvatar string `protobuf:"bytes,2,opt,name=channel_avatar,json=channelAvatar,proto3" json:"channel_avatar,omitempty"`
 	// Last post id seen on the page (mirrors the lastread_<chid> cookie).
 	LastPostId    int64 `protobuf:"varint,3,opt,name=last_post_id,json=lastPostId,proto3" json:"last_post_id,omitempty"`
@@ -511,11 +543,12 @@ var File_v2_ezytel_ezytel_proto protoreflect.FileDescriptor
 
 const file_v2_ezytel_ezytel_proto_rawDesc = "" +
 	"\n" +
-	"\x16v2/ezytel/ezytel.proto\x12\x06ezytel\"P\n" +
+	"\x16v2/ezytel/ezytel.proto\x12\x06ezytel\"\x84\x01\n" +
 	"\x12ChannelInfoRequest\x12\x1d\n" +
 	"\n" +
 	"channel_id\x18\x01 \x01(\tR\tchannelId\x12\x1b\n" +
-	"\tlast_read\x18\x02 \x01(\x03R\blastRead\"\xdd\x01\n" +
+	"\tlast_read\x18\x02 \x01(\x03R\blastRead\x122\n" +
+	"\x15disable_inline_images\x18\x03 \x01(\bR\x13disableInlineImages\"\xdd\x01\n" +
 	"\vChannelInfo\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12 \n" +
 	"\vdescription\x18\x02 \x01(\tR\vdescription\x12\x1f\n" +
@@ -526,11 +559,12 @@ const file_v2_ezytel_ezytel_proto_rawDesc = "" +
 	"\x06newmsg\x18\x06 \x01(\tR\x06newmsg\x12 \n" +
 	"\flast_post_id\x18\a \x01(\x03R\n" +
 	"lastPostId\x12\x0e\n" +
-	"\x02ok\x18\b \x01(\bR\x02ok\"O\n" +
+	"\x02ok\x18\b \x01(\bR\x02ok\"\x83\x01\n" +
 	"\x16ChannelMessagesRequest\x12\x1d\n" +
 	"\n" +
 	"channel_id\x18\x01 \x01(\tR\tchannelId\x12\x16\n" +
-	"\x06before\x18\x02 \x01(\x03R\x06before\"v\n" +
+	"\x06before\x18\x02 \x01(\x03R\x06before\x122\n" +
+	"\x15disable_inline_images\x18\x03 \x01(\bR\x13disableInlineImages\"v\n" +
 	"\x17ChannelMessagesResponse\x12\x12\n" +
 	"\x04html\x18\x01 \x01(\tR\x04html\x12%\n" +
 	"\x0echannel_avatar\x18\x02 \x01(\tR\rchannelAvatar\x12 \n" +

@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/md5"
 	"crypto/tls"
+	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -134,8 +135,121 @@ func (s *EzytelService) GetChannelMessages(ctx context.Context, in *ChannelMessa
 		}
 	}
 
+	if !in.DisableInlineImages {
+		// chanPic at this point is "proxy.php?url=<hex>" because it
+		// was captured after rewriteImgSources. Resolve it once so
+		// resp.ChannelAvatar is also a data: URI; the same placeholder
+		// inside content gets substituted by inlineProxyPlaceholders.
+		if chanPicURI := s.inlineProxyPlaceholder(ctx, chanPic); chanPicURI != "" {
+			resp.ChannelAvatar = chanPicURI
+		}
+		content = s.inlineProxyPlaceholders(ctx, content)
+	}
+
 	resp.Html = content
 	return resp, nil
+}
+
+// inlineProxyPlaceholder resolves a single "proxy.php?url=<hex>"
+// reference into a data: URI. Returns "" on any failure (caller
+// should keep the original value).
+func (s *EzytelService) inlineProxyPlaceholder(ctx context.Context, ref string) string {
+	const prefix = "proxy.php?url="
+	idx := strings.Index(ref, prefix)
+	if idx < 0 {
+		return ""
+	}
+	hexStr := ref[idx+len(prefix):]
+	raw, err := hex.DecodeString(hexStr)
+	if err != nil {
+		return ""
+	}
+	data, _, ferr := s.fetchImageBytes(ctx, "https://"+string(raw))
+	if ferr != nil {
+		return ""
+	}
+	return dataURL(data, "image/jpeg")
+}
+
+// inlineProxyPlaceholders walks the post-rewrite HTML and replaces every
+// "proxy.php?url=<hex>" reference with a "data:image/jpeg;base64,…"
+// URI. Fetches run in a bounded worker pool so a 20-image page does not
+// serialise downloads. On per-image failure the placeholder is left
+// alone so the rest of the page still renders.
+func (s *EzytelService) inlineProxyPlaceholders(ctx context.Context, content string) string {
+	hexes := extractProxyHexes(content)
+	if len(hexes) == 0 {
+		return content
+	}
+	type result struct {
+		hex string
+		uri string
+	}
+	jobs := make(chan string, len(hexes))
+	results := make(chan result, len(hexes))
+	const workers = 8
+	var wg sync.WaitGroup
+	for i := 0; i < workers; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for h := range jobs {
+				raw, err := hex.DecodeString(h)
+				if err != nil {
+					continue
+				}
+				data, _, ferr := s.fetchImageBytes(ctx, "https://"+string(raw))
+				if ferr != nil {
+					continue
+				}
+				results <- result{hex: h, uri: dataURL(data, "image/jpeg")}
+			}
+		}()
+	}
+	for h := range hexes {
+		jobs <- h
+	}
+	close(jobs)
+	wg.Wait()
+	close(results)
+
+	pairs := make([]string, 0, 2*len(hexes))
+	for r := range results {
+		pairs = append(pairs, "proxy.php?url="+r.hex, r.uri)
+	}
+	if len(pairs) == 0 {
+		return content
+	}
+	return strings.NewReplacer(pairs...).Replace(content)
+}
+
+// extractProxyHexes returns the set of distinct hex bodies referenced
+// by "proxy.php?url=<hex>" in s. The hex token is the run of [0-9a-f]
+// (case-insensitive) immediately after the prefix.
+func extractProxyHexes(s string) map[string]struct{} {
+	out := map[string]struct{}{}
+	const prefix = "proxy.php?url="
+	i := 0
+	for {
+		idx := strings.Index(s[i:], prefix)
+		if idx < 0 {
+			return out
+		}
+		start := i + idx + len(prefix)
+		end := start
+		for end < len(s) {
+			c := s[end]
+			if (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F') {
+				end++
+				continue
+			}
+			break
+		}
+		if end > start {
+			out[strings.ToLower(s[start:end])] = struct{}{}
+		}
+		i = end
+	}
 }
 
 // ---------------------------------------------------------------------------
@@ -159,6 +273,15 @@ func (s *EzytelService) GetChannelInfo(ctx context.Context, in *ChannelInfoReque
 			if jerr := json.Unmarshal(data, &snap); jerr == nil {
 				snap.Newmsg = "OFF"
 				snap.Ok = false
+				// Snapshot stores the file-path form. Re-encode to a
+				// data: URI when the caller wants inline images.
+				if !in.DisableInlineImages && strings.HasPrefix(snap.AvatarPath, "cache/") {
+					if b, rerr := os.ReadFile(filepath.Join(s.cacheDir, strings.TrimPrefix(snap.AvatarPath, "cache/"))); rerr == nil {
+						snap.AvatarPath = dataURL(b, "image/jpeg")
+					} else {
+						snap.AvatarPath = ""
+					}
+				}
 				return &snap, nil
 			}
 		}
@@ -175,9 +298,12 @@ func (s *EzytelService) GetChannelInfo(ctx context.Context, in *ChannelInfoReque
 
 	pic := strFind(html, []string{`<meta property="og:image" content="https://`}, "\"")
 	if pic != "" {
-		hash := md5sum(pic)
-		if err := s.curlDownload(ctx, "https://"+pic, hash+".jpg"); err == nil {
-			info.AvatarPath = "cache/" + hash + ".jpg"
+		if data, cacheName, ferr := s.fetchImageBytes(ctx, "https://"+pic); ferr == nil {
+			if in.DisableInlineImages {
+				info.AvatarPath = "cache/" + cacheName
+			} else {
+				info.AvatarPath = dataURL(data, "image/jpeg")
+			}
 		}
 	}
 
@@ -214,7 +340,24 @@ func (s *EzytelService) GetChannelInfo(ctx context.Context, in *ChannelInfoReque
 	}
 
 	if err := s.ensureCacheDir(); err == nil {
-		if data, jerr := json.Marshal(info); jerr == nil {
+		// Persist a copy with the file-path form of avatar_path so the
+		// JSON snapshot stays small even when the live response inlines
+		// base64. Stale-replay can re-encode on read if needed.
+		avatarOnDisk := info.AvatarPath
+		if !in.DisableInlineImages && pic != "" {
+			avatarOnDisk = "cache/" + md5sum(pic) + ".jpg"
+		}
+		snap := map[string]any{
+			"name":         info.Name,
+			"description":  info.Description,
+			"avatar_path":  avatarOnDisk,
+			"date":         info.Date,
+			"date_str":     info.DateStr,
+			"newmsg":       info.Newmsg,
+			"last_post_id": info.LastPostId,
+			"ok":           info.Ok,
+		}
+		if data, jerr := json.Marshal(snap); jerr == nil {
 			s.infoMu.Lock()
 			_ = os.WriteFile(cacheFile, data, 0o644)
 			s.infoMu.Unlock()
@@ -235,14 +378,7 @@ func (s *EzytelService) ProxyImage(ctx context.Context, in *ProxyImageRequest) (
 	if err != nil {
 		return nil, fmt.Errorf("hex_url is not valid hex: %w", err)
 	}
-	pic := string(raw)
-	hash := md5sum(pic)
-	cacheName := hash + ".jpg"
-
-	if err := s.curlDownload(ctx, "https://"+pic, cacheName); err != nil {
-		return nil, err
-	}
-	data, err := os.ReadFile(filepath.Join(s.cacheDir, cacheName))
+	data, cacheName, err := s.fetchImageBytes(ctx, "https://"+string(raw))
 	if err != nil {
 		return nil, err
 	}
@@ -251,6 +387,32 @@ func (s *EzytelService) ProxyImage(ctx context.Context, in *ProxyImageRequest) (
 		ContentType: "image/jpeg",
 		CacheName:   cacheName,
 	}, nil
+}
+
+// fetchImageBytes downloads src through the translate.goog front (or
+// reads the existing cache hit), then returns the bytes plus the
+// "<md5>.jpg" cache filename. Shared by ProxyImage, GetChannelInfo
+// and GetChannelMessages so all three reuse the same cache.
+func (s *EzytelService) fetchImageBytes(ctx context.Context, src string) ([]byte, string, error) {
+	hash := md5sum(strings.TrimPrefix(strings.TrimPrefix(src, "https://"), "http://"))
+	cacheName := hash + ".jpg"
+	if err := s.curlDownload(ctx, src, cacheName); err != nil {
+		return nil, cacheName, err
+	}
+	data, err := os.ReadFile(filepath.Join(s.cacheDir, cacheName))
+	if err != nil {
+		return nil, cacheName, err
+	}
+	return data, cacheName, nil
+}
+
+// dataURL builds a "data:<ct>;base64,<b64>" URI ready to drop into
+// <img src>. Empty contentType defaults to image/jpeg.
+func dataURL(data []byte, contentType string) string {
+	if contentType == "" {
+		contentType = "image/jpeg"
+	}
+	return "data:" + contentType + ";base64," + base64.StdEncoding.EncodeToString(data)
 }
 
 // ---------------------------------------------------------------------------
