@@ -864,6 +864,8 @@ github.com/xmdhs/clash2singbox v0.1.4 h1:fhyFLve8VR/FtNVTjBLDsxRkzWqhUpaXq4XDdGY
 github.com/xmdhs/clash2singbox v0.1.4/go.mod h1:u2kIEBN2r26EGFSdU7mTwCqz4XG2B7Cwq8U1dVn2IXI=
 github.com/xmdhs/clash2singbox v0.1.5-0.20260430144619-ed81b387359d h1:UZawHWGhBZ/3KL00ojOo3bHSgL0XY2/cRoUyVm+yYuk=
 github.com/xmdhs/clash2singbox v0.1.5-0.20260430144619-ed81b387359d/go.mod h1:17jjRk00xzm7+DUJQE8myPGcN+1TlahQ9SFWtM3NmuA=
+github.com/xmdhs/clash2singbox v0.2.0 h1:PyDbxa1fQF/mufekRQdnCq9Izj/R9S+aagGjUVSJjqc=
+github.com/xmdhs/clash2singbox v0.2.0/go.mod h1:17jjRk00xzm7+DUJQE8myPGcN+1TlahQ9SFWtM3NmuA=
 github.com/xordataexchange/crypt v0.0.3-0.20170626215501-b2862e3d0a77/go.mod h1:aYKd//L2LvnjZzWKhF00oedf4jCCReLcmhLdhm1A27Q=
 github.com/xtaci/kcp-go/v5 v5.6.70 h1:AYX0QZl6PqmNj2IdYGZGuBfZuDUkUfl+eHYNijCqaO0=
 github.com/xtaci/kcp-go/v5 v5.6.70/go.mod h1:9O3D8WR+cyyUjGiTILYfg17vn72otWuXK2AFfqIe6CM=
