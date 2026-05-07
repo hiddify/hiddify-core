@@ -14,6 +14,7 @@ import (
 	"github.com/sagernet/sing/common/batch"
 	SJ "github.com/sagernet/sing/common/json"
 	"github.com/xmdhs/clash2singbox/convert"
+	clash2singmodel "github.com/xmdhs/clash2singbox/model"
 	"github.com/xmdhs/clash2singbox/model/clash"
 	"gopkg.in/yaml.v3"
 )
@@ -87,27 +88,27 @@ func parseConfigContent(ctx context.Context, content []byte, debug bool, configO
 		return patchConfigStr(ctx, newContent, "SingboxParser", configOpt)
 	}
 
-	v2ray, err := ray2sing.Ray2SingboxOptions(ctx, string(content), configOpt.UseXrayCoreWhenPossible)
-
-	if err == nil {
-		return patchConfigOptions(ctx, v2ray, "V2rayParser", configOpt)
-	}
 	fmt.Printf("Convert using clash\n")
 	clashObj := clash.Clash{}
 	if err := yaml.Unmarshal(content, &clashObj); err == nil && clashObj.Proxies != nil {
 		if len(clashObj.Proxies) == 0 {
 			return nil, fmt.Errorf("[ClashParser] no outbounds found")
 		}
-		converted, err := convert.Clash2sing(clashObj)
+		converted, endpoints, err := convert.Clash2sing(clashObj, clash2singmodel.SINGLATEST)
 		if err != nil {
 			return nil, fmt.Errorf("[ClashParser] converting clash to sing-box error: %w", err)
 		}
 		output := configByte
-		output, err = convert.Patch(output, converted, "", "", nil)
+		output, err = convert.Patch(output, converted, endpoints, "", "", nil)
 		if err != nil {
 			return nil, fmt.Errorf("[ClashParser] patching clash config error: %w", err)
 		}
 		return patchConfigStr(ctx, output, "ClashParser", configOpt)
+	}
+
+	v2ray, err := ray2sing.Ray2SingboxOptions(ctx, string(content), configOpt.UseXrayCoreWhenPossible)
+	if err == nil {
+		return patchConfigOptions(ctx, v2ray, "V2rayParser", configOpt)
 	}
 
 	return nil, fmt.Errorf("unable to determine config format")
