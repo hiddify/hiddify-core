@@ -25,7 +25,7 @@ func DefaultHiddifyOptions() *HiddifyOptions {
 			TproxyPort:     12335,
 			RedirectPort:   12336,
 			DirectPort:     12337,
-			Mtu:            9000,
+			Mtu:            1492,
 			StrictRoute:    true,
 			TunStack:       "mixed",
 		},
