@@ -8,10 +8,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"io"
-	"math/rand"
 	"net/http"
-	"net/url"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -30,6 +27,7 @@ type EzytelService struct {
 
 	cacheDir string
 	client   *http.Client
+	front    frontProvider
 	mu       sync.Mutex
 	infoMu   sync.Mutex
 }
@@ -40,15 +38,17 @@ func NewEzytelService(cacheDir string) *EzytelService {
 	if cacheDir == "" {
 		cacheDir = filepath.Join(os.TempDir(), "ezytel-cache")
 	}
+	client := &http.Client{
+		Timeout: 35 * time.Second,
+		Transport: &http.Transport{
+			TLSClientConfig:       &tls.Config{InsecureSkipVerify: true},
+			ResponseHeaderTimeout: 30 * time.Second,
+		},
+	}
 	return &EzytelService{
 		cacheDir: cacheDir,
-		client: &http.Client{
-			Timeout: 35 * time.Second,
-			Transport: &http.Transport{
-				TLSClientConfig:       &tls.Config{InsecureSkipVerify: true},
-				ResponseHeaderTimeout: 30 * time.Second,
-			},
-		},
+		client:   client,
+		front:    &googleTranslateFront{client: client},
 	}
 }
 
@@ -76,7 +76,7 @@ func (s *EzytelService) GetChannelMessages(ctx context.Context, in *ChannelMessa
 	if in.Before != 0 {
 		path = fmt.Sprintf("%s?before=%d", chid, in.Before)
 	}
-	html, err := s.curlAuto(ctx, path)
+	html, err := s.front.FetchPage(ctx, path)
 	if err != nil {
 		return nil, err
 	}
@@ -89,6 +89,13 @@ func (s *EzytelService) GetChannelMessages(ctx context.Context, in *ChannelMessa
 	html = rewriteBackgroundImages(html)
 	// rewrite <img src="https://...">
 	html = rewriteImgSources(html)
+
+	// Capture the main content with its original <time datetime="..."> still
+	// intact, so parseMessages can read real timestamps, before rewriteTimes
+	// replaces them with human-readable strings below.
+	rawMain := strFind(html, []string{"</header>"}, "</main>")
+	messages := parseMessages(rawMain)
+
 	// fix date and time blocks
 	html = rewriteTimes(html)
 
@@ -135,6 +142,8 @@ func (s *EzytelService) GetChannelMessages(ctx context.Context, in *ChannelMessa
 		}
 	}
 
+	resp.Messages = messages
+
 	if !in.DisableInlineImages {
 		// chanPic at this point is "proxy.php?url=<hex>" because it
 		// was captured after rewriteImgSources. Resolve it once so
@@ -144,10 +153,95 @@ func (s *EzytelService) GetChannelMessages(ctx context.Context, in *ChannelMessa
 			resp.ChannelAvatar = chanPicURI
 		}
 		content = s.inlineProxyPlaceholders(ctx, content)
+		for _, m := range resp.Messages {
+			for i, u := range m.MediaUrls {
+				if uri := s.inlineProxyPlaceholder(ctx, u); uri != "" {
+					m.MediaUrls[i] = uri
+				}
+			}
+		}
 	}
 
 	resp.Html = content
 	return resp, nil
+}
+
+// messageBlockRE splits a channel-page <main> fragment into individual
+// tgme_widget_message blocks, keyed by their data-post id.
+var messageBlockRE = regexp.MustCompile(`(?is)<div class="tgme_widget_message[^"]*"\s+data-post="[^/]+/(\d+)"`)
+
+// parseMessages walks content (the isolated <header>...</main> fragment
+// already produced by GetChannelMessages) and returns one ChannelMessage
+// per tgme_widget_message block, in document order. Best-effort: a block
+// that doesn't match an expected sub-pattern just leaves that field zero.
+func parseMessages(content string) []*ChannelMessage {
+	locs := messageBlockRE.FindAllStringSubmatchIndex(content, -1)
+	if len(locs) == 0 {
+		return nil
+	}
+	out := make([]*ChannelMessage, 0, len(locs))
+	for i, loc := range locs {
+		start := loc[0]
+		end := len(content)
+		if i+1 < len(locs) {
+			end = locs[i+1][0]
+		}
+		block := content[start:end]
+		id := content[loc[2]:loc[3]]
+
+		msg := &ChannelMessage{Id: id}
+		if strings.Contains(strings.ToLower(block), "tgme_widget_message_text") {
+			msg.Text = stripTags(strFind(block, []string{"tgme_widget_message_text", ">"}, "</div>"))
+		}
+		msg.MediaUrls = extractMediaURLs(block)
+		msg.IsForward = strings.Contains(block, "tgme_widget_message_forwarded_from")
+
+		if t := strFind(block, []string{`<time datetime="`}, `"`); t != "" {
+			if parsed, err := time.Parse(time.RFC3339, t); err == nil {
+				msg.Date = parsed.Unix()
+				msg.DateStr = dateConvert(parsed)
+			}
+		}
+		out = append(out, msg)
+	}
+	return out
+}
+
+// extractMediaURLs returns the distinct "proxy.php?url=<hex>" references
+// inside block, in first-seen order.
+func extractMediaURLs(block string) []string {
+	hexes := extractProxyHexes(block)
+	if len(hexes) == 0 {
+		return nil
+	}
+	seen := map[string]struct{}{}
+	out := make([]string, 0, len(hexes))
+	i := 0
+	const prefix = "proxy.php?url="
+	for {
+		idx := strings.Index(block[i:], prefix)
+		if idx < 0 {
+			break
+		}
+		start := i + idx + len(prefix)
+		end := start
+		for end < len(block) && isHexByte(block[end]) {
+			end++
+		}
+		h := strings.ToLower(block[start:end])
+		if _, ok := hexes[h]; ok {
+			if _, dup := seen[h]; !dup {
+				seen[h] = struct{}{}
+				out = append(out, prefix+h)
+			}
+		}
+		i = end
+	}
+	return out
+}
+
+func isHexByte(c byte) bool {
+	return (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F')
 }
 
 // inlineProxyPlaceholder resolves a single "proxy.php?url=<hex>"
@@ -263,7 +357,7 @@ func (s *EzytelService) GetChannelInfo(ctx context.Context, in *ChannelInfoReque
 	}
 
 	cacheFile := filepath.Join(s.cacheDir, chid+".json")
-	html, err := s.curlAuto(ctx, chid)
+	html, err := s.front.FetchPage(ctx, chid)
 	ok := err == nil && strings.Contains(html, `<meta property="og:title" content="`)
 
 	if !ok {
@@ -396,7 +490,7 @@ func (s *EzytelService) ProxyImage(ctx context.Context, in *ProxyImageRequest) (
 func (s *EzytelService) fetchImageBytes(ctx context.Context, src string) ([]byte, string, error) {
 	hash := md5sum(strings.TrimPrefix(strings.TrimPrefix(src, "https://"), "http://"))
 	cacheName := hash + ".jpg"
-	if err := s.curlDownload(ctx, src, cacheName); err != nil {
+	if err := s.front.Download(ctx, s.cacheDir, src, cacheName); err != nil {
 		return nil, cacheName, err
 	}
 	data, err := os.ReadFile(filepath.Join(s.cacheDir, cacheName))
@@ -445,139 +539,6 @@ func (s *EzytelService) ParseChannels(_ context.Context, in *ParseChannelsReques
 		out = append(out, name)
 	}
 	return &ParseChannelsResponse{ChannelIds: out}, nil
-}
-
-// ---------------------------------------------------------------------------
-// HTTP plumbing — domain-fronted GET via translate.goog.
-// ---------------------------------------------------------------------------
-
-const userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36"
-
-var googleDomains = []string{
-	"safebrowsing.google.com",
-	"images.google.com",
-	"maps.google.com",
-	"news.google.com",
-	"scholar.google.com",
-	"meet.google.com",
-	"mail.google.com",
-	"drive.google.com",
-}
-
-// curlAuto retries up to twice on timeout, like the PHP curl_auto().
-func (s *EzytelService) curlAuto(ctx context.Context, params string) (string, error) {
-	body, err := s.curlGet(ctx, params, 0)
-	if err == nil {
-		return body, nil
-	}
-	for try := 1; try <= 2; try++ {
-		if !isTimeout(err) {
-			break
-		}
-		body, err = s.curlGet(ctx, params, try)
-		if err == nil {
-			return body, nil
-		}
-	}
-	return "", err
-}
-
-func (s *EzytelService) curlGet(ctx context.Context, params string, try int) (string, error) {
-	host := domainPick(try > 1)
-	sep := "?"
-	if strings.Contains(params, "?") {
-		sep = "&"
-	}
-	dst := fmt.Sprintf("https://%s/s/%s%s_x_tr_sl=el&_x_tr_tl=en&_x_tr_hl=en&_x_tr_pto=wapp", host, params, sep)
-
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, dst, nil)
-	if err != nil {
-		return "", err
-	}
-	req.Host = "t-me.translate.goog"
-	req.Header.Set("Host", "t-me.translate.goog")
-	req.Header.Set("User-Agent", userAgent)
-	req.Header.Set("Pragma", "no-cache")
-	req.Header.Set("Cache-Control", "no-cache")
-
-	resp, err := s.client.Do(req)
-	if err != nil {
-		return "", err
-	}
-	defer resp.Body.Close()
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return "", err
-	}
-	return string(body), nil
-}
-
-// curlDownload mirrors the image-download fronting in libs.php: rewrite
-// the host into <host-with-dashes>.translate.goog and fetch via
-// www.google.com so the SNI stays Google.
-func (s *EzytelService) curlDownload(ctx context.Context, src, name string) error {
-	if err := s.ensureCacheDir(); err != nil {
-		return err
-	}
-	target := filepath.Join(s.cacheDir, name)
-	if _, err := os.Stat(target); err == nil {
-		return nil
-	}
-	parsed, err := url.Parse(src)
-	if err != nil || parsed.Host == "" {
-		return fmt.Errorf("invalid url: %s", src)
-	}
-	host := parsed.Host
-	dst := strings.Replace(src, host, "www.google.com", 1)
-
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, dst, nil)
-	if err != nil {
-		return err
-	}
-	frontHost := strings.ReplaceAll(host, ".", "-") + ".translate.goog"
-	req.Host = frontHost
-	req.Header.Set("Host", frontHost)
-	req.Header.Set("User-Agent", userAgent)
-
-	resp, err := s.client.Do(req)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("upstream status %d", resp.StatusCode)
-	}
-	data, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return err
-	}
-	return os.WriteFile(target, data, 0o644)
-}
-
-func isTimeout(err error) bool {
-	if err == nil {
-		return false
-	}
-	msg := strings.ToLower(err.Error())
-	return strings.Contains(msg, "timeout") || strings.Contains(msg, "deadline")
-}
-
-func domainPick(rand bool) string {
-	if !rand {
-		return "www.google.com"
-	}
-	return googleDomains[randInt(len(googleDomains))]
-}
-
-var rng = struct {
-	mu sync.Mutex
-	r  *rand.Rand
-}{r: rand.New(rand.NewSource(time.Now().UnixNano()))}
-
-func randInt(n int) int {
-	rng.mu.Lock()
-	defer rng.mu.Unlock()
-	return rng.r.Intn(n)
 }
 
 // ---------------------------------------------------------------------------
