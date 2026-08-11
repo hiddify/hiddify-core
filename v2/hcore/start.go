@@ -151,6 +151,16 @@ func StartService(ctx context.Context, in *StartRequest) (coreResponse *CoreInfo
 	for inb := range options.Inbounds {
 		if opts, ok := options.Inbounds[inb].Options.(option.SocksInboundOptions); ok {
 			static.ListenPort = opts.ListenPort
+			if len(opts.Users) > 0 {
+				static.ListenUser = opts.Users[0].Username
+				static.ListenPassword = opts.Users[0].Password
+			}
+		} else if opts, ok := options.Inbounds[inb].Options.(*option.HTTPMixedInboundOptions); ok && opts != nil {
+			static.ListenPort = opts.ListenPort
+			if len(opts.Users) > 0 {
+				static.ListenUser = opts.Users[0].Username
+				static.ListenPassword = opts.Users[0].Password
+			}
 		}
 	}
 

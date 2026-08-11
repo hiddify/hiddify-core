@@ -51,6 +51,8 @@ type InboundOptions struct {
 	EnableTunService bool   `json:"enable-tun-service,omitempty"`
 	SetSystemProxy   bool   `json:"set-system-proxy,omitempty"`
 	MixedPort        uint16 `json:"mixed-port,omitempty"`
+	MixedUser        string `json:"-"` // generated at runtime, never persisted
+	MixedPassword    string `json:"-"` // generated at runtime, never persisted
 	TProxyPort       uint16 `json:"tproxy-port,omitempty"`
 	RedirectPort     uint16 `json:"redirect-port,omitempty"`
 	DirectPort       uint16 `json:"direct-port,omitempty"`

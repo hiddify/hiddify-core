@@ -38,6 +38,13 @@ func (b *AdminServiceExtension) OnMainServicePreStart(singconfig *option.Options
 				if d, ok := inb.Options.(option.SocksInboundOptions); ok {
 					b.socksOptions = &d
 				}
+			} else if inb.Type == C.TypeMixed {
+				if d, ok := inb.Options.(*option.HTTPMixedInboundOptions); ok && d != nil {
+					b.socksOptions = &option.SocksInboundOptions{
+						ListenOptions: option.ListenOptions{ListenPort: d.ListenPort},
+						Users:         d.Users,
+					}
+				}
 			}
 			newInbounds = append(newInbounds, inb)
 		}
