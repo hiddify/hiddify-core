@@ -1,0 +1,364 @@
+syntax = "proto3";
+
+package hiddify.control.v1;
+
+option go_package = "github.com/hiddify/hiddify-core/v2/controlv1;controlv1";
+
+// ControlService is the versioned, local-only API between thin clients and the
+// daemon. Requests describe user intent; they never expose core file paths or
+// daemon storage details.
+service ControlService {
+  rpc GetSnapshot(GetSnapshotRequest) returns (Snapshot);
+  rpc WatchEvents(WatchRequest) returns (stream Event);
+  rpc Connect(ConnectRequest) returns (OperationResult);
+  rpc Disconnect(DisconnectRequest) returns (OperationResult);
+  rpc Restart(RestartRequest) returns (OperationResult);
+
+  rpc ListProfiles(ListProfilesRequest) returns (ListProfilesResponse);
+  rpc GetProfile(GetProfileRequest) returns (Profile);
+  rpc AddRemoteProfile(AddRemoteProfileRequest) returns (Profile);
+  rpc AddLocalProfile(stream AddLocalProfileRequest) returns (Profile);
+  rpc UpdateProfile(UpdateProfileRequest) returns (Profile);
+  rpc RefreshProfile(RefreshProfileRequest) returns (OperationResult);
+  rpc DeleteProfile(DeleteProfileRequest) returns (OperationResult);
+  rpc SetActiveProfile(SetActiveProfileRequest) returns (OperationResult);
+
+  rpc ListOutboundGroups(ListOutboundGroupsRequest) returns (ListOutboundGroupsResponse);
+  rpc SelectOutbound(SelectOutboundRequest) returns (OperationResult);
+  rpc TestOutbounds(TestOutboundsRequest) returns (OperationResult);
+  rpc TailLogs(TailLogsRequest) returns (stream LogEntry);
+  rpc ClearLogs(ClearLogsRequest) returns (OperationResult);
+
+  rpc GetSettings(GetSettingsRequest) returns (Settings);
+  rpc ValidateSettings(ValidateSettingsRequest) returns (ValidationResult);
+  rpc UpdateSettings(UpdateSettingsRequest) returns (Settings);
+  rpc ResetSettings(ResetSettingsRequest) returns (Settings);
+  rpc ExportSettings(ExportSettingsRequest) returns (ExportSettingsResponse);
+  rpc ImportSettings(ImportSettingsRequest) returns (Settings);
+  rpc GetServiceInfo(GetServiceInfoRequest) returns (ServiceInfo);
+  rpc SetAutoConnect(SetAutoConnectRequest) returns (OperationResult);
+  rpc GetDiagnostics(GetDiagnosticsRequest) returns (Diagnostics);
+  rpc PollAgent(AgentPollRequest) returns (AgentInstruction);
+}
+
+message GetSnapshotRequest {}
+
+message Snapshot {
+  uint32 api_major = 1;
+  uint32 api_minor = 2;
+  string daemon_version = 3;
+  string core_version = 4;
+  ConnectionState connection_state = 5;
+  string active_profile_id = 6;
+  string active_profile_name = 7;
+  string requested_mode = 8;
+  string effective_mode = 9;
+  string selected_outbound = 10;
+  string last_error = 11;
+  uint64 revision = 12;
+  uint64 event_sequence = 13;
+  TrafficStats traffic = 14;
+  SystemStats system = 15;
+  AgentHealth agent = 16;
+  repeated string capabilities = 17;
+  bool auto_connect = 18;
+}
+
+message WatchRequest {
+  uint64 after_sequence = 1;
+}
+
+message Event {
+  uint64 sequence = 1;
+  uint64 revision = 2;
+  oneof change {
+    ConnectionChange connection = 3;
+    ProfileChange profile = 4;
+    OutboundChange outbound = 5;
+    Warning warning = 6;
+    ResyncRequired resync_required = 7;
+    AgentHealth agent = 8;
+  }
+}
+
+message ConnectionChange {
+  ConnectionState state = 1;
+  string requested_mode = 2;
+  string effective_mode = 3;
+}
+
+message ProfileChange {
+  string active_profile_id = 1;
+  string active_profile_name = 2;
+}
+
+message OutboundChange {
+  string selected_outbound = 1;
+}
+
+message Warning {
+  string message = 1;
+}
+
+message ResyncRequired {}
+
+message ConnectRequest {
+  string profile_id = 1;
+  ConnectionMode mode = 2;
+}
+
+message DisconnectRequest {}
+message RestartRequest {}
+
+message OperationResult {
+  string operation_id = 1;
+  ErrorCode error_code = 2;
+  string message = 3;
+  bool already_in_requested_state = 4;
+}
+
+message ListProfilesRequest {}
+message GetProfileRequest {
+  string profile_id = 1;
+}
+message ListProfilesResponse {
+  repeated Profile profiles = 1;
+}
+
+message Profile {
+  string id = 1;
+  string name = 2;
+  ProfileKind kind = 3;
+  bool active = 4;
+  string redacted_url = 5;
+  int64 last_successful_refresh_unix = 6;
+  int64 last_attempted_refresh_unix = 7;
+  int64 update_interval_seconds = 8;
+  SubscriptionUsage subscription = 9;
+  string last_refresh_error = 10;
+}
+
+message SubscriptionUsage {
+  int64 upload_bytes = 1;
+  int64 download_bytes = 2;
+  int64 total_bytes = 3;
+  int64 expiry_unix = 4;
+}
+
+message AddRemoteProfileRequest {
+  string url = 1;
+  string name = 2;
+  bool set_active = 3;
+}
+
+// A client sends metadata in the first frame, then content chunks. The daemon
+// rejects a stream exceeding its advertised limit and never opens a client path.
+message AddLocalProfileRequest {
+  oneof part {
+    LocalProfileMetadata metadata = 1;
+    bytes content_chunk = 2;
+  }
+}
+
+message LocalProfileMetadata {
+  string name = 1;
+  bool set_active = 2;
+}
+
+message UpdateProfileRequest {
+  string profile_id = 1;
+  string name = 2;
+  int64 update_interval_seconds = 3;
+}
+
+message RefreshProfileRequest {
+  string profile_id = 1;
+}
+message DeleteProfileRequest {
+  string profile_id = 1;
+}
+message SetActiveProfileRequest {
+  string profile_id = 1;
+}
+
+message ListOutboundGroupsRequest {}
+message ListOutboundGroupsResponse {
+  repeated OutboundGroup groups = 1;
+}
+
+message OutboundGroup {
+  string id = 1;
+  string name = 2;
+  string selected_outbound_id = 3;
+  repeated Outbound outbounds = 4;
+}
+
+message Outbound {
+  string id = 1;
+  string tag = 2;
+  string protocol = 3;
+  bool selectable = 4;
+  int64 delay_millis = 5;
+  int64 last_test_unix = 6;
+  string endpoint_summary = 7;
+}
+
+message SelectOutboundRequest {
+  string group_id = 1;
+  string outbound_id = 2;
+}
+
+message TestOutboundsRequest {
+  oneof scope {
+    string outbound_id = 1;
+    string group_id = 2;
+    bool all_visible = 3;
+  }
+}
+
+message TailLogsRequest {
+  uint32 initial_tail = 1;
+  LogLevel minimum_level = 2;
+  bool follow = 3;
+}
+
+message LogEntry {
+  uint64 sequence = 1;
+  int64 timestamp_unix_nano = 2;
+  LogLevel level = 3;
+  string component = 4;
+  string message = 5;
+}
+
+message ClearLogsRequest {}
+message GetSettingsRequest {}
+message Settings {
+  bytes redacted_json = 1;
+}
+message ValidateSettingsRequest {
+  bytes candidate_json = 1;
+}
+
+message ValidationResult {
+  bool valid = 1;
+  repeated FieldError errors = 2;
+}
+
+message FieldError {
+  string field = 1;
+  string message = 2;
+}
+
+message UpdateSettingsRequest {
+  bytes candidate_json = 1;
+}
+message ResetSettingsRequest {}
+
+message ExportSettingsRequest {
+  bool include_secrets = 1;
+}
+
+message ExportSettingsResponse {
+  bytes json = 1;
+}
+message ImportSettingsRequest {
+  bytes json = 1;
+}
+message GetServiceInfoRequest {}
+
+message ServiceInfo {
+  bool installed = 1;
+  bool enabled = 2;
+  bool running = 3;
+  string last_error = 4;
+}
+
+message SetAutoConnectRequest {
+  bool enabled = 1;
+}
+message GetDiagnosticsRequest {}
+
+message Diagnostics {
+  string daemon_version = 1;
+  string core_version = 2;
+  string socket_path = 3;
+  repeated string active_listeners = 4;
+  string last_service_error = 5;
+}
+
+message TrafficStats {
+  uint64 uplink_bytes_per_second = 1;
+  uint64 downlink_bytes_per_second = 2;
+  uint64 total_upload_bytes = 3;
+  uint64 total_download_bytes = 4;
+}
+
+message SystemStats {
+  uint64 memory_bytes = 1;
+  uint32 connection_count = 2;
+}
+
+message AgentHealth {
+  bool required = 1;
+  bool connected = 2;
+  string last_error = 3;
+  bool applied = 4;
+}
+
+// The user-session proxy agent polls through the same OS-authorized local
+// socket. The daemon never accepts arbitrary proxy endpoints from an agent.
+message AgentPollRequest {
+  bool applied = 1;
+  string last_error = 2;
+}
+message AgentInstruction {
+  bool system_proxy_enabled = 1;
+  string host = 2;
+  uint32 port = 3;
+  uint32 lease_seconds = 4;
+}
+
+enum ConnectionMode {
+  CONNECTION_MODE_UNSPECIFIED = 0;
+  CONNECTION_MODE_TUN = 1;
+  CONNECTION_MODE_SYSTEM_PROXY = 2;
+  CONNECTION_MODE_LOCAL_PROXY = 3;
+}
+
+enum ProfileKind {
+  PROFILE_KIND_UNSPECIFIED = 0;
+  PROFILE_KIND_REMOTE = 1;
+  PROFILE_KIND_LOCAL = 2;
+}
+
+enum LogLevel {
+  LOG_LEVEL_UNSPECIFIED = 0;
+  LOG_LEVEL_DEBUG = 1;
+  LOG_LEVEL_INFO = 2;
+  LOG_LEVEL_WARN = 3;
+  LOG_LEVEL_ERROR = 4;
+}
+
+enum ErrorCode {
+  ERROR_CODE_UNSPECIFIED = 0;
+  ERROR_CODE_OK = 1;
+  ERROR_CODE_NO_ACTIVE_PROFILE = 2;
+  ERROR_CODE_INVALID_CONFIGURATION = 3;
+  ERROR_CODE_PERMISSION_DENIED = 4;
+  ERROR_CODE_INCOMPATIBLE_VERSION = 5;
+  ERROR_CODE_AGENT_UNAVAILABLE = 6;
+  ERROR_CODE_PORT_CONFLICT = 7;
+  ERROR_CODE_ALREADY_IN_REQUESTED_STATE = 8;
+  ERROR_CODE_NOT_FOUND = 9;
+  ERROR_CODE_INTERNAL = 10;
+}
+
+enum ConnectionState {
+  CONNECTION_STATE_UNSPECIFIED = 0;
+  CONNECTION_STATE_STOPPED = 1;
+  CONNECTION_STATE_STARTING = 2;
+  CONNECTION_STATE_STARTED = 3;
+  CONNECTION_STATE_STOPPING = 4;
+  CONNECTION_STATE_RECONNECT_WAIT = 5;
+  CONNECTION_STATE_FAILED = 6;
+}
