@@ -58,7 +58,13 @@ func Parse(ctx context.Context, in *ParseRequest) (*ParseResponse, error) {
 		path = in.ConfigPath
 	}
 
-	config, err := config.ParseConfigBytes(ctx, &config.ReadOptions{Content: in.Content, Path: path}, true, static.HiddifyOptions, false)
+	// Parsing needs the core's outbound/inbound options registries, which live
+	// in the libbox base context. A plain caller context lacks them.
+	parseCtx := ctx
+	if static.BaseContext != nil {
+		parseCtx = static.BaseContext
+	}
+	config, err := config.ParseConfigBytes(parseCtx, &config.ReadOptions{Content: in.Content, Path: path}, true, static.HiddifyOptions, false)
 	if err != nil {
 		return &ParseResponse{
 			ResponseCode: hcommon.ResponseCode_FAILED,
