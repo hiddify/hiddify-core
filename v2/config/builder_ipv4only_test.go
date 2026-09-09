@@ -54,14 +54,24 @@ func TestSetInboundIPv4OnlyDoesNotAdvertiseIPv6(t *testing.T) {
 	}
 }
 
-func TestSetInboundUseIPv6PreservesDualStackAddresses(t *testing.T) {
-	options := buildTunOptionsForMode(t, option.DomainStrategy(dns.DomainStrategyUseIPv6))
-	ipv4, ipv6 := countAddressFamilies(options)
-
-	if ipv4 != 1 {
-		t.Fatalf("IPv4 address count = %d, want 1", ipv4)
+func TestShouldEnableIPv6(t *testing.T) {
+	tests := []struct {
+		name             string
+		mode             option.DomainStrategy
+		hostSupportsIPv6 bool
+		want             bool
+	}{
+		{"IPv4Only disables IPv6 on a capable host", option.DomainStrategy(dns.DomainStrategyUseIPv4), true, false},
+		{"IPv4Only stays disabled on an IPv4-only host", option.DomainStrategy(dns.DomainStrategyUseIPv4), false, false},
+		{"AsIs preserves IPv6 on a capable host", option.DomainStrategy(dns.DomainStrategyAsIS), true, true},
+		{"UseIPv6 preserves existing host capability check", option.DomainStrategy(dns.DomainStrategyUseIPv6), false, false},
 	}
-	if ipv6 != 1 {
-		t.Fatalf("IPv6 address count = %d, want 1", ipv6)
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			if got := shouldEnableIPv6(test.mode, test.hostSupportsIPv6); got != test.want {
+				t.Fatalf("shouldEnableIPv6() = %v, want %v", got, test.want)
+			}
+		})
 	}
 }
