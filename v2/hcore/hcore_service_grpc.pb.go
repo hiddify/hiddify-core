@@ -40,6 +40,7 @@ const (
 	Core_SetSystemProxyEnabled_FullMethodName = "/hcore.Core/SetSystemProxyEnabled"
 	Core_LogListener_FullMethodName           = "/hcore.Core/LogListener"
 	Core_Close_FullMethodName                 = "/hcore.Core/Close"
+	Core_GetLANIP_FullMethodName              = "/hcore.Core/GetLANIP"
 )
 
 // CoreClient is the client API for Core service.
@@ -67,6 +68,7 @@ type CoreClient interface {
 	SetSystemProxyEnabled(ctx context.Context, in *SetSystemProxyEnabledRequest, opts ...grpc.CallOption) (*hcommon.Response, error)
 	LogListener(ctx context.Context, in *LogRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[LogMessage], error)
 	Close(ctx context.Context, in *CloseRequest, opts ...grpc.CallOption) (*hcommon.Empty, error)
+	GetLANIP(ctx context.Context, in *hcommon.Empty, opts ...grpc.CallOption) (*LANIPResponse, error)
 }
 
 type coreClient struct {
@@ -322,6 +324,16 @@ func (c *coreClient) Close(ctx context.Context, in *CloseRequest, opts ...grpc.C
 	return out, nil
 }
 
+func (c *coreClient) GetLANIP(ctx context.Context, in *hcommon.Empty, opts ...grpc.CallOption) (*LANIPResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(LANIPResponse)
+	err := c.cc.Invoke(ctx, Core_GetLANIP_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // CoreServer is the server API for Core service.
 // All implementations must embed UnimplementedCoreServer
 // for forward compatibility.
@@ -347,6 +359,7 @@ type CoreServer interface {
 	SetSystemProxyEnabled(context.Context, *SetSystemProxyEnabledRequest) (*hcommon.Response, error)
 	LogListener(*LogRequest, grpc.ServerStreamingServer[LogMessage]) error
 	Close(context.Context, *CloseRequest) (*hcommon.Empty, error)
+	GetLANIP(context.Context, *hcommon.Empty) (*LANIPResponse, error)
 	mustEmbedUnimplementedCoreServer()
 }
 
@@ -416,6 +429,9 @@ func (UnimplementedCoreServer) LogListener(*LogRequest, grpc.ServerStreamingServ
 }
 func (UnimplementedCoreServer) Close(context.Context, *CloseRequest) (*hcommon.Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Close not implemented")
+}
+func (UnimplementedCoreServer) GetLANIP(context.Context, *hcommon.Empty) (*LANIPResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetLANIP not implemented")
 }
 func (UnimplementedCoreServer) mustEmbedUnimplementedCoreServer() {}
 func (UnimplementedCoreServer) testEmbeddedByValue()              {}
@@ -763,6 +779,24 @@ func _Core_Close_Handler(srv interface{}, ctx context.Context, dec func(interfac
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Core_GetLANIP_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(hcommon.Empty)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CoreServer).GetLANIP(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Core_GetLANIP_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CoreServer).GetLANIP(ctx, req.(*hcommon.Empty))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Core_ServiceDesc is the grpc.ServiceDesc for Core service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -829,6 +863,10 @@ var Core_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Close",
 			Handler:    _Core_Close_Handler,
+		},
+		{
+			MethodName: "GetLANIP",
+			Handler:    _Core_GetLANIP_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

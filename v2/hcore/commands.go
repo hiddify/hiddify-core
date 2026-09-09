@@ -3,14 +3,18 @@ package hcore
 import (
 	"context"
 	"fmt"
+	"net"
 	"runtime"
+	"strings"
 	"time"
 
 	"github.com/hiddify/hiddify-core/v2/config"
 	"github.com/hiddify/hiddify-core/v2/db"
 	hcommon "github.com/hiddify/hiddify-core/v2/hcommon"
 	"github.com/sagernet/sing-box/adapter"
-	"github.com/sagernet/sing-box/common/conntrack"
+	"github.com/wlynxg/anet"
+
+	// "github.com/sagernet/sing-box/common/conntrack"
 	"github.com/sagernet/sing-box/protocol/group"
 
 	"github.com/sagernet/sing-box/common/monitoring"
@@ -23,7 +27,7 @@ func (h *HiddifyInstance) readStatus(prev *SystemInfo) *SystemInfo {
 	var message SystemInfo
 	message.Memory = int64(memory.Inuse())
 	message.Goroutines = int32(runtime.NumGoroutine())
-	message.ConnectionsOut = int32(conntrack.Count())
+	// message.ConnectionsOut = int32(conntrack.Count())
 
 	if ss := h.StartedService; ss != nil {
 		status := ss.ReadStatus()
@@ -382,4 +386,64 @@ func (h *HiddifyInstance) UrlTest(in *UrlTestRequest) (*hcommon.Response, error)
 		Code:    hcommon.ResponseCode_OK,
 		Message: "",
 	}, nil
+}
+
+func (s *CoreService) GetLANIP(ctx context.Context, req *hcommon.Empty) (*LANIPResponse, error) {
+	// Use anet instead of net to bypass Android 11+ SELinux restrictions
+	// that block direct Netlink socket binding (permission denied error).
+	ifaces, err := anet.Interfaces()
+	if err != nil {
+		Log(LogLevel_ERROR, LogType_CORE, "GetLANIP failed: ", err)
+		return &LANIPResponse{Ip: "127.0.0.1"}, nil
+	}
+
+	for _, iface := range ifaces {
+		// Filter out interfaces that are down, loopback, or point-to-point (VPN/Tunnels)
+		if iface.Flags&net.FlagUp == 0 || iface.Flags&net.FlagLoopback != 0 || iface.Flags&net.FlagPointToPoint != 0 {
+			continue
+		}
+
+		// Exclude interfaces with names typical for VPNs, TAP, or TUN devices
+		name := strings.ToLower(iface.Name)
+		if strings.Contains(name, "tun") || strings.Contains(name, "tap") || 
+			strings.Contains(name, "wintun") || strings.Contains(name, "utun") || 
+			strings.Contains(name, "vpn") || strings.Contains(name, "ppp") {
+			continue
+		}
+
+		// Retrieve addresses using anet to ensure compatibility on Android 11+
+		addrs, err := anet.InterfaceAddrsByInterface(&iface)
+		if err != nil {
+			continue
+		}
+
+		for _, addr := range addrs {
+			var ip net.IP
+			switch v := addr.(type) {
+			case *net.IPNet:
+				ip = v.IP
+			case *net.IPAddr:
+				ip = v.IP
+			}
+
+			if ip == nil || ip.IsLoopback() {
+				continue
+			}
+
+			// Ensure it is a valid IPv4 address
+			ip4 := ip.To4()
+			if ip4 == nil {
+				continue
+			}
+
+			// Verify the IP belongs to a standard private IP range (RFC 1918)
+			if ip4[0] == 10 || 
+				(ip4[0] == 172 && ip4[1] >= 16 && ip4[1] <= 31) || 
+				(ip4[0] == 192 && ip4[1] == 168) {
+				return &LANIPResponse{Ip: ip4.String()}, nil
+			}
+		}
+	}
+	// Fallback to loopback if no physical LAN interface is found
+	return &LANIPResponse{Ip: "127.0.0.1"}, nil
 }

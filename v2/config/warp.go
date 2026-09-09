@@ -186,7 +186,7 @@ func GenerateWarpSingboxNew(uniqueIdentifier string, noise *hiddify.NoiseOptions
 	out := T.Endpoint{
 		Type: C.TypeWARP,
 		Tag:  "WARP",
-		Options: &T.WireGuardWARPEndpointOptions{
+		Options: &T.WARPEndpointOptions{
 			// ServerOptions: T.ServerOptions{
 			// 	Server:     server,
 			// 	ServerPort: port,
@@ -204,7 +204,7 @@ func GenerateWarpSingboxNew(uniqueIdentifier string, noise *hiddify.NoiseOptions
 
 func patchWarp(base *option.Endpoint, configOpt *HiddifyOptions, final bool, staticIpsDns map[string][]string) error {
 	if base.Type == C.TypeWARP {
-		if opts, ok := base.Options.(*option.WireGuardWARPEndpointOptions); ok {
+		if opts, ok := base.Options.(*option.WARPEndpointOptions); ok {
 			opts.ServerOptions.Server = ""
 			opts.ServerOptions.ServerPort = 0
 			opts.Profile.Detour = OutboundWARPConfigDetour

@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	dnscode "github.com/miekg/dns"
+	// dnscode "github.com/miekg/dns"
 	C "github.com/sagernet/sing-box/constant"
 	"github.com/sagernet/sing-box/option"
 	E "github.com/sagernet/sing/common/exceptions"
@@ -433,29 +433,29 @@ func getDNSServerOptions(tag string, dnsurl string, domain_resolver string, deto
 			}
 
 		}
-	case "rcode":
-		var rcode int
-		if serverURL == nil {
-			return nil, E.New("invalid server address")
-		}
-		switch serverURL.Host {
-		case "success":
-			rcode = dnscode.RcodeSuccess
-		case "format_error":
-			rcode = dnscode.RcodeFormatError
-		case "server_failure":
-			rcode = dnscode.RcodeServerFailure
-		case "name_error":
-			rcode = dnscode.RcodeNameError
-		case "not_implemented":
-			rcode = dnscode.RcodeNotImplemented
-		case "refused":
-			rcode = dnscode.RcodeRefused
-		default:
-			return nil, E.New("unknown rcode: ", serverURL.Host)
-		}
-		o.Type = C.DNSTypeLegacyRcode
-		o.Options = rcode
+	// case "rcode":
+	// 	var rcode int
+	// 	if serverURL == nil {
+	// 		return nil, E.New("invalid server address")
+	// 	}
+	// 	switch serverURL.Host {
+	// 	case "success":
+	// 		rcode = dnscode.RcodeSuccess
+	// 	case "format_error":
+	// 		rcode = dnscode.RcodeFormatError
+	// 	case "server_failure":
+	// 		rcode = dnscode.RcodeServerFailure
+	// 	case "name_error":
+	// 		rcode = dnscode.RcodeNameError
+	// 	case "not_implemented":
+	// 		rcode = dnscode.RcodeNotImplemented
+	// 	case "refused":
+	// 		rcode = dnscode.RcodeRefused
+	// 	default:
+	// 		return nil, E.New("unknown rcode: ", serverURL.Host)
+	// 	}
+	// 	o.Type = C.DNSTypeLegacyRcode
+	// 	o.Options = rcode
 	case C.DNSTypeDHCP:
 		o.Type = C.DNSTypeDHCP
 		dhcpOptions := option.DHCPDNSServerOptions{}

@@ -90,11 +90,11 @@ func patchOutboundFragment(base option.Outbound, configOpt HiddifyOptions) optio
 		if opts, ok := base.Options.(option.DialerOptionsWrapper); ok {
 			dialer := opts.TakeDialerOptions()
 			dialer.TCPFastOpen = false
-			dialer.TLSFragment = option.TLSFragmentOptions{
-				Enabled: configOpt.TLSTricks.EnableFragment,
-				Size:    configOpt.TLSTricks.FragmentSize,
-				Sleep:   configOpt.TLSTricks.FragmentSleep,
-			}
+			// dialer.TLSFragment = option.TLSFragmentOptions{
+			// 	Enabled: configOpt.TLSTricks.EnableFragment,
+			// 	Size:    configOpt.TLSTricks.FragmentSize,
+			// 	Sleep:   configOpt.TLSTricks.FragmentSleep,
+			// }
 			opts.ReplaceDialerOptions(dialer)
 		}
 
