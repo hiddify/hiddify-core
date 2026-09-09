@@ -17,6 +17,7 @@ import (
 	C "github.com/sagernet/sing-box/constant"
 	sdns "github.com/sagernet/sing-box/dns"
 	"github.com/sagernet/sing-box/option"
+	dns "github.com/sagernet/sing-dns"
 	"github.com/sagernet/sing/common/json/badoption"
 	"github.com/sagernet/wireguard-go/hiddify"
 )
@@ -437,7 +438,7 @@ func setInbound(options *option.Options, hopt *HiddifyOptions) {
 	// } else {
 	// 	inboundDomainStrategy = opt.IPv6Mode
 	// }
-	ipv6Enable := isIPv6Supported()
+	ipv6Enable := isIPv6Supported() && hopt.IPv6Mode != option.DomainStrategy(dns.DomainStrategyUseIPv4)
 	if hopt.EnableTun {
 
 		opts := option.TunInboundOptions{
