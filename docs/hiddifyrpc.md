@@ -11,6 +11,25 @@
     - [Outbound](#config-Outbound)
     - [Protocol](#config-Protocol)
   
+- [v2/ezytel/ezytel.proto](#v2_ezytel_ezytel-proto)
+    - [ChannelInfo](#ezytel-ChannelInfo)
+    - [ChannelInfoRequest](#ezytel-ChannelInfoRequest)
+    - [ChannelMessagesRequest](#ezytel-ChannelMessagesRequest)
+    - [ChannelMessagesResponse](#ezytel-ChannelMessagesResponse)
+    - [ParseChannelsRequest](#ezytel-ParseChannelsRequest)
+    - [ParseChannelsResponse](#ezytel-ParseChannelsResponse)
+    - [ProxyImageRequest](#ezytel-ProxyImageRequest)
+    - [ProxyImageResponse](#ezytel-ProxyImageResponse)
+  
+- [v2/ezytel/ezytel_service.proto](#v2_ezytel_ezytel_service-proto)
+    - [Ezytel](#ezytel-Ezytel)
+  
+- [v2/hcommon/common.proto](#v2_hcommon_common-proto)
+    - [Empty](#hcommon-Empty)
+    - [Response](#hcommon-Response)
+  
+    - [ResponseCode](#hcommon-ResponseCode)
+  
 - [v2/hcore/hcore.proto](#v2_hcore_hcore-proto)
     - [ChangeHiddifySettingsRequest](#hcore-ChangeHiddifySettingsRequest)
     - [CloseRequest](#hcore-CloseRequest)
@@ -19,6 +38,7 @@
     - [GenerateConfigResponse](#hcore-GenerateConfigResponse)
     - [GenerateWarpConfigRequest](#hcore-GenerateWarpConfigRequest)
     - [IpInfo](#hcore-IpInfo)
+    - [LANIPResponse](#hcore-LANIPResponse)
     - [LogMessage](#hcore-LogMessage)
     - [LogRequest](#hcore-LogRequest)
     - [OutboundGroup](#hcore-OutboundGroup)
@@ -54,6 +74,13 @@
 - [v2/hcore/tunnelservice/tunnel_service.proto](#v2_hcore_tunnelservice_tunnel_service-proto)
     - [TunnelService](#tunnelservice-TunnelService)
   
+- [v2/hello/hello.proto](#v2_hello_hello-proto)
+    - [HelloRequest](#hello-HelloRequest)
+    - [HelloResponse](#hello-HelloResponse)
+  
+- [v2/hello/hello_service.proto](#v2_hello_hello_service-proto)
+    - [Hello](#hello-Hello)
+  
 - [v2/hiddifyoptions/hiddify_options.proto](#v2_hiddifyoptions_hiddify_options-proto)
     - [DNSOptions](#hiddifyoptions-DNSOptions)
     - [HiddifyOptions](#hiddifyoptions-HiddifyOptions)
@@ -70,6 +97,11 @@
   
     - [DomainStrategy](#hiddifyoptions-DomainStrategy)
   
+- [v2/profile/profile.proto](#v2_profile_profile-proto)
+    - [ProfileEntity](#profile-ProfileEntity)
+    - [ProfileOptions](#profile-ProfileOptions)
+    - [SubscriptionInfo](#profile-SubscriptionInfo)
+  
 - [v2/profile/profile_service.proto](#v2_profile_profile_service-proto)
     - [AddProfileRequest](#profile-AddProfileRequest)
     - [MultiProfilesResponse](#profile-MultiProfilesResponse)
@@ -77,27 +109,6 @@
     - [ProfileResponse](#profile-ProfileResponse)
   
     - [ProfileService](#profile-ProfileService)
-  
-- [v2/profile/profile.proto](#v2_profile_profile-proto)
-    - [ProfileEntity](#profile-ProfileEntity)
-    - [ProfileOptions](#profile-ProfileOptions)
-    - [SubscriptionInfo](#profile-SubscriptionInfo)
-  
-- [v2/hcommon/common.proto](#v2_hcommon_common-proto)
-    - [Empty](#hcommon-Empty)
-    - [Response](#hcommon-Response)
-  
-    - [ResponseCode](#hcommon-ResponseCode)
-  
-- [v2/hello/hello_service.proto](#v2_hello_hello_service-proto)
-    - [Hello](#hello-Hello)
-  
-- [v2/hello/hello.proto](#v2_hello_hello-proto)
-    - [HelloRequest](#hello-HelloRequest)
-    - [HelloResponse](#hello-HelloResponse)
-  
-- [extension/extension_service.proto](#extension_extension_service-proto)
-    - [ExtensionHostService](#extension-ExtensionHostService)
   
 - [extension/extension.proto](#extension_extension-proto)
     - [EditExtensionRequest](#extension-EditExtensionRequest)
@@ -111,6 +122,9 @@
     - [SendExtensionDataRequest.DataEntry](#extension-SendExtensionDataRequest-DataEntry)
   
     - [ExtensionResponseType](#extension-ExtensionResponseType)
+  
+- [extension/extension_service.proto](#extension_extension_service-proto)
+    - [ExtensionHostService](#extension-ExtensionHostService)
   
 - [Scalar Value Types](#scalar-value-types)
 
@@ -212,6 +226,246 @@
 | stun | 3 |  |
 | dns | 4 |  |
 | bittorrent | 5 |  |
+
+
+ 
+
+ 
+
+ 
+
+
+
+<a name="v2_ezytel_ezytel-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## v2/ezytel/ezytel.proto
+
+
+
+<a name="ezytel-ChannelInfo"></a>
+
+### ChannelInfo
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  |  |
+| description | [string](#string) |  | Plain-text preview of the most recent post, or &#34;فایل&#34; if it is a media post. |
+| avatar_path | [string](#string) |  | By default this is a &#34;data:image/jpeg;base64,…&#34; URI ready for &lt;img src&gt;. When the request set disable_inline_images=true it is the legacy &#34;cache/&lt;md5&gt;.jpg&#34; file path relative to GetCacheDir(). Empty if the avatar could not be fetched. |
+| date | [int64](#int64) |  | Unix epoch seconds of the most recent post. |
+| date_str | [string](#string) |  | Persian-calendar formatted &#34;MM-DD HH:mm&#34; string for the most recent post. |
+| newmsg | [string](#string) |  | Unread badge, e.g. &#34;&#43;12&#34; or &#34;&#43;99&#34; (capped). Empty when caught up. |
+| last_post_id | [int64](#int64) |  | Last post id observed on the channel page (server-side cookie replacement). |
+| ok | [bool](#bool) |  | True when the channel page was reachable and parsed; false if served from stale cache (newmsg is then forced to &#34;OFF&#34;). |
+
+
+
+
+
+
+<a name="ezytel-ChannelInfoRequest"></a>
+
+### ChannelInfoRequest
+Request the metadata card of a Telegram public channel
+(name, description preview, avatar, last-post timestamp, unread badge).
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| channel_id | [string](#string) |  | Channel id, e.g. &#34;durov&#34; — without &#34;@&#34; or &#34;t.me/&#34;. |
+| last_read | [int64](#int64) |  | Last post id the client has already read; used to compute the unread badge (newmsg). 0 means &#34;everything is unread&#34;. |
+| disable_inline_images | [bool](#bool) |  | By default avatar_path in the response carries a &#34;data:image/jpeg;base64,…&#34; URI ready to drop into &lt;img src&gt;. Set this to true to opt out and receive the legacy &#34;cache/&lt;md5&gt;.jpg&#34; server-side file path instead. |
+
+
+
+
+
+
+<a name="ezytel-ChannelMessagesRequest"></a>
+
+### ChannelMessagesRequest
+Request a slab of HTML for the channel timeline.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| channel_id | [string](#string) |  |  |
+| before | [int64](#int64) |  | 0 = latest page; otherwise the &#34;before&#34; cursor returned by Telegram (the data-before attribute of messages_more_wrap). |
+| disable_inline_images | [bool](#bool) |  | By default every image URL in the returned html and the channel_avatar field is a &#34;data:image/jpeg;base64,…&#34; URI ready to render. Set this to true to opt out: html and channel_avatar will both carry the legacy &#34;proxy.php?url=&lt;hex&gt;&#34; placeholder form, requiring per-image ProxyImage calls. |
+
+
+
+
+
+
+<a name="ezytel-ChannelMessagesResponse"></a>
+
+### ChannelMessagesResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| html | [string](#string) |  | Pre-rendered HTML fragment ready to be injected into .main_block. Dates have been converted to the Persian calendar. By default &lt;img src&gt; and background-image:url(...) carry inline &#34;data:image/jpeg;base64,…&#34; payloads; with disable_inline_images=true they carry &#34;proxy.php?url=&lt;hex&gt;&#34; placeholders. |
+| channel_avatar | [string](#string) |  | Channel avatar embedded in the header (only set when before == 0). &#34;data:image/jpeg;base64,…&#34; by default, &#34;proxy.php?url=&lt;hex&gt;&#34; placeholder when disable_inline_images=true. |
+| last_post_id | [int64](#int64) |  | Last post id seen on the page (mirrors the lastread_&lt;chid&gt; cookie). |
+
+
+
+
+
+
+<a name="ezytel-ParseChannelsRequest"></a>
+
+### ParseChannelsRequest
+Parse the operator-supplied newline-separated channel list into the
+normalised ids the other RPCs accept.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| raw | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="ezytel-ParseChannelsResponse"></a>
+
+### ParseChannelsResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| channel_ids | [string](#string) | repeated |  |
+
+
+
+
+
+
+<a name="ezytel-ProxyImageRequest"></a>
+
+### ProxyImageRequest
+Fetch a Telegram-hosted image through the translate.goog domain front
+and cache it locally. Mirrors proxy.php?url=&lt;hex&gt;.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| hex_url | [string](#string) |  | Hex-encoded source URL without the &#34;https://&#34; prefix, exactly as the PHP version expected (bin2hex of the host&#43;path). |
+
+
+
+
+
+
+<a name="ezytel-ProxyImageResponse"></a>
+
+### ProxyImageResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| data | [bytes](#bytes) |  |  |
+| content_type | [string](#string) |  |  |
+| cache_name | [string](#string) |  | Local cache filename (md5(url) &#43; &#34;.jpg&#34;) for clients that prefer to reload from disk instead of holding the bytes. |
+
+
+
+
+
+ 
+
+ 
+
+ 
+
+ 
+
+
+
+<a name="v2_ezytel_ezytel_service-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## v2/ezytel/ezytel_service.proto
+
+
+ 
+
+ 
+
+ 
+
+
+<a name="ezytel-Ezytel"></a>
+
+### Ezytel
+Ezytel exposes the Telegram public-channel viewer originally shipped as
+the ezytel.zip PHP app. Traffic to t.me is routed through Google&#39;s
+translate.goog domain front so it reaches users behind GFW-style filters.
+
+| Method Name | Request Type | Response Type | Description |
+| ----------- | ------------ | ------------- | ------------|
+| GetChannelInfo | [ChannelInfoRequest](#ezytel-ChannelInfoRequest) | [ChannelInfo](#ezytel-ChannelInfo) |  |
+| GetChannelMessages | [ChannelMessagesRequest](#ezytel-ChannelMessagesRequest) | [ChannelMessagesResponse](#ezytel-ChannelMessagesResponse) |  |
+| ProxyImage | [ProxyImageRequest](#ezytel-ProxyImageRequest) | [ProxyImageResponse](#ezytel-ProxyImageResponse) |  |
+| ParseChannels | [ParseChannelsRequest](#ezytel-ParseChannelsRequest) | [ParseChannelsResponse](#ezytel-ParseChannelsResponse) |  |
+
+ 
+
+
+
+<a name="v2_hcommon_common-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## v2/hcommon/common.proto
+
+
+
+<a name="hcommon-Empty"></a>
+
+### Empty
+
+
+
+
+
+
+
+<a name="hcommon-Response"></a>
+
+### Response
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| code | [ResponseCode](#hcommon-ResponseCode) |  |  |
+| message | [string](#string) |  |  |
+
+
+
+
+
+ 
+
+
+<a name="hcommon-ResponseCode"></a>
+
+### ResponseCode
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| OK | 0 |  |
+| FAILED | 1 |  |
+| AUTH_NEED | 2 |  |
 
 
  
@@ -342,6 +596,21 @@
 | latitude | [double](#double) |  | The latitude (optional). |
 | longitude | [double](#double) |  | The longitude (optional). |
 | postal_code | [string](#string) |  | The postal code (optional). |
+
+
+
+
+
+
+<a name="hcore-LANIPResponse"></a>
+
+### LANIPResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| ip | [string](#string) |  |  |
 
 
 
@@ -807,6 +1076,7 @@ Define the message equivalent of SetupParameters
 | SetSystemProxyEnabled | [SetSystemProxyEnabledRequest](#hcore-SetSystemProxyEnabledRequest) | [.hcommon.Response](#hcommon-Response) |  |
 | LogListener | [LogRequest](#hcore-LogRequest) | [LogMessage](#hcore-LogMessage) stream |  |
 | Close | [CloseRequest](#hcore-CloseRequest) | [.hcommon.Empty](#hcommon-Empty) |  |
+| GetLANIP | [.hcommon.Empty](#hcommon-Empty) | [LANIPResponse](#hcore-LANIPResponse) |  |
 
  
 
@@ -888,6 +1158,79 @@ Define the message equivalent of SetupParameters
 | Stop | [.hcommon.Empty](#hcommon-Empty) | [TunnelResponse](#tunnelservice-TunnelResponse) |  |
 | Status | [.hcommon.Empty](#hcommon-Empty) | [TunnelResponse](#tunnelservice-TunnelResponse) |  |
 | Exit | [.hcommon.Empty](#hcommon-Empty) | [TunnelResponse](#tunnelservice-TunnelResponse) |  |
+
+ 
+
+
+
+<a name="v2_hello_hello-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## v2/hello/hello.proto
+
+
+
+<a name="hello-HelloRequest"></a>
+
+### HelloRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="hello-HelloResponse"></a>
+
+### HelloResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| message | [string](#string) |  |  |
+
+
+
+
+
+ 
+
+ 
+
+ 
+
+ 
+
+
+
+<a name="v2_hello_hello_service-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## v2/hello/hello_service.proto
+
+
+ 
+
+ 
+
+ 
+
+
+<a name="hello-Hello"></a>
+
+### Hello
+
+
+| Method Name | Request Type | Response Type | Description |
+| ----------- | ------------ | ------------- | ------------|
+| SayHello | [HelloRequest](#hello-HelloRequest) | [HelloResponse](#hello-HelloResponse) |  |
+| SayHelloStream | [HelloRequest](#hello-HelloRequest) stream | [HelloResponse](#hello-HelloResponse) stream |  |
 
  
 
@@ -1171,6 +1514,80 @@ DomainStrategy defines the strategies for IP address preference when resolving d
 
 
 
+<a name="v2_profile_profile-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## v2/profile/profile.proto
+
+
+
+<a name="profile-ProfileEntity"></a>
+
+### ProfileEntity
+ProfileEntity defines a profile entity.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| id | [string](#string) |  | Unique identifier for the profile. |
+| name | [string](#string) |  | bool active = 2; // Indicates if the profile is active.
+
+Name of the profile. |
+| url | [string](#string) |  | URL associated with the profile. |
+| last_update | [int64](#int64) |  | Last update time in milliseconds of the profile. |
+| options | [ProfileOptions](#profile-ProfileOptions) |  | Options associated with the profile. |
+| sub_info | [SubscriptionInfo](#profile-SubscriptionInfo) |  | Subscription-related information. |
+| override_hiddify_options | [hiddifyoptions.HiddifyOptions](#hiddifyoptions-HiddifyOptions) |  | Override Hiddify options. |
+
+
+
+
+
+
+<a name="profile-ProfileOptions"></a>
+
+### ProfileOptions
+ProfileOptions defines options for a profile.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| update_interval | [int64](#int64) |  | Update interval in milliseconds. |
+
+
+
+
+
+
+<a name="profile-SubscriptionInfo"></a>
+
+### SubscriptionInfo
+SubscriptionInfo defines subscription-related information.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| upload | [int64](#int64) |  | Upload speed in bytes. |
+| download | [int64](#int64) |  | Download speed in bytes. |
+| total | [int64](#int64) |  | Total data in bytes. |
+| expire | [int64](#int64) |  | Expiration time in milliseconds of the subscription. |
+| web_page_url | [string](#string) |  | URL for the web page. |
+| support_url | [string](#string) |  | URL for support. |
+
+
+
+
+
+ 
+
+ 
+
+ 
+
+ 
+
+
+
 <a name="v2_profile_profile_service-proto"></a>
 <p align="right"><a href="#top">Top</a></p>
 
@@ -1269,239 +1686,6 @@ ProfileService defines the RPC methods available for managing profiles.
 | SetActiveProfile | [ProfileRequest](#profile-ProfileRequest) | [.hcommon.Response](#hcommon-Response) | SetActiveProfile sets a profile as active, identified by ID, name, or URL. |
 | AddProfile | [AddProfileRequest](#profile-AddProfileRequest) | [ProfileResponse](#profile-ProfileResponse) | AddProfile adds a new profile using either a URL or the raw profile content. |
 | DeleteProfile | [ProfileRequest](#profile-ProfileRequest) | [.hcommon.Response](#hcommon-Response) | DeleteProfile deletes a profile identified by ID, name, or URL. |
-
- 
-
-
-
-<a name="v2_profile_profile-proto"></a>
-<p align="right"><a href="#top">Top</a></p>
-
-## v2/profile/profile.proto
-
-
-
-<a name="profile-ProfileEntity"></a>
-
-### ProfileEntity
-ProfileEntity defines a profile entity.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| id | [string](#string) |  | Unique identifier for the profile. |
-| name | [string](#string) |  | bool active = 2; // Indicates if the profile is active.
-
-Name of the profile. |
-| url | [string](#string) |  | URL associated with the profile. |
-| last_update | [int64](#int64) |  | Last update time in milliseconds of the profile. |
-| options | [ProfileOptions](#profile-ProfileOptions) |  | Options associated with the profile. |
-| sub_info | [SubscriptionInfo](#profile-SubscriptionInfo) |  | Subscription-related information. |
-| override_hiddify_options | [hiddifyoptions.HiddifyOptions](#hiddifyoptions-HiddifyOptions) |  | Override Hiddify options. |
-
-
-
-
-
-
-<a name="profile-ProfileOptions"></a>
-
-### ProfileOptions
-ProfileOptions defines options for a profile.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| update_interval | [int64](#int64) |  | Update interval in milliseconds. |
-
-
-
-
-
-
-<a name="profile-SubscriptionInfo"></a>
-
-### SubscriptionInfo
-SubscriptionInfo defines subscription-related information.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| upload | [int64](#int64) |  | Upload speed in bytes. |
-| download | [int64](#int64) |  | Download speed in bytes. |
-| total | [int64](#int64) |  | Total data in bytes. |
-| expire | [int64](#int64) |  | Expiration time in milliseconds of the subscription. |
-| web_page_url | [string](#string) |  | URL for the web page. |
-| support_url | [string](#string) |  | URL for support. |
-
-
-
-
-
- 
-
- 
-
- 
-
- 
-
-
-
-<a name="v2_hcommon_common-proto"></a>
-<p align="right"><a href="#top">Top</a></p>
-
-## v2/hcommon/common.proto
-
-
-
-<a name="hcommon-Empty"></a>
-
-### Empty
-
-
-
-
-
-
-
-<a name="hcommon-Response"></a>
-
-### Response
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| code | [ResponseCode](#hcommon-ResponseCode) |  |  |
-| message | [string](#string) |  |  |
-
-
-
-
-
- 
-
-
-<a name="hcommon-ResponseCode"></a>
-
-### ResponseCode
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| OK | 0 |  |
-| FAILED | 1 |  |
-| AUTH_NEED | 2 |  |
-
-
- 
-
- 
-
- 
-
-
-
-<a name="v2_hello_hello_service-proto"></a>
-<p align="right"><a href="#top">Top</a></p>
-
-## v2/hello/hello_service.proto
-
-
- 
-
- 
-
- 
-
-
-<a name="hello-Hello"></a>
-
-### Hello
-
-
-| Method Name | Request Type | Response Type | Description |
-| ----------- | ------------ | ------------- | ------------|
-| SayHello | [HelloRequest](#hello-HelloRequest) | [HelloResponse](#hello-HelloResponse) |  |
-| SayHelloStream | [HelloRequest](#hello-HelloRequest) stream | [HelloResponse](#hello-HelloResponse) stream |  |
-
- 
-
-
-
-<a name="v2_hello_hello-proto"></a>
-<p align="right"><a href="#top">Top</a></p>
-
-## v2/hello/hello.proto
-
-
-
-<a name="hello-HelloRequest"></a>
-
-### HelloRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  |  |
-
-
-
-
-
-
-<a name="hello-HelloResponse"></a>
-
-### HelloResponse
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| message | [string](#string) |  |  |
-
-
-
-
-
- 
-
- 
-
- 
-
- 
-
-
-
-<a name="extension_extension_service-proto"></a>
-<p align="right"><a href="#top">Top</a></p>
-
-## extension/extension_service.proto
-
-
- 
-
- 
-
- 
-
-
-<a name="extension-ExtensionHostService"></a>
-
-### ExtensionHostService
-
-
-| Method Name | Request Type | Response Type | Description |
-| ----------- | ------------ | ------------- | ------------|
-| ListExtensions | [.hcommon.Empty](#hcommon-Empty) | [ExtensionList](#extension-ExtensionList) |  |
-| Connect | [ExtensionRequest](#extension-ExtensionRequest) | [ExtensionResponse](#extension-ExtensionResponse) stream |  |
-| EditExtension | [EditExtensionRequest](#extension-EditExtensionRequest) | [ExtensionActionResult](#extension-ExtensionActionResult) |  |
-| SubmitForm | [SendExtensionDataRequest](#extension-SendExtensionDataRequest) | [ExtensionActionResult](#extension-ExtensionActionResult) |  |
-| Close | [ExtensionRequest](#extension-ExtensionRequest) | [ExtensionActionResult](#extension-ExtensionActionResult) |  |
-| GetUI | [ExtensionRequest](#extension-ExtensionRequest) | [ExtensionActionResult](#extension-ExtensionActionResult) |  |
 
  
 
@@ -1680,6 +1864,37 @@ SubscriptionInfo defines subscription-related information.
  
 
  
+
+ 
+
+
+
+<a name="extension_extension_service-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## extension/extension_service.proto
+
+
+ 
+
+ 
+
+ 
+
+
+<a name="extension-ExtensionHostService"></a>
+
+### ExtensionHostService
+
+
+| Method Name | Request Type | Response Type | Description |
+| ----------- | ------------ | ------------- | ------------|
+| ListExtensions | [.hcommon.Empty](#hcommon-Empty) | [ExtensionList](#extension-ExtensionList) |  |
+| Connect | [ExtensionRequest](#extension-ExtensionRequest) | [ExtensionResponse](#extension-ExtensionResponse) stream |  |
+| EditExtension | [EditExtensionRequest](#extension-EditExtensionRequest) | [ExtensionActionResult](#extension-ExtensionActionResult) |  |
+| SubmitForm | [SendExtensionDataRequest](#extension-SendExtensionDataRequest) | [ExtensionActionResult](#extension-ExtensionActionResult) |  |
+| Close | [ExtensionRequest](#extension-ExtensionRequest) | [ExtensionActionResult](#extension-ExtensionActionResult) |  |
+| GetUI | [ExtensionRequest](#extension-ExtensionRequest) | [ExtensionActionResult](#extension-ExtensionActionResult) |  |
 
  
 
