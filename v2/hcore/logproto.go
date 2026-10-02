@@ -40,11 +40,21 @@ func Log(level LogLevel, typ LogType, message ...any) {
 	// os.Stderr.WriteString(fmt.Sprintf("%v %v %v\n", level, typ, fmt.Sprint(message...)))
 	// }
 
+	publishLog(level, typ, fmt.Sprint(message...))
+}
+
+// publishLog sends a message to log listeners only, without writing it to the
+// sing-box logger. Used for messages that already come from sing-box, which
+// would otherwise loop back through the platform writer.
+func publishLog(level LogLevel, typ LogType, message string) {
+	if level < static.logLevel {
+		return
+	}
 	static.logObserver.Publish(&LogMessage{
 		Level:   level,
 		Type:    typ,
 		Time:    timestamppb.New(time.Now()),
-		Message: fmt.Sprint(message...),
+		Message: message,
 	})
 }
 
