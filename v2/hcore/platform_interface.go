@@ -2,6 +2,7 @@ package hcore
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/sagernet/sing-box/experimental/libbox"
 )
@@ -119,6 +120,13 @@ func (h *MobilePlatformInterface) SendNotification(notification *libbox.Notifica
 	return h.platform.SendNotification(notification)
 }
 
+func (h *MobilePlatformInterface) CancelNotification(identifier string, typeID int32) error {
+	if h.platform == nil {
+		return nil
+	}
+	return h.platform.CancelNotification(identifier, typeID)
+}
+
 func (h *MobilePlatformInterface) StartNeighborMonitor(listener libbox.NeighborUpdateListener) error {
 	if h.platform == nil {
 		return nil
@@ -138,4 +146,81 @@ func (h *MobilePlatformInterface) RegisterMyInterface(name string) {
 		return
 	}
 	h.platform.RegisterMyInterface(name)
+}
+
+func (h *MobilePlatformInterface) UsePlatformShell() bool {
+	if h.platform == nil {
+		return false
+	}
+	return h.platform.UsePlatformShell()
+}
+
+func (h *MobilePlatformInterface) CheckPlatformShell() error {
+	if h.platform == nil {
+		return os.ErrInvalid
+	}
+	return h.platform.CheckPlatformShell()
+}
+
+func (h *MobilePlatformInterface) OpenShellSession(user *libbox.PlatformUser, command string, environ libbox.StringIterator, term string, rows int32, cols int32) (libbox.ShellSession, error) {
+	if h.platform == nil {
+		return nil, os.ErrInvalid
+	}
+	return h.platform.OpenShellSession(user, command, environ, term, rows, cols)
+}
+
+func (h *MobilePlatformInterface) LookupUser(username string) (*libbox.PlatformUser, error) {
+	if h.platform == nil {
+		return nil, os.ErrInvalid
+	}
+	return h.platform.LookupUser(username)
+}
+
+func (h *MobilePlatformInterface) LookupSFTPServer() (*libbox.StringBox, error) {
+	if h.platform == nil {
+		return nil, os.ErrInvalid
+	}
+	return h.platform.LookupSFTPServer()
+}
+
+func (h *MobilePlatformInterface) ReadSystemSSHHostKey() (*libbox.StringBox, error) {
+	if h.platform == nil {
+		return nil, os.ErrInvalid
+	}
+	return h.platform.ReadSystemSSHHostKey()
+}
+
+func (h *MobilePlatformInterface) TailscaleHostname() string {
+	if h.platform == nil {
+		return ""
+	}
+	return h.platform.TailscaleHostname()
+}
+
+func (h *MobilePlatformInterface) UsePlatformBridge() bool {
+	if h.platform == nil {
+		return false
+	}
+	return h.platform.UsePlatformBridge()
+}
+
+func (h *MobilePlatformInterface) CreateBridge(options *libbox.BridgeOptions) (libbox.BridgeSession, error) {
+	if h.platform == nil {
+		return nil, os.ErrInvalid
+	}
+	return h.platform.CreateBridge(options)
+}
+
+func (h *MobilePlatformInterface) UsePlatformAutoRedirect() bool {
+	if h.platform == nil {
+		return false
+	}
+	return h.platform.UsePlatformAutoRedirect()
+}
+
+func (h *MobilePlatformInterface) CreateAutoRedirect(options []byte, handler libbox.AutoRedirectHandler) (libbox.AutoRedirectSession, error) {
+	if h.platform == nil {
+		return nil, os.ErrInvalid
+	}
+	return h.platform.CreateAutoRedirect(options, handler)
 }

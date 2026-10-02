@@ -8,14 +8,31 @@ import (
 	hcommon "github.com/hiddify/hiddify-core/v2/hcommon"
 	"github.com/sagernet/sing-box/adapter"
 	"github.com/sagernet/sing-box/common/monitoring"
+	C "github.com/sagernet/sing-box/constant"
 	G "github.com/sagernet/sing-box/protocol/group"
 	"github.com/sagernet/sing-box/protocol/group/balancer"
 	E "github.com/sagernet/sing/common/exceptions"
+	N "github.com/sagernet/sing/common/network"
 	"github.com/sagernet/sing/service"
 	"google.golang.org/grpc"
 
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 )
+
+// groupNow returns the tag currently selected by an outbound group, or "" if none.
+func groupNow(group adapter.OutboundGroup) string {
+	if selected := group.Selected(N.NetworkTCP); selected != nil {
+		return selected.Tag()
+	}
+	return ""
+}
+
+func outboundDisplayType(outbound adapter.Outbound) string {
+	if displayer, ok := outbound.(interface{ DisplayType() string }); ok {
+		return displayer.DisplayType()
+	}
+	return C.ProxyDisplayName(outbound.Type())
+}
 
 func (h *HiddifyInstance) GetProxyInfo(url_test_history *adapter.URLTestHistory, detour adapter.Outbound) *OutboundInfo {
 	// historyStorage := h.UrlTestHistory()
@@ -27,10 +44,10 @@ func (h *HiddifyInstance) GetProxyInfo(url_test_history *adapter.URLTestHistory,
 	// realTag := ""
 
 	out.Tag = detour.Tag()
-	out.Type = detour.DisplayType()
+	out.Type = outboundDisplayType(detour)
 	if group, isGroup := detour.(adapter.OutboundGroup); isGroup {
 		out.IsGroup = true
-		gnow := group.Now()
+		gnow := groupNow(group)
 		out.GroupSelectedTag = &gnow
 	}
 	out.TagDisplay = TrimTagName(out.Tag)
@@ -131,7 +148,7 @@ func (h *HiddifyInstance) GetAllProxiesInfo(hismap map[string]*adapter.URLTestHi
 		group.Tag = iGroup.Tag()
 		group.Type = iGroup.Type()
 		_, group.Selectable = iGroup.(*G.Selector)
-		selectedTag := iGroup.Now()
+		selectedTag := groupNow(iGroup)
 		group.Selected = selectedTag
 
 		// outbounds_converted[iGroup.Tag()].GroupSelectedOutbound = &group.Selected

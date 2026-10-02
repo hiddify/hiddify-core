@@ -40,14 +40,14 @@ func (h *HiddifyInstance) readStatus(prev *SystemInfo) *SystemInfo {
 			current := ""
 			if currentOutBound, ok := box.Outbound().Outbound(config.OutboundSelectTag); ok {
 				if selectOutBound, ok := currentOutBound.(*group.Selector); ok {
-					current = selectOutBound.Now()
+					current = groupNow(selectOutBound)
 					message.CurrentOutbound = TrimTagName(current)
 				}
 			}
 			// if message.CurrentOutbound == config.OutboundURLTestTag {
 			if currentOutBound, ok := box.Outbound().Outbound(current); ok {
 				if g, ok := currentOutBound.(adapter.OutboundGroup); ok {
-					if now := g.Now(); now != "" {
+					if now := groupNow(g); now != "" {
 						message.CurrentOutbound = fmt.Sprint(message.CurrentOutbound, "→", TrimTagName(now))
 					}
 				}
@@ -275,7 +275,7 @@ func (h *HiddifyInstance) UrlTestActive() (*hcommon.Response, error) {
 				Message: E.New("outbound is not a selector: ", config.OutboundSelectTag).Error(),
 			}, E.New("outbound is not a selector: ", config.OutboundSelectTag)
 		}
-		now := selector.Now()
+		now := groupNow(selector)
 		if now == "" {
 			return &hcommon.Response{
 				Code:    hcommon.ResponseCode_FAILED,
@@ -284,7 +284,7 @@ func (h *HiddifyInstance) UrlTestActive() (*hcommon.Response, error) {
 		}
 		if outboundGroupInner, isLoaded := box.Outbound().Outbound(now); isLoaded {
 			if grp, isgrp := outboundGroupInner.(adapter.OutboundGroup); isgrp {
-				if n2 := grp.Now(); n2 != "" {
+				if n2 := groupNow(grp); n2 != "" {
 					now = n2
 				}
 			}
