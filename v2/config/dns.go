@@ -55,21 +55,16 @@ func setDns(options *option.Options, opt *HiddifyOptions, staticIps *map[string]
 	if err != nil {
 		return err
 	}
-	remote_no_warp_dns, err := getDNSServerOptions(DNSRemoteNoWarpTag, opt.RemoteDnsAddress, DNSDirectTag, OutboundWARPConfigDetour)
+	remote_no_warp_dns, err := getDNSServerOptions(DNSRemoteNoWarpTag, opt.RemoteDnsAddress, DNSDirectTag, "")
 	if err != nil {
 		return err
 	}
 
-	direct_detour := OutboundDirectFragmentTag
-	if strings.HasPrefix(opt.DirectDnsAddress, "udp://") || !strings.Contains(opt.DirectDnsAddress, "://") {
-		direct_detour = ""
-	}
-
-	direct_dns, err := getDNSServerOptions(DNSDirectTag, opt.DirectDnsAddress, DNSLocalTag, direct_detour)
+	direct_dns, err := getDNSServerOptions(DNSDirectTag, opt.DirectDnsAddress, DNSLocalTag, "")
 	if err != nil {
 		return err
 	}
-	trick_dns, err := getDNSServerOptions(DNSTricksDirectTag, "https://dns.cloudflare.com/dns-query#fragment=300", DNSDirectTag, OutboundDirectFragmentTag)
+	trick_dns, err := getDNSServerOptions(DNSTricksDirectTag, "https://dns.cloudflare.com/dns-query#fragment=300", DNSDirectTag, "")
 	if err != nil {
 		return err
 	}
