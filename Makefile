@@ -67,7 +67,7 @@ webui:
 .PHONY: build
 windows-amd64: prepare
 	rm -rf $(BINDIR)/*
-	go run -v "github.com/sagernet/cronet-go/cmd/build-naive@$(CRONET_GO_VERSION)" extract-lib --target windows/amd64 -o $(BINDIR)/
+	$(MAKE) BINDIR=$(BINDIR) fetch-libcronet-windows_amd64.dll
 	env GOOS=windows GOARCH=amd64 CC=x86_64-w64-mingw32-gcc  $(GOBUILDLIB) -tags $(TAGS),$(WINDOWS_ADD_TAGS)   -o $(BINDIR)/$(LIBNAME).dll ./platform/desktop
 	echo "core built, now building cli" 
 	ls -R $(BINDIR)/
@@ -77,8 +77,8 @@ windows-amd64: prepare
 	$$(go env GOPATH)/bin/rsrc -ico ./assets/hiddify-cli.ico -o ./cmd/bydll/cli.syso ||echo "rsrc error in syso"
 	env GOOS=windows GOARCH=amd64 CC=x86_64-w64-mingw32-gcc CGO_LDFLAGS="$(LIBNAME).dll" $(GOBUILDSRV) -o $(BINDIR)/$(CLINAME).exe ./cmd/bydll
 	rm ./*.dll
-	if [ ! -f $(BINDIR)/$(LIBNAME).dll -o ! -f $(BINDIR)/$(CLINAME).exe ]; then \
-		echo "Error: $(LIBNAME).dll or $(CLINAME).exe not built"; \
+	if [ ! -f $(BINDIR)/$(LIBNAME).dll -o ! -f $(BINDIR)/$(CLINAME).exe -o ! -f $(BINDIR)/libcronet.dll ]; then \
+		echo "Error: $(LIBNAME).dll, $(CLINAME).exe or libcronet.dll missing"; \
 		exit 1; \
 	fi
 
@@ -86,6 +86,18 @@ windows-amd64: prepare
 	
 
 
+
+# Prebuilt libcronet from cronet-go's lib/<os>_<arch>/ (same as upstream sing-box CI).
+# Usage: make fetch-libcronet-windows_amd64.dll
+fetch-libcronet-%:
+	rm -rf $(BINDIR)/.cronet-go-lib
+	git init -q $(BINDIR)/.cronet-go-lib
+	git -C $(BINDIR)/.cronet-go-lib remote add origin https://github.com/sagernet/cronet-go.git
+	git -C $(BINDIR)/.cronet-go-lib sparse-checkout set --no-cone "/lib/$(basename $*)/libcronet$(suffix $*)"
+	git -C $(BINDIR)/.cronet-go-lib fetch -q --depth=1 --filter=blob:none origin $(CRONET_GO_VERSION)
+	git -C $(BINDIR)/.cronet-go-lib checkout -q FETCH_HEAD
+	cp $(BINDIR)/.cronet-go-lib/lib/$(basename $*)/libcronet$(suffix $*) $(BINDIR)/
+	rm -rf $(BINDIR)/.cronet-go-lib
 
 cronet-%:
 	$(MAKE) ARCH=$* build-cronet
