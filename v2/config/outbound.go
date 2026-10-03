@@ -25,7 +25,7 @@ func patchOutboundMux(base option.Outbound, configOpt HiddifyOptions, obj outbou
 }
 
 func patchOutboundTLSTricks(base option.Outbound, configOpt HiddifyOptions) option.Outbound {
-	if base.Type == C.TypeSelector || base.Type == C.TypeURLTest || base.Type == C.TypeBlock || base.Type == C.TypeDNS {
+	if base.Type == C.TypeSelector || base.Type == C.TypeURLTest || base.Type == C.TypeBlock {
 		return base
 	}
 	if isOutboundReality(base) {

@@ -42,7 +42,6 @@ const (
 	OutboundSelectTag         = "select"
 	OutboundURLTestTag        = "lowest"
 	OutboundRoundRobinTag     = "balance"
-	OutboundDNSTag            = "dns-out §hide§"
 	OutboundDirectFragmentTag = "direct-fragment §hide§"
 
 	WARPConfigTag = "🔒 WARP"
@@ -57,7 +56,7 @@ const (
 var (
 	OutboundMainDetour       = OutboundSelectTag
 	OutboundWARPConfigDetour = OutboundDirectFragmentTag
-	PredefinedOutboundTags   = []string{OutboundDirectTag, OutboundBypassTag, OutboundSelectTag, OutboundURLTestTag, OutboundDNSTag, OutboundDirectFragmentTag, WARPConfigTag}
+	PredefinedOutboundTags   = []string{OutboundDirectTag, OutboundBypassTag, OutboundSelectTag, OutboundURLTestTag, OutboundDirectFragmentTag, WARPConfigTag}
 )
 
 // TODO include selectors
@@ -136,6 +135,14 @@ func getHostnameIfNotIP(inp string) (string, error) {
 	return "", fmt.Errorf("not a hostname: %s", inp)
 }
 
+func isDNSOutbound(out option.Outbound) bool {
+	if out.Type == C.TypeDNS {
+		return true
+	}
+	invalid, ok := out.Options.(*option.HInvalidOptions)
+	return ok && invalid.OriginalType == C.TypeDNS
+}
+
 func setOutbounds(options *option.Options, input *option.Options, opt *HiddifyOptions, staticIPs *map[string][]string) error {
 	var outbounds []option.Outbound
 	var endpoints []option.Endpoint
@@ -151,6 +158,11 @@ func setOutbounds(options *option.Options, input *option.Options, opt *HiddifyOp
 		if contains(PredefinedOutboundTags, out.Tag) {
 			continue
 		}
+		// dns outbounds were removed in sing-box 1.13; the parser turns them into hinvalid
+		// placeholders, which must not end up as selectable proxies
+		if isDNSOutbound(out) {
+			continue
+		}
 		outbound, err := patchOutbound(out, *opt, staticIPs)
 		if err != nil {
 			return err
@@ -158,7 +170,7 @@ func setOutbounds(options *option.Options, input *option.Options, opt *HiddifyOp
 		out = *outbound
 
 		switch out.Type {
-		case C.TypeBlock, C.TypeDNS:
+		case C.TypeBlock:
 			continue
 		case C.TypeSelector, C.TypeURLTest:
 			continue
