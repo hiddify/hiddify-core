@@ -56,7 +56,7 @@ const (
 var (
 	OutboundMainDetour       = OutboundSelectTag
 	OutboundWARPConfigDetour = OutboundDirectFragmentTag
-	PredefinedOutboundTags   = []string{OutboundDirectTag, OutboundBypassTag, OutboundSelectTag, OutboundURLTestTag, OutboundDirectFragmentTag, WARPConfigTag}
+	PredefinedOutboundTags   = []string{OutboundDirectTag, OutboundBypassTag, OutboundSelectTag, OutboundURLTestTag, OutboundDirectFragmentTag, WARPConfigTag, ChainExtraSecurityTag, ChainUnblockerTag}
 )
 
 // TODO include selectors
@@ -266,6 +266,9 @@ func setOutbounds(options *option.Options, input *option.Options, opt *HiddifyOp
 		}
 
 		endpoints = append(endpoints, *out)
+	}
+	if err := setChainHop(opt, &outbounds, &endpoints); err != nil {
+		return err
 	}
 	if len(opt.ConnectionTestUrls) == 0 {
 		opt.ConnectionTestUrls = []string{opt.ConnectionTestUrl, "https://www.google.com/generate_204", "http://captive.apple.com/generate_204", "https://cp.cloudflare.com"}

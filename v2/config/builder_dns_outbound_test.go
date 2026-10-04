@@ -2,6 +2,7 @@ package config
 
 import (
 	"slices"
+	"strings"
 	"testing"
 
 	"github.com/sagernet/sing-box/experimental/libbox"
@@ -62,5 +63,15 @@ func TestParseConfigDropsLegacyDNSOutbound(t *testing.T) {
 	}
 	if len(options.Outbounds) != 1 || options.Outbounds[0].Tag != "proxy-a" {
 		t.Fatalf("expected only proxy-a, got %d outbounds", len(options.Outbounds))
+	}
+}
+
+// A profile with nothing selectable (here only a legacy dns outbound, which is dropped) must fail
+// with an error instead of panicking with "index out of range" on the empty selector list.
+func TestBuildConfigWithoutUsableOutboundReturnsError(t *testing.T) {
+	ctx := libbox.BaseContext(nil)
+	_, err := BuildConfig(ctx, DefaultHiddifyOptions(), &ReadOptions{Content: `{"outbounds":[{"type":"dns","tag":"dns-out"}]}`})
+	if err == nil || !strings.Contains(err.Error(), "no usable outbound") {
+		t.Fatalf("expected a no usable outbound error, got %v", err)
 	}
 }

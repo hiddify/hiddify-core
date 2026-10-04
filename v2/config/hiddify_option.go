@@ -34,6 +34,7 @@ type HiddifyOptions struct {
 	InboundOptions
 	URLTestOptions
 	RouteOptions
+	ChainOptions
 }
 
 type DNSOptions struct {

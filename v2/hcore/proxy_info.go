@@ -178,17 +178,39 @@ func (h *HiddifyInstance) GetAllProxiesInfo(hismap map[string]*adapter.URLTestHi
 		groups.Items = append(groups.Items, &group)
 
 		if onlyGroupitems && group.Tag == config.OutboundSelectTag {
-			if warp_info, ok := outbounds_converted[config.WARPConfigTag]; ok {
-				warp_info.TagDisplay = config.WARPConfigTag + " → " + outbounds_converted[group.Selected].TagDisplay
-				group.Selected = warp_info.Tag
-				group.Items = append([]*OutboundInfo{warp_info}, group.Items...)
-			}
-
+			showEntryHop(&group, outbounds_converted, func(tag string) string {
+				if out, ok := box.Outbound().Outbound(tag); ok {
+					return C.ProxyDisplayName(out.Type())
+				}
+				if ep, ok := box.Endpoint().Get(tag); ok {
+					return C.ProxyDisplayName(ep.Type())
+				}
+				return TrimTagName(tag)
+			})
 		}
 
 	}
 
 	return &groups
+}
+
+// showEntryHop makes the hop that traffic enters before the selected proxy (extra security, or
+// legacy WARP) the active entry of the main group, since its delay and IP are what the user gets.
+// It is labelled "<hop protocol> → <selected config>", e.g. "Psiphon → my-server".
+func showEntryHop(group *OutboundGroup, infos map[string]*OutboundInfo, protocolName func(tag string) string) {
+	for _, entryTag := range []string{config.ChainExtraSecurityTag, config.WARPConfigTag} {
+		entry, ok := infos[entryTag]
+		if !ok {
+			continue
+		}
+		entry.TagDisplay = protocolName(entryTag)
+		if selected, ok := infos[group.Selected]; ok {
+			entry.TagDisplay += " → " + selected.TagDisplay
+		}
+		group.Selected = entry.Tag
+		group.Items = append([]*OutboundInfo{entry}, group.Items...)
+		return
+	}
 }
 
 func TrimTagName(tag string) string {
