@@ -320,6 +320,9 @@ func setOutbounds(options *option.Options, input *option.Options, opt *HiddifyOp
 			InterruptExistConnections: true,
 		},
 	}
+	if len(tags) == 0 {
+		return fmt.Errorf("profile has no usable outbound")
+	}
 	defaultSelect := tags[0]
 
 	for _, tag := range tags {
