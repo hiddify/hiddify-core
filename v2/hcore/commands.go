@@ -242,11 +242,9 @@ func (h *HiddifyInstance) SelectOutbound(in *SelectOutboundRequest) (*hcommon.Re
 				Message: E.New("outbound not found in selector:: ", in.GroupTag).Error(),
 			}, E.New("outbound not found in selector: ", in.GroupTag)
 		}
-		Log(LogLevel_DEBUG, LogType_CORE, "Trying to ping outbound: ", in.OutboundTag)
-
-		// if urltesHistory := h.UrlTestHistory(); urltesHistory != nil {
-		// 	urltesHistory.Observer().Emit(2)
-		// }
+	} else {
+		err := E.New("service not started")
+		return &hcommon.Response{Code: hcommon.ResponseCode_FAILED, Message: err.Error()}, err
 	}
 	return &hcommon.Response{
 		Code:    hcommon.ResponseCode_OK,
