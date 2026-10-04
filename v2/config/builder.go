@@ -459,7 +459,11 @@ func setInbound(options *option.Options, hopt *HiddifyOptions) {
 	// } else {
 	// 	inboundDomainStrategy = opt.IPv6Mode
 	// }
-	ipv6Enable := isIPv6Supported()
+	// Honor the user's IPv6 mode: IPv4-only must not give the TUN an IPv6
+	// address nor bind IPv6, otherwise the TUN captures the default IPv6
+	// route while egress has no usable IPv6, black-holing AAAA-first conns.
+	ipv6Enable := isIPv6Supported() &&
+		hopt.IPv6Mode != option.DomainStrategy(C.DomainStrategyIPv4Only)
 	if hopt.EnableTun {
 
 		opts := option.TunInboundOptions{
