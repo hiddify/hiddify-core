@@ -33,8 +33,10 @@ const (
 	DNSTricksDirectTag = "dns-trick-direct"
 	// DNSMultiDirectTag  = "dns-multi-direct"
 	// DNSMultiRemoteTag  = "dns-multi-remote"
-	DNSMultiDirectTag = "dns-direct"
-	DNSMultiRemoteTag = "dns-remote"
+	// sequential groups (selected server, its TCP/TLS variants, then a fallback resolver);
+	// all DNS rules and the DNS final use these
+	DNSMultiDirectTag = "dns-direct-group"
+	DNSMultiRemoteTag = "dns-remote-group"
 
 	OutboundDirectTag = "direct §hide§"
 	OutboundBypassTag = "bypass §hide§"

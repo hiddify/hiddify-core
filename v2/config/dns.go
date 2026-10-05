@@ -1,8 +1,10 @@
 package config
 
 import (
+	"fmt"
 	"net/netip"
 	"net/url"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -81,6 +83,21 @@ func setDns(options *option.Options, opt *HiddifyOptions, staticIps *map[string]
 	if err != nil {
 		return err
 	}
+	remoteGroup, remoteMembers, err := getDNSGroupOptions(DNSMultiRemoteTag, *remote_dns, remoteAddr, DNSDirectTag, func(string) string {
+		return OutboundMainDetour
+	})
+	if err != nil {
+		return err
+	}
+	directGroup, directMembers, err := getDNSGroupOptions(DNSMultiDirectTag, *direct_dns, opt.DirectDnsAddress, DNSLocalTag, func(address string) string {
+		if strings.HasPrefix(address, "udp://") {
+			return ""
+		}
+		return OutboundDirectFragmentTag
+	})
+	if err != nil {
+		return err
+	}
 	// block_dns, err := getDNSServerOptions(DNSBlockTag, "rcode://name_error", "", "")
 	// if err != nil {
 	// 	return err
@@ -112,6 +129,8 @@ func setDns(options *option.Options, opt *HiddifyOptions, staticIps *map[string]
 				*direct_dns,
 				*local_dns,
 				*remote_no_warp_dns,
+				*remoteGroup,
+				*directGroup,
 				// *multi_dns_direct,
 				// *multi_dns_remote,
 				// *block_dns,
@@ -131,6 +150,8 @@ func setDns(options *option.Options, opt *HiddifyOptions, staticIps *map[string]
 			},
 		})
 	}
+	dnsOptions.Servers = append(dnsOptions.Servers, remoteMembers...)
+	dnsOptions.Servers = append(dnsOptions.Servers, directMembers...)
 	options.DNS = &dnsOptions
 
 	// options.DNS.StaticIPs["time.apple.com"] = []string{"time.g.aaplimg.com", "time.apple.com"}
@@ -311,6 +332,67 @@ func addForceDirect(options *option.Options, hopt *HiddifyOptions) ([]option.Def
 	}
 	return forceDirectRules, nil
 
+}
+
+// dnsGroupIgnoreRange: answers in this range count as failures, so the group tries the next server
+const dnsGroupIgnoreRange = "10.10.34.0/24"
+
+// dnsGroupAddresses lists the group members in order: the selected address, its TCP and TLS variants,
+// then a fallback resolver (8.8.8.8, or 1.1.1.1 when the selection already is 8.8.8.8) over UDP, TCP and TLS.
+func dnsGroupAddresses(selected string) []string {
+	if selected != "local" && selected != "fakeip" {
+		selected = getDnsAddress(selected)
+	}
+	host := ""
+	if u, err := url.Parse(selected); err == nil {
+		switch u.Scheme {
+		case C.DNSTypeUDP, C.DNSTypeTCP, C.DNSTypeTLS, C.DNSTypeHTTPS, C.DNSTypeHTTP3, C.DNSTypeQUIC:
+			host = u.Hostname()
+		}
+	}
+	if strings.Contains(host, ":") {
+		host = "[" + host + "]"
+	}
+	fallback := "8.8.8.8"
+	if host == fallback {
+		fallback = "1.1.1.1"
+	}
+	candidates := []string{selected}
+	if host != "" {
+		candidates = append(candidates, "tcp://"+host, "tls://"+host)
+	}
+	candidates = append(candidates, "udp://"+fallback, "tcp://"+fallback, "tls://"+fallback)
+	var addresses []string
+	for _, candidate := range candidates {
+		if !slices.Contains(addresses, candidate) {
+			addresses = append(addresses, candidate)
+		}
+	}
+	return addresses
+}
+
+// getDNSGroupOptions builds a sequential DNS group: the already built selected server first,
+// then a member per remaining address of dnsGroupAddresses.
+func getDNSGroupOptions(tag string, selected option.DNSServerOptions, selectedAddress, domainResolver string, detour func(address string) string) (*option.DNSServerOptions, []option.DNSServerOptions, error) {
+	members := []string{selected.Tag}
+	var servers []option.DNSServerOptions
+	for i, address := range dnsGroupAddresses(selectedAddress)[1:] {
+		server, err := getDNSServerOptions(fmt.Sprint(tag, "-", i+1), address, domainResolver, detour(address))
+		if err != nil {
+			return nil, nil, E.Cause(err, "dns group ", tag, ": ", address)
+		}
+		members = append(members, server.Tag)
+		servers = append(servers, *server)
+	}
+	return &option.DNSServerOptions{
+		Tag:  tag,
+		Type: C.DNSTypeGroup,
+		Options: &option.GroupDNSServerOptions{
+			Servers:      members,
+			Mode:         C.DNSGroupModeSequential,
+			IgnoreRanges: []badoption.Prefix{badoption.Prefix(netip.MustParsePrefix(dnsGroupIgnoreRange))},
+		},
+	}, servers, nil
 }
 
 func getDNSServerOptions(tag string, dnsurl string, domain_resolver string, detour string) (*option.DNSServerOptions, error) {
