@@ -44,14 +44,14 @@ func (h *HiddifyInstance) readStatus(prev *SystemInfo) *SystemInfo {
 			current := ""
 			if currentOutBound, ok := box.Outbound().Outbound(config.OutboundSelectTag); ok {
 				if selectOutBound, ok := currentOutBound.(*group.Selector); ok {
-					current = selectOutBound.Now()
+					current = groupNow(selectOutBound)
 					message.CurrentOutbound = TrimTagName(current)
 				}
 			}
 			// if message.CurrentOutbound == config.OutboundURLTestTag {
 			if currentOutBound, ok := box.Outbound().Outbound(current); ok {
 				if g, ok := currentOutBound.(adapter.OutboundGroup); ok {
-					if now := g.Now(); now != "" {
+					if now := groupNow(g); now != "" {
 						message.CurrentOutbound = fmt.Sprint(message.CurrentOutbound, "→", TrimTagName(now))
 					}
 				}
@@ -242,11 +242,9 @@ func (h *HiddifyInstance) SelectOutbound(in *SelectOutboundRequest) (*hcommon.Re
 				Message: E.New("outbound not found in selector:: ", in.GroupTag).Error(),
 			}, E.New("outbound not found in selector: ", in.GroupTag)
 		}
-		Log(LogLevel_DEBUG, LogType_CORE, "Trying to ping outbound: ", in.OutboundTag)
-
-		// if urltesHistory := h.UrlTestHistory(); urltesHistory != nil {
-		// 	urltesHistory.Observer().Emit(2)
-		// }
+	} else {
+		err := E.New("service not started")
+		return &hcommon.Response{Code: hcommon.ResponseCode_FAILED, Message: err.Error()}, err
 	}
 	return &hcommon.Response{
 		Code:    hcommon.ResponseCode_OK,
@@ -279,7 +277,7 @@ func (h *HiddifyInstance) UrlTestActive() (*hcommon.Response, error) {
 				Message: E.New("outbound is not a selector: ", config.OutboundSelectTag).Error(),
 			}, E.New("outbound is not a selector: ", config.OutboundSelectTag)
 		}
-		now := selector.Now()
+		now := groupNow(selector)
 		if now == "" {
 			return &hcommon.Response{
 				Code:    hcommon.ResponseCode_FAILED,
@@ -288,7 +286,7 @@ func (h *HiddifyInstance) UrlTestActive() (*hcommon.Response, error) {
 		}
 		if outboundGroupInner, isLoaded := box.Outbound().Outbound(now); isLoaded {
 			if grp, isgrp := outboundGroupInner.(adapter.OutboundGroup); isgrp {
-				if n2 := grp.Now(); n2 != "" {
+				if n2 := groupNow(grp); n2 != "" {
 					now = n2
 				}
 			}
@@ -405,8 +403,8 @@ func (s *CoreService) GetLANIP(ctx context.Context, req *hcommon.Empty) (*LANIPR
 
 		// Exclude interfaces with names typical for VPNs, TAP, or TUN devices
 		name := strings.ToLower(iface.Name)
-		if strings.Contains(name, "tun") || strings.Contains(name, "tap") || 
-			strings.Contains(name, "wintun") || strings.Contains(name, "utun") || 
+		if strings.Contains(name, "tun") || strings.Contains(name, "tap") ||
+			strings.Contains(name, "wintun") || strings.Contains(name, "utun") ||
 			strings.Contains(name, "vpn") || strings.Contains(name, "ppp") {
 			continue
 		}
@@ -437,8 +435,8 @@ func (s *CoreService) GetLANIP(ctx context.Context, req *hcommon.Empty) (*LANIPR
 			}
 
 			// Verify the IP belongs to a standard private IP range (RFC 1918)
-			if ip4[0] == 10 || 
-				(ip4[0] == 172 && ip4[1] >= 16 && ip4[1] <= 31) || 
+			if ip4[0] == 10 ||
+				(ip4[0] == 172 && ip4[1] >= 16 && ip4[1] <= 31) ||
 				(ip4[0] == 192 && ip4[1] == 168) {
 				return &LANIPResponse{Ip: ip4.String()}, nil
 			}

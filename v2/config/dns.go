@@ -235,10 +235,12 @@ func addForceDirect(options *option.Options, hopt *HiddifyOptions) ([]option.Def
 			DNSRuleAction: option.DNSRuleAction{
 				Action: C.RuleActionTypeRoute,
 				RouteOptions: option.DNSRouteActionOptions{
-					Server:         DNSRemoteNoWarpTag,
-					Strategy:       hopt.DirectDnsDomainStrategy,
-					BypassIfFailed: false,
-					RewriteTTL:     &DEFAULT_DNS_TTL,
+					Server: DNSRemoteNoWarpTag,
+					AbstractDNSRouteActionOptions: option.AbstractDNSRouteActionOptions{
+						Strategy:       hopt.DirectDnsDomainStrategy,
+						BypassIfFailed: false,
+						RewriteTTL:     &DEFAULT_DNS_TTL,
+					},
 				},
 			},
 		},
@@ -266,10 +268,12 @@ func addForceDirect(options *option.Options, hopt *HiddifyOptions) ([]option.Def
 				DNSRuleAction: option.DNSRuleAction{
 					Action: C.RuleActionTypeRoute,
 					RouteOptions: option.DNSRouteActionOptions{
-						Server:         DNSMultiDirectTag,
-						Strategy:       hopt.DirectDnsDomainStrategy,
-						RewriteTTL:     &DEFAULT_DNS_TTL,
-						BypassIfFailed: false,
+						Server: DNSMultiDirectTag,
+						AbstractDNSRouteActionOptions: option.AbstractDNSRouteActionOptions{
+							Strategy:       hopt.DirectDnsDomainStrategy,
+							RewriteTTL:     &DEFAULT_DNS_TTL,
+							BypassIfFailed: false,
+						},
 					},
 				},
 			},
@@ -328,10 +332,12 @@ func getDNSServerOptions(tag string, dnsurl string, domain_resolver string, deto
 	remoteOptions := option.RemoteDNSServerOptions{
 		RawLocalDNSServerOptions: option.RawLocalDNSServerOptions{
 			DialerOptions: option.DialerOptions{
-				Detour: detour,
-				DomainResolver: &option.DomainResolveOptions{
-					Server:   domain_resolver,
-					Strategy: option.DomainStrategy(C.DomainStrategyPreferIPv4),
+				Detour: dialDetour(detour),
+				AbstractDialerOptions: option.AbstractDialerOptions{
+					DomainResolver: &option.DomainResolveOptions{
+						Server:   domain_resolver,
+						Strategy: option.DomainStrategy(C.DomainStrategyPreferIPv4),
+					},
 				},
 			},
 		},

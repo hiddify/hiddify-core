@@ -43,7 +43,9 @@ func (h *LogInterface) WriteDebugMessage(message string) {
 	h.WriteMessage(log.LevelDebug, message)
 }
 func (h *LogInterface) WriteMessage(level log.Level, message string) {
-	Log(convertLogLevel(level), LogType_SERVICE, message)
+	// Must not call Log: it writes to the sing-box logger, whose platform
+	// writer calls back here in debug mode, recursing forever.
+	publishLog(convertLogLevel(level), LogType_SERVICE, message)
 }
 func convertLogLevel(level log.Level) LogLevel {
 	switch level {

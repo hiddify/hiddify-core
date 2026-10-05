@@ -12,6 +12,8 @@ import (
 	"github.com/sagernet/sing-box/experimental/clashapi/trafficontrol"
 	"github.com/sagernet/sing-box/experimental/libbox"
 	"github.com/sagernet/sing-box/option"
+	"github.com/sagernet/sing/common/json"
+	"github.com/sagernet/sing/service"
 )
 
 func NewService(ctx context.Context, options option.Options) (*daemon.StartedService, error) {
@@ -40,7 +42,11 @@ func NewService(ctx context.Context, options option.Options) (*daemon.StartedSer
 	// 	}
 	// }
 
-	if err := instance.StartOrReloadServiceOptions(options); err != nil {
+	content, err := json.MarshalContext(ctx, options)
+	if err != nil {
+		return nil, err
+	}
+	if err := instance.StartOrReloadService(ctx, string(content), nil); err != nil {
 		return nil, err
 	}
 
@@ -88,9 +94,9 @@ func (h *HiddifyInstance) Context() context.Context {
 }
 
 func (h *HiddifyInstance) TrafficManager() *trafficontrol.Manager {
-	if ins := h.Instance(); ins != nil {
-		if s := ins.ClashServer(); s != nil {
-			return s.(*clashapi.Server).TrafficManager()
+	if ctx := h.Context(); ctx != nil {
+		if s, ok := service.FromContext[adapter.ClashServer](ctx).(*clashapi.Server); ok {
+			return s.TrafficManager()
 		}
 	}
 	return nil
