@@ -58,6 +58,8 @@ func panelSecurities() map[string][]string {
 		"insecure": {"security", "tls", "fp", "chrome", "sni", pDomain, "alpn", "h2,http/1.1", "allowInsecure", "true", "insecure", "true", "pcs", pPCS},
 		"fragment": {"security", "tls", "fp", "chrome", "sni", pDomain, "alpn", "http/1.1", "fragment", "10-100,1-10,tlshello"},
 		"reality":  {"security", "reality", "fp", "chrome", "sni", "www.google.com", "pbk", pPBK, "sid", pSID},
+		// "unsafe" (Xray): no uTLS, standard Go TLS ClientHello
+		"tls-unsafe-fp": {"security", "tls", "fp", "unsafe", "sni", pDomain, "alpn", "h2,http/1.1"},
 	}
 }
 
