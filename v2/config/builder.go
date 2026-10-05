@@ -17,7 +17,6 @@ import (
 	C "github.com/sagernet/sing-box/constant"
 	sdns "github.com/sagernet/sing-box/dns"
 	"github.com/sagernet/sing-box/option"
-	dns "github.com/sagernet/sing-dns"
 	"github.com/sagernet/sing/common/json/badoption"
 	"github.com/sagernet/wireguard-go/hiddify"
 )
@@ -463,8 +462,11 @@ func isIPv6Supported() bool {
 }
 
 func shouldEnableIPv6(mode option.DomainStrategy) bool {
-	hostSupportsIPv6 := isIPv6Supported()
-	return hostSupportsIPv6 && mode != option.DomainStrategy(dns.DomainStrategyUseIPv4)
+	return ipv6EnabledFor(mode, isIPv6Supported())
+}
+
+func ipv6EnabledFor(mode option.DomainStrategy, hostSupportsIPv6 bool) bool {
+	return hostSupportsIPv6 && mode != option.DomainStrategy(C.DomainStrategyIPv4Only)
 }
 
 func setInbound(options *option.Options, hopt *HiddifyOptions) {
@@ -494,7 +496,7 @@ func setInbound(options *option.Options, hopt *HiddifyOptions) {
 			Options: &opts,
 		}
 		// switch hopt.IPv6Mode {
-		// case option.DomainStrategy(dns.DomainStrategyUseIPv4):
+		// case option.DomainStrategy(C.DomainStrategyIPv4Only):
 		// 	opts.Address = []netip.Prefix{
 		// 		netip.MustParsePrefix("172.19.0.1/28"),
 		// 	}
