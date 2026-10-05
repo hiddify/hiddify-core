@@ -162,7 +162,8 @@ func chainPsiphonOutbound(tag string, psiphon ChainPsiphonOptions, detour string
 	if region == psiphonRegionAuto {
 		region = ""
 	}
-	options := &option.PsiphonOutboundOptions{EgressRegion: region}
+	// "hiddify": the Psiphon config embedded at build time (falls back to the defaults without it)
+	options := &option.PsiphonOutboundOptions{Config: "hiddify", EgressRegion: region}
 	options.Detour = detour
 	return option.Outbound{Type: C.TypePsiphon, Tag: tag, Options: options}
 }

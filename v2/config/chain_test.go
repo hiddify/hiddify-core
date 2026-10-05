@@ -101,6 +101,9 @@ func TestChainUnblockerPsiphon(t *testing.T) {
 	if hop == nil {
 		t.Fatal("unblocker psiphon outbound not created")
 	}
+	if hop.Config != "hiddify" {
+		t.Fatalf("the psiphon hop must use the embedded hiddify config, got %q", hop.Config)
+	}
 	if hop.Detour != "" || hop.EgressRegion != "DE" {
 		t.Fatalf("unblocker must dial directly with the chosen region, got detour %q region %q", hop.Detour, hop.EgressRegion)
 	}

@@ -179,6 +179,9 @@ jobs:
         env:
           ANDROID_NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
           JAVA_HOME: /usr/lib/jvm/java-17-openjdk-amd64
+          # embedded at build time; the Psiphon config only in encrypted form (empty = not embedded)
+          HIDDIFY_SECRET_KEY: ${{ secrets.HIDDIFY_SECRET_KEY }}
+          PSIPHON_CONFIG: ${{ secrets.PSIPHON_CONFIG }}
 
       - name: zip
         run: |
