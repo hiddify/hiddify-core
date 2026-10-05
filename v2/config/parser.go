@@ -78,10 +78,21 @@ func parseConfigContent(ctx context.Context, content []byte, debug bool, configO
 					}
 				}
 			}
-		} else if jsonArray, ok := tmpJsonResult.([]map[string]interface{}); ok {
-			jsonObj["outbounds"] = jsonArray
+		} else if jsonArray, ok := tmpJsonResult.([]interface{}); ok {
+			if len(jsonArray) == 0 {
+				return nil, fmt.Errorf("[SingboxParser] no outbounds found")
+			}
+			outbounds := make([]interface{}, 0, len(jsonArray))
+			for i, item := range jsonArray {
+				itemObj, ok := item.(map[string]interface{})
+				if !ok {
+					return nil, fmt.Errorf("[SingboxParser] outbound at index %d is %T, expected a json object", i, item)
+				}
+				outbounds = append(outbounds, itemObj)
+			}
+			jsonObj["outbounds"] = outbounds
 		} else {
-			return nil, fmt.Errorf("[SingboxParser] Incorrect Json Format")
+			return nil, fmt.Errorf("[SingboxParser] incorrect json format: expected a json object or an array of outbound objects, got %T", tmpJsonResult)
 		}
 
 		newContent, _ := json.MarshalIndent(jsonObj, "", "  ")
