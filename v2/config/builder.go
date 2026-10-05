@@ -432,7 +432,8 @@ func isIPv6Supported() bool {
 	return err == nil
 }
 
-func shouldEnableIPv6(mode option.DomainStrategy, hostSupportsIPv6 bool) bool {
+func shouldEnableIPv6(mode option.DomainStrategy) bool {
+	hostSupportsIPv6 := isIPv6Supported()
 	return hostSupportsIPv6 && mode != option.DomainStrategy(dns.DomainStrategyUseIPv4)
 }
 
@@ -443,7 +444,7 @@ func setInbound(options *option.Options, hopt *HiddifyOptions) {
 	// } else {
 	// 	inboundDomainStrategy = opt.IPv6Mode
 	// }
-	ipv6Enable := shouldEnableIPv6(hopt.IPv6Mode, isIPv6Supported())
+	ipv6Enable := shouldEnableIPv6(hopt.IPv6Mode)
 	if hopt.EnableTun {
 
 		opts := option.TunInboundOptions{
