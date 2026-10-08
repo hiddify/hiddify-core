@@ -65,7 +65,8 @@ func parseConfigContent(ctx context.Context, content []byte, debug bool, configO
 		fmt.Printf("Convert using json\n")
 		if tmpJsonObj, ok := tmpJsonResult.(map[string]interface{}); ok {
 			if tmpJsonObj["outbounds"] == nil && tmpJsonObj["endpoints"] == nil {
-				jsonObj["outbounds"] = []interface{}{jsonObj}
+				// a single outbound object (was wrapping the empty result itself)
+				jsonObj["outbounds"] = []interface{}{tmpJsonObj}
 			} else {
 				if fullConfig || (configOpt != nil && configOpt.EnableFullConfig) {
 					jsonObj = tmpJsonObj
@@ -95,7 +96,18 @@ func parseConfigContent(ctx context.Context, content []byte, debug bool, configO
 			return nil, fmt.Errorf("[SingboxParser] incorrect json format: expected a json object or an array of outbound objects, got %T", tmpJsonResult)
 		}
 
-		newContent, _ := json.MarshalIndent(jsonObj, "", "  ")
+		// the legacy WireGuard outbound was removed from sing-box: use the WireGuard endpoint
+		outbounds, _ := jsonObj["outbounds"].([]interface{})
+		endpoints, _ := jsonObj["endpoints"].([]interface{})
+		if outbounds, endpoints = ray2sing.MoveLegacyWireGuardOutbounds(outbounds, endpoints); len(endpoints) > 0 {
+			jsonObj["outbounds"] = outbounds
+			jsonObj["endpoints"] = endpoints
+		}
+
+		newContent, err := json.MarshalIndent(jsonObj, "", "  ")
+		if err != nil {
+			return nil, fmt.Errorf("[SingboxParser] %w", err)
+		}
 
 		return patchConfigStr(ctx, newContent, "SingboxParser", configOpt)
 	}
