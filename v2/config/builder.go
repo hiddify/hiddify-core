@@ -642,7 +642,12 @@ func setRoutingOptions(options *option.Options, hopt *HiddifyOptions) error {
 	// 	},
 	// },	}
 
-	if hopt.BypassLAN {
+	appRules := buildAppRouteRules(hopt)
+	useAppRules := hopt.RouteRule != nil && hopt.RouteRule.RouteRule != nil
+	if useAppRules {
+		routeRules = append(routeRules, appRules.routeRules...)
+	}
+	if !useAppRules && hopt.BypassLAN {
 		routeRules = append(
 			routeRules,
 			option.Rule{
@@ -757,7 +762,11 @@ func setRoutingOptions(options *option.Options, hopt *HiddifyOptions) error {
 			Rcode: &rejectRCode,
 		},
 	}
-	if hopt.BlockAds {
+	if useAppRules {
+		dnsRules = append(dnsRules, appRules.dnsRules...)
+		rulesets = append(rulesets, appRules.ruleSets...)
+	}
+	if !useAppRules && hopt.BlockAds {
 		rulesets = append(rulesets, option.RuleSet{
 			Type:   C.RuleSetTypeRemote,
 			Tag:    badoption.Listable[string]{"geosite-ads"},
@@ -853,7 +862,7 @@ func setRoutingOptions(options *option.Options, hopt *HiddifyOptions) error {
 			DNSRuleAction: rejectDnsAction,
 		})
 	}
-	if hopt.Region != "other" {
+	if !useAppRules && hopt.Region != "other" {
 		dnsRules = append(dnsRules, option.DefaultDNSRule{
 			RawDefaultDNSRule: option.RawDefaultDNSRule{
 				DomainSuffix: []string{"." + hopt.Region},
