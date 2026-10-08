@@ -83,7 +83,9 @@ func TestHotReload(t *testing.T) {
 	require.NotNil(t, proxyB)
 	require.Nil(t, runningOutbound(t, "proxy-c"))
 
-	// only outbounds change: applied to the running core
+	// only outbounds change: applied to the running core, reported as HOT_RELOADING meanwhile
+	states := static.coreInfoObserver.Subscribe(16)
+	defer static.coreInfoObserver.Unsubscribe(states)
 	response, err = HotReload(static.BaseContext, &StartRequest{
 		ConfigContent: profile(socks("proxy-a", 1080), socks("proxy-b", 2081), socks("proxy-c", 1082)),
 	})
@@ -94,6 +96,16 @@ func TestHotReload(t *testing.T) {
 	require.Same(t, proxyA, runningOutbound(t, "proxy-a"), "an unchanged outbound keeps running")
 	require.NotSame(t, proxyB, runningOutbound(t, "proxy-b"), "a changed outbound is replaced")
 	require.NotNil(t, runningOutbound(t, "proxy-c"), "a new outbound is added")
+	var seen []CoreStates
+	for len(seen) == 0 || seen[len(seen)-1] != CoreStates_STARTED {
+		select {
+		case info := <-states:
+			seen = append(seen, info.CoreState)
+		case <-time.After(5 * time.Second):
+			t.Fatalf("core states seen: %v", seen)
+		}
+	}
+	require.Equal(t, CoreStates_HOT_RELOADING, seen[0], "states: %v", seen)
 
 	// a normal start while started is still refused
 	response, err = StartService(static.BaseContext, &StartRequest{ConfigContent: profile(socks("proxy-a", 1080))})

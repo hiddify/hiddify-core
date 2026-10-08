@@ -12,6 +12,8 @@ enum CoreStates {
   STARTING = 1;
   STARTED = 2;
   STOPPING = 3;
+  // the running core is applying a new config (HotReload); traffic keeps flowing
+  HOT_RELOADING = 4;
 }
 
 enum MessageType {
