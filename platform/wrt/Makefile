@@ -1,12 +1,12 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=hiddify-core
-PKG_VERSION:=4.1.0
+PKG_VERSION:=5.0.0
 PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=https://codeload.github.com/hiddify/hiddify-core/tar.gz/v$(PKG_VERSION)?
-PKG_HASH:=8a877268eaea3dc52f300ddfd2f702ed1c4e37f75ddea5fcecc27cfefc849f85
+PKG_HASH:=04e2590eeca7e9b181423a9b8d3f0848e0e4c2d82d711ad5d315e75e2cebaf3b
 
 PKG_LICENSE:=https://github.com/hiddify/hiddify-app/edit/main/LICENSE.md
 PKG_LICENSE_FILES:=LICENSE
