@@ -106,7 +106,7 @@ func setChainHop(opt *HiddifyOptions, outbounds *[]option.Outbound, endpoints *[
 // chainDialer makes a main outbound/endpoint dial through the unblocker hop, unless it already
 // dials through another detour (it is then not the first hop of its own chain) or is the hop itself.
 func chainDialer(options any, outboundTag, hopTag string) {
-	if outboundTag == hopTag || outboundTag == WARPConfigTag {
+	if outboundTag == hopTag {
 		return
 	}
 	wrapper, ok := options.(option.DialerOptionsWrapper)
@@ -166,4 +166,43 @@ func chainPsiphonOutbound(tag string, psiphon ChainPsiphonOptions, detour string
 	options := &option.PsiphonOutboundOptions{Config: "hiddify", EgressRegion: region}
 	options.Detour = detour
 	return option.Outbound{Type: C.TypePsiphon, Tag: tag, Options: options}
+}
+
+// chainUsesPsiphon reports whether the active chain hop is Psiphon; Psiphon runs as one instance
+// per process, so the profile's own Psiphon outbounds are dropped then.
+func chainUsesPsiphon(opt *HiddifyOptions) bool {
+	switch opt.ChainStatus {
+	case ChainStatusExtraSecurity:
+		return opt.ExtraSecurity.Mode == ChainModePsiphon
+	case ChainStatusUnblocker:
+		return opt.Unblocker.Mode == ChainModePsiphon
+	}
+	return false
+}
+
+// redirectRemovedPsiphon points detours to a dropped Psiphon outbound at the kept one; without a
+// kept one (a Psiphon chain hop replaces them) the detour is cleared: the outbound dials directly,
+// or through the unblocker hop, which setChainHop adds to outbounds without a detour.
+func redirectRemovedPsiphon(outbounds []option.Outbound, endpoints []option.Endpoint, removed map[string]bool, kept string) {
+	if len(removed) == 0 {
+		return
+	}
+	redirect := func(options any) {
+		wrapper, ok := options.(option.DialerOptionsWrapper)
+		if !ok {
+			return
+		}
+		dialer := wrapper.TakeDialerOptions()
+		if !removed[dialer.Detour] {
+			return
+		}
+		dialer.Detour = kept
+		wrapper.ReplaceDialerOptions(dialer)
+	}
+	for i := range outbounds {
+		redirect(outbounds[i].Options)
+	}
+	for i := range endpoints {
+		redirect(endpoints[i].Options)
+	}
 }

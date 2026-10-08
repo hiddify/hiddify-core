@@ -198,7 +198,7 @@ func (h *HiddifyInstance) GetAllProxiesInfo(hismap map[string]*adapter.URLTestHi
 // legacy WARP) the active entry of the main group, since its delay and IP are what the user gets.
 // It is labelled "<hop protocol> → <selected config>", e.g. "Psiphon → my-server".
 func showEntryHop(group *OutboundGroup, infos map[string]*OutboundInfo, protocolName func(tag string) string) {
-	for _, entryTag := range []string{config.ChainExtraSecurityTag, config.WARPConfigTag} {
+	for _, entryTag := range []string{config.ChainExtraSecurityTag} {
 		entry, ok := infos[entryTag]
 		if !ok {
 			continue

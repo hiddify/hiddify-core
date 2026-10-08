@@ -18,7 +18,6 @@ import (
 	sdns "github.com/sagernet/sing-box/dns"
 	"github.com/sagernet/sing-box/option"
 	"github.com/sagernet/sing/common/json/badoption"
-	"github.com/sagernet/wireguard-go/hiddify"
 )
 
 const (
@@ -46,8 +45,6 @@ const (
 	OutboundRoundRobinTag     = "balance"
 	OutboundDirectFragmentTag = "direct-fragment §hide§"
 
-	WARPConfigTag = "🔒 WARP"
-
 	InboundTUNTag    = "tun-in"
 	InboundMixedTag  = "mixed-in"
 	InboundTProxy    = "tproxy-in"
@@ -58,7 +55,7 @@ const (
 var (
 	OutboundMainDetour       = OutboundSelectTag
 	OutboundWARPConfigDetour = OutboundDirectFragmentTag
-	PredefinedOutboundTags   = []string{OutboundDirectTag, OutboundBypassTag, OutboundSelectTag, OutboundURLTestTag, OutboundDirectFragmentTag, WARPConfigTag, ChainExtraSecurityTag, ChainUnblockerTag}
+	PredefinedOutboundTags   = []string{OutboundDirectTag, OutboundBypassTag, OutboundSelectTag, OutboundURLTestTag, OutboundDirectFragmentTag, ChainExtraSecurityTag, ChainUnblockerTag}
 )
 
 // TODO include selectors
@@ -154,7 +151,9 @@ func setOutbounds(options *option.Options, input *option.Options, opt *HiddifyOp
 	// outbound==proxies over warp
 	OutboundMainDetour = OutboundSelectTag
 	OutboundWARPConfigDetour = OutboundDirectFragmentTag
-	hasPsiphon := false
+	chainPsiphon := chainUsesPsiphon(opt)
+	keptPsiphon := ""
+	removedPsiphon := map[string]bool{}
 	for _, out := range input.Outbounds {
 
 		if contains(PredefinedOutboundTags, out.Tag) {
@@ -183,81 +182,26 @@ func setOutbounds(options *option.Options, input *option.Options, opt *HiddifyOp
 			if contains([]string{"direct", "bypass", "block"}, out.Tag) {
 				continue
 			}
+			// Psiphon runs as one instance per process: a Psiphon chain hop replaces every
+			// Psiphon of the profile, otherwise only the first one is kept
 			if out.Type == C.TypePsiphon {
-				if hasPsiphon {
+				if chainPsiphon || keptPsiphon != "" {
+					removedPsiphon[out.Tag] = true
 					continue
 				}
-				hasPsiphon = true
+				keptPsiphon = out.Tag
 			}
 			if !strings.Contains(out.Tag, "§hide§") {
 				tags = append(tags, out.Tag)
 			}
-			// OutboundWARPConfigDetour = OutboundSelectTag
-			out = *patchHiddifyWarpFromConfig(&out, *opt)
 			outbounds = append(outbounds, out)
 		}
 	}
 
-	if opt.Warp.EnableWarp {
-		// wg := getOrGenerateWarpLocallyIfNeeded(&opt.Warp)
-
-		// out, err := GenerateWarpSingbox(wg, opt.Warp.CleanIP, opt.Warp.CleanPort, &option.WireGuardHiddify{
-		// 	FakePackets:      opt.Warp.FakePackets,
-		// 	FakePacketsSize:  opt.Warp.FakePacketSize,
-		// 	FakePacketsDelay: opt.Warp.FakePacketDelay,
-		// 	FakePacketsMode:  opt.Warp.FakePacketMode,
-		// })
-		out, err := GenerateWarpSingboxNew("p1", &hiddify.NoiseOptions{})
-		if err != nil {
-			return fmt.Errorf("failed to generate warp config: %v", err)
-		}
-		out.Tag = WARPConfigTag
-		if opts, ok := out.Options.(*option.WARPEndpointOptions); ok {
-			if opt.Warp.Mode == "warp_over_proxy" {
-				opts.Detour = OutboundSelectTag
-				opts.MTU = 1280
-			} else {
-				opts.Detour = dialDetour(OutboundDirectTag)
-				opt.MTU = max(opt.MTU, 1340)
-			}
-
-		}
-
-		OutboundMainDetour = WARPConfigTag
-		// patchWarp(out, opt, true, nil)
-		out, err = patchEndpoint(out, *opt, staticIPs)
-		if err != nil {
-			return err
-		}
-		endpoints = append(endpoints, *out)
-	}
 	for _, end := range input.Endpoints {
 		if contains(PredefinedOutboundTags, end.Tag) {
 			continue
 		}
-		if opt.Warp.EnableWarp {
-			if end.Type == C.TypeWARP {
-				if opts, ok := end.Options.(*option.WARPEndpointOptions); ok {
-					if opts.UniqueIdentifier == "p1" {
-						continue
-					}
-					if opt.Warp.EnableWarp && opt.Warp.Mode == "warp_over_proxy" {
-						opt.MTU = max(opt.MTU, 1340)
-					}
-				}
-			}
-			if end.Type == C.TypeWireGuard {
-				if opts, ok := end.Options.(*option.WireGuardEndpointOptions); ok {
-					if opts.PrivateKey == opt.Warp.WireguardConfig.PrivateKey {
-						continue
-					}
-					if opt.Warp.EnableWarp && opt.Warp.Mode == "warp_over_proxy" {
-						opt.MTU = max(opt.MTU, 1340)
-					}
-				}
-			}
-		}
-
 		out, err := patchEndpoint(&end, *opt, staticIPs)
 		if err != nil {
 			return err
@@ -269,6 +213,7 @@ func setOutbounds(options *option.Options, input *option.Options, opt *HiddifyOp
 
 		endpoints = append(endpoints, *out)
 	}
+	redirectRemovedPsiphon(outbounds, endpoints, removedPsiphon, keptPsiphon)
 	if err := setChainHop(opt, &outbounds, &endpoints); err != nil {
 		return err
 	}
@@ -338,16 +283,9 @@ func setOutbounds(options *option.Options, input *option.Options, opt *HiddifyOp
 
 	selectorTags := tags
 	if len(tags) > 1 {
-		if OutboundMainDetour == WARPConfigTag {
-			outbounds = append([]option.Outbound{urlTest}, outbounds...)
-			selectorTags = append([]string{urlTest.Tag}, selectorTags...)
-			defaultSelect = urlTest.Tag
-		} else {
-			outbounds = append([]option.Outbound{balancer, urlTest}, outbounds...)
-			selectorTags = append([]string{urlTest.Tag, balancer.Tag}, selectorTags...)
-			defaultSelect = balancer.Tag
-
-		}
+		outbounds = append([]option.Outbound{balancer, urlTest}, outbounds...)
+		selectorTags = append([]string{urlTest.Tag, balancer.Tag}, selectorTags...)
+		defaultSelect = balancer.Tag
 	}
 	selector := option.Outbound{
 		Type: C.TypeSelector,
@@ -1151,20 +1089,6 @@ func setRoutingOptions(options *option.Options, hopt *HiddifyOptions) error {
 	}
 	// }
 	return nil
-}
-
-func patchHiddifyWarpFromConfig(out *option.Outbound, opt HiddifyOptions) *option.Outbound {
-	if out.Type == C.TypePsiphon {
-		return out
-	}
-	if opt.Warp.EnableWarp && opt.Warp.Mode == "proxy_over_warp" {
-		if opts, ok := out.Options.(option.DialerOptionsWrapper); ok {
-			dialer := opts.TakeDialerOptions()
-			dialer.Detour = WARPConfigTag
-			opts.ReplaceDialerOptions(dialer)
-		}
-	}
-	return out
 }
 
 var (
