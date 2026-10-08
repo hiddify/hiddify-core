@@ -82,7 +82,11 @@ func StartService(ctx context.Context, in *StartRequest) (coreResponse *CoreInfo
 	})
 	static.lock.Lock()
 	defer static.lock.Unlock()
+	return startServiceLocked(ctx, in)
+}
 
+// startServiceLocked is StartService with static.lock held.
+func startServiceLocked(ctx context.Context, in *StartRequest) (coreResponse *CoreInfoResponse, err error) {
 	if static.CoreState != CoreStates_STOPPED {
 		// return errorWrapper(MessageType_ALREADY_STARTED, fmt.Errorf("instance already started"))
 		return &CoreInfoResponse{

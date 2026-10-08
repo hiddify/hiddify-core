@@ -417,7 +417,7 @@ func setExperimental(options *option.Options, hopt *HiddifyOptions) {
 	}
 	if hopt.EnableClashApi {
 		if hopt.ClashApiSecret == "" {
-			hopt.ClashApiSecret = generateRandomString(16)
+			hopt.ClashApiSecret = defaultClashApiSecret()
 		}
 		options.Experimental = &option.ExperimentalOptions{
 			UnifiedDelay: &option.UnifiedDelayOptions{
@@ -1255,6 +1255,12 @@ func removeDuplicateStr(strSlice []string) []string {
 	}
 	return list
 }
+
+// defaultClashApiSecret is generated once per process, so the same settings build the same
+// config (hot reload compares the running config with the new one).
+var defaultClashApiSecret = sync.OnceValue(func() string {
+	return generateRandomString(16)
+})
 
 func generateRandomString(length int) string {
 	// Determine the number of bytes needed

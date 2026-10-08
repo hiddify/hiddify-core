@@ -5,6 +5,7 @@ import (
 	"net/netip"
 	"net/url"
 	"slices"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -280,6 +281,8 @@ func addForceDirect(options *option.Options, hopt *HiddifyOptions) ([]option.Def
 	for domain := range dnsMap {
 		domains = append(domains, domain)
 	}
+	// stable order: the same settings must build the same config (hot reload compares them)
+	sort.Strings(domains)
 	if len(domains) > 0 {
 		forceDirectRules = append(forceDirectRules,
 			option.DefaultDNSRule{
