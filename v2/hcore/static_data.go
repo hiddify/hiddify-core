@@ -28,6 +28,8 @@ type HiddifyInstance struct {
 	previousStartRequest      *StartRequest
 	debug                     bool
 	ListenPort                uint16
+	ListenUser                string
+	ListenPassword            string
 	BaseContext               context.Context
 	endPauseTimer             *time.Timer // only for ios
 
