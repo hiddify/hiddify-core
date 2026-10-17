@@ -12,7 +12,7 @@ import (
 )
 
 func (s *CoreService) HotReload(ctx context.Context, in *StartRequest) (*CoreInfoResponse, error) {
-	return HotReload(static.BaseContext, in)
+	return HotReload(withRequestContext(static.BaseContext, ctx), in)
 }
 
 // HotReload applies the request's config to the running core without restarting it, or starts
@@ -25,6 +25,9 @@ func HotReload(ctx context.Context, in *StartRequest) (coreResponse *CoreInfoRes
 	})
 	static.lock.Lock()
 	defer static.lock.Unlock()
+	if err := contextErr(ctx); err != nil {
+		return hotReloadError(MessageType_HOT_RELOAD_FAILED, fmt.Errorf("hot reload cancelled: %w", err))
+	}
 	switch static.CoreState {
 	case CoreStates_STOPPED:
 		return startServiceLocked(ctx, in)
@@ -68,12 +71,19 @@ func hotReloadService(ctx context.Context, in *StartRequest) (*CoreInfoResponse,
 	if err := libbox.CheckConfigOptions(options); err != nil {
 		return hotReloadError(MessageType_ERROR_BUILDING_CONFIG, err)
 	}
+	if err := contextErr(ctx); err != nil {
+		return hotReloadError(MessageType_HOT_RELOAD_FAILED, fmt.Errorf("hot reload cancelled: %w", err))
+	}
 	tunChanged, err := static.StartedService.IsTunChanged(ctx, options)
 	if err != nil {
 		return hotReloadError(MessageType_HOT_RELOAD_FAILED, err)
 	}
 	if tunChanged {
 		return hotReloadError(MessageType_HOT_RELOAD_FAILED, errors.New("tun inbound has changed, hot reload can not be applied"))
+	}
+	// last point to give up: once applied, the reload is kept and recorded below
+	if err := contextErr(ctx); err != nil {
+		return hotReloadError(MessageType_HOT_RELOAD_FAILED, fmt.Errorf("hot reload cancelled: %w", err))
 	}
 	result, err := static.StartedService.HotReload(ctx, options)
 	if err != nil {

@@ -19,7 +19,7 @@ import (
 )
 
 func (s *CoreService) Start(ctx context.Context, in *StartRequest) (*CoreInfoResponse, error) {
-	return Start(static.BaseContext, in)
+	return Start(withRequestContext(static.BaseContext, ctx), in)
 }
 
 func Start(ctx context.Context, in *StartRequest) (*CoreInfoResponse, error) {
@@ -27,7 +27,49 @@ func Start(ctx context.Context, in *StartRequest) (*CoreInfoResponse, error) {
 }
 
 func (s *CoreService) StartService(ctx context.Context, in *StartRequest) (*CoreInfoResponse, error) {
-	return StartService(ctx, in)
+	return StartService(withRequestContext(static.BaseContext, ctx), in)
+}
+
+type requestContextKey struct{}
+
+// withRequestContext attaches the caller's request context to base. base stays the context the
+// core runs with, so the core keeps running after the request returns; the request context is
+// only checked by contextErr, to give up on a start, restart or reload nobody waits for anymore.
+func withRequestContext(base, request context.Context) context.Context {
+	return context.WithValue(base, requestContextKey{}, request)
+}
+
+// contextErr reports why ctx, or the request context attached to it, is done; nil while both
+// are alive.
+func contextErr(ctx context.Context) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	if request, ok := ctx.Value(requestContextKey{}).(context.Context); ok {
+		if err := request.Err(); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// sleepContext waits for d, returning early once ctx or its request context is done.
+func sleepContext(ctx context.Context, d time.Duration) {
+	var requestDone <-chan struct{}
+	if request, ok := ctx.Value(requestContextKey{}).(context.Context); ok {
+		requestDone = request.Done()
+	}
+	select {
+	case <-ctx.Done():
+	case <-requestDone:
+	case <-time.After(d):
+	}
+}
+
+// cancelledStart reports a start given up because its context is done; the core stays STOPPED.
+func cancelledStart(err error) (*CoreInfoResponse, error) {
+	Log(LogLevel_WARNING, LogType_CORE, "start cancelled: ", err.Error())
+	return SetCoreStatus(CoreStates_STOPPED, MessageType_INSTANCE_NOT_STARTED, "start cancelled"), err
 }
 
 func saveLastStartRequest(in *StartRequest) error {
@@ -82,6 +124,9 @@ func StartService(ctx context.Context, in *StartRequest) (coreResponse *CoreInfo
 	})
 	static.lock.Lock()
 	defer static.lock.Unlock()
+	if err := contextErr(ctx); err != nil {
+		return cancelledStart(err)
+	}
 	return startServiceLocked(ctx, in)
 }
 
@@ -115,11 +160,17 @@ func startServiceLocked(ctx context.Context, in *StartRequest) (coreResponse *Co
 	if err != nil {
 		return errorWrapper(MessageType_ERROR_BUILDING_CONFIG, err)
 	}
+	if err := contextErr(ctx); err != nil {
+		return cancelledStart(err)
+	}
 	saveLastStartRequest(in)
 
 	Log(LogLevel_DEBUG, LogType_CORE, "Main Service pre start")
 	if err := service_manager.OnMainServicePreStart(options); err != nil {
 		return errorWrapper(MessageType_ERROR_EXTENSION, err)
+	}
+	if err := contextErr(ctx); err != nil {
+		return cancelledStart(err)
 	}
 	currentBuildConfigPath := filepath.Join(sWorkingPath, "data/current-config.json")
 	Log(LogLevel_DEBUG, LogType_CORE, "Saving config to ", currentBuildConfigPath)
@@ -141,12 +192,22 @@ func startServiceLocked(ctx context.Context, in *StartRequest) (coreResponse *Co
 	}
 	Log(LogLevel_DEBUG, LogType_CORE, "Stating Service with delay ?", in.DelayStart)
 	if in.DelayStart {
-		<-time.After(1000 * time.Millisecond)
+		sleepContext(ctx, 1000*time.Millisecond)
+	}
+	if err := contextErr(ctx); err != nil {
+		return cancelledStart(err)
 	}
 	libbox.SetMemoryLimit(C.IsIos || !in.DisableMemoryLimit)
 	instance, err := NewService(ctx, *options)
 	if err != nil {
 		return errorWrapper(MessageType_START_SERVICE, err)
+	}
+	if err := contextErr(ctx); err != nil {
+		// cancelled while the service was starting: stop it again
+		if closeErr := instance.CloseService(); closeErr != nil {
+			Log(LogLevel_ERROR, LogType_CORE, "closing cancelled service: ", closeErr.Error())
+		}
+		return cancelledStart(err)
 	}
 	static.StartedService = instance
 	if static.debug {

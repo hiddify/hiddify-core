@@ -606,7 +606,7 @@ jobs:
   upload-release:
     permissions: write-all
     if: ${{ inputs.channel=='prod' }}
-    needs: [build]
+    needs: [build,build-binary]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/download-artifact@v4

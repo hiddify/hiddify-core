@@ -10,7 +10,7 @@ import (
 )
 
 func (s *CoreService) Restart(ctx context.Context, in *StartRequest) (*CoreInfoResponse, error) {
-	return Restart(static.BaseContext, in)
+	return Restart(withRequestContext(static.BaseContext, ctx), in)
 }
 
 func Restart(ctx context.Context, in *StartRequest) (coreResponse *CoreInfoResponse, err error) {
@@ -25,17 +25,25 @@ func Restart(ctx context.Context, in *StartRequest) (coreResponse *CoreInfoRespo
 	// 	return errorWrapper(MessageType_INSTANCE_NOT_FOUND, fmt.Errorf("instance not found"))
 	// }
 
+	if err := contextErr(ctx); err != nil {
+		return &CoreInfoResponse{
+			CoreState:   static.CoreState,
+			MessageType: MessageType_EMPTY,
+			Message:     "restart cancelled",
+		}, err
+	}
+
 	resp, err := Stop()
 	if err != nil {
 		return resp, err
 	}
 
 	if C.IsAndroid && static.HiddifyOptions.EnableTun {
-		select {
-		case <-ctx.Done():
-			return SetCoreStatus(CoreStates_STOPPED, MessageType_INSTANCE_NOT_STARTED, "restart cancelled"), nil
-		case <-time.After(time.Second):
-		}
+		sleepContext(ctx, time.Second)
+	}
+	if err := contextErr(ctx); err != nil {
+		// stopped already: stay stopped instead of starting again
+		return SetCoreStatus(CoreStates_STOPPED, MessageType_INSTANCE_NOT_STARTED, "restart cancelled"), err
 	}
 	return StartService(ctx, in)
 }
