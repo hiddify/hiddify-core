@@ -73,7 +73,7 @@ func RunInstance(ctx context.Context, hiddifySettings *config.HiddifyOptions, si
 // dialer, err := s.libbox.GetInstance().Router().Dialer(context.Background())
 
 func (s *HiddifyInstance) Close() error {
-	return s.StartedService.CloseService()
+	return closeService(s.StartedService)
 }
 
 func (s *HiddifyInstance) GetContent(url string) (string, error) {

@@ -32,7 +32,7 @@ func Stop() (coreResponse *CoreInfoResponse, err error) {
 		return SetCoreStatus(CoreStates_STOPPED, MessageType_ALREADY_STOPPED, ""), nil
 	}
 
-	if err := ss.CloseService(); err != nil {
+	if err := closeService(ss); err != nil {
 		static.StartedService = nil
 		dumpGoroutinesToFile(fmt.Sprint(sWorkingPath, "/data/goroutine-stop.log"))
 		return errorWrapper(MessageType_UNEXPECTED_ERROR, err)
