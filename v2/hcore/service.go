@@ -44,9 +44,11 @@ func NewService(ctx context.Context, options option.Options) (*daemon.StartedSer
 
 	content, err := json.MarshalContext(ctx, options)
 	if err != nil {
+		closeService(instance)
 		return nil, err
 	}
 	if err := instance.StartOrReloadService(ctx, string(content), nil); err != nil {
+		closeService(instance)
 		return nil, err
 	}
 
@@ -57,6 +59,14 @@ func NewService(ctx context.Context, options option.Options) (*daemon.StartedSer
 	// }
 
 	return instance, nil
+}
+
+// closeService stops ss and ends its observer goroutines. CloseService alone
+// stops only the box and leaves five goroutines running for every service built.
+func closeService(ss *daemon.StartedService) error {
+	err := ss.CloseService()
+	ss.Close()
+	return err
 }
 
 func (h *HiddifyInstance) UrlTestHistory() *urltest.HistoryStorage {

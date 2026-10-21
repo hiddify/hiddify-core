@@ -204,7 +204,7 @@ func startServiceLocked(ctx context.Context, in *StartRequest) (coreResponse *Co
 	}
 	if err := contextErr(ctx); err != nil {
 		// cancelled while the service was starting: stop it again
-		if closeErr := instance.CloseService(); closeErr != nil {
+		if closeErr := closeService(instance); closeErr != nil {
 			Log(LogLevel_ERROR, LogType_CORE, "closing cancelled service: ", closeErr.Error())
 		}
 		return cancelledStart(err)

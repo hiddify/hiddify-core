@@ -111,6 +111,8 @@ func (s *TunnelService) Stop(ctx context.Context, _ *hcommon.Empty) (*TunnelResp
 		}, nil
 	}
 	err := s.box.CloseService()
+	// CloseService leaves the box's observer goroutines running; Close ends them.
+	s.box.Close()
 	if err != nil {
 		return &TunnelResponse{
 			Message: err.Error(),
@@ -131,6 +133,7 @@ func (s *TunnelService) Status(ctx context.Context, _ *hcommon.Empty) (*TunnelRe
 func (s *TunnelService) Exit(ctx context.Context, _ *hcommon.Empty) (*TunnelResponse, error) {
 	if s.box != nil {
 		s.box.CloseService()
+		s.box.Close()
 	}
 	go func() {
 		<-time.After(time.Second * 1)
