@@ -131,7 +131,7 @@ func chainWarpEndpoint(tag, chainStatus string, warp ChainWarpOptions, detour st
 		Noise: chainWarpNoise(warp),
 		// its packets travel inside the main proxy, which adds its own header: 1280 lost every
 		// packet above ~1200 bytes behind a shadowsocks server, 1000 passed
-		MTU: 1000,
+		MTU: 1280,
 	}
 	options.Detour = detour
 	if warp.CleanIP != "" {
