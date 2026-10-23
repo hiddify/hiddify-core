@@ -13,7 +13,7 @@ func SetCoreStatus(state CoreStates, msgType MessageType, message string) *CoreI
 		msg = fmt.Sprintf("%s: %s", state.String(), message)
 	}
 	Log(LogLevel_INFO, LogType_CORE, msg)
-	static.CoreState = state
+	setCoreState(state)
 	info := CoreInfoResponse{
 		CoreState:   state,
 		MessageType: msgType,
@@ -24,11 +24,19 @@ func SetCoreStatus(state CoreStates, msgType MessageType, message string) *CoreI
 	return &info
 }
 
+// setCoreState changes the state without publishing it.
+func setCoreState(state CoreStates) {
+	static.CoreState = state
+	coreState.Store(int32(state))
+}
+
 func (s *CoreService) CoreInfoListener(req *hcommon.Empty, stream grpc.ServerStreamingServer[CoreInfoResponse]) error {
-	coreSub := static.coreInfoObserver.Subscribe(1)
+	// Start and Stop answer at once and report through here: the buffer holds a whole burst of
+	// states (STOPPING, STOPPED, STARTING, ...) so none is dropped before it is sent
+	coreSub := static.coreInfoObserver.Subscribe(32)
 	defer static.coreInfoObserver.Unsubscribe(coreSub)
 	stream.Send(&CoreInfoResponse{
-		CoreState:   static.CoreState,
+		CoreState:   currentCoreState(),
 		MessageType: MessageType_EMPTY,
 		Message:     "",
 	})

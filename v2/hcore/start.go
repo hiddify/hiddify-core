@@ -18,57 +18,61 @@ import (
 	"github.com/sagernet/sing/service"
 )
 
+// Start queues a start of the core and answers at once with STARTING (or ALREADY_STARTED when
+// the core is started or will be); the outcome is reported through CoreInfoListener.
 func (s *CoreService) Start(ctx context.Context, in *StartRequest) (*CoreInfoResponse, error) {
-	return Start(withRequestContext(static.BaseContext, ctx), in)
+	return startInBackground(in), nil
+}
+
+func (s *CoreService) StartService(ctx context.Context, in *StartRequest) (*CoreInfoResponse, error) {
+	return startInBackground(in), nil
+}
+
+func startInBackground(in *StartRequest) *CoreInfoResponse {
+	queue.Lock()
+	defer queue.Unlock()
+	if startingLocked() {
+		return &CoreInfoResponse{
+			CoreState:   currentCoreState(),
+			MessageType: MessageType_ALREADY_STARTED,
+			Message:     "instance already started",
+		}
+	}
+	queueStartLocked(static.BaseContext, in)
+	return &CoreInfoResponse{CoreState: CoreStates_STARTING, MessageType: MessageType_EMPTY}
 }
 
 func Start(ctx context.Context, in *StartRequest) (*CoreInfoResponse, error) {
 	return StartService(ctx, in)
 }
 
-func (s *CoreService) StartService(ctx context.Context, in *StartRequest) (*CoreInfoResponse, error) {
-	return StartService(withRequestContext(static.BaseContext, ctx), in)
+// StartService starts the core after the operations queued before it, and returns the outcome.
+func StartService(ctx context.Context, in *StartRequest) (*CoreInfoResponse, error) {
+	queue.Lock()
+	result := queueStartLocked(ctx, in)
+	queue.Unlock()
+	return wait(result)
 }
 
-type requestContextKey struct{}
-
-// withRequestContext attaches the caller's request context to base. base stays the context the
-// core runs with, so the core keeps running after the request returns; the request context is
-// only checked by contextErr, to give up on a start, restart or reload nobody waits for anymore.
-func withRequestContext(base, request context.Context) context.Context {
-	return context.WithValue(base, requestContextKey{}, request)
-}
-
-// contextErr reports why ctx, or the request context attached to it, is done; nil while both
-// are alive.
-func contextErr(ctx context.Context) error {
-	if err := ctx.Err(); err != nil {
-		return err
-	}
-	if request, ok := ctx.Value(requestContextKey{}).(context.Context); ok {
-		if err := request.Err(); err != nil {
-			return err
+// queueStartLocked queues a start that a stop called after it cancels; queue must be locked.
+func queueStartLocked(ctx context.Context, in *StartRequest) <-chan operationResult {
+	ctx = withStopSignalLocked(ctx)
+	return enqueueLocked(operationStart, "start", func() (*CoreInfoResponse, error) {
+		if err := contextErr(ctx); err != nil {
+			return cancelledStart(err)
 		}
-	}
-	return nil
-}
-
-// sleepContext waits for d, returning early once ctx or its request context is done.
-func sleepContext(ctx context.Context, d time.Duration) {
-	var requestDone <-chan struct{}
-	if request, ok := ctx.Value(requestContextKey{}).(context.Context); ok {
-		requestDone = request.Done()
-	}
-	select {
-	case <-ctx.Done():
-	case <-requestDone:
-	case <-time.After(d):
-	}
+		return startServiceLocked(ctx, in)
+	})
 }
 
 // cancelledStart reports a start given up because its context is done; the core stays STOPPED.
+// For a stop, nothing is published: the stop that follows reports STOPPING and STOPPED.
 func cancelledStart(err error) (*CoreInfoResponse, error) {
 	Log(LogLevel_WARNING, LogType_CORE, "start cancelled: ", err.Error())
+	if errors.Is(err, errStopped) {
+		setCoreState(CoreStates_STOPPED)
+		return &CoreInfoResponse{CoreState: CoreStates_STOPPED, MessageType: MessageType_INSTANCE_NOT_STARTED, Message: "start cancelled"}, err
+	}
 	return SetCoreStatus(CoreStates_STOPPED, MessageType_INSTANCE_NOT_STARTED, "start cancelled"), err
 }
 
@@ -118,19 +122,7 @@ func loadLastStartRequestIfNeeded(in *StartRequest) (*StartRequest, error) {
 	}, nil
 }
 
-func StartService(ctx context.Context, in *StartRequest) (coreResponse *CoreInfoResponse, err error) {
-	defer config.DeferPanicToError("startmobile", func(recovered_err error) {
-		coreResponse, err = errorWrapper(MessageType_UNEXPECTED_ERROR, recovered_err)
-	})
-	static.lock.Lock()
-	defer static.lock.Unlock()
-	if err := contextErr(ctx); err != nil {
-		return cancelledStart(err)
-	}
-	return startServiceLocked(ctx, in)
-}
-
-// startServiceLocked is StartService with static.lock held.
+// startServiceLocked starts the core; static.lock must be held.
 func startServiceLocked(ctx context.Context, in *StartRequest) (coreResponse *CoreInfoResponse, err error) {
 	if static.CoreState != CoreStates_STOPPED {
 		// return errorWrapper(MessageType_ALREADY_STARTED, fmt.Errorf("instance already started"))
@@ -198,7 +190,7 @@ func startServiceLocked(ctx context.Context, in *StartRequest) (coreResponse *Co
 		return cancelledStart(err)
 	}
 	libbox.SetMemoryLimit(C.IsIos || !in.DisableMemoryLimit)
-	instance, err := NewService(ctx, *options)
+	instance, err := NewService(serviceContext(ctx), *options)
 	if err != nil {
 		return errorWrapper(MessageType_START_SERVICE, err)
 	}

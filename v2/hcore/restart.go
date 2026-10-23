@@ -4,46 +4,44 @@ import (
 	"context"
 	"time"
 
-	"github.com/hiddify/hiddify-core/v2/config"
 	C "github.com/sagernet/sing-box/constant"
 	"github.com/sagernet/sing-box/log"
 )
 
+// Restart queues a restart of the core and answers at once with STOPPING; the outcome
+// (STOPPING, STOPPED, STARTING, STARTED) is reported through CoreInfoListener.
 func (s *CoreService) Restart(ctx context.Context, in *StartRequest) (*CoreInfoResponse, error) {
-	return Restart(withRequestContext(static.BaseContext, ctx), in)
+	queue.Lock()
+	defer queue.Unlock()
+	queueRestartLocked(static.BaseContext, in)
+	return &CoreInfoResponse{CoreState: CoreStates_STOPPING, MessageType: MessageType_EMPTY}, nil
 }
 
-func Restart(ctx context.Context, in *StartRequest) (coreResponse *CoreInfoResponse, err error) {
-	defer config.DeferPanicToError("startmobile", func(recovered_err error) {
-		coreResponse, err = errorWrapper(MessageType_UNEXPECTED_ERROR, recovered_err)
+// Restart stops then starts the core after the operations queued before it, and returns the
+// outcome.
+func Restart(ctx context.Context, in *StartRequest) (*CoreInfoResponse, error) {
+	queue.Lock()
+	result := queueRestartLocked(ctx, in)
+	queue.Unlock()
+	return wait(result)
+}
+
+// queueRestartLocked queues a restart: it cancels the starts queued before it, and a stop
+// called after it cancels its start; queue must be locked.
+func queueRestartLocked(ctx context.Context, in *StartRequest) <-chan operationResult {
+	signalStopLocked()
+	ctx = withStopSignalLocked(ctx)
+	return enqueueLocked(operationStart, "restart", func() (*CoreInfoResponse, error) {
+		log.Debug("[Service] Restarting")
+		if response, err := stopLocked(); err != nil {
+			return response, err
+		}
+		if C.IsAndroid && static.HiddifyOptions.EnableTun {
+			sleepContext(ctx, time.Second)
+		}
+		if err := contextErr(ctx); err != nil {
+			return cancelledStart(err)
+		}
+		return startServiceLocked(ctx, in)
 	})
-	log.Debug("[Service] Restarting")
-	// if static.CoreState != CoreStates_STARTED {
-	// 	return errorWrapper(MessageType_INSTANCE_NOT_STARTED, fmt.Errorf("instance not started"))
-	// }
-	// if static.Box == nil {
-	// 	return errorWrapper(MessageType_INSTANCE_NOT_FOUND, fmt.Errorf("instance not found"))
-	// }
-
-	if err := contextErr(ctx); err != nil {
-		return &CoreInfoResponse{
-			CoreState:   static.CoreState,
-			MessageType: MessageType_EMPTY,
-			Message:     "restart cancelled",
-		}, err
-	}
-
-	resp, err := Stop()
-	if err != nil {
-		return resp, err
-	}
-
-	if C.IsAndroid && static.HiddifyOptions.EnableTun {
-		sleepContext(ctx, time.Second)
-	}
-	if err := contextErr(ctx); err != nil {
-		// stopped already: stay stopped instead of starting again
-		return SetCoreStatus(CoreStates_STOPPED, MessageType_INSTANCE_NOT_STARTED, "restart cancelled"), err
-	}
-	return StartService(ctx, in)
 }

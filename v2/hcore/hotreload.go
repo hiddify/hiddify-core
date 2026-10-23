@@ -11,20 +11,31 @@ import (
 	"github.com/sagernet/sing-box/experimental/libbox"
 )
 
+// HotReload waits for the outcome, unlike Start and Stop: on HOT_RELOAD_FAILED the caller has to
+// restart the core to apply the config.
 func (s *CoreService) HotReload(ctx context.Context, in *StartRequest) (*CoreInfoResponse, error) {
-	return HotReload(withRequestContext(static.BaseContext, ctx), in)
+	return HotReload(static.BaseContext, in)
 }
 
 // HotReload applies the request's config to the running core without restarting it, or starts
 // the core when it is stopped. When the config cannot be hot reloaded (a TUN inbound or a
 // setting outside outbounds/inbounds/DNS/route changed), HOT_RELOAD_FAILED is returned and the
 // core keeps running unchanged: restart it to apply the config.
-func HotReload(ctx context.Context, in *StartRequest) (coreResponse *CoreInfoResponse, err error) {
-	defer config.DeferPanicToError("hotreload", func(recovered_err error) {
-		coreResponse, err = hotReloadError(MessageType_UNEXPECTED_ERROR, recovered_err)
+func HotReload(ctx context.Context, in *StartRequest) (*CoreInfoResponse, error) {
+	queue.Lock()
+	ctx = withStopSignalLocked(ctx)
+	result := enqueueLocked(operationStart, "hotreload", func() (coreResponse *CoreInfoResponse, err error) {
+		defer config.DeferPanicToError("hotreload", func(recovered_err error) {
+			coreResponse, err = hotReloadError(MessageType_UNEXPECTED_ERROR, recovered_err)
+		})
+		return hotReloadLocked(ctx, in)
 	})
-	static.lock.Lock()
-	defer static.lock.Unlock()
+	queue.Unlock()
+	return wait(result)
+}
+
+// hotReloadLocked is HotReload; static.lock must be held.
+func hotReloadLocked(ctx context.Context, in *StartRequest) (*CoreInfoResponse, error) {
 	if err := contextErr(ctx); err != nil {
 		return hotReloadError(MessageType_HOT_RELOAD_FAILED, fmt.Errorf("hot reload cancelled: %w", err))
 	}
@@ -85,7 +96,7 @@ func hotReloadService(ctx context.Context, in *StartRequest) (*CoreInfoResponse,
 	if err := contextErr(ctx); err != nil {
 		return hotReloadError(MessageType_HOT_RELOAD_FAILED, fmt.Errorf("hot reload cancelled: %w", err))
 	}
-	result, err := static.StartedService.HotReload(ctx, options)
+	result, err := static.StartedService.HotReload(serviceContext(ctx), options)
 	if err != nil {
 		return hotReloadError(MessageType_HOT_RELOAD_FAILED, err)
 	}
