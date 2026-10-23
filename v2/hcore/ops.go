@@ -112,6 +112,13 @@ func withStopSignalLocked(ctx context.Context) context.Context {
 	return context.WithValue(ctx, stopSignalKey{}, (<-chan struct{})(queue.stop))
 }
 
+// stopSignal is what closes once a stop wants the operation running with ctx to give up; nil when
+// nothing will.
+func stopSignal(ctx context.Context) <-chan struct{} {
+	stop, _ := ctx.Value(stopSignalKey{}).(<-chan struct{})
+	return stop
+}
+
 // serviceContext is ctx without the stop signal, for what outlives the operation: the core.
 func serviceContext(ctx context.Context) context.Context {
 	return context.WithValue(ctx, stopSignalKey{}, nil)

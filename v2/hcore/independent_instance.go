@@ -57,7 +57,7 @@ func RunInstance(ctx context.Context, hiddifySettings *config.HiddifyOptions, si
 		return nil, err
 	}
 
-	instance, err := NewService(ctx, *finalConfigs)
+	instance, err := NewService(ctx, *finalConfigs, nil)
 	if err != nil {
 		return nil, err
 	}

@@ -2,6 +2,7 @@ package hcore
 
 import (
 	"context"
+	"time"
 
 	box "github.com/sagernet/sing-box"
 
@@ -16,7 +17,10 @@ import (
 	"github.com/sagernet/sing/service"
 )
 
-func NewService(ctx context.Context, options option.Options) (*daemon.StartedService, error) {
+// NewService creates the service and starts it. Once [stop] closes, the start in progress is
+// interrupted, so a stop does not wait for a slow start (a download, a handshake) to finish; nil when
+// nothing stops it.
+func NewService(ctx context.Context, options option.Options, stop <-chan struct{}) (*daemon.StartedService, error) {
 
 	// ctx = filemanager.WithDefault(ctx, sWorkingPath, sTempPath, sUserID, sGroupID)
 	logInterface := LogInterface{}
@@ -35,6 +39,29 @@ func NewService(ctx context.Context, options option.Options) (*daemon.StartedSer
 		return nil, err
 	}
 	instance := daemon.NewStartedService(bopts)
+	if stop != nil {
+		started := make(chan struct{})
+		defer close(started)
+		go func() {
+			select {
+			case <-stop:
+			case <-started:
+				return
+			}
+			// the instance only becomes interruptible once it is created, so keep asking until the
+			// start has given up
+			ticker := time.NewTicker(50 * time.Millisecond)
+			defer ticker.Stop()
+			for {
+				instance.InterruptStart()
+				select {
+				case <-started:
+					return
+				case <-ticker.C:
+				}
+			}
+		}()
+	}
 
 	// for i := 0; i < 10; i++ {
 	// 	if hutils.IsPortInUse(options.Inbounds[0].SocksOptions.ListenPort) {

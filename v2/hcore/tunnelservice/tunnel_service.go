@@ -25,7 +25,7 @@ func (s *TunnelService) Start(ctx context.Context, in *TunnelStartRequest) (*Tun
 	}
 	option := makeTunnelConfig(in)
 
-	box, err := hcore.NewService(ctx, option)
+	box, err := hcore.NewService(ctx, option, nil)
 	s.box = box
 	if err != nil {
 		return &TunnelResponse{
