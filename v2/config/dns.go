@@ -84,13 +84,14 @@ func setDns(options *option.Options, opt *HiddifyOptions, staticIps *map[string]
 	if err != nil {
 		return err
 	}
-	remoteGroup, remoteMembers, err := getDNSGroupOptions(DNSMultiRemoteTag, *remote_dns, remoteAddr, DNSDirectTag, func(string) string {
+	// through the proxy UDP is what fails most often, so each host is tried over TCP first
+	remoteGroup, remoteMembers, err := getDNSGroupOptions(DNSMultiRemoteTag, *remote_dns, remoteAddr, DNSDirectTag, true, func(string) string {
 		return OutboundMainDetour
 	})
 	if err != nil {
 		return err
 	}
-	directGroup, directMembers, err := getDNSGroupOptions(DNSMultiDirectTag, *direct_dns, opt.DirectDnsAddress, DNSLocalTag, func(address string) string {
+	directGroup, directMembers, err := getDNSGroupOptions(DNSMultiDirectTag, *direct_dns, opt.DirectDnsAddress, DNSLocalTag, false, func(address string) string {
 		if strings.HasPrefix(address, "udp://") {
 			return ""
 		}
@@ -374,13 +375,44 @@ func dnsGroupAddresses(selected string) []string {
 	return addresses
 }
 
-// getDNSGroupOptions builds a sequential DNS group: the already built selected server first,
-// then a member per remaining address of dnsGroupAddresses.
-func getDNSGroupOptions(tag string, selected option.DNSServerOptions, selectedAddress, domainResolver string, detour func(address string) string) (*option.DNSServerOptions, []option.DNSServerOptions, error) {
-	members := []string{selected.Tag}
+// tcpBeforeUDP moves each host's TCP address in front of its UDP address, so a group tries TCP first
+// and falls back to UDP.
+func tcpBeforeUDP(addresses []string) []string {
+	out := slices.Clone(addresses)
+	for i := 0; i < len(out); i++ {
+		host, isUDP := strings.CutPrefix(out[i], "udp://")
+		if !isUDP {
+			continue
+		}
+		j := slices.Index(out[i+1:], "tcp://"+host)
+		if j < 0 {
+			continue
+		}
+		j += i + 1
+		tcp := out[j]
+		copy(out[i+1:j+1], out[i:j])
+		out[i] = tcp
+	}
+	return out
+}
+
+// getDNSGroupOptions builds a sequential DNS group: the already built selected server and a member
+// per remaining address of dnsGroupAddresses, in that order, or with each host's TCP before its UDP
+// when [tcpFirst].
+func getDNSGroupOptions(tag string, selected option.DNSServerOptions, selectedAddress, domainResolver string, tcpFirst bool, detour func(address string) string) (*option.DNSServerOptions, []option.DNSServerOptions, error) {
+	addresses := dnsGroupAddresses(selectedAddress)
+	ordered := addresses
+	if tcpFirst {
+		ordered = tcpBeforeUDP(addresses)
+	}
+	var members []string
 	var servers []option.DNSServerOptions
-	for i, address := range dnsGroupAddresses(selectedAddress)[1:] {
-		server, err := getDNSServerOptions(fmt.Sprint(tag, "-", i+1), address, domainResolver, detour(address))
+	for _, address := range ordered {
+		if address == addresses[0] {
+			members = append(members, selected.Tag)
+			continue
+		}
+		server, err := getDNSServerOptions(fmt.Sprint(tag, "-", len(servers)+1), address, domainResolver, detour(address))
 		if err != nil {
 			return nil, nil, E.Cause(err, "dns group ", tag, ": ", address)
 		}
