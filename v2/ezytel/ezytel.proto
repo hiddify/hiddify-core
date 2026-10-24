@@ -69,6 +69,28 @@ message ChannelMessagesResponse {
   string channel_avatar = 2;
   // Last post id seen on the page (mirrors the lastread_<chid> cookie).
   int64 last_post_id = 3;
+  // Structured parse of the same page, one entry per post, in the
+  // same order they appear in html. Prefer this over scraping html.
+  repeated ChannelMessage messages = 4;
+}
+
+// A single Telegram post, parsed out of the channel's public HTML page.
+message ChannelMessage {
+  // Post id (the numeric suffix of data-post="<channel>/<id>").
+  string id = 1;
+  // Plain-text body with HTML tags stripped. Empty for media-only posts.
+  string text = 2;
+  // Image URLs referenced by the post, already rewritten to
+  // "proxy.php?url=<hex>" (or a "data:image/jpeg;base64,…" URI when
+  // the request did not set disable_inline_images).
+  repeated string media_urls = 3;
+  // Unix epoch seconds of the post.
+  int64 date = 4;
+  // Persian-calendar formatted date/time string, same convention as
+  // ChannelInfo.date_str.
+  string date_str = 5;
+  // True if the post is a forward from another channel.
+  bool is_forward = 6;
 }
 
 // Fetch a Telegram-hosted image through the translate.goog domain front
