@@ -67,15 +67,34 @@ func getCurrentExecutableDirectory() string {
 	return executableDirectory
 }
 
+// serviceDataDirectory is where the service keeps its files, such as the box's cache: next to the app
+// when it runs from a macOS app bundle, whose contents must not change, else beside the executable.
+func serviceDataDirectory() string {
+	return dataDirectoryFor(getCurrentExecutableDirectory())
+}
+
+func dataDirectoryFor(directory string) string {
+	if filepath.Base(directory) == "MacOS" && filepath.Base(filepath.Dir(directory)) == "Contents" &&
+		filepath.Ext(filepath.Dir(filepath.Dir(directory))) == ".app" {
+		return filepath.Join(filepath.Dir(filepath.Dir(filepath.Dir(directory))), "data")
+	}
+	return directory
+}
+
 func StartTunnelService(goArg string) (int, string) {
+	// The service starts in this directory, so it must exist from installation on.
+	dataDirectory := serviceDataDirectory()
+	if err := os.MkdirAll(dataDirectory, 0o755); err != nil {
+		return 3, fmt.Sprintf("Error: %v", err)
+	}
 	svcConfig := &service.Config{
-		Name:        "HiddifyTunnelService",
-		DisplayName: "Hiddify Tunnel Service",
-		Arguments:   []string{"tunnel", "run"},
-		Description: "This is a bridge for tunnel",
+		Name:             "HiddifyTunnelService",
+		DisplayName:      "Hiddify Tunnel Service",
+		Arguments:        []string{"tunnel", "run"},
+		Description:      "This is a bridge for tunnel",
+		WorkingDirectory: dataDirectory,
 		Option: map[string]interface{}{
-			"RunAtLoad":        true,
-			"WorkingDirectory": getCurrentExecutableDirectory(),
+			"RunAtLoad": true,
 		},
 	}
 
@@ -90,6 +109,10 @@ func StartTunnelService(goArg string) (int, string) {
 		return control(s, goArg)
 	}
 
+	// A service installed before it had a working directory starts in /, read-only on macOS.
+	if err := os.Chdir(dataDirectory); err != nil {
+		return 3, fmt.Sprintf("Error: %v", err)
+	}
 	logger, err = s.Logger(nil)
 	if err != nil {
 		log.Printf("Error: %v", err)
