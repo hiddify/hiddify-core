@@ -65,7 +65,10 @@ func RunInstance(ctx context.Context, hiddifySettings *config.HiddifyOptions, si
 	<-time.After(250 * time.Millisecond)
 	hservice := &HiddifyInstance{
 		StartedService: instance,
-		ListenPort:     hiddifySettings.InboundOptions.MixedPort}
+		ListenPort:     hiddifySettings.InboundOptions.MixedPort,
+		ListenUser:     hiddifySettings.InboundOptions.MixedUser,
+		ListenPassword: hiddifySettings.InboundOptions.MixedPassword,
+	}
 	hservice.PingCloudflare()
 	return hservice, nil
 }
@@ -93,7 +96,11 @@ func (s *HiddifyInstance) ContentFromURL(method string, url string, timeout time
 		return "", err
 	}
 
-	dialer, err := proxy.SOCKS5("tcp", fmt.Sprintf("127.0.0.1:%d", s.ListenPort), nil, proxy.Direct)
+	var socksAuth *proxy.Auth
+	if s.ListenUser != "" {
+		socksAuth = &proxy.Auth{User: s.ListenUser, Password: s.ListenPassword}
+	}
+	dialer, err := proxy.SOCKS5("tcp", fmt.Sprintf("127.0.0.1:%d", s.ListenPort), socksAuth, proxy.Direct)
 	if err != nil {
 		return "", err
 	}

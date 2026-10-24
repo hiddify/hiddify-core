@@ -2,6 +2,7 @@ package config
 
 import (
 	context "context"
+	crand "crypto/rand"
 	"encoding/base64"
 	"fmt"
 	"math/rand"
@@ -17,6 +18,7 @@ import (
 	C "github.com/sagernet/sing-box/constant"
 	sdns "github.com/sagernet/sing-box/dns"
 	"github.com/sagernet/sing-box/option"
+	"github.com/sagernet/sing/common/auth"
 	"github.com/sagernet/sing/common/json/badoption"
 )
 
@@ -76,6 +78,9 @@ func BuildConfig(ctx context.Context, hopts *HiddifyOptions, inputOpt *ReadOptio
 	setExperimental(&options, hopts)
 
 	setLog(&options, hopts)
+	if hopts.MixedPort > 0 && hopts.MixedUser == "" {
+		hopts.MixedUser, hopts.MixedPassword = generateLocalProxyCredentials()
+	}
 	setInbound(&options, hopts)
 	staticIPs := make(map[string][]string)
 	// staticIPs["api.cloudflareclient.com"] = []string{"104.16.192.82", "2606:4700::6810:1854", getRandomWarpIP()}
@@ -487,6 +492,7 @@ func setInbound(options *option.Options, hopt *HiddifyOptions) {
 						// 	DomainStrategy:           inboundDomainStrategy,
 						// },
 					},
+					Users:          []auth.User{{Username: hopt.MixedUser, Password: hopt.MixedPassword}},
 					SetSystemProxy: hopt.SetSystemProxy,
 				},
 			},
@@ -1211,4 +1217,13 @@ func generateRandomString(length int) string {
 
 	// Trim padding characters and return the string
 	return randomString[:length]
+}
+
+func generateLocalProxyCredentials() (user, password string) {
+	b := make([]byte, 24)
+	if _, err := crand.Read(b); err != nil {
+		rand.Read(b)
+	}
+	return base64.RawURLEncoding.EncodeToString(b[:12]),
+		base64.RawURLEncoding.EncodeToString(b[12:])
 }
