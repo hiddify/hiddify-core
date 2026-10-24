@@ -32,9 +32,11 @@ func IsAdmin() bool {
 
 var TunAllowed = IsAdmin
 
+// ExecuteCmd shows one UAC prompt and runs the already-installed HiddifyCli. It does not copy
+// binaries into ProgramData or %TEMP% (both patterns raise antivirus false positives).
 func ExecuteCmd(exe string, background bool, args ...string) (string, error) {
 	verb := "runas"
-	cwd, err := os.Getwd() // Error handling added
+	cwd, err := os.Getwd()
 	if err != nil {
 		return "", err
 	}
@@ -44,7 +46,7 @@ func ExecuteCmd(exe string, background bool, args ...string) (string, error) {
 	cwdPtr, _ := syscall.UTF16PtrFromString(cwd)
 	argPtr, _ := syscall.UTF16PtrFromString(strings.Join(args, " "))
 
-	var showCmd int32 = 0 // SW_NORMAL
+	var showCmd int32 = 0 // SW_HIDE / SW_NORMAL: 0 keeps the UAC dialog only
 
 	err = windows.ShellExecute(0, verbPtr, exePtr, argPtr, cwdPtr, showCmd)
 	if err != nil {

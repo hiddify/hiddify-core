@@ -167,7 +167,9 @@ func (s *TunnelService) watchPort(port int32, done <-chan struct{}) {
 	}
 }
 
-// watchOwner stops the full core and exits the service once the connecting app is gone.
+// watchOwner stops the VPN engine once the connecting app is gone, but leaves the service
+// process listening. Exiting the process would require another administrator prompt to start
+// it again; an idle authenticated listener is enough to avoid a background VPN.
 func (s *TunnelService) watchOwner(pid int32, done <-chan struct{}) {
 	if pid <= 0 {
 		return
@@ -195,10 +197,6 @@ func (s *TunnelService) watchOwner(pid int32, done <-chan struct{}) {
 			s.closeRunning()
 		}
 		s.mutex.Unlock()
-		go func() {
-			time.Sleep(time.Second)
-			os.Exit(0)
-		}()
 		return
 	}
 }

@@ -6,28 +6,40 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 
 	"github.com/hiddify/hiddify-core/v2/hcore/tunnel"
 )
 
 const controlSecretFileName = "control.secret"
 
-// macOSTunnelServiceRoot is the root-owned install location of the unsigned VPN service.
-const macOSTunnelServiceRoot = "/Library/Application Support/Hiddify/TunnelService"
+// controlDataDir is a fixed, OS-standard location shared by the elevated service and the
+// unelevated app. It must not live next to a debug build path (those move) and must not be a
+// copy of the app binary tree (that triggers antivirus heuristics on Windows).
+func controlDataDir() string {
+	if dir := os.Getenv("HIDDIFY_TUNNEL_DATA"); dir != "" {
+		return dir
+	}
+	switch runtime.GOOS {
+	case "darwin":
+		return "/Library/Application Support/Hiddify/TunnelService/data"
+	case "windows":
+		base := os.Getenv("PROGRAMDATA")
+		if base == "" {
+			base = `C:\ProgramData`
+		}
+		return filepath.Join(base, "Hiddify", "TunnelService")
+	default:
+		return "/var/lib/hiddify-tunnel"
+	}
+}
 
 func controlSecretPath() string {
-	if dir := os.Getenv("HIDDIFY_TUNNEL_DATA"); dir != "" {
-		return filepath.Join(dir, controlSecretFileName)
-	}
-	// The app (user) and the daemon (root copy) both read the secret next to the installed service.
-	if _, err := os.Stat(macOSTunnelServiceRoot); err == nil {
-		return filepath.Join(macOSTunnelServiceRoot, "data", controlSecretFileName)
-	}
-	return filepath.Join(serviceDataDirectory(), controlSecretFileName)
+	return filepath.Join(controlDataDir(), controlSecretFileName)
 }
 
 // EnsureControlSecret writes a random secret the installing user can read and the
-// root daemon can enforce on every gRPC call. Safe to call again when the file exists.
+// privileged service can enforce on every gRPC call. Safe to call again when the file exists.
 func EnsureControlSecret(owner string) (string, error) {
 	path := controlSecretPath()
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
@@ -65,7 +77,7 @@ func LoadControlSecret() (string, error) {
 }
 
 func restrictSecretFile(path, owner string) error {
-	if err := os.Chmod(path, 0o600); err != nil {
+	if err := os.Chmod(path, 0o600); err != nil && runtime.GOOS != "windows" {
 		return err
 	}
 	if owner == "" {

@@ -28,6 +28,11 @@ endif
 EMBED_LDFLAGS+=-X github.com/sagernet/sing-box/protocol/psiphon.embeddedHiddifyConfig=$(PSIPHON_CONFIG_ENCRYPTED)
 endif
 endif
+# Per-build UUID so the app can match its downloaded core to the tunnel service (Go only; Dart never embeds it).
+ifeq ($(strip $(HIDDIFY_BUILD_ID)),)
+HIDDIFY_BUILD_ID := $(shell (uuidgen 2>/dev/null || openssl rand -hex 16) | tr '[:upper:]' '[:lower:]' | tr -d '\n')
+endif
+EMBED_LDFLAGS+=-X github.com/hiddify/hiddify-core/v2/hcore/buildid.ID=$(strip $(HIDDIFY_BUILD_ID))
 LDFLAGS=-w -s -checklinkname=0 -buildid= $${CODE_VERSION} $(EMBED_LDFLAGS)
 GOBUILDLIB=CGO_ENABLED=1 go build -trimpath -ldflags="$(LDFLAGS)" -buildmode=c-shared
 GOBUILDSRV=CGO_ENABLED=1 go build -ldflags="$(LDFLAGS)" -trimpath -tags $(TAGS)

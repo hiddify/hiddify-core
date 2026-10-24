@@ -6,6 +6,7 @@ import (
 	"net"
 	"os"
 	"path/filepath"
+	"runtime"
 
 	"github.com/hiddify/hiddify-core/v2/hcore/tunnel"
 	"github.com/kardianos/service"
@@ -58,6 +59,9 @@ func (m *hiddifyNext) StartTunnelGrpcServer(listenAddressG string) (*grpc.Server
 }
 
 func (m *hiddifyNext) Start(s service.Service) error {
+	if err := WriteRunningBinaryStamp(); err != nil {
+		return fmt.Errorf("record tunnel binary stamp: %w", err)
+	}
 	if secret, err := LoadControlSecret(); err == nil {
 		m.secret = secret
 	} else if os.IsNotExist(err) {
@@ -89,6 +93,11 @@ func getCurrentExecutableDirectory() string {
 }
 
 func serviceDataDirectory() string {
+	// Windows/Linux: keep cache and the control secret under the OS data dir, never beside the
+	// install tree in Program Files (writes there look suspicious and often fail).
+	if runtime.GOOS != "darwin" {
+		return controlDataDir()
+	}
 	return dataDirectoryFor(getCurrentExecutableDirectory())
 }
 
@@ -100,22 +109,33 @@ func dataDirectoryFor(directory string) string {
 	return directory
 }
 
+func installOwner() string {
+	if owner := os.Getenv("HIDDIFY_TUNNEL_OWNER"); owner != "" {
+		return owner
+	}
+	if owner := os.Getenv("USERNAME"); owner != "" {
+		return owner
+	}
+	return os.Getenv("USER")
+}
+
 func StartTunnelService(goArg string) (int, string) {
 	dataDirectory := serviceDataDirectory()
 	if err := os.MkdirAll(dataDirectory, 0o755); err != nil {
 		return 3, fmt.Sprintf("Error: %v", err)
 	}
 	if goArg == "install" {
-		owner := os.Getenv("HIDDIFY_TUNNEL_OWNER")
-		if _, err := EnsureControlSecret(owner); err != nil {
+		if _, err := EnsureControlSecret(installOwner()); err != nil {
 			return 3, fmt.Sprintf("Error: %v", err)
 		}
 	}
+	// The service runs this same HiddifyCli binary with "tunnel run" — no helper EXE and no
+	// copied payload under ProgramData (both are common antivirus false-positive triggers).
 	svcConfig := &service.Config{
 		Name:             "HiddifyTunnelService",
-		DisplayName:      "Hiddify Tunnel Service",
+		DisplayName:      "Hiddify VPN",
 		Arguments:        []string{"tunnel", "run"},
-		Description:      "Runs Hiddify's VPN engine with administrator rights",
+		Description:      "Hiddify virtual private network",
 		WorkingDirectory: dataDirectory,
 		Option: map[string]interface{}{
 			"RunAtLoad": true,

@@ -7,7 +7,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"strings"
 
 	"github.com/sagernet/sing-box/experimental/libbox"
 	"golang.org/x/sys/unix"
@@ -24,16 +23,19 @@ func IsAdmin() bool {
 func TunAllowed() bool {
 	var hdr unix.CapUserHeader
 	hdr.Version = unix.LINUX_CAPABILITY_VERSION_3
-	hdr.Pid = 0 // 0 means current process
+	hdr.Pid = 0
 
 	var data unix.CapUserData
 	if err := unix.Capget(&hdr, &data); err != nil {
 		fmt.Print(err)
-		return false //, fmt.Errorf("failed to get capabilities: %v", err)
+		return false
 	}
 	return (data.Effective & (1 << unix.CAP_NET_ADMIN)) != 0
 }
 
+// ExecuteCmd elevates once to install or start the tunnel service. Prefer pkexec (PolicyKit),
+// which desktop environments and security tools recognise; avoid cocoasudo/gksu/xterm wrappers
+// that look like unexpected privilege escalation.
 func ExecuteCmd(executablePath string, background bool, args ...string) (string, error) {
 	cwd := filepath.Dir(executablePath)
 	if appimage := os.Getenv("APPIMAGE"); appimage != "" {
@@ -44,20 +46,20 @@ func ExecuteCmd(executablePath string, background bool, args ...string) (string,
 	}
 
 	commands := [][]string{
-		{"cocoasudo", "--prompt=Hiddify needs root for tunneling.", executablePath},
-		{"gksu", executablePath},
-		{"pkexec", executablePath},
-		{"xterm", "-e", "sudo", executablePath, strings.Join(args, " ")},
-		{"sudo", executablePath},
+		append([]string{"pkexec", executablePath}, args...),
+		append([]string{"sudo", "-n", executablePath}, args...),
+		append([]string{"sudo", executablePath}, args...),
 	}
 
 	var err error
-	var cmd *exec.Cmd
 	for _, command := range commands {
-		cmd = exec.Command(command[0], command[1:]...)
+		cmd := exec.Command(command[0], command[1:]...)
 		cmd.Dir = cwd
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
+		if owner := os.Getenv("USER"); owner != "" {
+			cmd.Env = append(os.Environ(), "HIDDIFY_TUNNEL_OWNER="+owner)
+		}
 		fmt.Printf("Running command: %v\n", command)
 		if background {
 			err = cmd.Start()
@@ -69,7 +71,7 @@ func ExecuteCmd(executablePath string, background bool, args ...string) (string,
 		}
 	}
 
-	return "", fmt.Errorf("Error executing run as root shell command")
+	return "", fmt.Errorf("error elevating tunnel service install: %w", err)
 }
 
 func Chmod(path string, mode os.FileMode) error {
