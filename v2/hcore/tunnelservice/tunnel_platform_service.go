@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/hiddify/hiddify-core/v2/hcore/tunnel"
 	"github.com/kardianos/service"
 	"google.golang.org/grpc"
 )
@@ -15,9 +16,19 @@ var logger service.Logger
 
 type hiddifyNext struct {
 	tunnelService *TunnelService
+	secret        string
 }
 
 var port int = 18020
+
+func allowTunnelMethod(method string) error {
+	switch method {
+	case TunnelService_Start_FullMethodName, TunnelService_Stop_FullMethodName,
+		TunnelService_Status_FullMethodName, TunnelService_Exit_FullMethodName:
+		return nil
+	}
+	return tunnel.AllowCoreMethod(method)
+}
 
 func (m *hiddifyNext) StartTunnelGrpcServer(listenAddressG string) (*grpc.Server, error) {
 	lis, err := net.Listen("tcp", listenAddressG)
@@ -25,9 +36,16 @@ func (m *hiddifyNext) StartTunnelGrpcServer(listenAddressG string) (*grpc.Server
 		log.Printf("failed to listen: %v", err)
 		return nil, err
 	}
-	s := grpc.NewServer()
+	var serverOptions []grpc.ServerOption
+	if m.secret != "" {
+		serverOptions = tunnel.ServerOptions(m.secret, allowTunnelMethod)
+	}
+	s := grpc.NewServer(serverOptions...)
 	m.tunnelService = &TunnelService{}
 	RegisterTunnelServiceServer(s, m.tunnelService)
+	if m.secret != "" {
+		tunnel.RegisterControl(s)
+	}
 
 	log.Printf("Server listening on %s", listenAddressG)
 	go func() {
@@ -35,23 +53,30 @@ func (m *hiddifyNext) StartTunnelGrpcServer(listenAddressG string) (*grpc.Server
 			log.Printf("failed to serve: %v", err)
 		}
 		log.Printf("Server stopped")
-		// cancel()
 	}()
 	return s, nil
 }
 
 func (m *hiddifyNext) Start(s service.Service) error {
+	if secret, err := LoadControlSecret(); err == nil {
+		m.secret = secret
+	} else if os.IsNotExist(err) {
+		log.Printf("tunnel control secret missing; gRPC is unauthenticated until reinstall")
+	} else {
+		return err
+	}
 	_, err := m.StartTunnelGrpcServer(fmt.Sprintf("127.0.0.1:%d", port))
 	return err
 }
 
 func (m *hiddifyNext) Stop(s service.Service) error {
+	if m.tunnelService == nil {
+		return nil
+	}
 	_, err := m.tunnelService.Stop(nil, nil)
 	if err != nil {
 		return nil
 	}
-	// Stop should not block. Return with a few seconds.
-	// <-time.After(time.Second * 1)
 	return nil
 }
 
@@ -60,15 +85,9 @@ func getCurrentExecutableDirectory() string {
 	if err != nil {
 		return ""
 	}
-
-	// Extract the directory (folder) containing the executable
-	executableDirectory := filepath.Dir(executablePath)
-
-	return executableDirectory
+	return filepath.Dir(executablePath)
 }
 
-// serviceDataDirectory is where the service keeps its files, such as the box's cache: next to the app
-// when it runs from a macOS app bundle, whose contents must not change, else beside the executable.
 func serviceDataDirectory() string {
 	return dataDirectoryFor(getCurrentExecutableDirectory())
 }
@@ -82,16 +101,21 @@ func dataDirectoryFor(directory string) string {
 }
 
 func StartTunnelService(goArg string) (int, string) {
-	// The service starts in this directory, so it must exist from installation on.
 	dataDirectory := serviceDataDirectory()
 	if err := os.MkdirAll(dataDirectory, 0o755); err != nil {
 		return 3, fmt.Sprintf("Error: %v", err)
+	}
+	if goArg == "install" {
+		owner := os.Getenv("HIDDIFY_TUNNEL_OWNER")
+		if _, err := EnsureControlSecret(owner); err != nil {
+			return 3, fmt.Sprintf("Error: %v", err)
+		}
 	}
 	svcConfig := &service.Config{
 		Name:             "HiddifyTunnelService",
 		DisplayName:      "Hiddify Tunnel Service",
 		Arguments:        []string{"tunnel", "run"},
-		Description:      "This is a bridge for tunnel",
+		Description:      "Runs Hiddify's VPN engine with administrator rights",
 		WorkingDirectory: dataDirectory,
 		Option: map[string]interface{}{
 			"RunAtLoad": true,
@@ -101,7 +125,6 @@ func StartTunnelService(goArg string) (int, string) {
 	prg := &hiddifyNext{}
 	s, err := service.New(prg, svcConfig)
 	if err != nil {
-		// log.Printf("Error: %v", err)
 		return 1, fmt.Sprintf("Error: %v", err)
 	}
 
@@ -109,7 +132,6 @@ func StartTunnelService(goArg string) (int, string) {
 		return control(s, goArg)
 	}
 
-	// A service installed before it had a working directory starts in /, read-only on macOS.
 	if err := os.Chdir(dataDirectory); err != nil {
 		return 3, fmt.Sprintf("Error: %v", err)
 	}
@@ -137,23 +159,15 @@ func control(s service.Service, goArg string) (int, string) {
 		if status == service.StatusRunning {
 			s.Stop()
 		}
-		if dolog {
-			fmt.Printf("Tunnel Service Uninstalled Successfully.\n")
-		}
 		err = s.Uninstall()
 	case "start":
 		if status == service.StatusRunning {
-			if dolog {
-				fmt.Printf("Tunnel Service Already Running.\n")
-			}
 			return 0, "Tunnel Service Already Running."
 		} else if status == service.StatusUnknown {
 			s.Uninstall()
 			s.Install()
 			status, serr = s.Status()
-			if dolog {
-				fmt.Printf("Check status again: %+v %+v!", status, serr)
-			}
+			_ = serr
 		}
 		if status != service.StatusRunning {
 			err = s.Start()
@@ -162,17 +176,12 @@ func control(s service.Service, goArg string) (int, string) {
 		s.Uninstall()
 		err = s.Install()
 		status, serr = s.Status()
-		if dolog {
-			fmt.Printf("Check Status Again: %+v %+v", status, serr)
-		}
+		_ = serr
 		if status != service.StatusRunning {
 			err = s.Start()
 		}
 	case "stop":
 		if status == service.StatusStopped {
-			if dolog {
-				fmt.Printf("Tunnel Service Already Stopped.\n")
-			}
 			return 0, "Tunnel Service Already Stopped."
 		}
 		err = s.Stop()
@@ -180,16 +189,7 @@ func control(s service.Service, goArg string) (int, string) {
 		err = service.Control(s, goArg)
 	}
 	if err == nil {
-		out := fmt.Sprintf("Tunnel Service %sed Successfully.", goArg)
-		if dolog {
-			fmt.Printf("%s", out)
-		}
-		return 0, out
-	} else {
-		out := fmt.Sprintf("Error: %v", err)
-		if dolog {
-			log.Printf("%s", out)
-		}
-		return 2, out
+		return 0, fmt.Sprintf("Tunnel Service %sed Successfully.", goArg)
 	}
+	return 2, fmt.Sprintf("Error: %v", err)
 }

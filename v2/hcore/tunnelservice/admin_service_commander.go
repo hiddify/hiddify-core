@@ -10,8 +10,10 @@ import (
 	"time"
 
 	hcommon "github.com/hiddify/hiddify-core/v2/hcommon"
+	"github.com/hiddify/hiddify-core/v2/hcore/tunnel"
 	hutils "github.com/hiddify/hiddify-core/v2/hutils"
 	grpc "google.golang.org/grpc"
+	"google.golang.org/grpc/metadata"
 )
 
 const tunnelServicePort uint16 = 18020
@@ -63,14 +65,15 @@ func startTunnelRequest(opt *TunnelStartRequest, installService bool) (bool, err
 		}
 		return false, fmt.Errorf("service is not running")
 	}
-	conn, err := grpc.Dial(tunnelServiceAddress, grpc.WithInsecure())
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	defer cancel()
+	conn, ctx, err := dialTunnel(ctx)
 	if err != nil {
 		log.Printf("did not connect: %v", err)
+		return false, err
 	}
 	defer conn.Close()
 	c := NewTunnelServiceClient(conn)
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
-	defer cancel()
 	_, _ = c.Stop(ctx, &hcommon.Empty{})
 	res, err := c.Start(ctx, opt)
 	if err != nil {
@@ -87,44 +90,51 @@ func startTunnelRequest(opt *TunnelStartRequest, installService bool) (bool, err
 }
 
 func stopTunnelRequest() error {
-	conn, err := grpc.Dial(tunnelServiceAddress, grpc.WithInsecure())
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*20)
+	defer cancel()
+	conn, ctx, err := dialTunnel(ctx)
 	if err != nil {
 		log.Printf("did not connect: %v", err)
 		return err
 	}
 	defer conn.Close()
 	c := NewTunnelServiceClient(conn)
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*20)
-	defer cancel()
-
 	res, err := c.Stop(ctx, &hcommon.Empty{})
 	if err != nil {
 		log.Printf("did not Stopped: %v %v", res, err)
 		_, _ = c.Stop(ctx, &hcommon.Empty{})
 		return err
 	}
-
 	return nil
 }
 
 func ExitTunnelService() (bool, error) {
-	conn, err := grpc.Dial(tunnelServiceAddress, grpc.WithInsecure())
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*1)
+	defer cancel()
+	conn, ctx, err := dialTunnel(ctx)
 	if err != nil {
 		log.Printf("did not connect: %v", err)
 		return false, err
 	}
 	defer conn.Close()
-	c := NewTunnelServiceClient(conn)
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*1)
-	defer cancel()
-
-	res, err := c.Exit(ctx, &hcommon.Empty{})
-	if res != nil {
+	res, err := NewTunnelServiceClient(conn).Exit(ctx, &hcommon.Empty{})
+	if err != nil {
 		log.Printf("did not exit: %v %v", res, err)
 		return false, err
 	}
-
 	return true, nil
+}
+
+// dialTunnel attaches the control secret when the service was installed with one (macOS).
+func dialTunnel(ctx context.Context) (*grpc.ClientConn, context.Context, error) {
+	conn, err := grpc.Dial(tunnelServiceAddress, grpc.WithInsecure())
+	if err != nil {
+		return nil, ctx, err
+	}
+	if secret, err := LoadControlSecret(); err == nil {
+		ctx = metadata.NewOutgoingContext(ctx, metadata.Pairs(tunnel.SecretHeader, secret))
+	}
+	return conn, ctx, nil
 }
 
 func runTunnelService(opt *TunnelStartRequest) (bool, error) {
