@@ -194,12 +194,26 @@ macos-amd64:
 	env GOOS=darwin GOARCH=amd64 CGO_CFLAGS="-mmacosx-version-min=10.11 -O2" CGO_LDFLAGS="-mmacosx-version-min=10.11 -O2 -lpthread" CGO_ENABLED=1 go build -trimpath -ldflags="$(EMBED_LDFLAGS)" -tags $(TAGS),$(MACOS_ADD_TAGS) -buildmode=c-shared -o $(BINDIR)/$(LIBNAME)-amd64.dylib ./platform/desktop
 macos-arm64:
 	env GOOS=darwin GOARCH=arm64 CGO_CFLAGS="-mmacosx-version-min=10.11 -O2" CGO_LDFLAGS="-mmacosx-version-min=10.11 -O2 -lpthread" CGO_ENABLED=1 go build -trimpath -ldflags="$(EMBED_LDFLAGS)" -tags $(TAGS),$(MACOS_ADD_TAGS) -buildmode=c-shared -o $(BINDIR)/$(LIBNAME)-arm64.dylib ./platform/desktop
-	
-macos: prepare macos-amd64 macos-arm64 
+
+# Packet-tunnel / system-extension bind (same tags as hiddify-app macos/scripts/build-tunnel-core.sh).
+TUNNEL_TAGS=with_gvisor,with_quic,with_wireguard,with_utls,with_clash_api,with_grpc,with_awg,tfogo_checklinkname0,with_naive_outbound,with_conntrack,with_dhcp
+
+.PHONY: macos-tunnel
+macos-tunnel:
+	mkdir -p $(BINDIR)
+	go install -v github.com/sagernet/gomobile/cmd/gomobile@v0.1.12
+	go install -v github.com/sagernet/gomobile/cmd/gobind@v0.1.12
+	gomobile bind -v -target macos -macosversion 12.0 -libname HiddifyTunnelCore -tags $(TUNNEL_TAGS) \
+		-trimpath -ldflags "$(LDFLAGS)" \
+		-o $(BINDIR)/HiddifyTunnelCore.xcframework \
+		github.com/sagernet/sing-box/experimental/libbox github.com/hiddify/hiddify-core/v2/hcore/tunnel
+
+macos: prepare macos-amd64 macos-arm64 macos-tunnel
 	
 	lipo -create $(BINDIR)/$(LIBNAME)-amd64.dylib $(BINDIR)/$(LIBNAME)-arm64.dylib -output $(BINDIR)/$(LIBNAME).dylib
 	cp $(BINDIR)/$(LIBNAME).dylib ./$(LIBNAME).dylib 
 	mv $(BINDIR)/$(LIBNAME)-arm64.h $(BINDIR)/desktop.h 
+	test -d $(BINDIR)/HiddifyTunnelCore.xcframework
 	# env GOOS=darwin GOARCH=amd64 CGO_CFLAGS="-mmacosx-version-min=10.15" CGO_LDFLAGS="-mmacosx-version-min=10.15" CGO_LDFLAGS="bin/$(LIBNAME).dylib"  CGO_ENABLED=1 $(GOBUILDSRV)  -o $(BINDIR)/$(CLINAME) ./cmd/bydll
 	# rm ./$(LIBNAME).dylib
 	# chmod +x $(BINDIR)/$(CLINAME)

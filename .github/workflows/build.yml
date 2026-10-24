@@ -197,6 +197,7 @@ jobs:
                 -o -name "hiddify-core.aar" \
                 -o -name "webui" \
                 -o -name "HiddifyCore.xcframework" \
+                -o -name "HiddifyTunnelCore.xcframework" \
                 -o -name "HiddifyCli" \
                 -o -name "HiddifyCli.exe" \))
           echo tar -czvf ${{ matrix.job.name }}.tar.gz  $files
