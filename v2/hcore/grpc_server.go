@@ -203,23 +203,27 @@ func StartGrpcServerByMode(listenAddressG string, mode SetupMode) (*grpc.Server,
 		Log(LogLevel_DEBUG, LogType_CORE, table)
 		grpcServerPrivateKey, err := table.Get("grpc_server_private_key")
 		grpcServerPublicKey, err2 := table.Get("grpc_server_public_key")
-		if err != nil || err2 != nil {
-			Log(LogLevel_DEBUG, LogType_CORE, fmt.Sprintf("failed to get grpc_server_private_key and grpc_server_public_key from database: %v %v\n", err, err2))
+		needNew := err != nil || err2 != nil
+		if !needNew {
+			pub, ok1 := grpcServerPublicKey.Value.([]byte)
+			priv, ok2 := grpcServerPrivateKey.Value.([]byte)
+			if !ok1 || !ok2 || !hutils.CertificateHasLoopbackSAN(pub) {
+				needNew = true
+			} else {
+				certpair = &hutils.CertificatePair{Certificate: pub, PrivateKey: priv}
+			}
+		}
+		if needNew {
+			Log(LogLevel_DEBUG, LogType_CORE, fmt.Sprintf("generating new grpc server certificate (load err: %v %v)\n", err, err2))
 			certpair, err = hutils.GenerateCertificatePair()
 			if err != nil {
 				Log(LogLevel_ERROR, LogType_CORE, fmt.Sprintf("failed to generate certificate pair: %v", err))
-
 				return nil, err
 			}
 			table.UpdateInsert(
 				&hcommon.AppSettings{Id: "grpc_server_public_key", Value: certpair.Certificate},
 				&hcommon.AppSettings{Id: "grpc_server_private_key", Value: certpair.PrivateKey},
 			)
-		} else {
-			certpair = &hutils.CertificatePair{
-				Certificate: grpcServerPublicKey.Value.([]byte),
-				PrivateKey:  grpcServerPrivateKey.Value.([]byte),
-			}
 		}
 		// Load server certificate and private key
 		serverCert, err := tls.X509KeyPair(certpair.Certificate, certpair.PrivateKey)
@@ -234,6 +238,7 @@ func StartGrpcServerByMode(listenAddressG string, mode SetupMode) (*grpc.Server,
 			Certificates: []tls.Certificate{serverCert},
 			ClientAuth:   tls.RequireAndVerifyClientCert, // Enforce mutual TLS (mTLS)
 			ClientCAs:    caCertPool,                     // Client CAs to verify client certificates
+			MinVersion:   tls.VersionTLS12,
 		}
 
 		// Create a new gRPC server with TLS credentials
@@ -268,29 +273,38 @@ func StartGrpcServerByMode(listenAddressG string, mode SetupMode) (*grpc.Server,
 	return grpcServer[mode], nil
 }
 
-// GetGrpcServerPublicKey returns the gRPC server's public key.
+// GetGrpcServerPublicKey returns the gRPC server's certificate (PEM).
 func GetGrpcServerPublicKey() []byte {
+	if certpair == nil {
+		return nil
+	}
 	return certpair.Certificate
 }
 
-// AddGrpcClientPublicKey adds a client's public key to the CA pool for verification.
+// AddGrpcClientPublicKey trusts a client certificate (PEM CERTIFICATE) for mTLS.
+// A bare PUBLIC KEY is rejected — TLS client auth requires the full certificate the
+// client will present, which must be added to ClientCAs.
 func AddGrpcClientPublicKey(clientPublicKey []byte) error {
 	block, _ := pem.Decode(clientPublicKey)
-	if block == nil || block.Type != "PUBLIC KEY" {
-		return fmt.Errorf("failed to decode client public key")
+	if block == nil {
+		return fmt.Errorf("failed to decode client PEM")
 	}
-	cert, err := x509.ParseCertificate(block.Bytes)
-	if err != nil {
-		pubKey, err := x509.ParsePKIXPublicKey(block.Bytes)
+	var cert *x509.Certificate
+	switch block.Type {
+	case "CERTIFICATE":
+		parsed, err := x509.ParseCertificate(block.Bytes)
 		if err != nil {
-			return fmt.Errorf("failed to parse client public key: %v", err)
+			return fmt.Errorf("failed to parse client certificate: %v", err)
 		}
-		cert = &x509.Certificate{
-			PublicKey: pubKey,
-		}
+		cert = parsed
+	case "PUBLIC KEY":
+		return fmt.Errorf("client CERTIFICATE PEM required for mTLS, got PUBLIC KEY")
+	default:
+		return fmt.Errorf("unsupported PEM type %q (want CERTIFICATE)", block.Type)
 	}
+	mu.Lock()
+	defer mu.Unlock()
 	caCertPool.AddCert(cert)
-
 	return nil
 }
 
