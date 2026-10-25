@@ -42,6 +42,8 @@ const (
 	Core_LogListener_FullMethodName           = "/hcore.Core/LogListener"
 	Core_Close_FullMethodName                 = "/hcore.Core/Close"
 	Core_GetLANIP_FullMethodName              = "/hcore.Core/GetLANIP"
+	Core_NeedAdminBgService_FullMethodName    = "/hcore.Core/NeedAdminBgService"
+	Core_EnsureAdminBgService_FullMethodName  = "/hcore.Core/EnsureAdminBgService"
 )
 
 // CoreClient is the client API for Core service.
@@ -75,6 +77,10 @@ type CoreClient interface {
 	LogListener(ctx context.Context, in *LogRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[LogMessage], error)
 	Close(ctx context.Context, in *CloseRequest, opts ...grpc.CallOption) (*hcommon.Empty, error)
 	GetLANIP(ctx context.Context, in *hcommon.Empty, opts ...grpc.CallOption) (*LANIPResponse, error)
+	// Windows/Linux: whether elevated admin_bgservice is required for this connect.
+	NeedAdminBgService(ctx context.Context, in *NeedAdminBgServiceRequest, opts ...grpc.CallOption) (*NeedAdminBgServiceResponse, error)
+	// Windows/Linux: install/start admin_bgservice if needed and start the bg core until STARTED.
+	EnsureAdminBgService(ctx context.Context, in *EnsureAdminBgServiceRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[EnsureAdminBgServiceEvent], error)
 }
 
 type coreClient struct {
@@ -350,6 +356,35 @@ func (c *coreClient) GetLANIP(ctx context.Context, in *hcommon.Empty, opts ...gr
 	return out, nil
 }
 
+func (c *coreClient) NeedAdminBgService(ctx context.Context, in *NeedAdminBgServiceRequest, opts ...grpc.CallOption) (*NeedAdminBgServiceResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(NeedAdminBgServiceResponse)
+	err := c.cc.Invoke(ctx, Core_NeedAdminBgService_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *coreClient) EnsureAdminBgService(ctx context.Context, in *EnsureAdminBgServiceRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[EnsureAdminBgServiceEvent], error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	stream, err := c.cc.NewStream(ctx, &Core_ServiceDesc.Streams[5], Core_EnsureAdminBgService_FullMethodName, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &grpc.GenericClientStream[EnsureAdminBgServiceRequest, EnsureAdminBgServiceEvent]{ClientStream: stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type Core_EnsureAdminBgServiceClient = grpc.ServerStreamingClient[EnsureAdminBgServiceEvent]
+
 // CoreServer is the server API for Core service.
 // All implementations must embed UnimplementedCoreServer
 // for forward compatibility.
@@ -381,6 +416,10 @@ type CoreServer interface {
 	LogListener(*LogRequest, grpc.ServerStreamingServer[LogMessage]) error
 	Close(context.Context, *CloseRequest) (*hcommon.Empty, error)
 	GetLANIP(context.Context, *hcommon.Empty) (*LANIPResponse, error)
+	// Windows/Linux: whether elevated admin_bgservice is required for this connect.
+	NeedAdminBgService(context.Context, *NeedAdminBgServiceRequest) (*NeedAdminBgServiceResponse, error)
+	// Windows/Linux: install/start admin_bgservice if needed and start the bg core until STARTED.
+	EnsureAdminBgService(*EnsureAdminBgServiceRequest, grpc.ServerStreamingServer[EnsureAdminBgServiceEvent]) error
 	mustEmbedUnimplementedCoreServer()
 }
 
@@ -456,6 +495,12 @@ func (UnimplementedCoreServer) Close(context.Context, *CloseRequest) (*hcommon.E
 }
 func (UnimplementedCoreServer) GetLANIP(context.Context, *hcommon.Empty) (*LANIPResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetLANIP not implemented")
+}
+func (UnimplementedCoreServer) NeedAdminBgService(context.Context, *NeedAdminBgServiceRequest) (*NeedAdminBgServiceResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method NeedAdminBgService not implemented")
+}
+func (UnimplementedCoreServer) EnsureAdminBgService(*EnsureAdminBgServiceRequest, grpc.ServerStreamingServer[EnsureAdminBgServiceEvent]) error {
+	return status.Errorf(codes.Unimplemented, "method EnsureAdminBgService not implemented")
 }
 func (UnimplementedCoreServer) mustEmbedUnimplementedCoreServer() {}
 func (UnimplementedCoreServer) testEmbeddedByValue()              {}
@@ -839,6 +884,35 @@ func _Core_GetLANIP_Handler(srv interface{}, ctx context.Context, dec func(inter
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Core_NeedAdminBgService_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(NeedAdminBgServiceRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CoreServer).NeedAdminBgService(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Core_NeedAdminBgService_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CoreServer).NeedAdminBgService(ctx, req.(*NeedAdminBgServiceRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Core_EnsureAdminBgService_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(EnsureAdminBgServiceRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(CoreServer).EnsureAdminBgService(m, &grpc.GenericServerStream[EnsureAdminBgServiceRequest, EnsureAdminBgServiceEvent]{ServerStream: stream})
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type Core_EnsureAdminBgServiceServer = grpc.ServerStreamingServer[EnsureAdminBgServiceEvent]
+
 // Core_ServiceDesc is the grpc.ServiceDesc for Core service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -914,6 +988,10 @@ var Core_ServiceDesc = grpc.ServiceDesc{
 			MethodName: "GetLANIP",
 			Handler:    _Core_GetLANIP_Handler,
 		},
+		{
+			MethodName: "NeedAdminBgService",
+			Handler:    _Core_NeedAdminBgService_Handler,
+		},
 	},
 	Streams: []grpc.StreamDesc{
 		{
@@ -939,6 +1017,11 @@ var Core_ServiceDesc = grpc.ServiceDesc{
 		{
 			StreamName:    "LogListener",
 			Handler:       _Core_LogListener_Handler,
+			ServerStreams: true,
+		},
+		{
+			StreamName:    "EnsureAdminBgService",
+			Handler:       _Core_EnsureAdminBgService_Handler,
 			ServerStreams: true,
 		},
 	},

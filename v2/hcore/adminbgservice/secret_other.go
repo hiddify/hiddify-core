@@ -1,6 +1,6 @@
 //go:build !unix && !windows
 
-package tunnelservice
+package adminbgservice
 
 func chownSecret(path, owner string) error {
 	return nil

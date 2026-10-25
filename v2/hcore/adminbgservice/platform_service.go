@@ -1,4 +1,4 @@
-package tunnelservice
+package adminbgservice
 
 import (
 	"fmt"
@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"runtime"
 
-	"github.com/hiddify/hiddify-core/v2/hcore/tunnel"
+	"github.com/hiddify/hiddify-core/v2/hcore/adminbg"
 	"github.com/kardianos/service"
 	"google.golang.org/grpc"
 )
@@ -16,22 +16,22 @@ import (
 var logger service.Logger
 
 type hiddifyNext struct {
-	tunnelService *TunnelService
-	secret        string
+	adminBg *hiddifyAdminBG
+	secret  string
 }
 
 var port int = 18020
 
-func allowTunnelMethod(method string) error {
+func allowAdminBgMethod(method string) error {
 	switch method {
-	case TunnelService_Start_FullMethodName, TunnelService_Stop_FullMethodName,
-		TunnelService_Status_FullMethodName, TunnelService_Exit_FullMethodName:
+	case HiddifyAdminBG_Start_FullMethodName, HiddifyAdminBG_Stop_FullMethodName,
+		HiddifyAdminBG_Status_FullMethodName, HiddifyAdminBG_Exit_FullMethodName:
 		return nil
 	}
-	return tunnel.AllowCoreMethod(method)
+	return adminbg.AllowCoreMethod(method)
 }
 
-func (m *hiddifyNext) StartTunnelGrpcServer(listenAddressG string) (*grpc.Server, error) {
+func (m *hiddifyNext) StartAdminBgGrpcServer(listenAddressG string) (*grpc.Server, error) {
 	lis, err := net.Listen("tcp", listenAddressG)
 	if err != nil {
 		log.Printf("failed to listen: %v", err)
@@ -39,13 +39,13 @@ func (m *hiddifyNext) StartTunnelGrpcServer(listenAddressG string) (*grpc.Server
 	}
 	var serverOptions []grpc.ServerOption
 	if m.secret != "" {
-		serverOptions = tunnel.ServerOptions(m.secret, allowTunnelMethod)
+		serverOptions = adminbg.ServerOptions(m.secret, allowAdminBgMethod)
 	}
 	s := grpc.NewServer(serverOptions...)
-	m.tunnelService = &TunnelService{}
-	RegisterTunnelServiceServer(s, m.tunnelService)
+	m.adminBg = &hiddifyAdminBG{}
+	RegisterHiddifyAdminBGServer(s, m.adminBg)
 	if m.secret != "" {
-		tunnel.RegisterControl(s)
+		adminbg.RegisterControl(s)
 	}
 
 	log.Printf("Server listening on %s", listenAddressG)
@@ -69,15 +69,15 @@ func (m *hiddifyNext) Start(s service.Service) error {
 	} else {
 		return err
 	}
-	_, err := m.StartTunnelGrpcServer(fmt.Sprintf("127.0.0.1:%d", port))
+	_, err := m.StartAdminBgGrpcServer(fmt.Sprintf("127.0.0.1:%d", port))
 	return err
 }
 
 func (m *hiddifyNext) Stop(s service.Service) error {
-	if m.tunnelService == nil {
+	if m.adminBg == nil {
 		return nil
 	}
-	_, err := m.tunnelService.Stop(nil, nil)
+	_, err := m.adminBg.Stop(nil, nil)
 	if err != nil {
 		return nil
 	}
@@ -110,6 +110,9 @@ func dataDirectoryFor(directory string) string {
 }
 
 func installOwner() string {
+	if owner := os.Getenv("HIDDIFY_ADMIN_BG_OWNER"); owner != "" {
+		return owner
+	}
 	if owner := os.Getenv("HIDDIFY_TUNNEL_OWNER"); owner != "" {
 		return owner
 	}
@@ -119,7 +122,20 @@ func installOwner() string {
 	return os.Getenv("USER")
 }
 
-func StartTunnelService(goArg string) (int, string) {
+// osServiceName is the OS service id passed to kardianos/service.
+// On Linux systemd, that library writes Name+".service" (do not include the suffix here).
+func osServiceName() string {
+	return "HiddifyAdminBG"
+}
+
+func serviceRunArguments() []string {
+	if runtime.GOOS == "darwin" {
+		return []string{"--tunnel", "run"}
+	}
+	return []string{"admin_bgservice", "run"}
+}
+
+func StartAdminBgService(goArg string) (int, string) {
 	dataDirectory := serviceDataDirectory()
 	if err := os.MkdirAll(dataDirectory, 0o755); err != nil {
 		return 3, fmt.Sprintf("Error: %v", err)
@@ -129,12 +145,12 @@ func StartTunnelService(goArg string) (int, string) {
 			return 3, fmt.Sprintf("Error: %v", err)
 		}
 	}
-	// The service runs this same HiddifyCli binary with "tunnel run" — no helper EXE and no
-	// copied payload under ProgramData (both are common antivirus false-positive triggers).
+	// Windows/Linux: HiddifyCli admin_bgservice run.
+	// macOS: the copied .app must get --tunnel so AppDelegate runs parseCli instead of the Flutter UI.
 	svcConfig := &service.Config{
-		Name:             "HiddifyTunnelService",
+		Name:             osServiceName(),
 		DisplayName:      "Hiddify VPN",
-		Arguments:        []string{"tunnel", "run"},
+		Arguments:        serviceRunArguments(),
 		Description:      "Hiddify virtual private network",
 		WorkingDirectory: dataDirectory,
 		Option: map[string]interface{}{

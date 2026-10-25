@@ -195,7 +195,7 @@ macos-amd64:
 macos-arm64:
 	env GOOS=darwin GOARCH=arm64 CGO_CFLAGS="-mmacosx-version-min=10.11 -O2" CGO_LDFLAGS="-mmacosx-version-min=10.11 -O2 -lpthread" CGO_ENABLED=1 go build -trimpath -ldflags="$(EMBED_LDFLAGS)" -tags $(TAGS),$(MACOS_ADD_TAGS) -buildmode=c-shared -o $(BINDIR)/$(LIBNAME)-arm64.dylib ./platform/desktop
 
-# Packet-tunnel / system-extension bind (same tags as hiddify-app macos/scripts/build-tunnel-core.sh).
+# Packet-tunnel / system-extension bind (same tags as hiddify-app macos/scripts/build-admin-bgservice-core.sh).
 TUNNEL_TAGS=with_gvisor,with_quic,with_wireguard,with_utls,with_clash_api,with_grpc,with_awg,tfogo_checklinkname0,with_naive_outbound,with_conntrack,with_dhcp
 
 .PHONY: macos-tunnel
@@ -217,6 +217,25 @@ macos: prepare macos-amd64 macos-arm64 macos-tunnel
 	# env GOOS=darwin GOARCH=amd64 CGO_CFLAGS="-mmacosx-version-min=10.15" CGO_LDFLAGS="-mmacosx-version-min=10.15" CGO_LDFLAGS="bin/$(LIBNAME).dylib"  CGO_ENABLED=1 $(GOBUILDSRV)  -o $(BINDIR)/$(CLINAME) ./cmd/bydll
 	# rm ./$(LIBNAME).dylib
 	# chmod +x $(BINDIR)/$(CLINAME)
+
+# Current host arch only; skips the tunnel/admin-bg xcframework (faster local Flutter runs).
+.PHONY: macos-lite
+macos-lite: prepare
+	mkdir -p $(BINDIR)
+	@arch=$$(uname -m); \
+	if [ "$$arch" = "arm64" ]; then \
+		$(MAKE) macos-arm64; \
+		cp $(BINDIR)/$(LIBNAME)-arm64.dylib $(BINDIR)/$(LIBNAME).dylib; \
+		mv $(BINDIR)/$(LIBNAME)-arm64.h $(BINDIR)/desktop.h; \
+	elif [ "$$arch" = "x86_64" ]; then \
+		$(MAKE) macos-amd64; \
+		cp $(BINDIR)/$(LIBNAME)-amd64.dylib $(BINDIR)/$(LIBNAME).dylib; \
+		mv $(BINDIR)/$(LIBNAME)-amd64.h $(BINDIR)/desktop.h; \
+	else \
+		echo "unsupported macOS arch: $$arch" >&2; exit 1; \
+	fi
+	cp $(BINDIR)/$(LIBNAME).dylib ./$(LIBNAME).dylib
+
 
 prepare: 
 	go mod tidy

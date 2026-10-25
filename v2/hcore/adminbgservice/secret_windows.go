@@ -1,6 +1,6 @@
 //go:build windows
 
-package tunnelservice
+package adminbgservice
 
 import (
 	"fmt"

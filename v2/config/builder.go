@@ -446,9 +446,12 @@ func setInbound(options *option.Options, hopt *HiddifyOptions) {
 		// default:
 
 		// }
-		opts.Address = []netip.Prefix{netip.MustParsePrefix("172.19.0.1/28")}
-		if ipv6Enable {
-			opts.Address = append(opts.Address, netip.MustParsePrefix("fdfe:dcba:9876::1/126"))
+		opts.Address = []netip.Prefix{
+			netip.MustParsePrefix("172.19.0.1/28"),
+			// Always on the TUN when auto-routing. Without it, sing-tun installs no ::/0
+			// and IPv6 bypasses the VPN (NE builds guard this in Swift; admin_bgservice /
+			// desktop TUN must do it here). ipv6Mode only affects DNS strategy below.
+			netip.MustParsePrefix("fdfe:dcba:9876::1/126"),
 		}
 
 		options.Inbounds = append(options.Inbounds, tunInbound)

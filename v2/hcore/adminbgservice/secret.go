@@ -1,4 +1,4 @@
-package tunnelservice
+package adminbgservice
 
 import (
 	"crypto/rand"
@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"runtime"
 
-	"github.com/hiddify/hiddify-core/v2/hcore/tunnel"
+	"github.com/hiddify/hiddify-core/v2/hcore/adminbg"
 )
 
 const controlSecretFileName = "control.secret"
@@ -17,9 +17,28 @@ const controlSecretFileName = "control.secret"
 // unelevated app. It must not live next to a debug build path (those move) and must not be a
 // copy of the app binary tree (that triggers antivirus heuristics on Windows).
 func controlDataDir() string {
+	if dir := os.Getenv("HIDDIFY_ADMIN_BG_DATA"); dir != "" {
+		return dir
+	}
 	if dir := os.Getenv("HIDDIFY_TUNNEL_DATA"); dir != "" {
 		return dir
 	}
+	switch runtime.GOOS {
+	case "darwin":
+		return "/Library/Application Support/Hiddify/AdminBgService/data"
+	case "windows":
+		base := os.Getenv("PROGRAMDATA")
+		if base == "" {
+			base = `C:\ProgramData`
+		}
+		return filepath.Join(base, "Hiddify", "AdminBgService")
+	default:
+		return "/var/lib/hiddify-admin-bgservice"
+	}
+}
+
+// legacyControlDataDir is the pre-rename path; used only to find an existing secret/stamp.
+func legacyControlDataDir() string {
 	switch runtime.GOOS {
 	case "darwin":
 		return "/Library/Application Support/Hiddify/TunnelService/data"
@@ -45,7 +64,7 @@ func EnsureControlSecret(owner string) (string, error) {
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		return "", err
 	}
-	if secret, err := os.ReadFile(path); err == nil && len(secret) >= tunnel.MinSecretLength {
+	if secret, err := os.ReadFile(path); err == nil && len(secret) >= adminbg.MinSecretLength {
 		if err := restrictSecretFile(path, owner); err != nil {
 			return "", err
 		}
@@ -68,10 +87,14 @@ func EnsureControlSecret(owner string) (string, error) {
 func LoadControlSecret() (string, error) {
 	secret, err := os.ReadFile(controlSecretPath())
 	if err != nil {
-		return "", err
+		legacy := filepath.Join(legacyControlDataDir(), controlSecretFileName)
+		secret, err = os.ReadFile(legacy)
+		if err != nil {
+			return "", err
+		}
 	}
-	if len(secret) < tunnel.MinSecretLength {
-		return "", fmt.Errorf("tunnel control secret is too short")
+	if len(secret) < adminbg.MinSecretLength {
+		return "", fmt.Errorf("admin_bgservice control secret is too short")
 	}
 	return string(secret), nil
 }

@@ -1,8 +1,9 @@
-package tunnelservice
+package adminbgservice
 
 import (
 	"context"
 	"fmt"
+	"log"
 	"net"
 	"net/netip"
 	"os"
@@ -22,11 +23,11 @@ import (
 
 	hcommon "github.com/hiddify/hiddify-core/v2/hcommon"
 	"github.com/hiddify/hiddify-core/v2/hcore"
-	"github.com/hiddify/hiddify-core/v2/hcore/tunnel"
+	"github.com/hiddify/hiddify-core/v2/hcore/adminbg"
 )
 
-type TunnelService struct {
-	UnimplementedTunnelServiceServer
+type hiddifyAdminBG struct {
+	UnimplementedHiddifyAdminBGServer
 	mutex sync.Mutex
 	box   *daemon.StartedService
 	// closed when the box or full core stops, to end its watchdog
@@ -34,25 +35,25 @@ type TunnelService struct {
 	fullCore bool
 }
 
-func (s *TunnelService) Start(ctx context.Context, in *TunnelStartRequest) (response *TunnelResponse, err error) {
+func (s *hiddifyAdminBG) Start(ctx context.Context, in *AdminBgStartRequest) (response *AdminBgResponse, err error) {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 	defer func() {
 		if recovered := recover(); recovered != nil {
 			err = fmt.Errorf("start tunnel: %v", recovered)
-			response = &TunnelResponse{Message: err.Error()}
+			response = &AdminBgResponse{Message: err.Error()}
 		}
 	}()
 	if in.GetConfigContent() != "" {
 		if err := s.startFullCore(in); err != nil {
-			return &TunnelResponse{Message: err.Error()}, err
+			return &AdminBgResponse{Message: err.Error()}, err
 		}
-		return &TunnelResponse{Message: "OK"}, nil
+		return &AdminBgResponse{Message: "OK"}, nil
 	}
 	return s.startBridge(in)
 }
 
-func (s *TunnelService) startBridge(in *TunnelStartRequest) (*TunnelResponse, error) {
+func (s *hiddifyAdminBG) startBridge(in *AdminBgStartRequest) (*AdminBgResponse, error) {
 	s.closeRunning()
 	if in.ServerPort == 0 {
 		in.ServerPort = 12334
@@ -60,16 +61,16 @@ func (s *TunnelService) startBridge(in *TunnelStartRequest) (*TunnelResponse, er
 	option := makeTunnelConfig(in)
 	box, err := hcore.NewService(libbox.BaseContext(nil), option, nil)
 	if err != nil {
-		return &TunnelResponse{Message: err.Error()}, err
+		return &AdminBgResponse{Message: err.Error()}, err
 	}
 	s.box = box
 	s.fullCore = false
 	s.watching = make(chan struct{})
 	go s.watchPort(in.ServerPort, s.watching)
-	return &TunnelResponse{Message: "OK"}, nil
+	return &AdminBgResponse{Message: "OK"}, nil
 }
 
-func (s *TunnelService) startFullCore(in *TunnelStartRequest) error {
+func (s *hiddifyAdminBG) startFullCore(in *AdminBgStartRequest) error {
 	s.closeRunning()
 	dataDirectory := serviceDataDirectory()
 	base := filepath.Join(dataDirectory, "core")
@@ -91,7 +92,7 @@ func (s *TunnelService) startFullCore(in *TunnelStartRequest) error {
 	if settings == "" {
 		settings = "{}"
 	}
-	if err := tunnel.Apply(&tunnel.Options{
+	if err := adminbg.Apply(&adminbg.Options{
 		BasePath:           base,
 		WorkingPath:        work,
 		TempPath:           temp,
@@ -137,7 +138,7 @@ func writeResources(directory string, resources map[string][]byte) error {
 }
 
 // watchPort stops the TUN bridge once the app's proxy stops answering.
-func (s *TunnelService) watchPort(port int32, done <-chan struct{}) {
+func (s *hiddifyAdminBG) watchPort(port int32, done <-chan struct{}) {
 	address := net.JoinHostPort("127.0.0.1", strconv.Itoa(int(port)))
 	failures := 0
 	ticker := time.NewTicker(2 * time.Second)
@@ -170,7 +171,7 @@ func (s *TunnelService) watchPort(port int32, done <-chan struct{}) {
 // watchOwner stops the VPN engine once the connecting app is gone, but leaves the service
 // process listening. Exiting the process would require another administrator prompt to start
 // it again; an idle authenticated listener is enough to avoid a background VPN.
-func (s *TunnelService) watchOwner(pid int32, done <-chan struct{}) {
+func (s *hiddifyAdminBG) watchOwner(pid int32, done <-chan struct{}) {
 	if pid <= 0 {
 		return
 	}
@@ -209,14 +210,20 @@ func processAlive(pid int32) bool {
 	return processSignalAlive(process)
 }
 
-func (s *TunnelService) closeRunning() error {
+func (s *hiddifyAdminBG) closeRunning() error {
 	if s.watching != nil {
 		close(s.watching)
 		s.watching = nil
 	}
 	if s.fullCore {
+		// Clear fullCore only after StopEngine finishes. Clearing first made Status
+		// report "stopped" while the TUN was still tearing down, so a reconnect could
+		// race and leave a dead interface (Connected UI, IP unchanged).
+		started := time.Now()
+		err := adminbg.StopEngine()
+		log.Printf("admin_bgservice: StopEngine took %s (err=%v)", time.Since(started), err)
 		s.fullCore = false
-		return tunnel.StopEngine()
+		return err
 	}
 	if s.box == nil {
 		return nil
@@ -227,7 +234,7 @@ func (s *TunnelService) closeRunning() error {
 	return err
 }
 
-func makeTunnelConfig(in *TunnelStartRequest) option.Options {
+func makeTunnelConfig(in *AdminBgStartRequest) option.Options {
 	ips := []netip.Prefix{netip.MustParsePrefix("172.20.0.1/30")}
 	if in.Ipv6 {
 		ips = append(ips, netip.MustParsePrefix("fdfe:dcba:9876::1/126"))
@@ -297,28 +304,28 @@ func makeTunnelConfig(in *TunnelStartRequest) option.Options {
 	}
 }
 
-func (s *TunnelService) Stop(ctx context.Context, _ *hcommon.Empty) (*TunnelResponse, error) {
+func (s *hiddifyAdminBG) Stop(ctx context.Context, _ *hcommon.Empty) (*AdminBgResponse, error) {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 	if s.box == nil && !s.fullCore {
-		return &TunnelResponse{Message: "Not Started"}, nil
+		return &AdminBgResponse{Message: "Not Started"}, nil
 	}
 	if err := s.closeRunning(); err != nil {
-		return &TunnelResponse{Message: err.Error()}, err
+		return &AdminBgResponse{Message: err.Error()}, err
 	}
-	return &TunnelResponse{Message: "OK"}, nil
+	return &AdminBgResponse{Message: "OK"}, nil
 }
 
-func (s *TunnelService) Status(ctx context.Context, _ *hcommon.Empty) (*TunnelResponse, error) {
+func (s *hiddifyAdminBG) Status(ctx context.Context, _ *hcommon.Empty) (*AdminBgResponse, error) {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 	if s.fullCore || s.box != nil {
-		return &TunnelResponse{Message: "started"}, nil
+		return &AdminBgResponse{Message: "started"}, nil
 	}
-	return &TunnelResponse{Message: "stopped"}, nil
+	return &AdminBgResponse{Message: "stopped"}, nil
 }
 
-func (s *TunnelService) Exit(ctx context.Context, _ *hcommon.Empty) (*TunnelResponse, error) {
+func (s *hiddifyAdminBG) Exit(ctx context.Context, _ *hcommon.Empty) (*AdminBgResponse, error) {
 	s.mutex.Lock()
 	s.closeRunning()
 	s.mutex.Unlock()
@@ -326,7 +333,7 @@ func (s *TunnelService) Exit(ctx context.Context, _ *hcommon.Empty) (*TunnelResp
 		<-time.After(time.Second * 1)
 		os.Exit(0)
 	}()
-	return &TunnelResponse{Message: "OK"}, nil
+	return &AdminBgResponse{Message: "OK"}, nil
 }
 
 func routedVPNInterface() string {
@@ -356,5 +363,5 @@ func tunInterfaceName() string {
 	if runtime.GOOS == "darwin" {
 		return ""
 	}
-	return "HiddifyTunnel"
+	return "HiddifyAdminBg"
 }
