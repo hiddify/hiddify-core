@@ -16,4 +16,4 @@ data
 node_modules
 *.db
 *.json
-**test.go
+**/*_test.go

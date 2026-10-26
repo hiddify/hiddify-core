@@ -37,6 +37,22 @@ func patchOutboundTLSTricks(base option.Outbound, configOpt HiddifyOptions) opti
 		tls = tlsopt.TakeOutboundTLSOptions()
 	}
 
+	// H: migrate legacy tls.tls_fragment object onto the dialer (issue #2399)
+	if tls != nil && tls.TLSFragment != nil && tls.TLSFragment.Enabled {
+		if opts, ok := base.Options.(option.DialerOptionsWrapper); ok {
+			dialer := opts.TakeDialerOptions()
+			if !dialer.TLSFragment.Enabled {
+				dialer.TCPFastOpen = false
+				dialer.TLSFragment = *tls.TLSFragment
+				opts.ReplaceDialerOptions(dialer)
+			}
+		}
+		tls.TLSFragment = nil
+		if tlsopt, ok := base.Options.(option.OutboundTLSOptionsWrapper); ok {
+			tlsopt.ReplaceOutboundTLSOptions(tls)
+		}
+	}
+
 	var transport *option.V2RayTransportOptions
 	if opts, ok := base.Options.(option.VLESSOutboundOptions); ok {
 		transport = opts.Transport
@@ -54,7 +70,10 @@ func patchOutboundTLSTricks(base option.Outbound, configOpt HiddifyOptions) opti
 		return base
 	}
 
-	if transport.Type != C.V2RayTransportTypeWebsocket && transport.Type != C.V2RayTransportTypeGRPC && transport.Type != C.V2RayTransportTypeHTTPUpgrade {
+	switch transport.Type {
+	case C.V2RayTransportTypeWebsocket, C.V2RayTransportTypeGRPC, C.V2RayTransportTypeHTTPUpgrade, C.V2RayTransportTypeXHTTP, C.V2RayTransportTypeHTTP:
+		// fragment applies to TLS ClientHello on these transports
+	default:
 		return base
 	}
 
@@ -90,14 +109,15 @@ func patchOutboundFragment(base option.Outbound, configOpt HiddifyOptions) optio
 		if opts, ok := base.Options.(option.DialerOptionsWrapper); ok {
 			dialer := opts.TakeDialerOptions()
 			dialer.TCPFastOpen = false
-			// dialer.TLSFragment = option.TLSFragmentOptions{
-			// 	Enabled: configOpt.TLSTricks.EnableFragment,
-			// 	Size:    configOpt.TLSTricks.FragmentSize,
-			// 	Sleep:   configOpt.TLSTricks.FragmentSleep,
-			// }
+			if !dialer.TLSFragment.Enabled {
+				dialer.TLSFragment = option.TLSFragmentOptions{
+					Enabled: true,
+					Size:    configOpt.TLSTricks.FragmentSize,
+					Sleep:   configOpt.TLSTricks.FragmentSleep,
+				}
+			}
 			opts.ReplaceDialerOptions(dialer)
 		}
-
 	}
 
 	return base

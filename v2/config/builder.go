@@ -315,11 +315,11 @@ func setOutbounds(options *option.Options, input *option.Options, opt *HiddifyOp
 						AbstractDialerOptions: option.AbstractDialerOptions{
 							TCPFastOpen: false,
 						},
-						// TLSFragment: option.TLSFragmentOptions{
-						// 	Enabled: true,
-						// 	Size:    opt.TLSTricks.FragmentSize,
-						// 	Sleep:   opt.TLSTricks.FragmentSleep,
-						// }
+						TLSFragment: option.TLSFragmentOptions{
+							Enabled: true,
+							Size:    opt.TLSTricks.FragmentSize,
+							Sleep:   opt.TLSTricks.FragmentSleep,
+						},
 					},
 				},
 			},
