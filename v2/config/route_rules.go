@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"net/netip"
 	"path"
 	"strconv"
 	"strings"
@@ -68,6 +69,27 @@ func buildAppRouteRules(hopt *HiddifyOptions) *appRouteRules {
 	return b
 }
 
+// prefixables parses the CIDRs of a rule: sing-box takes them as prefixes, and a bare address is a
+// host route. An entry that is neither is dropped, as the rule list is built with no way to fail;
+// a rule left with no condition is dropped with it (see hasCondition), never made to match all.
+func prefixables(items []string) badoption.Listable[*badoption.Prefixable] {
+	var prefixes badoption.Listable[*badoption.Prefixable]
+	for _, item := range items {
+		item = strings.TrimSpace(item)
+		prefix, err := netip.ParsePrefix(item)
+		if err != nil {
+			addr, addrErr := netip.ParseAddr(item)
+			if addrErr != nil {
+				continue
+			}
+			prefix = netip.PrefixFrom(addr, addr.BitLen())
+		}
+		parsed := badoption.Prefixable(prefix)
+		prefixes = append(prefixes, &parsed)
+	}
+	return prefixes
+}
+
 func sortedRules(rules []*Rule) []*Rule {
 	sorted := append([]*Rule(nil), rules...)
 	for i := 1; i < len(sorted); i++ {
@@ -98,8 +120,8 @@ func (b *appRouteRules) add(rule *Rule) {
 		DomainSuffix:    rule.GetDomainSuffixes(),
 		DomainKeyword:   rule.GetDomainKeywords(),
 		DomainRegex:     rule.GetDomainRegexes(),
-		IPCIDR:          rule.GetIpCidrs(),
-		SourceIPCIDR:    rule.GetSourceIpCidrs(),
+		IPCIDR:          prefixables(rule.GetIpCidrs()),
+		SourceIPCIDR:    prefixables(rule.GetSourceIpCidrs()),
 		Port:            ports,
 		PortRange:       portRanges,
 		SourcePort:      sourcePorts,

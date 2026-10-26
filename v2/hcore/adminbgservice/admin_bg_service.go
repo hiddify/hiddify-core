@@ -292,7 +292,7 @@ func makeTunnelConfig(in *AdminBgStartRequest) option.Options {
 							},
 						},
 						RuleAction: option.RuleAction{
-							Action: C.RuleActionTypeDirect,
+							Action: C.RuleActionTypeRoute,
 							RouteOptions: option.RouteActionOptions{
 								Outbound: "direct-out",
 							},

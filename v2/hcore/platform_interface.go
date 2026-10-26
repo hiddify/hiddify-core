@@ -50,13 +50,6 @@ func (h *MobilePlatformInterface) WriteLog(message string) {
 	Log(LogLevel_DEBUG, LogType_CORE, message)
 }
 
-func (h *MobilePlatformInterface) UseProcFS() bool {
-	if h.platform == nil {
-		return false
-	}
-	return h.platform.UseProcFS()
-}
-
 func (h *MobilePlatformInterface) FindConnectionOwner(ipProtocol int32, sourceAddress string, sourcePort int32, destinationAddress string, destinationPort int32) (*libbox.ConnectionOwner, error) {
 	if h.platform == nil {
 		return nil, fmt.Errorf("platform is nil")
@@ -176,16 +169,16 @@ func (h *MobilePlatformInterface) LookupUser(username string) (*libbox.PlatformU
 	return h.platform.LookupUser(username)
 }
 
-func (h *MobilePlatformInterface) LookupSFTPServer() (*libbox.StringBox, error) {
+func (h *MobilePlatformInterface) LookupSFTPServer() (string, error) {
 	if h.platform == nil {
-		return nil, os.ErrInvalid
+		return "", os.ErrInvalid
 	}
 	return h.platform.LookupSFTPServer()
 }
 
-func (h *MobilePlatformInterface) ReadSystemSSHHostKey() (*libbox.StringBox, error) {
+func (h *MobilePlatformInterface) ReadSystemSSHHostKey() (string, error) {
 	if h.platform == nil {
-		return nil, os.ErrInvalid
+		return "", os.ErrInvalid
 	}
 	return h.platform.ReadSystemSSHHostKey()
 }

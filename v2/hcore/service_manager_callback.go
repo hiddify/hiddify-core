@@ -10,7 +10,7 @@ type hiddifyMainServiceManager struct{}
 var _ adapter.LifecycleService = (*hiddifyMainServiceManager)(nil)
 
 func (h *hiddifyMainServiceManager) Name() string { return "hiddifyMainServiceManager" }
-func (h *hiddifyMainServiceManager) Start(stage adapter.StartStage) error {
+func (h *hiddifyMainServiceManager) Start(stage adapter.StartStage, _ *adapter.Scope) error {
 	if stage == adapter.StartStateStarted {
 		return service_manager.OnMainServiceStart()
 	}
