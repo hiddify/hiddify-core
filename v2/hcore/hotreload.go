@@ -39,20 +39,18 @@ func hotReloadLocked(ctx context.Context, in *StartRequest) (*CoreInfoResponse, 
 	if err := contextErr(ctx); err != nil {
 		return hotReloadError(MessageType_HOT_RELOAD_FAILED, fmt.Errorf("hot reload cancelled: %w", err))
 	}
-	switch static.CoreState {
+	switch currentCoreState() {
 	case CoreStates_STOPPED:
 		return startServiceLocked(ctx, in)
-	case CoreStates_STARTED:
+	case CoreStates_WAITING, CoreStates_STARTED, CoreStates_NO_AVAILABLE_PROXIES:
 		SetCoreStatus(CoreStates_HOT_RELOADING, MessageType_EMPTY, "")
-		// back to STARTED whatever happens: the core keeps running unchanged on a failure
+		// back to running whatever happens: the core keeps running unchanged on a failure
 		defer func() {
-			if static.CoreState == CoreStates_HOT_RELOADING {
-				SetCoreStatus(CoreStates_STARTED, MessageType_EMPTY, "")
-			}
+			setCoreStatusIf([]CoreStates{CoreStates_HOT_RELOADING}, static.connectedState(), MessageType_EMPTY, "")
 		}()
 		return hotReloadService(ctx, in)
 	default:
-		return hotReloadError(MessageType_HOT_RELOAD_FAILED, fmt.Errorf("core is %s", static.CoreState))
+		return hotReloadError(MessageType_HOT_RELOAD_FAILED, fmt.Errorf("core is %s", currentCoreState()))
 	}
 }
 
@@ -104,15 +102,15 @@ func hotReloadService(ctx context.Context, in *StartRequest) (*CoreInfoResponse,
 	saveLastStartRequest(in)
 	config.SaveCurrentConfig(ctx, filepath.Join(sWorkingPath, "data/current-config.json"), *options)
 	Log(LogLevel_INFO, LogType_CORE, fmt.Sprintf("hot reload: %+v", result))
-	return SetCoreStatus(CoreStates_STARTED, MessageType_EMPTY, ""), nil
+	return SetCoreStatus(static.connectedState(), MessageType_EMPTY, ""), nil
 }
 
-// hotReloadError reports a failed hot reload; the core keeps running unchanged (STARTED).
+// hotReloadError reports a failed hot reload; the core keeps running unchanged.
 func hotReloadError(messageType MessageType, err error) (*CoreInfoResponse, error) {
 	Log(LogLevel_ERROR, LogType_CORE, "hot reload: ", err.Error())
-	state := static.CoreState
+	state := currentCoreState()
 	if state == CoreStates_HOT_RELOADING {
-		state = CoreStates_STARTED
+		state = static.connectedState()
 	}
 	return &CoreInfoResponse{
 		CoreState:   state,

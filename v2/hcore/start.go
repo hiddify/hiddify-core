@@ -18,8 +18,9 @@ import (
 	"github.com/sagernet/sing/service"
 )
 
-// Start queues a start of the core and answers at once with STARTING (or ALREADY_STARTED when
-// the core is started or will be); the outcome is reported through CoreInfoListener.
+// Start queues a start of the core and answers at once with STARTING; the outcome is reported
+// through CoreInfoListener. The core is started only once it is disconnected: ALREADY_STARTED
+// when it is started or will be, INSTANCE_NOT_STOPPED while it is stopping.
 func (s *CoreService) Start(ctx context.Context, in *StartRequest) (*CoreInfoResponse, error) {
 	return startInBackground(in), nil
 }
@@ -36,6 +37,13 @@ func startInBackground(in *StartRequest) *CoreInfoResponse {
 			CoreState:   currentCoreState(),
 			MessageType: MessageType_ALREADY_STARTED,
 			Message:     "instance already started",
+		}
+	}
+	if queue.pending > 0 || currentCoreState() != CoreStates_STOPPED {
+		return &CoreInfoResponse{
+			CoreState:   currentCoreState(),
+			MessageType: MessageType_INSTANCE_NOT_STOPPED,
+			Message:     "the core can be started only once it is stopped",
 		}
 	}
 	queueStartLocked(static.BaseContext, in)
@@ -70,7 +78,12 @@ func queueStartLocked(ctx context.Context, in *StartRequest) <-chan operationRes
 func cancelledStart(err error) (*CoreInfoResponse, error) {
 	Log(LogLevel_WARNING, LogType_CORE, "start cancelled: ", err.Error())
 	if errors.Is(err, errStopped) {
-		setCoreState(CoreStates_STOPPED)
+		// the stop that gave this start up already reports STOPPING and then STOPPED
+		stateMu.Lock()
+		if currentCoreState() == CoreStates_STARTING {
+			setCoreState(CoreStates_STOPPED)
+		}
+		stateMu.Unlock()
 		return &CoreInfoResponse{CoreState: CoreStates_STOPPED, MessageType: MessageType_INSTANCE_NOT_STARTED, Message: "start cancelled"}, err
 	}
 	return SetCoreStatus(CoreStates_STOPPED, MessageType_INSTANCE_NOT_STARTED, "start cancelled"), err
@@ -124,14 +137,15 @@ func loadLastStartRequestIfNeeded(in *StartRequest) (*StartRequest, error) {
 
 // startServiceLocked starts the core; static.lock must be held.
 func startServiceLocked(ctx context.Context, in *StartRequest) (coreResponse *CoreInfoResponse, err error) {
-	if static.CoreState != CoreStates_STOPPED {
+	if currentCoreState() != CoreStates_STOPPED {
 		// return errorWrapper(MessageType_ALREADY_STARTED, fmt.Errorf("instance already started"))
 		return &CoreInfoResponse{
-			CoreState:   static.CoreState,
+			CoreState:   currentCoreState(),
 			MessageType: MessageType_ALREADY_STARTED,
 			Message:     "instance already started",
 		}, nil
 	}
+	watch := newStopwatch("start")
 	SetCoreStatus(CoreStates_STARTING, MessageType_EMPTY, "")
 
 	in, err = loadLastStartRequestIfNeeded(in)
@@ -148,10 +162,12 @@ func startServiceLocked(ctx context.Context, in *StartRequest) (coreResponse *Co
 		)
 	}
 
+	watch.step("loading the request")
 	options, err := BuildConfig(ctx, in)
 	if err != nil {
 		return errorWrapper(MessageType_ERROR_BUILDING_CONFIG, err)
 	}
+	watch.step("building the config")
 	if err := contextErr(ctx); err != nil {
 		return cancelledStart(err)
 	}
@@ -161,6 +177,7 @@ func startServiceLocked(ctx context.Context, in *StartRequest) (coreResponse *Co
 	if err := service_manager.OnMainServicePreStart(options); err != nil {
 		return errorWrapper(MessageType_ERROR_EXTENSION, err)
 	}
+	watch.step("extensions pre start")
 	if err := contextErr(ctx); err != nil {
 		return cancelledStart(err)
 	}
@@ -175,6 +192,7 @@ func startServiceLocked(ctx context.Context, in *StartRequest) (coreResponse *Co
 		}
 		Log(LogLevel_INFO, LogType_CORE, "Current Config is:\n", string(pout))
 	}
+	watch.step("saving the config")
 	ctx = libbox.FromContext(ctx, static.globalPlatformInterface)
 	if static.globalPlatformInterface != nil {
 		platformWrapper := libbox.WrapPlatformInterface(static.globalPlatformInterface)
@@ -189,9 +207,12 @@ func startServiceLocked(ctx context.Context, in *StartRequest) (coreResponse *Co
 	if err := contextErr(ctx); err != nil {
 		return cancelledStart(err)
 	}
+	watch.step("preparing the platform and the delay")
 	libbox.SetMemoryLimit(C.IsIos || !in.DisableMemoryLimit)
 	instance, err := NewService(serviceContext(ctx), *options, stopSignal(ctx))
+	watch.step("starting the service")
 	if err != nil {
+		watch.done("failed: " + err.Error())
 		return errorWrapper(MessageType_START_SERVICE, err)
 	}
 	if err := contextErr(ctx); err != nil {
@@ -211,5 +232,12 @@ func startServiceLocked(ctx context.Context, in *StartRequest) (coreResponse *Co
 		}
 	}
 
-	return SetCoreStatus(CoreStates_STARTED, MessageType_EMPTY, ""), nil
+	// a stop called meanwhile has already reported STOPPING; it closes the service
+	response, ok := setCoreStatusIf([]CoreStates{CoreStates_STARTING}, CoreStates_WAITING, MessageType_EMPTY, "")
+	if !ok {
+		return &CoreInfoResponse{CoreState: currentCoreState(), MessageType: MessageType_INSTANCE_NOT_STARTED, Message: "start cancelled"}, errStopped
+	}
+	startConnectivityWatcher()
+	watch.done("core is up (WAITING for a ping)")
+	return response, nil
 }

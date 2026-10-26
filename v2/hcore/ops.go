@@ -3,6 +3,7 @@ package hcore
 import (
 	"context"
 	"errors"
+	"fmt"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -53,6 +54,7 @@ func currentCoreState() CoreStates {
 // must be locked. The result channel receives the outcome.
 func enqueueLocked(kind operationKind, name string, run func() (*CoreInfoResponse, error)) <-chan operationResult {
 	previous := queue.last
+	queuedAt := time.Now()
 	done := make(chan struct{})
 	queue.last = done
 	queue.pending++
@@ -61,6 +63,9 @@ func enqueueLocked(kind operationKind, name string, run func() (*CoreInfoRespons
 	go func() {
 		defer close(done)
 		<-previous
+		if waited := time.Since(queuedAt); waited > 50*time.Millisecond {
+			reportTiming(fmt.Sprintf("%s waited %dms in the queue for the operations before it", name, waited.Milliseconds()))
+		}
 		response, err := runOperation(name, run)
 		queue.Lock()
 		queue.pending--
@@ -98,7 +103,7 @@ func startingLocked() bool {
 		return queue.lastKind == operationStart
 	}
 	switch currentCoreState() {
-	case CoreStates_STARTING, CoreStates_STARTED, CoreStates_HOT_RELOADING:
+	case CoreStates_STARTING, CoreStates_WAITING, CoreStates_STARTED, CoreStates_NO_AVAILABLE_PROXIES, CoreStates_HOT_RELOADING:
 		return true
 	}
 	return false

@@ -157,7 +157,7 @@ func applyLocked(options *Options, platform libbox.PlatformInterface) error {
 		return err
 	}
 	// StartService waits for the queue: it returns only when the background core
-	// has finished starting (STARTED) or failed. Callers such as
+	// has finished starting (WAITING or STARTED) or failed. Callers such as
 	// `HiddifyCli tunnel connect` must not report success before that.
 	res, err := hcore.StartService(libbox.BaseContext(platform), &hcore.StartRequest{
 		ConfigContent: options.ConfigContent, ConfigName: options.ConfigName,
@@ -167,13 +167,13 @@ func applyLocked(options *Options, platform libbox.PlatformInterface) error {
 		hcore.Stop()
 		return fmt.Errorf("start background core: %w", err)
 	}
-	if res.GetCoreState() != hcore.CoreStates_STARTED {
+	if state := res.GetCoreState(); state != hcore.CoreStates_STARTED && state != hcore.CoreStates_WAITING && state != hcore.CoreStates_NO_AVAILABLE_PROXIES {
 		hcore.Stop()
 		detail := res.GetMessage()
 		if detail == "" {
 			detail = res.GetCoreState().String()
 		}
-		return fmt.Errorf("background core did not reach STARTED: %s", detail)
+		return fmt.Errorf("background core did not start: %s", detail)
 	}
 	engineRunning = true
 	return nil
