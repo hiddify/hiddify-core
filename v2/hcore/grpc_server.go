@@ -15,6 +15,7 @@ import (
 	"net"
 	_ "net/http/pprof"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	sync "sync"
@@ -109,6 +110,12 @@ func Setup(params *SetupRequest, platformInterface libbox.PlatformInterface) err
 		_, err := StartGrpcServerByMode(params.Listen, params.Mode)
 		if err != nil {
 			return err
+		}
+		if isMutualTLS(params.Mode) {
+			// the app made its client identity before setting the core up
+			if err := trustStoredClientCertificate(params.BasePath); err != nil {
+				Log(LogLevel_WARNING, LogType_CORE, "no stored client certificate to trust: ", err.Error())
+			}
 		}
 	}
 	settings := db.GetTable[hcommon.AppSettings]()
@@ -284,28 +291,59 @@ func GetGrpcServerPublicKey() []byte {
 // AddGrpcClientPublicKey trusts a client certificate (PEM CERTIFICATE) for mTLS.
 // A bare PUBLIC KEY is rejected — TLS client auth requires the full certificate the
 // client will present, which must be added to ClientCAs.
-func AddGrpcClientPublicKey(clientPublicKey []byte) error {
+// StoredClientCertificateFile is where the app keeps the client certificate it presents to this
+// server, relative to the base path. The core reads it itself when it is set up, so the platform
+// code never has to pass the certificate.
+const StoredClientCertificateFile = "grpc/client.crt"
+
+func parseClientCertificate(clientPublicKey []byte) (*x509.Certificate, error) {
 	block, _ := pem.Decode(clientPublicKey)
 	if block == nil {
-		return fmt.Errorf("failed to decode client PEM")
+		return nil, fmt.Errorf("failed to decode client PEM")
 	}
-	var cert *x509.Certificate
 	switch block.Type {
 	case "CERTIFICATE":
 		parsed, err := x509.ParseCertificate(block.Bytes)
 		if err != nil {
-			return fmt.Errorf("failed to parse client certificate: %v", err)
+			return nil, fmt.Errorf("failed to parse client certificate: %v", err)
 		}
-		cert = parsed
+		return parsed, nil
 	case "PUBLIC KEY":
-		return fmt.Errorf("client CERTIFICATE PEM required for mTLS, got PUBLIC KEY")
+		return nil, fmt.Errorf("client CERTIFICATE PEM required for mTLS, got PUBLIC KEY")
 	default:
-		return fmt.Errorf("unsupported PEM type %q (want CERTIFICATE)", block.Type)
+		return nil, fmt.Errorf("unsupported PEM type %q (want CERTIFICATE)", block.Type)
+	}
+}
+
+func AddGrpcClientPublicKey(clientPublicKey []byte) error {
+	cert, err := parseClientCertificate(clientPublicKey)
+	if err != nil {
+		return err
 	}
 	mu.Lock()
 	defer mu.Unlock()
 	caCertPool.AddCert(cert)
 	return nil
+}
+
+// trustStoredClientCertificate makes the server accept the client certificate stored under
+// basePath; mu must be held.
+func trustStoredClientCertificate(basePath string) error {
+	pemBytes, err := os.ReadFile(filepath.Join(basePath, StoredClientCertificateFile))
+	if err != nil {
+		return err
+	}
+	cert, err := parseClientCertificate(pemBytes)
+	if err != nil {
+		return err
+	}
+	caCertPool.AddCert(cert)
+	return nil
+}
+
+// isMutualTLS reports whether clients of the mode must present a certificate.
+func isMutualTLS(mode SetupMode) bool {
+	return mode == SetupMode_GRPC_NORMAL || mode == SetupMode_GRPC_BACKGROUND
 }
 
 func CloseGrpcServer(mode SetupMode) {
