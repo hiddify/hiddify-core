@@ -3,6 +3,7 @@ package hcore
 import (
 	"context"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/hiddify/hiddify-core/v2/config"
@@ -31,7 +32,8 @@ type HiddifyInstance struct {
 	BaseContext               context.Context
 	endPauseTimer             *time.Timer // only for ios
 
-	logLevel LogLevel
+	// read by every log call from any goroutine
+	logLevel atomic.Int32
 }
 
 var static = &HiddifyInstance{

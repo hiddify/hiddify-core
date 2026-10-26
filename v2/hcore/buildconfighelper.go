@@ -90,21 +90,21 @@ func ChangeHiddifySettings(in *ChangeHiddifySettingsRequest, insert bool) (*Core
 	defer func() {
 		switch static.HiddifyOptions.LogLevel {
 		case "debug":
-			static.logLevel = LogLevel_DEBUG
+			static.logLevel.Store(int32(LogLevel_DEBUG))
 		case "info":
-			static.logLevel = LogLevel_INFO
+			static.logLevel.Store(int32(LogLevel_INFO))
 		case "warn":
-			static.logLevel = LogLevel_WARNING
+			static.logLevel.Store(int32(LogLevel_WARNING))
 		case "error":
-			static.logLevel = LogLevel_ERROR
+			static.logLevel.Store(int32(LogLevel_ERROR))
 		case "fatal":
-			static.logLevel = LogLevel_FATAL
+			static.logLevel.Store(int32(LogLevel_FATAL))
 		case "trace":
-			static.logLevel = LogLevel_TRACE
+			static.logLevel.Store(int32(LogLevel_TRACE))
 		default:
-			static.logLevel = LogLevel_INFO
+			static.logLevel.Store(int32(LogLevel_INFO))
 		}
-		static.debug = static.debug || static.logLevel <= LogLevel_DEBUG
+		static.debug = static.debug || LogLevel(static.logLevel.Load()) <= LogLevel_DEBUG
 	}()
 
 	if in.HiddifySettingsJson == "" {

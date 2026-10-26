@@ -102,7 +102,11 @@ func hotReloadService(ctx context.Context, in *StartRequest) (*CoreInfoResponse,
 	saveLastStartRequest(in)
 	config.SaveCurrentConfig(ctx, filepath.Join(sWorkingPath, "data/current-config.json"), *options)
 	Log(LogLevel_INFO, LogType_CORE, fmt.Sprintf("hot reload: %+v", result))
-	return SetCoreStatus(static.connectedState(), MessageType_EMPTY, ""), nil
+	// a stop called meanwhile has already reported STOPPING, and it must stay so
+	if response, ok := setCoreStatusIf([]CoreStates{CoreStates_HOT_RELOADING}, static.connectedState(), MessageType_EMPTY, ""); ok {
+		return response, nil
+	}
+	return &CoreInfoResponse{CoreState: currentCoreState(), MessageType: MessageType_EMPTY}, nil
 }
 
 // hotReloadError reports a failed hot reload; the core keeps running unchanged.

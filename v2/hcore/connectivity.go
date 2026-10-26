@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	sbox "github.com/sagernet/sing-box"
 	"github.com/sagernet/sing-box/adapter"
 	"github.com/sagernet/sing-box/common/monitoring"
 
@@ -17,6 +18,11 @@ import (
 
 // connectivityRecheck is how often the ping is looked at when the monitor reports no change.
 const connectivityRecheck = 2 * time.Second
+
+// connectivitySettle is the least time between two looks caused by monitor events. A test cycle
+// reports a result for every proxy within moments, and looking at each one cost the memory limited
+// iOS extension too much.
+const connectivitySettle = 500 * time.Millisecond
 
 // running are the states of a core that is up.
 var running = []CoreStates{CoreStates_WAITING, CoreStates_STARTED, CoreStates_NO_AVAILABLE_PROXIES}
@@ -69,6 +75,12 @@ func (h *HiddifyInstance) watchConnectivity(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		case <-changes:
+			// let the rest of the burst arrive; those that do are folded into one look
+			select {
+			case <-ctx.Done():
+				return
+			case <-time.After(connectivitySettle):
+			}
 		case <-ticker.C:
 		}
 	}
@@ -103,33 +115,34 @@ func pingAlive(delay int32) bool    { return delay > 0 && delay < maxPing }
 func pingTimedOut(delay int32) bool { return delay >= maxPing }
 
 // proxiesConnectivity reads the ping of what the user is connected through, from the monitoring.
+// It runs often, so it only looks up the selected outbound and the history, and does not build the
+// whole proxy list.
 func (h *HiddifyInstance) proxiesConnectivity() CoreStates {
 	ctx, box := h.Context(), h.Box()
 	if ctx == nil || box == nil || h.UrlTestHistory() == nil {
 		return CoreStates_WAITING
 	}
 	histories := monitoring.Get(ctx).OutboundsHistory("")
-	selected := h.selectedOutbound(histories)
-	if selected == nil {
+	selected, selectedIsGroup := selectedEntry(box, histories)
+	if selected == "" {
 		return CoreStates_WAITING
 	}
 	var leaves []int32
 	for tag, history := range histories {
-		if !isProxyTag(tag) {
+		if !isProxyTag(tag) || isGroupTag(box, tag) {
 			continue
 		}
-		if out, ok := box.Outbound().Outbound(tag); ok {
-			if _, isGroup := out.(adapter.OutboundGroup); isGroup {
-				continue
-			}
-		}
-		delay := int32(0)
-		if history != nil && !history.IsFromCache {
-			delay = int32(history.Delay)
-		}
-		leaves = append(leaves, delay)
+		leaves = append(leaves, historyDelay(history))
 	}
-	return decideConnectivity(selected.UrlTestDelay, selected.IsGroup, leaves)
+	return decideConnectivity(historyDelay(histories[selected]), selectedIsGroup, leaves)
+}
+
+// historyDelay is the delay of a url test, or 0 when there is none or it came from the cache.
+func historyDelay(history *adapter.URLTestHistory) int32 {
+	if history == nil || history.IsFromCache {
+		return 0
+	}
+	return int32(history.Delay)
 }
 
 // isProxyTag reports whether the outbound is one the user's configs provide, not a built-in that
@@ -142,24 +155,30 @@ func isProxyTag(tag string) bool {
 	return true
 }
 
-// selectedOutbound is the entry of the main group the user is connected through: the selected
-// outbound, or the extra security hop in front of it.
-func (h *HiddifyInstance) selectedOutbound(histories map[string]*adapter.URLTestHistory) *OutboundInfo {
-	groups := h.GetAllProxiesInfo(histories, true)
-	if groups == nil {
-		return nil
+func isGroupTag(box *sbox.Box, tag string) bool {
+	if out, ok := box.Outbound().Outbound(tag); ok {
+		_, isGroup := out.(adapter.OutboundGroup)
+		return isGroup
 	}
-	for _, group := range groups.Items {
-		if group.Tag != config.OutboundSelectTag {
-			continue
-		}
-		for _, item := range group.Items {
-			if item.Tag == group.Selected {
-				return item
-			}
-		}
+	return false
+}
+
+// selectedEntry is the outbound the user is connected through: the extra security hop in front of
+// the selected one when there is one, else what the main group has selected.
+func selectedEntry(box *sbox.Box, histories map[string]*adapter.URLTestHistory) (tag string, isGroup bool) {
+	if _, ok := histories[config.ChainExtraSecurityTag]; ok {
+		return config.ChainExtraSecurityTag, isGroupTag(box, config.ChainExtraSecurityTag)
 	}
-	return nil
+	main, ok := box.Outbound().Outbound(config.OutboundSelectTag)
+	if !ok {
+		return "", false
+	}
+	group, ok := main.(adapter.OutboundGroup)
+	if !ok {
+		return "", false
+	}
+	tag = groupNow(group)
+	return tag, tag != "" && isGroupTag(box, tag)
 }
 
 // decideConnectivity is the state of a running core by the last url tests. A delay of 0 is a test
