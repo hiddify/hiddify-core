@@ -13,9 +13,10 @@ import (
 
 // The core owns the connection state. Once the service is up the core is WAITING until the
 // "lowest" (auto) group's pings decide: STARTED with a working ping, NO_AVAILABLE_PROXIES when
-// every proxy in that group has timed out (see decideConnectivity). The user's selected outbound
-// does not drive this: picking a single dead proxy must not flip the core to NO_AVAILABLE_PROXIES.
-// Clients only display what the core reports.
+// every proxy in that group has timed out (see decideConnectivity). When the profile has only
+// one proxy, "lowest" is not built — then the select group's leaf proxy is used instead.
+// The user's selected outbound does not drive this when "lowest" exists: picking a single dead
+// proxy must not flip the core to NO_AVAILABLE_PROXIES. Clients only display what the core reports.
 
 // connectivityRecheck is how often the ping is looked at when the monitor reports no change.
 const connectivityRecheck = 2 * time.Second
@@ -117,6 +118,7 @@ func pingTimedOut(delay int32) bool { return delay >= maxPing }
 
 // proxiesConnectivity reads pings of the built-in "lowest" group from monitoring. It runs often,
 // so it only walks that group's members and their histories — not the user's selected outbound.
+// With a single-proxy profile there is no "lowest"; the select leaf is used instead.
 func (h *HiddifyInstance) proxiesConnectivity() CoreStates {
 	ctx, box := h.Context(), h.Box()
 	if ctx == nil || box == nil || h.UrlTestHistory() == nil {
@@ -125,7 +127,7 @@ func (h *HiddifyInstance) proxiesConnectivity() CoreStates {
 	histories := monitoring.Get(ctx).OutboundsHistory("")
 	lowest, ok := box.Outbound().Outbound(config.OutboundURLTestTag)
 	if !ok {
-		return CoreStates_WAITING
+		return decideConnectivity(0, true, selectProxyLeaves(box, histories))
 	}
 	group, isGroup := lowest.(adapter.OutboundGroup)
 	if !isGroup {
@@ -139,6 +141,30 @@ func (h *HiddifyInstance) proxiesConnectivity() CoreStates {
 		leaves = append(leaves, historyDelay(histories[tag]))
 	}
 	return decideConnectivity(historyDelay(histories[config.OutboundURLTestTag]), true, leaves)
+}
+
+// selectProxyLeaves are delays of non-group proxy members of "select" (the one proxy when
+// "lowest" was not built).
+func selectProxyLeaves(box *sbox.Box, histories map[string]*adapter.URLTestHistory) []int32 {
+	sel, ok := box.Outbound().Outbound(config.OutboundSelectTag)
+	if !ok {
+		return nil
+	}
+	group, isGroup := sel.(adapter.OutboundGroup)
+	if !isGroup {
+		if isProxyTag(sel.Tag()) {
+			return []int32{historyDelay(histories[sel.Tag()])}
+		}
+		return nil
+	}
+	var leaves []int32
+	for _, tag := range group.All() {
+		if !isProxyTag(tag) || isGroupTag(box, tag) {
+			continue
+		}
+		leaves = append(leaves, historyDelay(histories[tag]))
+	}
+	return leaves
 }
 
 // historyDelay is the delay of a url test, or 0 when there is none or it came from the cache.
@@ -171,12 +197,12 @@ func isGroupTag(box *sbox.Box, tag string) bool {
 // A delay of 0 is a test still to come (or a result from the cache), a delay of maxPing or more is
 // a timeout.
 //
-//   - the lowest group (or its best member) has a ping: STARTED.
+//   - the lowest group or any of its leaf proxies has a ping: STARTED.
 //   - every proxy in the lowest group timed out: NO_AVAILABLE_PROXIES.
 //   - otherwise WAITING (tests still running, or no members yet).
 //
 // groupDelay is the aggregated delay of the lowest group; leaves are delays of its member proxies
-// (not other groups, not the user's selected outbound).
+// (or of select when lowest is absent for a one-proxy profile).
 func decideConnectivity(groupDelay int32, isGroup bool, leaves []int32) CoreStates {
 	if pingAlive(groupDelay) {
 		return CoreStates_STARTED
@@ -190,10 +216,17 @@ func decideConnectivity(groupDelay int32, isGroup bool, leaves []int32) CoreStat
 	if len(leaves) == 0 {
 		return CoreStates_WAITING
 	}
+	pending := false
 	for _, delay := range leaves {
-		if !pingTimedOut(delay) {
-			return CoreStates_WAITING
+		if pingAlive(delay) {
+			return CoreStates_STARTED
 		}
+		if !pingTimedOut(delay) {
+			pending = true
+		}
+	}
+	if pending {
+		return CoreStates_WAITING
 	}
 	return CoreStates_NO_AVAILABLE_PROXIES
 }
