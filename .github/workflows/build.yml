@@ -489,8 +489,15 @@ jobs:
             -p "dist/hiddify-core_${{ matrix.os }}_${{ matrix.debian }}.deb" \
             --architecture ${{ matrix.debian }} \
             dist/hiddify-core=/usr/bin/hiddify-core
+          # Older Ubuntu needs this debsigs fix; Resolute+ already has it (patch then exits 1).
           curl -Lo '/tmp/debsigs.diff' 'https://gitlab.com/debsigs/debsigs/-/commit/160138f5de1ec110376d3c807b60a37388bc7c90.diff'
-          sudo patch /usr/bin/debsigs < '/tmp/debsigs.diff'
+          set +e
+          sudo patch -N -r - /usr/bin/debsigs < '/tmp/debsigs.diff'
+          patch_status=$?
+          set -e
+          if [ "$patch_status" -gt 1 ]; then
+            exit "$patch_status"
+          fi
           rm -rf $HOME/.gnupg
           echo "${{ secrets.GPG_KEY }}" | base64 -d | gpg --batch --yes --pinentry-mode loopback --import
           debsigs --sign=origin -k ${{ secrets.GPG_KEY_ID }} --gpgopts '--pinentry-mode loopback --passphrase "${{ secrets.GPG_PASSPHRASE }}"' dist/*.deb
