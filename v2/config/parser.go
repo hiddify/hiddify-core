@@ -57,85 +57,119 @@ func parseConfigContent(ctx context.Context, content []byte, debug bool, configO
 		configOpt = DefaultHiddifyOptions()
 	}
 
-	var jsonObj map[string]interface{} = make(map[string]interface{})
-
-	var tmpJsonResult any
-	jsonDecoder := json.NewDecoder(SJ.NewCommentFilter(bytes.NewReader(content)))
-	if err := jsonDecoder.Decode(&tmpJsonResult); err == nil {
-		fmt.Printf("Convert using json\n")
-		if tmpJsonObj, ok := tmpJsonResult.(map[string]interface{}); ok {
-			if tmpJsonObj["outbounds"] == nil && tmpJsonObj["endpoints"] == nil {
-				// a single outbound object (was wrapping the empty result itself)
-				jsonObj["outbounds"] = []interface{}{tmpJsonObj}
-			} else {
-				if fullConfig || (configOpt != nil && configOpt.EnableFullConfig) {
-					jsonObj = tmpJsonObj
-				} else {
-					if tmpJsonObj["outbounds"] != nil {
-						jsonObj["outbounds"] = tmpJsonObj["outbounds"]
-					}
-					if tmpJsonObj["endpoints"] != nil {
-						jsonObj["endpoints"] = tmpJsonObj["endpoints"]
-					}
-				}
+	// The content is JSON, YAML or text. JSON and YAML are read as sing-box / hiddify-core first, then as Clash,
+	// then as Xray; text is share links.
+	var structured any
+	isStructured := json.NewDecoder(SJ.NewCommentFilter(bytes.NewReader(content))).Decode(&structured) == nil
+	if !isStructured {
+		var yamlValue any
+		if yaml.Unmarshal(content, &yamlValue) == nil {
+			switch yamlValue.(type) {
+			case map[string]any, []any:
+				structured, isStructured = yamlValue, true
 			}
-		} else if jsonArray, ok := tmpJsonResult.([]interface{}); ok {
-			if len(jsonArray) == 0 {
-				return nil, fmt.Errorf("[SingboxParser] no outbounds found")
-			}
-			outbounds := make([]interface{}, 0, len(jsonArray))
-			for i, item := range jsonArray {
-				itemObj, ok := item.(map[string]interface{})
-				if !ok {
-					return nil, fmt.Errorf("[SingboxParser] outbound at index %d is %T, expected a json object", i, item)
-				}
-				outbounds = append(outbounds, itemObj)
-			}
-			jsonObj["outbounds"] = outbounds
-		} else {
-			return nil, fmt.Errorf("[SingboxParser] incorrect json format: expected a json object or an array of outbound objects, got %T", tmpJsonResult)
 		}
-
-		// the legacy WireGuard outbound was removed from sing-box: use the WireGuard endpoint
-		outbounds, _ := jsonObj["outbounds"].([]interface{})
-		endpoints, _ := jsonObj["endpoints"].([]interface{})
-		if outbounds, endpoints = ray2sing.MoveLegacyWireGuardOutbounds(outbounds, endpoints); len(endpoints) > 0 {
-			jsonObj["outbounds"] = outbounds
-			jsonObj["endpoints"] = endpoints
-		}
-
-		newContent, err := json.MarshalIndent(jsonObj, "", "  ")
-		if err != nil {
-			return nil, fmt.Errorf("[SingboxParser] %w", err)
-		}
-
-		return patchConfigStr(ctx, newContent, "SingboxParser", configOpt)
 	}
-
-	fmt.Printf("Convert using clash\n")
-	clashObj := clash.Clash{}
-	if err := yaml.Unmarshal(content, &clashObj); err == nil && clashObj.Proxies != nil {
-		if len(clashObj.Proxies) == 0 {
-			return nil, fmt.Errorf("[ClashParser] no outbounds found")
-		}
-		converted, endpoints, err := convert.Clash2sing(clashObj, clash2singmodel.SINGLATEST)
+	if !isStructured {
+		v2ray, err := ray2sing.Ray2SingboxOptions(ctx, string(content), configOpt.UseXrayCoreWhenPossible)
 		if err != nil {
-			return nil, fmt.Errorf("[ClashParser] converting clash to sing-box error: %w", err)
+			return nil, fmt.Errorf("unable to determine config format")
 		}
-		output := configByte
-		output, err = convert.Patch(output, converted, endpoints, "", "", nil)
-		if err != nil {
-			return nil, fmt.Errorf("[ClashParser] patching clash config error: %w", err)
-		}
-		return patchConfigStr(ctx, output, "ClashParser", configOpt)
-	}
-
-	v2ray, err := ray2sing.Ray2SingboxOptions(ctx, string(content), configOpt.UseXrayCoreWhenPossible)
-	if err == nil {
 		return patchConfigOptions(ctx, v2ray, "V2rayParser", configOpt)
 	}
 
-	return nil, fmt.Errorf("unable to determine config format")
+	options, singboxErr := parseSingboxContent(ctx, structured, configOpt, fullConfig)
+	if singboxErr == nil {
+		return options, nil
+	}
+	if options, isClash, err := parseClashContent(ctx, content, configOpt); isClash {
+		return options, err
+	}
+	if links, ok := xrayJSONShareLinks(structured); ok {
+		fmt.Printf("Convert using xray json\n")
+		v2ray, err := ray2sing.Ray2SingboxOptions(ctx, links, configOpt.UseXrayCoreWhenPossible)
+		if err != nil {
+			return nil, fmt.Errorf("[XrayJsonParser] %w", err)
+		}
+		return patchConfigOptions(ctx, v2ray, "XrayJsonParser", configOpt)
+	}
+	return nil, singboxErr
+}
+
+// parseSingboxContent reads a decoded sing-box / hiddify-core config: a config, one outbound or a list of them.
+func parseSingboxContent(ctx context.Context, structured any, configOpt *HiddifyOptions, fullConfig bool) (*option.Options, error) {
+	fmt.Printf("Convert using singbox\n")
+	var jsonObj map[string]interface{} = make(map[string]interface{})
+	if tmpJsonObj, ok := structured.(map[string]interface{}); ok {
+		if tmpJsonObj["outbounds"] == nil && tmpJsonObj["endpoints"] == nil {
+			// a single outbound object (was wrapping the empty result itself)
+			jsonObj["outbounds"] = []interface{}{tmpJsonObj}
+		} else {
+			if fullConfig || (configOpt != nil && configOpt.EnableFullConfig) {
+				jsonObj = tmpJsonObj
+			} else {
+				if tmpJsonObj["outbounds"] != nil {
+					jsonObj["outbounds"] = tmpJsonObj["outbounds"]
+				}
+				if tmpJsonObj["endpoints"] != nil {
+					jsonObj["endpoints"] = tmpJsonObj["endpoints"]
+				}
+			}
+		}
+	} else if jsonArray, ok := structured.([]interface{}); ok {
+		if len(jsonArray) == 0 {
+			return nil, fmt.Errorf("[SingboxParser] no outbounds found")
+		}
+		outbounds := make([]interface{}, 0, len(jsonArray))
+		for i, item := range jsonArray {
+			itemObj, ok := item.(map[string]interface{})
+			if !ok {
+				return nil, fmt.Errorf("[SingboxParser] outbound at index %d is %T, expected a json object", i, item)
+			}
+			outbounds = append(outbounds, itemObj)
+		}
+		jsonObj["outbounds"] = outbounds
+	} else {
+		return nil, fmt.Errorf("[SingboxParser] incorrect json format: expected a json object or an array of outbound objects, got %T", structured)
+	}
+
+	// the legacy WireGuard outbound was removed from sing-box: use the WireGuard endpoint
+	outbounds, _ := jsonObj["outbounds"].([]interface{})
+	endpoints, _ := jsonObj["endpoints"].([]interface{})
+	if outbounds, endpoints = ray2sing.MoveLegacyWireGuardOutbounds(outbounds, endpoints); len(endpoints) > 0 {
+		jsonObj["outbounds"] = outbounds
+		jsonObj["endpoints"] = endpoints
+	}
+
+	newContent, err := json.MarshalIndent(jsonObj, "", "  ")
+	if err != nil {
+		return nil, fmt.Errorf("[SingboxParser] %w", err)
+	}
+
+	return patchConfigStr(ctx, newContent, "SingboxParser", configOpt)
+}
+
+// parseClashContent reads a Clash config; isClash is false when content has no Clash proxies.
+func parseClashContent(ctx context.Context, content []byte, configOpt *HiddifyOptions) (options *option.Options, isClash bool, err error) {
+	clashObj := clash.Clash{}
+	if err := yaml.Unmarshal(content, &clashObj); err != nil || clashObj.Proxies == nil {
+		return nil, false, nil
+	}
+	fmt.Printf("Convert using clash\n")
+	if len(clashObj.Proxies) == 0 {
+		return nil, true, fmt.Errorf("[ClashParser] no outbounds found")
+	}
+	converted, endpoints, err := convert.Clash2sing(clashObj, clash2singmodel.SINGLATEST)
+	if err != nil {
+		return nil, true, fmt.Errorf("[ClashParser] converting clash to sing-box error: %w", err)
+	}
+	output := configByte
+	output, err = convert.Patch(output, converted, endpoints, "", "", nil)
+	if err != nil {
+		return nil, true, fmt.Errorf("[ClashParser] patching clash config error: %w", err)
+	}
+	options, err = patchConfigStr(ctx, output, "ClashParser", configOpt)
+	return options, true, err
 }
 
 func patchConfigStr(ctx context.Context, content []byte, name string, configOpt *HiddifyOptions) (*option.Options, error) {
