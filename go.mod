@@ -219,6 +219,7 @@ require (
 	github.com/sagernet/ws v0.0.0-20231204124109-acfe8907c854 // indirect
 	github.com/sergeyfrolov/bsbuffer v0.0.0-20180903213811-94e85abb8507 // indirect
 	github.com/shadowsocks/go-shadowsocks2 v0.1.5 // indirect
+	github.com/shtorm-7/rmux v1.0.1 // indirect
 	github.com/sirupsen/logrus v1.9.4 // indirect
 	github.com/smallstep/pkcs7 v0.1.1 // indirect
 	github.com/songgao/water v0.0.0-20200317203138-2b4b6d7c09d8 // indirect
@@ -325,7 +326,7 @@ replace github.com/hiddify/ray2sing => ./ray2sing
 
 replace github.com/sagernet/sing-box => ./hiddify-sing-box
 
-replace github.com/sagernet/sing-vmess => github.com/starifly/sing-vmess v0.2.7-mod.9
+replace github.com/sagernet/sing-vmess => ./hiddify-sing-box/replace/sing-vmess
 
 replace github.com/sagernet/wireguard-go => ./hiddify-sing-box/replace/wireguard-go
 
@@ -341,4 +342,12 @@ replace github.com/kianmhz/GooseRelayVPN => github.com/hiddify/GooseRelayVPN v0.
 
 replace github.com/Diniboy1123/connect-ip-go => github.com/shtorm-7/connect-ip-go v1.0.0-extended-1.1.1
 
-replace github.com/amnezia-vpn/amneziawg-go => github.com/hiddifydeveloper/amneziawg-go v0.0.0-20261001141816-70b344f2f78b
+replace github.com/amnezia-vpn/amneziawg-go/v3 => ./hiddify-sing-box/replace/amneziawg-go
+
+replace github.com/sagernet/sing-tun => ./hiddify-sing-box/replace/sing-tun
+
+replace github.com/sagernet/gvisor => ./hiddify-sing-box/replace/gvisor
+
+replace github.com/sagernet/sing-mux => ./hiddify-sing-box/replace/sing-mux
+
+replace github.com/metacubex/utls => github.com/Leadaxe/utls-lx v1.8.8-0.20261011005638-ad69b191e2f8
