@@ -1,0 +1,1898 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>hiddify-core gRPC tester</title>
+  <style>
+    :root {
+      --bg: #f6f4ef;
+      --panel: #fffdf8;
+      --ink: #1c1a16;
+      --muted: #6b6458;
+      --line: #ddd6c8;
+      --accent: #0b6e4f;
+      --warn: #9a5b00;
+      --bad: #9b1c1c;
+      --ok: #0b6e4f;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font: 14px/1.45 "IBM Plex Sans", "Segoe UI", sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(900px 400px at 10% -10%, #e8f3ec 0%, transparent 60%),
+        radial-gradient(700px 300px at 100% 0%, #f3ebe0 0%, transparent 55%),
+        var(--bg);
+      min-height: 100vh;
+    }
+    header {
+      padding: 10px 20px 8px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(255, 253, 248, 0.96);
+      backdrop-filter: blur(8px);
+      position: sticky; top: 0; z-index: 200;
+      box-shadow: 0 1px 0 var(--line);
+    }
+    .toolbar {
+      display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: center;
+    }
+    h1 {
+      margin: 0; font: 600 15px/1.2 "IBM Plex Serif", Georgia, serif; letter-spacing: -0.02em;
+      white-space: nowrap;
+    }
+    .toolbar-proxy {
+      flex: 1 1 160px; min-width: 120px; max-width: 360px;
+      font-size: 12px; color: var(--ink);
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .toolbar-proxy .k { color: var(--muted); }
+    .toolbar-actions { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+    .toolbar-actions button {
+      padding: 4px 9px; font-size: 12px; border-radius: 6px;
+    }
+    .state.sm { padding: 4px 8px; font-size: 12px; gap: 6px; }
+    .state.sm .dot { width: 7px; height: 7px; }
+    button.state-toggle {
+      cursor: pointer; font: inherit; appearance: none;
+      transition: transform 0.08s ease, box-shadow 0.15s ease;
+    }
+    button.state-toggle:hover { box-shadow: 0 1px 0 rgba(28,26,22,0.08); }
+    button.state-toggle:active { transform: scale(0.98); }
+    button.state-toggle .hint {
+      margin-left: 4px; font-weight: 500; color: var(--muted); font-size: 11px;
+    }
+    button.state-toggle.STOPPED .hint { color: var(--accent); }
+    button.state-toggle:not(.STOPPED) .hint { color: var(--bad); }
+    .toolbar-total {
+      font: 11px/1.35 ui-monospace, SFMono-Regular, Menlo, monospace;
+      color: var(--ink); white-space: nowrap; font-variant-numeric: tabular-nums;
+      margin-left: auto;
+    }
+    .toolbar-total .k {
+      color: var(--muted); font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
+      font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; margin-right: 6px;
+    }
+    .rpc-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    .rpc-table th, .rpc-table td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+    .rpc-table th { color: var(--muted); font-weight: 600; font-size: 10px; text-transform: uppercase; letter-spacing: 0.04em; }
+    .rpc-table .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11px; }
+    .rpc-table button { padding: 3px 8px; font-size: 11px; }
+    #rpcResult { max-height: 180px; margin-top: 8px; }
+    .grpc-stats-local {
+      font: 11px/1.35 ui-monospace, SFMono-Regular, Menlo, monospace;
+      color: var(--muted); margin: 0 0 10px;
+    }
+    .card-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 8px; margin-bottom: 10px; }
+    .card-head h2 { margin: 0; }
+    main { display: grid; grid-template-columns: 1.1fr 1fr; gap: 16px; padding: 16px 24px 32px; }
+    @media (max-width: 960px) { main { grid-template-columns: 1fr; } }
+    #proxyList {
+      max-height: min(72vh, 1100px);
+      overflow-y: auto;
+      overflow-x: hidden;
+      padding-right: 4px;
+      scrollbar-gutter: stable;
+    }
+    #proxyList::-webkit-scrollbar { width: 8px; }
+    #proxyList::-webkit-scrollbar-thumb {
+      background: #c9c0b0; border-radius: 8px;
+    }
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 14px 16px;
+      position: relative;
+      z-index: 1;
+    }
+    .card h2 { margin: 0 0 10px; font-size: 13px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
+    .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 10px; position: relative; z-index: 2; }
+    label { color: var(--muted); font-size: 12px; display: block; }
+    .field { display: flex; flex-direction: column; gap: 4px; min-width: 140px; }
+    input, textarea, select, button {
+      font: inherit; color: var(--ink);
+      border: 1px solid var(--line); border-radius: 8px; background: #fff;
+    }
+    input, select { padding: 7px 10px; min-width: 0; }
+    textarea { width: 100%; min-height: 100px; padding: 10px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; }
+    button {
+      padding: 8px 12px; cursor: pointer; background: #efeae0;
+      position: relative; z-index: 3;
+      -webkit-user-select: none; user-select: none;
+    }
+    button.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+    .state {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 6px 10px; border-radius: 999px; border: 1px solid var(--line);
+      font-weight: 600; letter-spacing: 0.02em;
+      background: #fff;
+    }
+    .state .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
+    /* connected */
+    .state.STARTED {
+      background: #e6f6ec; border-color: #9dceb0; color: #0b6e4f;
+    }
+    .state.STARTED .dot { background: var(--ok); }
+    /* connecting / waiting */
+    .state.STARTING, .state.WAITING, .state.HOT_RELOADING, .state.STOPPING {
+      background: #fff6e0; border-color: #e6c87a; color: #8a5a00;
+    }
+    .state.STARTING .dot, .state.WAITING .dot,
+    .state.HOT_RELOADING .dot, .state.STOPPING .dot { background: var(--warn); }
+    /* no available proxies */
+    .state.NO_AVAILABLE_PROXIES {
+      background: #fde8e8; border-color: #e2a0a0; color: #9b1c1c;
+    }
+    .state.NO_AVAILABLE_PROXIES .dot { background: var(--bad); }
+    .state.STOPPED {
+      background: #f3f1ec; border-color: var(--line); color: var(--muted);
+    }
+    .state.STOPPED .dot { background: var(--muted); }
+    .map { color: var(--muted); font-size: 12px; }
+    pre {
+      margin: 0; max-height: 340px; overflow: auto;
+      background: #1c1a16; color: #f3eee4; border-radius: 8px;
+      padding: 12px; font: 11px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace;
+      white-space: pre-wrap; word-break: break-word;
+    }
+    .proxy {
+      display: grid; grid-template-columns: auto 1fr auto auto; gap: 8px 10px; align-items: center;
+      padding: 9px 10px; margin: 0 -8px 4px; border-radius: 10px;
+      cursor: pointer; border: 1px solid transparent;
+      transition: box-shadow 0.15s ease, transform 0.08s ease, border-color 0.15s ease;
+    }
+    .proxy:hover { filter: brightness(0.98); }
+    .proxy:active { transform: scale(0.995); }
+    .proxy .tag { font-weight: 600; }
+    .proxy .sel-mark {
+      width: 22px; height: 22px; border-radius: 50%;
+      border: 2px solid #c9c0b0; background: #fff;
+      display: inline-flex; align-items: center; justify-content: center;
+      flex: 0 0 auto;
+    }
+    .proxy .sel-mark svg { width: 12px; height: 12px; opacity: 0; }
+    /* connected / has ping */
+    .proxy.ping-ok {
+      background: #eaf7ef; border-color: #b7dcc4;
+    }
+    .proxy.ping-ok .delay { color: #0b6e4f; font-weight: 600; }
+    /* not pinged yet */
+    .proxy.ping-pending {
+      background: #fff8e8; border-color: #ead7a0;
+    }
+    .proxy.ping-pending .delay { color: #8a5a00; }
+    /* timeout */
+    .proxy.ping-timeout {
+      background: #fdecec; border-color: #e5b0b0;
+    }
+    .proxy.ping-timeout .delay { color: #9b1c1c; font-weight: 600; }
+    .proxy.selected {
+      border-color: #0b6e4f;
+      box-shadow:
+        0 0 0 2px rgba(11, 110, 79, 0.18),
+        0 8px 20px rgba(11, 110, 79, 0.12);
+      background: linear-gradient(135deg, #dff5e8, #eaf7ef);
+      position: relative;
+    }
+    .proxy.selected .sel-mark {
+      border-color: #0b6e4f; background: #0b6e4f; color: #fff;
+    }
+    .proxy.selected .sel-mark svg { opacity: 1; }
+    .proxy.selected .tag::after {
+      content: "selected";
+      display: inline-block;
+      margin-left: 8px;
+      padding: 1px 7px;
+      border-radius: 999px;
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      vertical-align: middle;
+      background: #0b6e4f;
+      color: #fff;
+    }
+    .proxy .btn-info {
+      padding: 4px 9px; font-size: 11px; border-radius: 7px;
+      background: #fff; color: var(--muted);
+    }
+    .proxy .btn-info:hover { color: var(--ink); border-color: #c9c0b0; }
+    .status-badge {
+      display: inline-block;
+      margin-left: 6px;
+      padding: 1px 7px;
+      border-radius: 999px;
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+      vertical-align: middle;
+      border: 1px solid transparent;
+      white-space: nowrap;
+    }
+    .status-badge.ready { background: #dff5e8; color: #0b6e4f; border-color: #b7dcc4; }
+    .status-badge.connecting,
+    .status-badge.reconnecting,
+    .status-badge.registering,
+    .status-badge.searching { background: #fff4d6; color: #8a5a00; border-color: #ead7a0; }
+    .status-badge.failed { background: #fdecec; color: #9b1c1c; border-color: #e5b0b0; }
+    .status-badge.unknown { background: #f0ebe3; color: var(--muted); border-color: var(--line); }
+    .chain-card .status-badge { margin-left: 0; }
+    .chain-slot { margin: 10px 0; }
+    .chain-card {
+      border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px;
+      background: linear-gradient(135deg, #fffdf8, #f3ebe0);
+      box-shadow: 0 6px 18px rgba(28,26,22,0.05);
+    }
+    .chain-card.extra {
+      background: linear-gradient(135deg, #eef6ff, #e8f3ec);
+      border-color: #b7c9e0;
+    }
+    .chain-card.unblock {
+      background: linear-gradient(135deg, #fff4ec, #f3ebe0);
+      border-color: #e0c4a8;
+    }
+    .chain-card .chain-top {
+      display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center;
+      margin-bottom: 8px;
+    }
+    .chain-card .chain-title {
+      font: 600 13px/1.2 "IBM Plex Serif", Georgia, serif;
+      letter-spacing: -0.01em;
+    }
+    .chain-card .chain-mode {
+      font-size: 11px; color: var(--muted);
+      padding: 2px 8px; border-radius: 999px; background: rgba(255,255,255,0.7);
+      border: 1px solid var(--line);
+    }
+    .chain-card .chain-ping {
+      margin-left: auto; font: 600 12px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-variant-numeric: tabular-nums;
+    }
+    .chain-card .chain-ping.ok { color: #0b6e4f; }
+    .chain-card .chain-ping.pending { color: #8a5a00; }
+    .chain-card .chain-ping.timeout { color: #9b1c1c; }
+    .chain-card .chain-ip {
+      font-size: 12px; color: var(--ink);
+      padding: 8px 10px; border-radius: 8px; background: rgba(255,255,255,0.75);
+      border: 1px solid var(--line); margin-bottom: 8px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    }
+    .chain-card .chain-ip .k { color: var(--muted); font-family: "IBM Plex Sans", "Segoe UI", sans-serif; font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; display: block; margin-bottom: 2px; }
+    .chain-card .chain-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+    .meta { color: var(--muted); font-size: 12px; }
+    .delay { font-variant-numeric: tabular-nums; min-width: 52px; text-align: right; }
+    .ip-line { color: var(--muted); font-size: 11px; margin-top: 2px; }
+    .log { max-height: 160px; }
+    .hidden { display: none !important; }
+    #modal {
+      display: none; position: fixed; inset: 0; z-index: 1000;
+      background: rgba(28, 26, 22, 0.45);
+      align-items: center; justify-content: center; padding: 16px;
+    }
+    #modal.open { display: flex; }
+    #modal .panel {
+      border: 1px solid var(--line); border-radius: 12px; padding: 0;
+      max-width: min(920px, 96vw); width: 920px; background: var(--panel); color: var(--ink);
+      box-shadow: 0 20px 60px rgba(28, 26, 22, 0.25);
+      max-height: 90vh; overflow: auto;
+    }
+    .dlg-head {
+      display: flex; justify-content: space-between; align-items: center; gap: 12px;
+      padding: 12px 16px; border-bottom: 1px solid var(--line);
+    }
+    .dlg-head h3 { margin: 0; font: 600 15px/1.2 "IBM Plex Serif", Georgia, serif; }
+    .dlg-body { padding: 12px 16px 16px; }
+    .dlg-meta { color: var(--muted); font-size: 12px; margin-bottom: 8px; }
+    .tabs { display: flex; gap: 6px; margin-bottom: 8px; }
+    .tabs button[aria-selected="true"] { background: var(--accent); color: #fff; border-color: var(--accent); }
+    #dlgPre { max-height: 55vh; }
+    .detail-grid {
+      display: grid; grid-template-columns: 120px 1fr; gap: 6px 12px;
+      margin-bottom: 12px; font-size: 13px;
+    }
+    .detail-grid .k { color: var(--muted); }
+    .detail-grid .v { word-break: break-word; }
+    #dlgResolve, #dlgOutbound, #dlgLive { display: none; }
+    #dlgResolve.open, #dlgOutbound.open, #dlgLive.open { display: block; }
+    .rpc-acc-row td {
+      padding: 0 8px 12px; border-bottom: 1px solid var(--line);
+      background: linear-gradient(180deg, rgba(232,243,236,0.35), rgba(255,253,248,0.9));
+    }
+    .rpc-acc-row { display: none; }
+    .rpc-acc-row.open { display: table-row; }
+    .rpc-acc {
+      border: 1px solid var(--line); border-radius: 12px; padding: 12px;
+      background: var(--panel); box-shadow: 0 8px 24px rgba(28,26,22,0.04);
+    }
+    .rpc-hero {
+      display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: center;
+      margin-bottom: 10px; padding: 10px 12px;
+      border-radius: 10px; background: linear-gradient(135deg, #f3ebe0, #e8f3ec);
+      border: 1px solid var(--line);
+    }
+    .rpc-hero .rpc-acc-actions {
+      margin: 0 0 0 auto; margin-top: 0;
+    }
+    .rpc-hero .pill {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: 600;
+      background: #fff; border: 1px solid var(--line);
+    }
+    .rpc-hero .pill .pulse {
+      width: 8px; height: 8px; border-radius: 50%; background: var(--muted);
+    }
+    .rpc-hero .pill.live .pulse {
+      background: var(--ok);
+      box-shadow: 0 0 0 0 rgba(11, 110, 79, 0.5);
+      animation: rpcPulse 1.4s ease-out infinite;
+    }
+    .rpc-hero .pill.error .pulse { background: var(--bad); animation: none; }
+    @keyframes rpcPulse {
+      0% { box-shadow: 0 0 0 0 rgba(11, 110, 79, 0.45); }
+      70% { box-shadow: 0 0 0 8px rgba(11, 110, 79, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(11, 110, 79, 0); }
+    }
+    .rpc-hero .stat {
+      font: 12px/1.35 ui-monospace, SFMono-Regular, Menlo, monospace;
+      color: var(--ink);
+    }
+    .rpc-hero .stat span { color: var(--muted); font-family: "IBM Plex Sans", "Segoe UI", sans-serif; font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; display: block; }
+    .rpc-acc-meta { font-size: 12px; color: var(--muted); margin: 0 0 8px; }
+    .rpc-acc-meta.is-error { color: var(--bad); font-weight: 600; }
+    .rpc-acc-summary {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px;
+      margin-bottom: 8px;
+    }
+    .rpc-acc-summary .cardlet {
+      padding: 8px 10px; border-radius: 10px; border: 1px solid var(--line); background: #fff;
+    }
+    .rpc-acc-summary .cardlet .k { font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); }
+    .rpc-acc-summary .cardlet .v { font-weight: 600; margin-top: 2px; word-break: break-word; font-size: 12px; }
+    .rpc-acc-pre {
+      max-height: 260px; margin: 0;
+      background: #1c1a16; color: #f3eee4; border-radius: 10px;
+      padding: 12px; font: 11px/1.45 ui-monospace, SFMono-Regular, Menlo, monospace;
+      white-space: pre-wrap; word-break: break-word; overflow: auto;
+    }
+    .rpc-acc-pre.is-error { background: #2a1212; color: #ffd4d4; outline: 1px solid #9b1c1c; }
+    .rpc-acc-pre.is-empty { color: #a89f90; font-style: italic; }
+    .rpc-pkt-list {
+      display: flex; flex-direction: column; gap: 6px;
+      max-height: min(420px, 55vh); overflow-y: auto; overflow-x: hidden;
+      margin: 0 0 4px; padding: 2px 6px 2px 2px;
+      border: 1px solid var(--line); border-radius: 10px; background: rgba(28,26,22,0.02);
+      scrollbar-gutter: stable;
+    }
+    .rpc-pkt-list::-webkit-scrollbar { width: 8px; }
+    .rpc-pkt-list::-webkit-scrollbar-thumb {
+      background: #c9c0b0; border-radius: 8px;
+    }
+    .rpc-pkt {
+      border: 1px solid var(--line); border-radius: 10px; background: #fff;
+      overflow: hidden; cursor: pointer; flex: 0 0 auto;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+    .rpc-pkt:hover { border-color: #c9c0b0; box-shadow: 0 2px 10px rgba(28,26,22,0.06); }
+    .rpc-pkt.open {
+      border-color: rgba(11, 110, 79, 0.35);
+      box-shadow: 0 4px 16px rgba(11, 110, 79, 0.08);
+    }
+    .rpc-pkt-head {
+      display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center;
+      padding: 8px 12px; background: linear-gradient(180deg, #fff, #faf8f4);
+      font-size: 11px; color: var(--muted); user-select: none;
+    }
+    .rpc-pkt-head .n {
+      font-weight: 700; color: var(--accent); font-variant-numeric: tabular-nums;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace; min-width: 2.2em;
+    }
+    .rpc-pkt-head .chips { display: flex; flex-wrap: wrap; gap: 4px; flex: 1; }
+    .rpc-pkt-head .chip {
+      padding: 2px 7px; border-radius: 999px; background: #efeae0;
+      border: 1px solid var(--line); color: var(--ink); font-size: 10px;
+    }
+    .rpc-pkt-head .chip.state { background: #e8f3ec; border-color: #b9d8c8; color: var(--ok); }
+    .rpc-pkt-head .meta-bits {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-variant-numeric: tabular-nums; font-size: 10px; color: var(--ink);
+    }
+    .rpc-pkt-head .meta-bits .size,
+    .rpc-pkt-head .meta-bits .time {
+      padding: 2px 6px; border-radius: 6px; background: #efeae0; border: 1px solid var(--line);
+    }
+    .rpc-pkt-head .hint {
+      margin-left: auto; font-size: 10px; color: var(--muted); white-space: nowrap;
+    }
+    .rpc-pkt.open .rpc-pkt-head .hint { color: var(--accent); }
+    .rpc-pkt-body {
+      margin: 0; overflow: hidden;
+      background: #1c1a16; color: #f3eee4;
+      padding: 10px 12px; font: 11px/1.45 ui-monospace, SFMono-Regular, Menlo, monospace;
+      white-space: pre-wrap; word-break: break-word;
+      max-height: calc(1.45em * 4 + 20px); /* ~4 lines, hard clip — no fade */
+    }
+    .rpc-pkt.open .rpc-pkt-body {
+      max-height: min(280px, 40vh); overflow: auto;
+    }
+    .rpc-pkt.open .rpc-pkt-body::-webkit-scrollbar { width: 8px; height: 8px; }
+    .rpc-pkt.open .rpc-pkt-body::-webkit-scrollbar-thumb {
+      background: #6b6458; border-radius: 8px;
+    }
+    .rpc-acc-params { display: grid; grid-template-columns: 110px 1fr; gap: 6px 10px; margin: 8px 0; font-size: 12px; }
+    .rpc-acc-params .k { color: var(--muted); }
+    .rpc-acc-params .field-full { grid-column: 1 / -1; }
+    .rpc-acc-params textarea, .rpc-acc-params input, .rpc-acc-params select {
+      width: 100%; padding: 7px 10px; font: inherit;
+      border: 1px solid var(--line); border-radius: 8px; background: #fff;
+    }
+    .rpc-acc-params textarea { min-height: 72px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; }
+    .rpc-acc-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; justify-content: flex-end; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="toolbar">
+      <h1>hiddify-core</h1>
+      <button type="button" id="tbStateBadge" class="state sm state-toggle STOPPED" data-action="toggle-connect" title="Tap to connect">
+        <span class="dot"></span><span id="tbStateName">STOPPED</span><span class="hint" id="tbStateHint">· tap to connect</span>
+      </button>
+      <div class="toolbar-proxy" id="tbActiveProxy" title="Active proxy"><span class="k">proxy </span>—</div>
+      <div class="toolbar-actions">
+        <button type="button" data-action="hotreload" title="Hot reload">Hot reload</button>
+      </div>
+      <div class="toolbar-total" id="grpcStatsBar" title="Packets per minute (size) · web ↔ grpcweb">
+        <span class="k">Total</span><span id="tbTotalPpm">—</span>
+      </div>
+    </div>
+  </header>
+  <main>
+    <section class="card">
+      <div class="card-head">
+        <h2>Connection</h2>
+        <span class="grpc-stats-local" id="statCoreLocal">web↔grpcweb CoreInfoListener: —</span>
+      </div>
+      <div class="row">
+        <button type="button" id="stateBadge" class="state state-toggle STOPPED" data-action="toggle-connect" title="Tap to connect">
+          <span class="dot"></span><span id="stateName">STOPPED</span><span class="hint" id="stateHint">· tap to connect</span>
+        </button>
+        <span class="map" id="uiMap">UI map: disconnected</span>
+      </div>
+      <div class="row" id="actions">
+        <button type="button" data-action="restart">Restart</button>
+        <button type="button" data-action="hotreload">Hot reload</button>
+        <button type="button" data-action="preview">Preview / Parse</button>
+        <button type="button" data-action="show-live">Live JSON…</button>
+      </div>
+      <div class="row">
+        <label class="field">Service mode
+          <select id="serviceMode">
+            <option value="proxy">Proxy (mixed port)</option>
+            <option value="system-proxy">System proxy</option>
+            <option value="vpn">VPN (TUN)</option>
+          </select>
+        </label>
+        <label class="field">Simple chain
+          <select id="chain">
+            <option value="off">Off</option>
+            <option value="extra_security_warp_auto">Extra security · WARP (Auto)</option>
+            <option value="extra_security_warp">Extra security · WARP (WireGuard)</option>
+            <option value="extra_security_warp_masque">Extra security · WARP (MASQUE)</option>
+            <option value="extra_security_warp_awg">Extra security · WARP (AmneziaWG)</option>
+            <option value="extra_security_psiphon">Extra security · Psiphon</option>
+            <option value="unblocker_warp_auto">Unblocker · WARP (Auto)</option>
+            <option value="unblocker_warp">Unblocker · WARP (WireGuard)</option>
+            <option value="unblocker_warp_masque">Unblocker · WARP (MASQUE)</option>
+            <option value="unblocker_warp_awg">Unblocker · WARP (AmneziaWG)</option>
+            <option value="unblocker_psiphon">Unblocker · Psiphon</option>
+          </select>
+        </label>
+        <button type="button" data-action="apply-settings">Apply settings</button>
+      </div>
+      <label>Config — path, URL, JSON, or share links
+        <textarea id="config" placeholder="/path/to/config.json&#10;or https://…/sub/…&#10;or vless://… / JSON"></textarea>
+      </label>
+      <p class="meta" id="uaHint">Fetch UA: HiddifyNext/5.0.0 … · ray2sing via Core.Parse</p>
+      <h2 style="margin-top:14px">Event log</h2>
+      <pre id="log" class="log"></pre>
+    </section>
+
+    <section class="card">
+      <div class="card-head">
+        <h2>Proxies</h2>
+        <span class="grpc-stats-local" id="statProxiesLocal">OutboundsInfo: — · Main: —</span>
+      </div>
+      <div class="row">
+        <label class="field">Group
+          <select id="groupSelect"></select>
+        </label>
+        <span class="meta" id="selectedMeta">selected: —</span>
+      </div>
+      <div class="row">
+        <button type="button" data-action="urltest-active">Ping active</button>
+        <button type="button" data-action="urltest-all">Ping all</button>
+        <button type="button" data-action="urltest-group">Ping group</button>
+      </div>
+      <div id="chainExtra" class="chain-slot hidden"></div>
+      <div id="proxyList"></div>
+      <div id="chainUnblock" class="chain-slot hidden"></div>
+    </section>
+
+    <section class="card" style="grid-column: 1 / -1;">
+      <div class="card-head">
+        <h2>Core gRPC endpoints</h2>
+        <span class="meta">Packet rates are web ↔ grpcweb (HTTP/SSE), per RPC — not VPN datapath</span>
+      </div>
+      <div style="overflow:auto;">
+        <table class="rpc-table" id="rpcTable">
+          <thead>
+            <tr><th></th><th>Method</th><th>Kind</th><th>PPM (size) · Σ packets (size)</th></tr>
+          </thead>
+          <tbody id="rpcTableBody"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <div id="modal" role="dialog" aria-modal="true" aria-labelledby="dlgTitle">
+    <div class="panel">
+      <div class="dlg-head">
+        <h3 id="dlgTitle">Detail</h3>
+        <button type="button" data-action="dlg-close">Close</button>
+      </div>
+      <div class="dlg-body">
+        <div id="dlgResolve">
+          <div class="dlg-meta" id="dlgMeta"></div>
+          <div class="tabs">
+            <button type="button" data-action="tab-parsed" aria-selected="true">Parsed (ray2sing)</button>
+            <button type="button" data-action="tab-raw" aria-selected="false">Raw</button>
+          </div>
+          <pre id="dlgPre"></pre>
+        </div>
+        <div id="dlgOutbound">
+          <div class="detail-grid" id="dlgOutboundFields"></div>
+          <h2 style="margin:12px 0 8px;font-size:12px;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted)">Full JSON</h2>
+          <pre id="dlgOutboundJson"></pre>
+        </div>
+        <div id="dlgLive">
+          <div class="tabs">
+            <button type="button" data-action="live-core" aria-selected="true">CoreInfo</button>
+            <button type="button" data-action="live-proxies" aria-selected="false">OutboundsInfo</button>
+            <button type="button" data-action="live-main" aria-selected="false">MainOutboundsInfo</button>
+            <button type="button" data-action="live-system" aria-selected="false">SystemInfo</button>
+            <button type="button" data-action="live-logs" aria-selected="false">Logs</button>
+          </div>
+          <pre id="dlgLivePre">{}</pre>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      function $(id) { return document.getElementById(id); }
+      var API = window.location.origin;
+      var logEl = $("log");
+      var stateName = $("stateName");
+      var stateBadge = $("stateBadge");
+      var uiMap = $("uiMap");
+      var groupSelect = $("groupSelect");
+      var proxyList = $("proxyList");
+      var modal = $("modal");
+      var groups = [];
+      var currentGroup = "";
+      var lastResolve = null;
+      var lastCore = {};
+      var lastProxies = {};
+      var lastMain = {};
+      var lastSystem = {};
+      var lastLogs = [];
+      var dlgTab = "parsed";
+      var liveTab = "core";
+      var busy = false;
+      var busyTimer = null;
+
+      function log(msg) {
+        var t = new Date().toLocaleTimeString();
+        logEl.textContent = "[" + t + "] " + msg + "\n" + logEl.textContent.slice(0, 8000);
+      }
+
+      function setBusy(v) {
+        busy = v;
+        if (busyTimer) { clearTimeout(busyTimer); busyTimer = null; }
+        if (v) busyTimer = setTimeout(function () { busy = false; busyTimer = null; }, 120000);
+      }
+
+      function uiLabel(state) {
+        switch (state) {
+          case "STARTING": return "UI map: connecting";
+          case "WAITING": return "UI map: waiting (core up, no ping yet)";
+          case "STARTED": return "UI map: connected";
+          case "NO_AVAILABLE_PROXIES": return "UI map: connected / no available proxies";
+          case "HOT_RELOADING": return "UI map: hot reloading";
+          case "STOPPING": return "UI map: disconnecting";
+          case "STOPPED": return "UI map: disconnected";
+          default: return "UI map: " + state;
+        }
+      }
+
+      function connectHint(state) {
+        return state === "STOPPED" ? "· tap to connect" : "· tap to stop";
+      }
+      function setState(info) {
+        lastCore = info || {};
+        var name = info.coreState || info.core_state || "STOPPED";
+        var hint = connectHint(name);
+        stateName.textContent = name;
+        stateBadge.className = "state state-toggle " + name;
+        stateBadge.title = name === "STOPPED" ? "Tap to connect" : "Tap to stop";
+        $("stateHint").textContent = hint;
+        $("tbStateName").textContent = name;
+        $("tbStateBadge").className = "state sm state-toggle " + name;
+        $("tbStateBadge").title = stateBadge.title;
+        $("tbStateHint").textContent = hint;
+        uiMap.textContent = uiLabel(name);
+        if ($("dlgLive").classList.contains("open") && liveTab === "core") paintLive();
+      }
+
+      function setActiveProxy(groupTag, selected, delay, display) {
+        var el = $("tbActiveProxy");
+        if (!selected) {
+          el.innerHTML = '<span class="k">proxy </span>—';
+          el.title = "Active proxy";
+          return;
+        }
+        var d = formatDelay(delay);
+        var label = display || selected;
+        el.innerHTML = '<span class="k">proxy </span>' + escapeHtml(label) +
+          (groupTag ? ' <span class="k">· ' + escapeHtml(groupTag) + "</span>" : "") +
+          ' <span class="k">· ' + escapeHtml(d) + "</span>";
+        el.title = (groupTag ? groupTag + " / " : "") + selected + " · " + d;
+      }
+
+      function api(path, body) {
+        var opts = { method: body === undefined ? "GET" : "POST", credentials: "same-origin" };
+        if (body !== undefined) {
+          opts.headers = { "Content-Type": "application/json" };
+          opts.body = JSON.stringify(body);
+        }
+        return fetch(API + path, opts).then(function (res) {
+          return res.text().then(function (text) {
+            var data;
+            try { data = JSON.parse(text); } catch (e) { data = { raw: text }; }
+            if (!res.ok) throw new Error(data.error || text || res.statusText);
+            return data;
+          });
+        });
+      }
+
+      function escapeHtml(s) {
+        return String(s).replace(/[&<>"']/g, function (c) {
+          return ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;" })[c];
+        });
+      }
+      function escapeAttr(s) { return escapeHtml(s).replace(/\n/g, " "); }
+
+      function formatDelay(delay) {
+        if (delay > 0 && delay < 65000) return delay + " ms";
+        if (delay >= 65000) return "timeout";
+        return "—";
+      }
+      function pingClass(delay) {
+        delay = Number(delay) || 0;
+        if (delay > 0 && delay < 65000) return "ping-ok";
+        if (delay >= 65000) return "ping-timeout";
+        return "ping-pending";
+      }
+      var STATUS_NAMES = ["READY", "CONNECTING", "RECONNECTING", "SEARCHING", "FAILED", "REGISTERING"];
+      function proxyStatusName(it) {
+        var s = it && (it.status != null ? it.status : it.Status);
+        if (s == null || s === "") return "READY";
+        if (typeof s === "number") return STATUS_NAMES[s] || "UNKNOWN";
+        s = String(s).replace(/^STATUS_/, "");
+        return s.toUpperCase();
+      }
+      function statusBadgeHtml(it) {
+        var name = proxyStatusName(it);
+        var cls = name.toLowerCase();
+        var label = name.charAt(0) + name.slice(1).toLowerCase();
+        return '<span class="status-badge ' + escapeAttr(cls) + '">' + escapeHtml(label) + "</span>";
+      }
+      function isConnectingStatus(it) {
+        var n = proxyStatusName(it);
+        return n !== "READY" && n !== "UNKNOWN";
+      }
+
+      function formatBytes(n) {
+        n = Number(n) || 0;
+        if (n < 1024) return Math.round(n) + " B";
+        if (n < 1024 * 1024) return (n / 1024).toFixed(1) + " KB";
+        return (n / (1024 * 1024)).toFixed(2) + " MB";
+      }
+      // PPM = packets last minute (size); also lifetime totals.
+      function formatPPM(st) {
+        if (!st) return "— ppm (—) · Σ — (—)";
+        var n = Number(st.packetsLastMin) || 0;
+        var b = Number(st.bytesLastMin) || 0;
+        var tp = Number(st.packets) || 0;
+        var tb = Number(st.bytes) || 0;
+        return n + " ppm (" + formatBytes(b) + ") · Σ " + tp + " (" + formatBytes(tb) + ")";
+      }
+      function methodByName(stats, name) {
+        var list = (stats && stats.methods) || [];
+        for (var i = 0; i < list.length; i++) if (list[i].name === name) return list[i];
+        return null;
+      }
+      function paintGrpcStats(stats) {
+        if (!stats) return;
+        lastGrpcStats = stats;
+        var el = $("tbTotalPpm");
+        if (el) el.textContent = formatPPM(stats.total);
+        var methods = stats.methods || [];
+        $("statCoreLocal").textContent = "CoreInfoListener: " + formatPPM(methodByName(stats, "CoreInfoListener"));
+        $("statProxiesLocal").textContent = "OutboundsInfo: " + formatPPM(methodByName(stats, "OutboundsInfo")) +
+          " · Main: " + formatPPM(methodByName(stats, "MainOutboundsInfo"));
+        var body = $("rpcTableBody");
+        if (!body || !body.children.length) {
+          paintRpcTable(methods);
+        } else {
+          // update PPM cells in place — never rebuild rows (would wipe open accordions / form edits)
+          body.querySelectorAll("tr[data-rpc-row]").forEach(function (tr) {
+            var name = tr.getAttribute("data-rpc-row");
+            var cell = tr.querySelector("[data-rpc-ppm]");
+            if (cell) cell.textContent = formatPPM(methodByName(stats, name));
+          });
+          Object.keys(rpcPanels).forEach(function (name) {
+            if (rpcPanels[name] && rpcPanels[name].open && rpcPanels[name].mode === "result") {
+              paintRpcHeroStats(name);
+            }
+          });
+        }
+      }
+      var rpcPending = null; // { method, kind: "unary"|"stream" }
+      var rpcLives = {}; // method -> { buf, unsub, paintTimer, extra }
+      var lastGrpcStats = null;
+      var rpcPanels = {}; // method -> panel state
+      var rpcPktOpen = {}; // method -> { "#n": true }
+
+      function isRpcLive(method) { return !!(rpcLives[method] && rpcLives[method].active); }
+
+      function paintRpcTable(methods) {
+        var body = $("rpcTableBody");
+        if (!body) return;
+        body.innerHTML = (methods || []).map(function (m) {
+          var kind = m.kind || "";
+          var name = m.name;
+          var living = isRpcLive(name);
+          var action = kind === "server_stream"
+            ? '<button type="button" class="' + (living ? "primary" : "") + '" data-action="rpc-stream" data-method="' +
+              escapeAttr(name) + '">' + (living ? "Stop" : "Live") + "</button>"
+            : '<button type="button" data-action="rpc-call" data-method="' + escapeAttr(name) + '">Call</button>';
+          var open = rpcPanels[name] && rpcPanels[name].open ? " open" : "";
+          return '<tr data-rpc-row="' + escapeAttr(name) + '"><td>' + action + '</td><td><div class="mono">' +
+            escapeHtml(name) + '</div><div class="meta">' + escapeHtml(m.desc || "") +
+            '</div></td><td>' + escapeHtml(kind) + '</td><td class="mono" data-rpc-ppm>' +
+            escapeHtml(formatPPM(m)) + "</td></tr>" +
+            '<tr class="rpc-acc-row' + open + '" data-rpc-acc="' + escapeAttr(name) + '"><td colspan="4">' +
+            '<div class="rpc-acc" data-rpc-panel="' + escapeAttr(name) + '"></div></td></tr>';
+        }).join("");
+        Object.keys(rpcPanels).forEach(function (name) {
+          if (rpcPanels[name] && rpcPanels[name].open) paintAccContent(name);
+        });
+      }
+
+      function openAcc(method) {
+        rpcPanels[method] = rpcPanels[method] || {};
+        rpcPanels[method].open = true;
+        var row = document.querySelector('[data-rpc-acc="' + method + '"]');
+        if (row) row.classList.add("open");
+      }
+
+      function pktPayload(entry) {
+        return entry && Object.prototype.hasOwnProperty.call(entry, "data") ? entry.data : entry;
+      }
+      function wrapPkt(msg, seq) {
+        var bytes = 0;
+        try {
+          var raw = typeof msg === "string" ? msg : JSON.stringify(msg);
+          bytes = typeof TextEncoder !== "undefined"
+            ? new TextEncoder().encode(raw).length
+            : unescape(encodeURIComponent(raw)).length;
+        } catch (e) {}
+        return { n: seq, at: Date.now(), bytes: bytes, data: msg };
+      }
+      function formatPktTime(ts) {
+        if (!ts) return "—";
+        var d = new Date(ts);
+        var pad = function (n) { return (n < 10 ? "0" : "") + n; };
+        return pad(d.getHours()) + ":" + pad(d.getMinutes()) + ":" + pad(d.getSeconds()) +
+          "." + String(d.getMilliseconds()).padStart(3, "0");
+      }
+
+      function pktChips(msg) {
+        var chips = [];
+        if (!msg || typeof msg !== "object") return chips;
+        if (msg.coreState || msg.core_state) chips.push({ t: msg.coreState || msg.core_state, state: true });
+        if (msg.messageType || msg.message_type) chips.push({ t: msg.messageType || msg.message_type });
+        if (msg.level != null) chips.push({ t: "L" + msg.level });
+        if (msg.message) chips.push({ t: String(msg.message).slice(0, 48) });
+        if (msg.items || msg.Items) chips.push({ t: (msg.items || msg.Items).length + " groups" });
+        if (msg.currentOutbound || msg.current_outbound) chips.push({ t: msg.currentOutbound || msg.current_outbound });
+        if (msg.error) chips.push({ t: "error" });
+        return chips.slice(0, 4);
+      }
+
+      function pktBodyText(msg) {
+        if (typeof msg === "string") return msg;
+        try { return JSON.stringify(msg, null, 2); } catch (e) { return String(msg); }
+      }
+
+      function renderPktList(method, packets) {
+        var list = packets || [];
+        if (!list.length) return '<pre class="rpc-acc-pre is-empty">No packets yet</pre>';
+        var openMap = rpcPktOpen[method] || {};
+        return '<div class="rpc-pkt-list" data-rpc-pkts="' + escapeAttr(method) + '">' + list.map(function (entry) {
+          var msg = pktPayload(entry);
+          var key = String(entry && entry.n != null ? entry.n : "?");
+          var isOpen = !!openMap[key];
+          var chips = pktChips(msg).map(function (c) {
+            return '<span class="chip' + (c.state ? " state" : "") + '">' + escapeHtml(String(c.t)) + "</span>";
+          }).join("");
+          var body = pktBodyText(msg);
+          var bytes = entry && entry.bytes != null ? entry.bytes : 0;
+          var time = formatPktTime(entry && entry.at);
+          var lines = body.split("\n").length;
+          var hint = isOpen ? "collapse" : (lines > 4 ? lines + " lines · click" : "click");
+          return '<div class="rpc-pkt' + (isOpen ? " open" : "") + '" data-action="rpc-pkt-toggle" data-method="' +
+            escapeAttr(method) + '" data-pkt="' + escapeAttr(key) + '" role="button" tabindex="0">' +
+            '<div class="rpc-pkt-head"><span class="n">#' + escapeHtml(key) + '</span><div class="chips">' +
+            chips + '</div><span class="meta-bits"><span class="time" title="Received at">' +
+            escapeHtml(time) + '</span><span class="size" title="Message size">' +
+            escapeHtml(formatBytes(bytes)) + '</span></span><span class="hint">' +
+            escapeHtml(hint) + "</span></div>" +
+            '<pre class="rpc-pkt-body">' + escapeHtml(body) + "</pre></div>";
+        }).join("") + "</div>";
+      }
+
+      function paintAccContent(method) {
+        var root = document.querySelector('[data-rpc-panel="' + method + '"]');
+        var p = rpcPanels[method];
+        if (!root || !p) return;
+        if (p.mode === "params") {
+          root.innerHTML =
+            '<p class="rpc-acc-meta">' + escapeHtml(p.paramsTitle || "Parameters") + "</p>" +
+            '<div class="rpc-acc-params" data-rpc-form="' + escapeAttr(method) + '">' + (p.paramsHtml || "") + "</div>" +
+            '<div class="rpc-acc-actions">' +
+            '<button type="button" class="primary" data-action="rpc-submit" data-method="' + escapeAttr(method) + '">Run</button>' +
+            '<button type="button" data-action="rpc-close-acc" data-method="' + escapeAttr(method) + '">Close</button>' +
+            "</div>";
+          return;
+        }
+        var prevList = root.querySelector(".rpc-pkt-list");
+        var keepScroll = prevList ? prevList.scrollTop : 0;
+        var followLatest = !prevList || keepScroll < 24;
+        var err = !!p.error;
+        var live = !!p.live;
+        var empty = !!p.empty;
+        var cards = p.cards || [];
+        var packets = p.packets;
+        var bodyHtml = packets
+          ? renderPktList(method, packets)
+          : '<pre class="rpc-acc-pre' + (err ? " is-error" : "") + (empty ? " is-empty" : "") + '">' +
+            escapeHtml(p.text || "") + "</pre>";
+        var actions =
+          '<div class="rpc-acc-actions">' +
+          (live ? '<button type="button" data-action="rpc-stop-live" data-method="' + escapeAttr(method) + '">Stop live</button>' : "") +
+          '<button type="button" data-action="rpc-close-acc" data-method="' + escapeAttr(method) + '">Close</button>' +
+          "</div>";
+        root.innerHTML =
+          '<div class="rpc-hero">' +
+          '<div class="pill' + (err ? " error" : (live ? " live" : "")) + '"><span class="pulse"></span><span>' +
+          escapeHtml(err ? "Error" : (live ? (empty ? "Connecting…" : "Live") : "Done")) + "</span></div>" +
+          '<div class="stat"><span>This RPC</span><div data-rpc-ppm-method="' + escapeAttr(method) + '">' +
+          escapeHtml(formatPPM(methodByName(lastGrpcStats, method))) + "</div></div>" +
+          '<div class="stat"><span>All RPCs</span><div data-rpc-ppm-total="' + escapeAttr(method) + '">' +
+          escapeHtml(formatPPM(lastGrpcStats && lastGrpcStats.total)) + "</div></div>" +
+          '<div class="stat"><span>Messages</span><div>' + escapeHtml(String(p.count || 0)) + "</div></div>" +
+          actions +
+          "</div>" +
+          '<p class="rpc-acc-meta' + (err ? " is-error" : "") + '">' + escapeHtml(p.title || method) + "</p>" +
+          (cards.length
+            ? '<div class="rpc-acc-summary">' + cards.map(function (c) {
+              return '<div class="cardlet"><div class="k">' + escapeHtml(c.k) + '</div><div class="v">' +
+                escapeHtml(c.v) + "</div></div>";
+            }).join("") + "</div>"
+            : "") +
+          bodyHtml;
+        var nextList = root.querySelector(".rpc-pkt-list");
+        if (nextList) nextList.scrollTop = followLatest ? 0 : keepScroll;
+      }
+
+      function paintRpcHeroStats(method) {
+        var elM = document.querySelector('[data-rpc-ppm-method="' + method + '"]');
+        var elT = document.querySelector('[data-rpc-ppm-total="' + method + '"]');
+        if (elM) elM.textContent = formatPPM(methodByName(lastGrpcStats, method));
+        if (elT) elT.textContent = formatPPM(lastGrpcStats && lastGrpcStats.total);
+      }
+
+      function rpcParamSpec(method) {
+        var cfg = function () { return $("config").value; };
+        switch (method) {
+          case "Start":
+          case "StartService":
+          case "Restart":
+          case "HotReload":
+            return [{ key: "config", label: "Config (path / URL / JSON / links)", type: "textarea", value: cfg }];
+          case "Parse":
+            return [
+              { key: "content", label: "Content", type: "textarea", value: cfg },
+              { key: "debug", label: "Debug", type: "checkbox", value: function () { return true; } }
+            ];
+          case "SelectOutbound":
+            return [
+              { key: "groupTag", label: "Group tag", type: "text", value: function () { return currentGroup || ""; } },
+              { key: "outboundTag", label: "Outbound tag", type: "text", value: function () { return ""; } }
+            ];
+          case "UrlTest":
+            return [{ key: "tag", label: "Tag (group or outbound)", type: "text", value: function () { return currentGroup || "select"; } }];
+          case "SetSystemProxyEnabled":
+            return [{ key: "isEnabled", label: "Enabled", type: "checkbox", value: function () { return true; } }];
+          case "GenerateWarpConfig":
+            return [
+              { key: "licenseKey", label: "License key", type: "text", value: function () { return ""; } },
+              { key: "accountId", label: "Account id (optional)", type: "text", value: function () { return ""; } },
+              { key: "accessToken", label: "Access token (optional)", type: "text", value: function () { return ""; } }
+            ];
+          case "LogListener":
+            return [{
+              key: "level", label: "Min log level", type: "select",
+              options: ["TRACE", "DEBUG", "INFO", "WARNING", "ERROR", "FATAL"],
+              value: function () { return "INFO"; }
+            }];
+          case "Close":
+            return [{ key: "mode", label: "Setup mode (number)", type: "text", value: function () { return "0"; } }];
+          case "EnsureAdminBgService":
+            return [
+              { key: "config", label: "Config", type: "textarea", value: cfg },
+              { key: "cliPath", label: "CLI path", type: "text", value: function () { return ""; } }
+            ];
+          default:
+            return [];
+        }
+      }
+
+      function summarizeRpcPayload(method, data) {
+        if (!data || typeof data !== "object") return [];
+        var cards = [];
+        function add(k, v) {
+          if (v == null || v === "") return;
+          cards.push({ k: k, v: String(v) });
+        }
+        if (Array.isArray(data)) {
+          add("Events", data.length);
+          if (data[0]) {
+            var latest = data[0];
+            if (latest.coreState || latest.core_state) add("Latest state", latest.coreState || latest.core_state);
+            if (latest.messageType || latest.message_type) add("Message", latest.messageType || latest.message_type);
+            if (latest.level != null) add("Log level", latest.level);
+            if (latest.message) add("Log", latest.message);
+            if (latest.items || latest.Items) add("Groups", (latest.items || latest.Items).length);
+          }
+          return cards;
+        }
+        if (data.coreState || data.core_state) add("State", data.coreState || data.core_state);
+        if (data.messageType || data.message_type) add("Type", data.messageType || data.message_type);
+        if (data.message) add("Message", data.message);
+        if (data.items || data.Items) add("Groups", (data.items || data.Items).length);
+        if (data.memory != null) add("Memory", formatBytes(data.memory));
+        if (data.goroutines != null) add("Goroutines", data.goroutines);
+        if (data.uplink != null || data.downlink != null) {
+          add("Up / Down", formatBytes(data.uplink || 0) + " / " + formatBytes(data.downlink || 0));
+        }
+        if (data.currentOutbound || data.current_outbound) add("Outbound", data.currentOutbound || data.current_outbound);
+        if (data.error) add("Error", data.error);
+        if (data.blocked) add("Blocked", data.reason || "yes");
+        if (data.result && (data.result.coreState || data.result.core_state)) {
+          add("Result state", data.result.coreState || data.result.core_state);
+        }
+        return cards;
+      }
+
+      function showRpcResult(method, title, data, live, isError) {
+        var asPackets = Array.isArray(data);
+        var text = typeof data === "string" ? data : (asPackets ? "" : JSON.stringify(data, null, 2));
+        var err = !!isError || (data && typeof data === "object" && !Array.isArray(data) && !!(data.error || data.blocked));
+        var empty = typeof data === "string" && /waiting|connecting|calling/i.test(data);
+        var count = asPackets ? data.length : (empty || data == null ? 0 : 1);
+        var cards = empty || asPackets ? [] : summarizeRpcPayload(method, data);
+        if (asPackets && data[0]) cards = summarizeRpcPayload(method, pktPayload(data[0]));
+        rpcPanels[method] = Object.assign(rpcPanels[method] || {}, {
+          open: true,
+          mode: "result",
+          title: title + (err ? " — error" : ""),
+          text: text,
+          packets: asPackets ? data.slice() : null,
+          error: err,
+          live: !!live,
+          empty: !!empty,
+          count: count,
+          cards: cards
+        });
+        openAcc(method);
+        paintAccContent(method);
+      }
+
+      function renderParamFields(fields) {
+        return fields.map(function (f) {
+          var val = typeof f.value === "function" ? f.value() : (f.value || "");
+          if (f.type === "textarea") {
+            return '<div class="k">' + escapeHtml(f.label) + '</div><div class="v field-full"><textarea data-rpc-key="' +
+              escapeAttr(f.key) + '">' + escapeHtml(String(val)) + "</textarea></div>";
+          }
+          if (f.type === "checkbox") {
+            return '<div class="k">' + escapeHtml(f.label) + '</div><div class="v"><input type="checkbox" data-rpc-key="' +
+              escapeAttr(f.key) + '"' + (val ? " checked" : "") + " /></div>";
+          }
+          if (f.type === "select") {
+            var opts = (f.options || []).map(function (o) {
+              return '<option value="' + escapeAttr(o) + '"' + (o === val ? " selected" : "") + ">" + escapeHtml(o) + "</option>";
+            }).join("");
+            return '<div class="k">' + escapeHtml(f.label) + '</div><div class="v"><select data-rpc-key="' +
+              escapeAttr(f.key) + '">' + opts + "</select></div>";
+          }
+          return '<div class="k">' + escapeHtml(f.label) + '</div><div class="v"><input type="text" data-rpc-key="' +
+            escapeAttr(f.key) + '" value="' + escapeAttr(String(val)) + '" /></div>';
+        }).join("");
+      }
+
+      function showRpcPanel(method, kind) {
+        var fields = rpcParamSpec(method);
+        rpcPending = { method: method, kind: kind };
+        if (!fields.length) {
+          runRpcPending({});
+          return;
+        }
+        rpcPanels[method] = Object.assign(rpcPanels[method] || {}, {
+          open: true,
+          mode: "params",
+          pendingKind: kind,
+          paramsTitle: (kind === "stream" ? "Live stream parameters" : "Call parameters") + " — edit then Run",
+          paramsHtml: renderParamFields(fields)
+        });
+        openAcc(method);
+        paintAccContent(method);
+      }
+
+      function readRpcForm(method) {
+        var body = {};
+        var root = document.querySelector('[data-rpc-form="' + method + '"]') ||
+          document.querySelector('[data-rpc-panel="' + method + '"]');
+        if (!root) return body;
+        root.querySelectorAll("[data-rpc-key]").forEach(function (el) {
+          var key = el.getAttribute("data-rpc-key");
+          if (el.type === "checkbox") body[key] = !!el.checked;
+          else body[key] = el.value;
+        });
+        if (body.mode != null && body.mode !== "") body.mode = Number(body.mode) || 0;
+        return body;
+      }
+
+      function closeRpcAcc(method) {
+        if (isRpcLive(method)) stopRpcLive(method);
+        if (rpcPending && rpcPending.method === method) rpcPending = null;
+        if (rpcPanels[method]) rpcPanels[method].open = false;
+        var row = document.querySelector('[data-rpc-acc="' + method + '"]');
+        if (row) row.classList.remove("open");
+        var root = document.querySelector('[data-rpc-panel="' + method + '"]');
+        if (root) root.innerHTML = "";
+      }
+
+      function refreshLiveButtons() {
+        document.querySelectorAll('button[data-action="rpc-stream"][data-method]').forEach(function (btn) {
+          var m = btn.getAttribute("data-method");
+          var living = isRpcLive(m);
+          btn.textContent = living ? "Stop" : "Live";
+          btn.classList.toggle("primary", living);
+        });
+      }
+
+      function stopRpcLive(method) {
+        var live = rpcLives[method];
+        if (!live) return;
+        live.active = false;
+        if (live.paintTimer) { clearTimeout(live.paintTimer); live.paintTimer = null; }
+        if (live.unsub) { try { live.unsub(); } catch (e) {} live.unsub = null; }
+        if (live.extra) {
+          var keep = $("dlgLive").classList.contains("open") && (
+            (live.extra === "MainOutboundsInfo" && liveTab === "main") ||
+            (live.extra === "GetSystemInfoStream" && liveTab === "system") ||
+            (live.extra === "LogListener" && liveTab === "logs")
+          );
+          if (!keep) busUnsub(live.extra);
+        }
+        var buf = live.buf ? live.buf.slice() : [];
+        delete rpcLives[method];
+        refreshLiveButtons();
+        return buf;
+      }
+
+      function pushLivePacket(method, msg) {
+        var live = rpcLives[method];
+        if (!live || !live.active) return;
+        live.seq = (live.seq || 0) + 1;
+        live.buf.unshift(wrapPkt(msg, live.seq));
+        if (live.buf.length > 200) live.buf.length = 200;
+        // coalesce paints, but never drop from buf
+        if (live.paintTimer) return;
+        live.paintTimer = setTimeout(function () {
+          live.paintTimer = null;
+          if (!rpcLives[method] || !rpcLives[method].active) return;
+          showRpcResult(method, method + " (live · " + live.buf.length + ")", live.buf.slice(), true, false);
+        }, 100);
+      }
+
+      function startRpcLive(method, body) {
+        if (isRpcLive(method)) {
+          var stopped = stopRpcLive(method);
+          showRpcResult(method, method + " (stopped)", stopped && stopped.length ? stopped : { stopped: true }, false, false);
+          return;
+        }
+        var seed = null;
+        var alwaysOn = method === "CoreInfoListener" || method === "OutboundsInfo";
+        if (method === "CoreInfoListener") seed = lastCore;
+        else if (method === "OutboundsInfo") seed = lastProxies;
+        else if (method === "MainOutboundsInfo") seed = lastMain;
+        else if (method === "GetSystemInfoStream") seed = lastSystem;
+        else if (method === "LogListener") seed = null;
+        else if (method === "EnsureAdminBgService") {
+          showRpcResult(method, method + " ERROR", {
+            error: "EnsureAdminBgService is not run from this harness",
+            hint: "Call NeedAdminBgService instead"
+          }, false, true);
+          return;
+        } else {
+          showRpcResult(method, method + " ERROR", { error: "no live path for " + method }, false, true);
+          return;
+        }
+        var live = { active: true, buf: [], seq: 0, unsub: null, paintTimer: null, extra: "" };
+        rpcLives[method] = live;
+        rpcPktOpen[method] = {};
+        if (seed && typeof seed === "object" && Object.keys(seed).length) {
+          live.seq = 1;
+          live.buf = [wrapPkt(seed, 1)];
+          showRpcResult(method, method + " (live · 1)", live.buf.slice(), true, false);
+        } else {
+          showRpcResult(method, method + " (live)", "Waiting for first message…", true, false);
+        }
+        if (!alwaysOn) {
+          live.extra = method;
+          busSub(method, body || {});
+        }
+        live.unsub = busOn(method, function (msg) { pushLivePacket(method, msg); });
+        refreshLiveButtons();
+        log("live " + method + " → bus");
+      }
+
+      function runRpcPending(body) {
+        if (!rpcPending) return;
+        var method = rpcPending.method;
+        var kind = rpcPending.kind;
+        rpcPending = null;
+        if (kind === "stream") {
+          startRpcLive(method, body);
+          return;
+        }
+        setBusy(true);
+        log("rpc " + method + "…");
+        showRpcResult(method, method, "calling…", false, false);
+        api("/api/rpc", { method: method, body: body || {} })
+          .then(function (out) {
+            if (out && (out.error || out.blocked)) {
+              log("rpc " + method + " → " + (out.error || out.reason || "blocked"));
+              showRpcResult(method, method + " ERROR", out, false, true);
+              return;
+            }
+            log("rpc " + method + " → ok");
+            showRpcResult(method, method, out, false, false);
+          })
+          .catch(function (e) {
+            log("rpc " + method + " error: " + e.message);
+            showRpcResult(method, method + " ERROR", { error: e.message }, false, true);
+          })
+          .then(function () { setBusy(false); });
+      }
+
+      function callRpc(method) { showRpcPanel(method, "unary"); }
+      function liveRpc(method) { showRpcPanel(method, "stream"); }
+
+      function ipSummary(it) {
+        var ip = it.ipinfo || it.Ipinfo || it.ipInfo;
+        if (!ip) return "";
+        return [ip.ip || ip.Ip, ip.countryCode || ip.country_code || ip.CountryCode, ip.city || ip.City, ip.org || ip.Org]
+          .filter(Boolean).join(" · ");
+      }
+
+      var chainHops = { extra: null, unblock: null };
+
+      function isChainHopsGroup(g) {
+        var t = (g && (g.tag || g.Tag)) || "";
+        return t.indexOf("chain-hops") === 0;
+      }
+      function trimHide(tag) {
+        return String(tag || "").split("§")[0].trim();
+      }
+      function isExtraSecurityTag(tag) {
+        return trimHide(tag).indexOf("Extra Security") >= 0;
+      }
+      function isUnblockerTag(tag) {
+        return trimHide(tag).indexOf("Unblocker") >= 0;
+      }
+      function findChainHops(list) {
+        chainHops = { extra: null, unblock: null };
+        var all = list.items || list.Items || [];
+        all.forEach(function (g) {
+          var items = g.items || g.Items || [];
+          items.forEach(function (it) {
+            var tag = it.tag || it.Tag || "";
+            if (isExtraSecurityTag(tag)) chainHops.extra = it;
+            if (isUnblockerTag(tag)) chainHops.unblock = it;
+          });
+        });
+      }
+      function hopModeLabel(it) {
+        // Core DisplayType keeps Connecting… — do not strip it.
+        var typ = (it && (it.type || it.Type)) || "";
+        if (typ) return typ;
+        var d = (it && (it.tagDisplay || it.tag_display)) || "";
+        if (d) return d;
+        return "";
+      }
+      function renderChainCard(kind, it) {
+        if (!it) return "";
+        var tag = it.tag || it.Tag || "";
+        var delay = it.urlTestDelay != null ? it.urlTestDelay : (it.url_test_delay || 0);
+        var pc = pingClass(delay);
+        var pingCls = pc === "ping-ok" ? "ok" : (pc === "ping-timeout" ? "timeout" : "pending");
+        var title = kind === "extra" ? "Extra security" : "Unblocker";
+        var mode = hopModeLabel(it);
+        var display = it.tagDisplay || it.tag_display || trimHide(tag) || title;
+        var connecting = isConnectingStatus(it);
+        var statusName = proxyStatusName(it);
+        var statusLabel = statusName.charAt(0) + statusName.slice(1).toLowerCase();
+        var ip = it.ipinfo || it.Ipinfo || it.ipInfo;
+        var ipLine = ip
+          ? escapeHtml([ip.ip || ip.Ip, ip.countryCode || ip.country_code || ip.CountryCode, ip.city || ip.City, ip.org || ip.Org].filter(Boolean).join(" · "))
+          : (connecting
+            ? '<span class="meta">' + escapeHtml(statusLabel) + "…</span>"
+            : '<span class="meta">No IP yet — run Ping</span>');
+        return '<div class="chain-card ' + (kind === "extra" ? "extra" : "unblock") + (connecting ? " connecting" : "") + '">' +
+          '<div class="chain-top">' +
+          '<span class="chain-title">' + escapeHtml(title) + "</span>" +
+          statusBadgeHtml(it) +
+          '<span class="chain-mode">' + escapeHtml(mode ? mode : display) + "</span>" +
+          '<span class="chain-ping ' + pingCls + '">' + escapeHtml(connecting && !delay ? "…" : formatDelay(delay)) + "</span>" +
+          "</div>" +
+          '<div class="chain-ip"><span class="k">Real IP</span>' + ipLine + "</div>" +
+          '<div class="meta" style="margin-top:6px">' + escapeHtml(display) + "</div>" +
+          '<div class="chain-actions">' +
+          '<button type="button" class="primary" data-action="urltest-tag" data-tag="' + escapeAttr(tag) + '">Ping</button>' +
+          '<button type="button" data-action="outbound-detail" data-tag="' + escapeAttr(tag) + '">Info</button>' +
+          "</div></div>";
+      }
+      function drawChainSlots() {
+        var extraEl = $("chainExtra");
+        var unEl = $("chainUnblock");
+        if (!extraEl || !unEl) return;
+        if (chainHops.extra) {
+          extraEl.classList.remove("hidden");
+          extraEl.innerHTML = renderChainCard("extra", chainHops.extra);
+        } else {
+          extraEl.classList.add("hidden");
+          extraEl.innerHTML = "";
+        }
+        if (chainHops.unblock) {
+          unEl.classList.remove("hidden");
+          unEl.innerHTML = renderChainCard("unblock", chainHops.unblock);
+        } else {
+          unEl.classList.add("hidden");
+          unEl.innerHTML = "";
+        }
+      }
+
+      function renderProxies(list) {
+        lastProxies = list || {};
+        findChainHops(list || {});
+        // Keep chain-hops / Extra Detour visible — do not filter §hide§ groups out of the UI.
+        groups = list.items || list.Items || [];
+        var tags = groups.map(function (g) { return g.tag || g.Tag; });
+        var prev = groupSelect.value || currentGroup;
+        groupSelect.innerHTML = tags.map(function (t) {
+          return '<option value="' + escapeAttr(t) + '">' + escapeHtml(trimHide(t) || t) + "</option>";
+        }).join("");
+        if (tags.indexOf(prev) >= 0) groupSelect.value = prev;
+        currentGroup = groupSelect.value || tags[0] || "";
+        drawChainSlots();
+        drawGroup();
+        if ($("dlgLive").classList.contains("open") && liveTab === "proxies") paintLive();
+      }
+
+      function activeProxyFromGroups() {
+        // Prefer the currently viewed group; else first group that has a selection.
+        var ordered = groups.slice();
+        ordered.sort(function (a, b) {
+          var at = a.tag || a.Tag || "";
+          var bt = b.tag || b.Tag || "";
+          if (at === currentGroup) return -1;
+          if (bt === currentGroup) return 1;
+          return 0;
+        });
+        for (var i = 0; i < ordered.length; i++) {
+          var g = ordered[i];
+          var selected = g.selected || g.Selected || "";
+          if (!selected) continue;
+          var items = g.items || g.Items || [];
+          var it = items.find(function (x) { return (x.tag || x.Tag) === selected; });
+          var delay = it ? (it.urlTestDelay != null ? it.urlTestDelay : (it.url_test_delay || 0)) : 0;
+          var display = it ? (it.tagDisplay || it.tag_display || selected) : selected;
+          return { group: g.tag || g.Tag || "", selected: selected, delay: delay, display: display };
+        }
+        return null;
+      }
+
+      function drawGroup() {
+        var g = groups.find(function (x) { return (x.tag || x.Tag) === currentGroup; });
+        var active = activeProxyFromGroups();
+        if (active) setActiveProxy(active.group, active.selected, active.delay, active.display);
+        else setActiveProxy("", "", 0, "");
+        if (!g) {
+          proxyList.innerHTML = '<div class="meta">No group</div>';
+          $("selectedMeta").textContent = "selected: —";
+          return;
+        }
+        var selected = g.selected || g.Selected || "";
+        $("selectedMeta").textContent = "selected: " + (selected || "—");
+        var items = (g.items || g.Items || []).filter(function (it) {
+          // Show chain hops / Extra Detour members. Only hide when core marks invisible
+          // and it is not a chain hop (legacy internals like direct §hide§).
+          var tag = it.tag || it.Tag || "";
+          if (isExtraSecurityTag(tag) || isUnblockerTag(tag) || isChainHopsGroup(g)) return true;
+          if (it.isVisible === false || it.is_visible === false) return false;
+          if (tag.indexOf("direct §hide§") >= 0 || tag.indexOf("bypass §hide§") >= 0) return false;
+          return true;
+        });
+        proxyList.innerHTML = items.map(function (it) {
+          var tag = it.tag || it.Tag;
+          var delay = it.urlTestDelay != null ? it.urlTestDelay : (it.url_test_delay || 0);
+          var typ = it.type || it.Type || "";
+          var sel = tag === selected || it.isSelected || it.is_selected;
+          var ip = ipSummary(it);
+          var label = it.tagDisplay || it.tag_display || trimHide(tag) || tag;
+          return '<div class="proxy ' + pingClass(delay) + (sel ? " selected" : "") +
+            '" data-action="select" data-tag="' + escapeAttr(tag) + '" role="button" tabindex="0"' +
+            (sel ? ' aria-current="true"' : "") + ' title="' + (sel ? "Selected" : "Tap to select") + '">' +
+            '<span class="sel-mark" aria-hidden="true">' +
+            '<svg viewBox="0 0 16 16" fill="none"><path d="M3.5 8.5l3 3 6-6" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>' +
+            "</span>" +
+            "<div><div class=\"tag\">" + escapeHtml(label) + statusBadgeHtml(it) + "</div>" +
+            '<div class="meta">' + escapeHtml(typ) + " · " + escapeHtml(trimHide(tag) || tag) + "</div>" +
+            (ip ? '<div class="ip-line">' + escapeHtml(ip) + "</div>" : "") +
+            "</div>" +
+            '<div class="delay">' + formatDelay(delay) + "</div>" +
+            '<button type="button" class="btn-info" data-action="outbound-detail" data-tag="' +
+            escapeAttr(tag) + '" title="Details">Info</button></div>';
+        }).join("") || '<div class="meta">Empty group</div>';
+      }
+
+      function paintDlg() {
+        var data = lastResolve || {};
+        var parsed = data.parsed || "";
+        var raw = data.raw || "";
+        var useParsed = dlgTab === "parsed" && parsed;
+        document.querySelector('[data-action="tab-parsed"]').setAttribute("aria-selected", useParsed ? "true" : "false");
+        document.querySelector('[data-action="tab-raw"]').setAttribute("aria-selected", useParsed ? "false" : "true");
+        var text = useParsed ? parsed : raw;
+        try { text = JSON.stringify(JSON.parse(text), null, 2); } catch (e) {}
+        $("dlgPre").textContent = text || "(empty)";
+      }
+
+      function showPanel(which) {
+        ["dlgResolve", "dlgOutbound", "dlgLive"].forEach(function (id) {
+          $(id).classList.toggle("open", id === which);
+        });
+        modal.classList.add("open");
+      }
+
+      function showResolveDialog(data) {
+        lastResolve = data;
+        var err = data.parseError ? " · parse error: " + data.parseError : "";
+        $("dlgMeta").textContent =
+          "kind=" + data.kind + " · source=" + data.source +
+          (data.userAgent ? " · UA=" + data.userAgent : "") + err;
+        dlgTab = data.parsed ? "parsed" : "raw";
+        paintDlg();
+        $("dlgTitle").textContent = "Resolved config";
+        showPanel("dlgResolve");
+      }
+
+      function findOutbound(tag) {
+        if (chainHops.extra && (chainHops.extra.tag || chainHops.extra.Tag) === tag) return chainHops.extra;
+        if (chainHops.unblock && (chainHops.unblock.tag || chainHops.unblock.Tag) === tag) return chainHops.unblock;
+        var all = (lastProxies && (lastProxies.items || lastProxies.Items)) || groups;
+        for (var i = 0; i < all.length; i++) {
+          var items = all[i].items || all[i].Items || [];
+          for (var j = 0; j < items.length; j++) {
+            if ((items[j].tag || items[j].Tag) === tag) return items[j];
+          }
+        }
+        return null;
+      }
+
+      function showOutboundDetail(tag) {
+        var it = findOutbound(tag);
+        if (!it) { log("outbound not found: " + tag); return; }
+        var ip = it.ipinfo || it.Ipinfo || it.ipInfo || null;
+        var delay = it.urlTestDelay != null ? it.urlTestDelay : (it.url_test_delay || 0);
+        var rows = [
+          ["Name", it.tagDisplay || it.tag_display || tag],
+          ["Tag", it.tag || it.Tag || tag],
+          ["Type", it.type || it.Type || "—"],
+          ["Status", proxyStatusName(it)],
+          ["Selected", (it.isSelected || it.is_selected) ? "yes" : "no"],
+          ["Ping", formatDelay(delay)],
+          ["Host", it.host || it.Host || "—"],
+          ["Port", it.port || it.Port || "—"],
+          ["Detour", it.detour || it.Detour || "—"],
+          ["Upload", String(it.upload != null ? it.upload : (it.Upload || 0))],
+          ["Download", String(it.download != null ? it.download : (it.Download || 0))]
+        ];
+        if (ip) {
+          rows.push(
+            ["IP", ip.ip || ip.Ip || "—"],
+            ["Country", ip.countryCode || ip.country_code || ip.CountryCode || "—"],
+            ["Region", ip.region || ip.Region || "—"],
+            ["City", ip.city || ip.City || "—"],
+            ["ASN", String(ip.asn != null ? ip.asn : (ip.Asn || "—"))],
+            ["Org", ip.org || ip.Org || "—"]
+          );
+        } else {
+          rows.push(["IP info", "not available yet (run ping)"]);
+        }
+        $("dlgOutboundFields").innerHTML = rows.map(function (r) {
+          return '<div class="k">' + escapeHtml(r[0]) + '</div><div class="v">' + escapeHtml(String(r[1])) + "</div>";
+        }).join("");
+        $("dlgOutboundJson").textContent = JSON.stringify(it, null, 2);
+        $("dlgTitle").textContent = it.tagDisplay || it.tag_display || tag;
+        showPanel("dlgOutbound");
+      }
+
+      function paintLive() {
+        ["core", "proxies", "main", "system", "logs"].forEach(function (t) {
+          var btn = document.querySelector('[data-action="live-' + t + '"]');
+          if (btn) btn.setAttribute("aria-selected", liveTab === t ? "true" : "false");
+        });
+        syncLiveBusSubs();
+        var data = lastCore;
+        if (liveTab === "proxies") data = lastProxies;
+        else if (liveTab === "main") data = lastMain;
+        else if (liveTab === "system") data = lastSystem;
+        else if (liveTab === "logs") data = lastLogs;
+        $("dlgLivePre").textContent = JSON.stringify(data || {}, null, 2);
+      }
+
+      function showLiveDialog() {
+        $("dlgTitle").textContent = "Live JSON";
+        paintLive();
+        showPanel("dlgLive");
+      }
+
+      function closeDlg() {
+        modal.classList.remove("open");
+        ["dlgResolve", "dlgOutbound", "dlgLive"].forEach(function (id) { $(id).classList.remove("open"); });
+        syncLiveBusSubs();
+      }
+
+      function readSettingsFromUI() {
+        return {
+          serviceMode: $("serviceMode").value,
+          chain: $("chain").value
+        };
+      }
+
+      function applySettingsToUI(s) {
+        if (!s) return;
+        if (s.serviceMode) $("serviceMode").value = s.serviceMode;
+        if (s.chain) $("chain").value = s.chain;
+      }
+
+      function run(action, el) {
+        var passthrough = {
+          "dlg-close": 1, "tab-parsed": 1, "tab-raw": 1, "outbound-detail": 1,
+          "live-core": 1, "live-proxies": 1, "live-main": 1, "live-system": 1, "live-logs": 1, "show-live": 1,
+          "rpc-call": 1, "rpc-stream": 1, "rpc-submit": 1, "rpc-stop-live": 1, "rpc-close-acc": 1,
+          "rpc-pkt-toggle": 1, "toggle-connect": 1
+        };
+        if (busy && !passthrough[action]) return;
+        if (action === "dlg-close") { closeDlg(); return; }
+        if (action === "tab-parsed") { dlgTab = "parsed"; paintDlg(); return; }
+        if (action === "tab-raw") { dlgTab = "raw"; paintDlg(); return; }
+        if (action === "outbound-detail") { showOutboundDetail(el.getAttribute("data-tag")); return; }
+        if (action === "show-live") { showLiveDialog(); return; }
+        if (action === "live-core") { liveTab = "core"; paintLive(); return; }
+        if (action === "live-proxies") { liveTab = "proxies"; paintLive(); return; }
+        if (action === "live-main") { liveTab = "main"; paintLive(); return; }
+        if (action === "live-system") { liveTab = "system"; paintLive(); return; }
+        if (action === "live-logs") { liveTab = "logs"; paintLive(); return; }
+        if (action === "rpc-pkt-toggle") {
+          var pktMethod = el.getAttribute("data-method");
+          var pktKey = el.getAttribute("data-pkt");
+          if (!rpcPktOpen[pktMethod]) rpcPktOpen[pktMethod] = {};
+          rpcPktOpen[pktMethod][pktKey] = !rpcPktOpen[pktMethod][pktKey];
+          el.classList.toggle("open", !!rpcPktOpen[pktMethod][pktKey]);
+          var hint = el.querySelector(".hint");
+          if (hint) hint.textContent = rpcPktOpen[pktMethod][pktKey] ? "collapse" : "click";
+          return;
+        }
+        if (action === "rpc-call") {
+          callRpc(el.getAttribute("data-method"));
+          return;
+        }
+        if (action === "rpc-stream") {
+          liveRpc(el.getAttribute("data-method"));
+          return;
+        }
+        if (action === "rpc-submit") {
+          var submitMethod = el.getAttribute("data-method");
+          var kind = (rpcPending && rpcPending.method === submitMethod && rpcPending.kind) ||
+            (rpcPanels[submitMethod] && rpcPanels[submitMethod].pendingKind) || "unary";
+          rpcPending = { method: submitMethod, kind: kind };
+          runRpcPending(readRpcForm(submitMethod));
+          return;
+        }
+        if (action === "rpc-stop-live") {
+          var stopMethod = el.getAttribute("data-method");
+          var buf = stopRpcLive(stopMethod) || [];
+          showRpcResult(stopMethod, stopMethod + " (stopped)", buf.length ? buf : { stopped: true }, false, false);
+          return;
+        }
+        if (action === "rpc-close-acc") {
+          closeRpcAcc(el.getAttribute("data-method"));
+          return;
+        }
+
+        if (action === "preview") {
+          setBusy(true);
+          log("preview…");
+          api("/api/resolve", { config: $("config").value })
+            .then(function (data) {
+              log("resolve " + data.kind + " → " + data.source + (data.parseError ? " ERR " + data.parseError : " OK"));
+              showResolveDialog(data);
+            })
+            .catch(function (e) { log("Preview error: " + e.message); })
+            .then(function () { setBusy(false); });
+          return;
+        }
+        if (action === "apply-settings") {
+          setBusy(true);
+          api("/api/settings", readSettingsFromUI())
+            .then(function (s) {
+              applySettingsToUI(s);
+              log("settings → mode=" + s.serviceMode + " chain=" + s.chain + " (Hot reload falls back to Restart when needed)");
+            })
+            .catch(function (e) { log("settings error: " + e.message); })
+            .then(function () { setBusy(false); });
+          return;
+        }
+        function logNeedAdmin(out) {
+          if (!out || !out.needAdmin) return;
+          log("NeedAdminBgService → " + JSON.stringify(out.needAdmin));
+        }
+        function doStart() {
+          setBusy(true);
+          log("start…");
+          api("/api/settings", readSettingsFromUI())
+            .then(function () { return api("/api/start", { config: $("config").value }); })
+            .then(function (out) {
+              logNeedAdmin(out);
+              if (out.blocked) {
+                log("stopped: admin_bgservice required (no Ensure in this harness) → " + JSON.stringify(out.needAdmin || out));
+                return;
+              }
+              log("Start → " + JSON.stringify(out.start || out));
+            })
+            .catch(function (e) { log("Start error: " + e.message); })
+            .then(function () { setBusy(false); });
+        }
+        function doStop() {
+          setBusy(true);
+          api("/api/stop", {})
+            .then(function (out) { log("Stop → " + JSON.stringify(out)); })
+            .catch(function (e) { log("Stop error: " + e.message); })
+            .then(function () { setBusy(false); });
+        }
+        if (action === "toggle-connect") {
+          var st = (lastCore.coreState || lastCore.core_state || "STOPPED");
+          if (st === "STOPPED") doStart();
+          else doStop();
+          return;
+        }
+        if (action === "start") { doStart(); return; }
+        if (action === "restart" || action === "hotreload") {
+          setBusy(true);
+          var path = action === "restart" ? "/api/restart" : "/api/hotreload";
+          log(action + "…");
+          api("/api/settings", readSettingsFromUI())
+            .then(function () { return api(path, { config: $("config").value }); })
+            .then(function (out) {
+              logNeedAdmin(out);
+              if (out.blocked) {
+                log("stopped: admin_bgservice required (no Ensure in this harness) → " + JSON.stringify(out.needAdmin || out));
+                return;
+              }
+              if (action === "hotreload" && out.fallback === "restart") {
+                log("hot reload not possible (" + (out.hotReloadError || "unsupported change") + ") → restarted");
+                log("restart → " + JSON.stringify(out.restart || out));
+                return;
+              }
+              log(action + " → " + JSON.stringify(out.restart || out.hotReload || out));
+            })
+            .catch(function (e) { log(action + " error: " + e.message); })
+            .then(function () { setBusy(false); });
+          return;
+        }
+        if (action === "stop") { doStop(); return; }
+        if (action === "urltest-active") {
+          setBusy(true);
+          api("/api/urltest-active", {})
+            .then(function (out) { log("Ping active → " + JSON.stringify(out)); })
+            .catch(function (e) { log("Ping active error: " + e.message); })
+            .then(function () { setBusy(false); });
+          return;
+        }
+        if (action === "urltest-all") {
+          setBusy(true);
+          api("/api/urltest", { tag: "select" })
+            .then(function (out) { log("Ping all → " + JSON.stringify(out)); })
+            .catch(function (e) { log("Ping all error: " + e.message); })
+            .then(function () { setBusy(false); });
+          return;
+        }
+        if (action === "urltest-group") {
+          setBusy(true);
+          api("/api/urltest", { tag: currentGroup })
+            .then(function (out) { log("Ping group " + currentGroup + " → " + JSON.stringify(out)); })
+            .catch(function (e) { log("Ping group error: " + e.message); })
+            .then(function () { setBusy(false); });
+          return;
+        }
+        if (action === "urltest-tag") {
+          var hopTag = el.getAttribute("data-tag");
+          setBusy(true);
+          log("ping " + hopTag + "…");
+          api("/api/urltest", { tag: hopTag })
+            .then(function (out) { log("Ping " + hopTag + " → " + JSON.stringify(out)); })
+            .catch(function (e) { log("Ping hop error: " + e.message); })
+            .then(function () { setBusy(false); });
+          return;
+        }
+        if (action === "select") {
+          var tag = el.getAttribute("data-tag");
+          setBusy(true);
+          api("/api/select", { groupTag: currentGroup, outboundTag: tag })
+            .then(function (out) { log("select → " + JSON.stringify(out)); })
+            .catch(function (e) { log("select error: " + e.message); })
+            .then(function () { setBusy(false); });
+        }
+      }
+
+      document.addEventListener("click", function (ev) {
+        var el = ev.target;
+        if (!el || !el.closest) return;
+        var btn = el.closest("button[data-action]");
+        if (btn) {
+          if (btn.disabled) return;
+          ev.preventDefault();
+          ev.stopPropagation();
+          run(btn.getAttribute("data-action"), btn);
+          return;
+        }
+        var pkt = el.closest("[data-action='rpc-pkt-toggle']");
+        if (pkt) {
+          ev.preventDefault();
+          ev.stopPropagation();
+          run("rpc-pkt-toggle", pkt);
+          return;
+        }
+        var row = el.closest("[data-action='select'].proxy");
+        if (row) {
+          if (row.classList.contains("selected")) return;
+          ev.preventDefault();
+          run("select", row);
+        }
+      }, true);
+
+      document.addEventListener("keydown", function (ev) {
+        if (ev.key !== "Enter" && ev.key !== " ") return;
+        var el = ev.target;
+        if (!el || !el.closest) return;
+        var row = el.closest("[data-action='select'].proxy");
+        if (!row || el.closest("button")) return;
+        if (row.classList.contains("selected")) return;
+        ev.preventDefault();
+        run("select", row);
+      });
+
+      modal.addEventListener("click", function (ev) {
+        if (ev.target === modal) closeDlg();
+      });
+
+      groupSelect.addEventListener("change", function () {
+        currentGroup = groupSelect.value;
+        drawGroup();
+      });
+
+      // Single bidirectional WebSocket bus — server multiplexes by method:
+      //   ← {"method":"CoreInfoListener","data":{...}}
+      //   → {"op":"sub","method":"LogListener","params":{"level":"INFO"}}
+      var busWS = null;
+      var busHandlers = {};
+      var busWanted = {}; // optional methods currently requested
+      var busRetry = 0;
+      var busSubSeq = 0;
+
+      function busOn(method, fn) {
+        if (!busHandlers[method]) busHandlers[method] = {};
+        var id = String(++busSubSeq);
+        busHandlers[method][id] = fn;
+        return function () {
+          if (busHandlers[method]) delete busHandlers[method][id];
+        };
+      }
+      function busEmit(method, data) {
+        var subs = busHandlers[method];
+        if (!subs) return;
+        Object.keys(subs).forEach(function (id) {
+          try { subs[id](data); } catch (e) {}
+        });
+      }
+      function busSend(obj) {
+        if (!busWS || busWS.readyState !== 1) return;
+        try { busWS.send(JSON.stringify(obj)); } catch (e) {}
+      }
+      function busSub(method, params) {
+        busWanted[method] = params || {};
+        busSend({ op: "sub", method: method, params: busWanted[method] });
+      }
+      function busUnsub(method) {
+        delete busWanted[method];
+        busSend({ op: "unsub", method: method });
+      }
+      function syncLiveBusSubs() {
+        var liveOpen = $("dlgLive").classList.contains("open");
+        var wantMain = (liveOpen && liveTab === "main") || isRpcLive("MainOutboundsInfo");
+        var wantSys = (liveOpen && liveTab === "system") || isRpcLive("GetSystemInfoStream");
+        var wantLogs = (liveOpen && liveTab === "logs") || isRpcLive("LogListener");
+        if (wantMain) busSub("MainOutboundsInfo", {});
+        else if (busWanted.MainOutboundsInfo) busUnsub("MainOutboundsInfo");
+        if (wantSys) busSub("GetSystemInfoStream", {});
+        else if (busWanted.GetSystemInfoStream) busUnsub("GetSystemInfoStream");
+        if (wantLogs && !isRpcLive("LogListener")) busSub("LogListener", { level: "INFO" });
+        else if (busWanted.LogListener && !isRpcLive("LogListener")) busUnsub("LogListener");
+      }
+      function connectBus() {
+        var proto = location.protocol === "https:" ? "wss:" : "ws:";
+        var ws = new WebSocket(proto + "//" + location.host + "/api/bus");
+        busWS = ws;
+        ws.onopen = function () {
+          busRetry = 0;
+          log("bus connected");
+          // re-sub optional feeds after reconnect (always-on are server-side)
+          Object.keys(busWanted).forEach(function (m) {
+            busSend({ op: "sub", method: m, params: busWanted[m] || {} });
+          });
+        };
+        ws.onmessage = function (ev) {
+          var msg;
+          try { msg = JSON.parse(ev.data); } catch (e) { return; }
+          if (msg.error) {
+            log("bus " + (msg.method || "") + " error: " + msg.error);
+            if (msg.method) busEmit(msg.method, { error: msg.error });
+            return;
+          }
+          var method = msg.method || "";
+          var data = msg.data;
+          if (method === "CoreInfoListener") {
+            setState(data || {});
+            busEmit(method, data || {});
+            return;
+          }
+          if (method === "OutboundsInfo") {
+            renderProxies(data || {});
+            busEmit(method, data || {});
+            return;
+          }
+          if (method === "MainOutboundsInfo") {
+            lastMain = data || {};
+            busEmit(method, lastMain);
+            if ($("dlgLive").classList.contains("open") && liveTab === "main") paintLive();
+            return;
+          }
+          if (method === "GetSystemInfoStream") {
+            lastSystem = data || {};
+            busEmit(method, lastSystem);
+            if ($("dlgLive").classList.contains("open") && liveTab === "system") paintLive();
+            return;
+          }
+          if (method === "LogListener") {
+            lastLogs = [data].concat(lastLogs).slice(0, 200);
+            busEmit(method, data);
+            if ($("dlgLive").classList.contains("open") && liveTab === "logs") paintLive();
+            return;
+          }
+          if (method === "GrpcStats") {
+            paintGrpcStats(data || {});
+            return;
+          }
+          if (method === "__hello") return;
+          if (method) busEmit(method, data);
+        };
+        ws.onclose = function () {
+          if (busWS === ws) busWS = null;
+          var delay = Math.min(8000, 400 * Math.pow(2, busRetry++));
+          setTimeout(connectBus, delay);
+        };
+        ws.onerror = function () { try { ws.close(); } catch (e) {} };
+      }
+
+      var lastCoreLog = "";
+      busOn("CoreInfoListener", function (info) {
+        var name = (info && (info.coreState || info.core_state)) || "";
+        if (name && name !== lastCoreLog) {
+          lastCoreLog = name;
+          log("core " + name);
+        }
+      });
+
+      connectBus();
+
+      api("/api/status").then(function (s) {
+        if (s.core) setState(s.core);
+        if (s.defaultConfig) $("config").value = s.defaultConfig;
+        if (s.userAgent) $("uaHint").textContent = "Fetch UA: " + s.userAgent + " · ray2sing via Core.Parse";
+        if (s.settings) applySettingsToUI(s.settings);
+        if (s.proxies) renderProxies(s.proxies);
+        if (s.main) lastMain = s.main;
+        if (s.system) lastSystem = s.system;
+        if (s.grpcStats) paintGrpcStats(s.grpcStats);
+        else if (s.rpcCatalog) paintRpcTable(s.rpcCatalog.map(function (m) {
+          return Object.assign({ packetsPerSec: 0, bytesPerSec: 0, packets: 0, bytes: 0, lastSize: 0 }, m);
+        }));
+        log("ready · grpc " + s.grpc + " · open " + (s.openURL || ("http://" + location.host)));
+      }).catch(function (e) { log("status error: " + e.message); });
+    })();
+  </script>
+</body>
+</html>
