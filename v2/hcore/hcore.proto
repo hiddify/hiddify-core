@@ -105,6 +105,16 @@ message SystemInfo {
   string current_profile = 11;
 }
 
+// Connection state of an outbound or endpoint (mirrors adapter.Status).
+enum Status {
+  READY = 0;
+  CONNECTING = 1;
+  RECONNECTING = 2;
+  SEARCHING = 3;
+  FAILED = 4;
+  REGISTERING = 5;
+}
+
 message OutboundInfo {
   string tag = 1;
   string type = 2;
@@ -123,6 +133,7 @@ message OutboundInfo {
   int64 upload = 15;
   int64 download = 16;
   string detour = 17;
+  Status status = 18; // ready / connecting / registering / … (outbound or endpoint)
 }
 
 message IpInfo {

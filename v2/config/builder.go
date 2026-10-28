@@ -367,9 +367,10 @@ func setExperimental(options *option.Options, hopt *HiddifyOptions) {
 			},
 
 			CacheFile: &option.CacheFileOptions{
-				Enabled:         true,
-				StoreWARPConfig: true,
-				Path:            "data/clash.db",
+				Enabled:           true,
+				StoreWARPConfig:   true,
+				StoreMASQUEConfig: true,
+				Path:              "data/clash.db",
 			},
 
 			Monitoring: &option.MonitoringOptions{

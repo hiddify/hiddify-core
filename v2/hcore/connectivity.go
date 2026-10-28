@@ -11,10 +11,11 @@ import (
 	"github.com/hiddify/hiddify-core/v2/config"
 )
 
-// The core owns the connection state. Once the service is up the core is WAITING until a ping
-// decides: STARTED with a ping, NO_AVAILABLE_PROXIES without one (see decideConnectivity). A ping
-// that arrives moves it to STARTED, and one that goes away to NO_AVAILABLE_PROXIES. Clients only
-// display what the core reports.
+// The core owns the connection state. Once the service is up the core is WAITING until the
+// "lowest" (auto) group's pings decide: STARTED with a working ping, NO_AVAILABLE_PROXIES when
+// every proxy in that group has timed out (see decideConnectivity). The user's selected outbound
+// does not drive this: picking a single dead proxy must not flip the core to NO_AVAILABLE_PROXIES.
+// Clients only display what the core reports.
 
 // connectivityRecheck is how often the ping is looked at when the monitor reports no change.
 const connectivityRecheck = 2 * time.Second
@@ -114,27 +115,30 @@ const (
 func pingAlive(delay int32) bool    { return delay > 0 && delay < maxPing }
 func pingTimedOut(delay int32) bool { return delay >= maxPing }
 
-// proxiesConnectivity reads the ping of what the user is connected through, from the monitoring.
-// It runs often, so it only looks up the selected outbound and the history, and does not build the
-// whole proxy list.
+// proxiesConnectivity reads pings of the built-in "lowest" group from monitoring. It runs often,
+// so it only walks that group's members and their histories — not the user's selected outbound.
 func (h *HiddifyInstance) proxiesConnectivity() CoreStates {
 	ctx, box := h.Context(), h.Box()
 	if ctx == nil || box == nil || h.UrlTestHistory() == nil {
 		return CoreStates_WAITING
 	}
 	histories := monitoring.Get(ctx).OutboundsHistory("")
-	selected, selectedIsGroup := selectedEntry(box, histories)
-	if selected == "" {
+	lowest, ok := box.Outbound().Outbound(config.OutboundURLTestTag)
+	if !ok {
 		return CoreStates_WAITING
 	}
+	group, isGroup := lowest.(adapter.OutboundGroup)
+	if !isGroup {
+		return decideConnectivity(historyDelay(histories[config.OutboundURLTestTag]), false, nil)
+	}
 	var leaves []int32
-	for tag, history := range histories {
+	for _, tag := range group.All() {
 		if !isProxyTag(tag) || isGroupTag(box, tag) {
 			continue
 		}
-		leaves = append(leaves, historyDelay(history))
+		leaves = append(leaves, historyDelay(histories[tag]))
 	}
-	return decideConnectivity(historyDelay(histories[selected]), selectedIsGroup, leaves)
+	return decideConnectivity(historyDelay(histories[config.OutboundURLTestTag]), true, leaves)
 }
 
 // historyDelay is the delay of a url test, or 0 when there is none or it came from the cache.
@@ -163,39 +167,22 @@ func isGroupTag(box *sbox.Box, tag string) bool {
 	return false
 }
 
-// selectedEntry is the outbound the user is connected through: the extra security hop in front of
-// the selected one when there is one, else what the main group has selected.
-func selectedEntry(box *sbox.Box, histories map[string]*adapter.URLTestHistory) (tag string, isGroup bool) {
-	if _, ok := histories[config.ChainExtraSecurityTag]; ok {
-		return config.ChainExtraSecurityTag, isGroupTag(box, config.ChainExtraSecurityTag)
-	}
-	main, ok := box.Outbound().Outbound(config.OutboundSelectTag)
-	if !ok {
-		return "", false
-	}
-	group, ok := main.(adapter.OutboundGroup)
-	if !ok {
-		return "", false
-	}
-	tag = groupNow(group)
-	return tag, tag != "" && isGroupTag(box, tag)
-}
-
-// decideConnectivity is the state of a running core by the last url tests. A delay of 0 is a test
-// still to come (or a result from the cache), a delay of maxPing or more is a timeout.
+// decideConnectivity is the state of a running core by the last url tests of the "lowest" group.
+// A delay of 0 is a test still to come (or a result from the cache), a delay of maxPing or more is
+// a timeout.
 //
-//   - the selected outbound has a ping: STARTED, whether it is a proxy or a balancer.
-//   - a proxy the user selected has no ping: NO_AVAILABLE_PROXIES once its test timed out.
-//   - a balancer has no ping: NO_AVAILABLE_PROXIES once every proxy was tested and timed out;
-//     WAITING while any is still to be tested, or a proxy answered that the balancer has yet to use.
+//   - the lowest group (or its best member) has a ping: STARTED.
+//   - every proxy in the lowest group timed out: NO_AVAILABLE_PROXIES.
+//   - otherwise WAITING (tests still running, or no members yet).
 //
-// leaves are the delays of the proxies, not of the groups.
-func decideConnectivity(selectedDelay int32, selectedIsGroup bool, leaves []int32) CoreStates {
-	if pingAlive(selectedDelay) {
+// groupDelay is the aggregated delay of the lowest group; leaves are delays of its member proxies
+// (not other groups, not the user's selected outbound).
+func decideConnectivity(groupDelay int32, isGroup bool, leaves []int32) CoreStates {
+	if pingAlive(groupDelay) {
 		return CoreStates_STARTED
 	}
-	if !selectedIsGroup {
-		if pingTimedOut(selectedDelay) {
+	if !isGroup {
+		if pingTimedOut(groupDelay) {
 			return CoreStates_NO_AVAILABLE_PROXIES
 		}
 		return CoreStates_WAITING

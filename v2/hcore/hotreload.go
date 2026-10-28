@@ -24,6 +24,8 @@ func (s *CoreService) HotReload(ctx context.Context, in *StartRequest) (*CoreInf
 func HotReload(ctx context.Context, in *StartRequest) (*CoreInfoResponse, error) {
 	queue.Lock()
 	ctx = withStopSignalLocked(ctx)
+	// HOT_RELOADING shows at once (like STOPPING), not only once the queue reaches the reload
+	setCoreStatusIf(append([]CoreStates{CoreStates_HOT_RELOADING}, running...), CoreStates_HOT_RELOADING, MessageType_EMPTY, "")
 	result := enqueueLocked(operationStart, "hotreload", func() (coreResponse *CoreInfoResponse, err error) {
 		defer config.DeferPanicToError("hotreload", func(recovered_err error) {
 			coreResponse, err = hotReloadError(MessageType_UNEXPECTED_ERROR, recovered_err)
@@ -42,13 +44,21 @@ func hotReloadLocked(ctx context.Context, in *StartRequest) (*CoreInfoResponse, 
 	switch currentCoreState() {
 	case CoreStates_STOPPED:
 		return startServiceLocked(ctx, in)
-	case CoreStates_WAITING, CoreStates_STARTED, CoreStates_NO_AVAILABLE_PROXIES:
+	case CoreStates_WAITING, CoreStates_STARTED, CoreStates_NO_AVAILABLE_PROXIES, CoreStates_HOT_RELOADING:
+		// HOT_RELOADING may already be set when the call was accepted (shown at once)
 		SetCoreStatus(CoreStates_HOT_RELOADING, MessageType_EMPTY, "")
-		// back to running whatever happens: the core keeps running unchanged on a failure
-		defer func() {
+		response, err := hotReloadService(ctx, in)
+		if err != nil {
+			// config unchanged: restore whatever the current pings say
 			setCoreStatusIf([]CoreStates{CoreStates_HOT_RELOADING}, static.connectedState(), MessageType_EMPTY, "")
-		}()
-		return hotReloadService(ctx, in)
+			return response, err
+		}
+		// same as start: WAITING until the lowest-group pings decide STARTED / NO_AVAILABLE_PROXIES
+		if response, ok := setCoreStatusIf([]CoreStates{CoreStates_HOT_RELOADING}, CoreStates_WAITING, MessageType_EMPTY, ""); ok {
+			startConnectivityWatcher()
+			return response, nil
+		}
+		return &CoreInfoResponse{CoreState: currentCoreState(), MessageType: MessageType_EMPTY}, nil
 	default:
 		return hotReloadError(MessageType_HOT_RELOAD_FAILED, fmt.Errorf("core is %s", currentCoreState()))
 	}
@@ -102,11 +112,7 @@ func hotReloadService(ctx context.Context, in *StartRequest) (*CoreInfoResponse,
 	saveLastStartRequest(in)
 	config.SaveCurrentConfig(ctx, filepath.Join(sWorkingPath, "data/current-config.json"), *options)
 	Log(LogLevel_INFO, LogType_CORE, fmt.Sprintf("hot reload: %+v", result))
-	// a stop called meanwhile has already reported STOPPING, and it must stay so
-	if response, ok := setCoreStatusIf([]CoreStates{CoreStates_HOT_RELOADING}, static.connectedState(), MessageType_EMPTY, ""); ok {
-		return response, nil
-	}
-	return &CoreInfoResponse{CoreState: currentCoreState(), MessageType: MessageType_EMPTY}, nil
+	return &CoreInfoResponse{CoreState: CoreStates_HOT_RELOADING, MessageType: MessageType_EMPTY}, nil
 }
 
 // hotReloadError reports a failed hot reload; the core keeps running unchanged.

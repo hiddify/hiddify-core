@@ -231,10 +231,11 @@ func startServiceLocked(ctx context.Context, in *StartRequest) (coreResponse *Co
 			static.ListenPort = opts.ListenPort
 		}
 	}
-
-	// a stop called meanwhile has already reported STOPPING; it closes the service
+	// Publish WAITING so CoreInfoListener leaves STARTING; the connectivity watcher only
+	// moves among WAITING/STARTED/NO_AVAILABLE_PROXIES and cannot leave STARTING itself.
 	response, ok := setCoreStatusIf([]CoreStates{CoreStates_STARTING}, CoreStates_WAITING, MessageType_EMPTY, "")
 	if !ok {
+		// a stop called meanwhile has already reported STOPPING; it closes the service
 		return &CoreInfoResponse{CoreState: currentCoreState(), MessageType: MessageType_INSTANCE_NOT_STARTED, Message: "start cancelled"}, errStopped
 	}
 	startConnectivityWatcher()
