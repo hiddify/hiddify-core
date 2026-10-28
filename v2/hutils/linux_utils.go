@@ -25,12 +25,13 @@ func TunAllowed() bool {
 	hdr.Version = unix.LINUX_CAPABILITY_VERSION_3
 	hdr.Pid = 0
 
-	var data unix.CapUserData
-	if err := unix.Capget(&hdr, &data); err != nil {
+	// LINUX_CAPABILITY_VERSION_3 makes the kernel write two CapUserData, for caps 0-31 and 32-63
+	var data [2]unix.CapUserData
+	if err := unix.Capget(&hdr, &data[0]); err != nil {
 		fmt.Print(err)
 		return false
 	}
-	return (data.Effective & (1 << unix.CAP_NET_ADMIN)) != 0
+	return (data[0].Effective & (1 << unix.CAP_NET_ADMIN)) != 0
 }
 
 // ExecuteCmd elevates once to install or start the tunnel service. Prefer pkexec (PolicyKit),
