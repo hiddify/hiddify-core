@@ -63,19 +63,12 @@ func parseConfigContent(ctx context.Context, content []byte, debug bool, configO
 	isStructured := json.NewDecoder(SJ.NewCommentFilter(bytes.NewReader(content))).Decode(&structured) == nil
 	if !isStructured {
 		var yamlValue any
-		if yaml.Unmarshal(content, &yamlValue) == nil {
-			switch yamlValue.(type) {
-			case map[string]any, []any:
-				structured, isStructured = yamlValue, true
-			}
+		if yaml.Unmarshal(content, &yamlValue) == nil && isYAMLConfig(yamlValue) {
+			structured, isStructured = yamlValue, true
 		}
 	}
 	if !isStructured {
-		v2ray, err := ray2sing.Ray2SingboxOptions(ctx, string(content), configOpt.UseXrayCoreWhenPossible)
-		if err != nil {
-			return nil, fmt.Errorf("unable to determine config format")
-		}
-		return patchConfigOptions(ctx, v2ray, "V2rayParser", configOpt)
+		return parseShareLinks(ctx, content, configOpt)
 	}
 
 	options, singboxErr := parseSingboxContent(ctx, structured, configOpt, fullConfig)
@@ -93,7 +86,35 @@ func parseConfigContent(ctx context.Context, content []byte, debug bool, configO
 		}
 		return patchConfigOptions(ctx, v2ray, "XrayJsonParser", configOpt)
 	}
+	if options, err := parseShareLinks(ctx, content, configOpt); err == nil {
+		return options, nil
+	}
 	return nil, singboxErr
+}
+
+func parseShareLinks(ctx context.Context, content []byte, configOpt *HiddifyOptions) (*option.Options, error) {
+	v2ray, err := ray2sing.Ray2SingboxOptions(ctx, string(content), configOpt.UseXrayCoreWhenPossible)
+	if err != nil {
+		return nil, fmt.Errorf("unable to determine config format")
+	}
+	return patchConfigOptions(ctx, v2ray, "V2rayParser", configOpt)
+}
+
+// isYAMLConfig reports YAML that can be a config: a map, or a list of maps. A WireGuard conf
+// starting with "[Interface]" is also a YAML list, of one string.
+func isYAMLConfig(value any) bool {
+	switch value := value.(type) {
+	case map[string]any:
+		return true
+	case []any:
+		for _, item := range value {
+			if _, ok := item.(map[string]any); !ok {
+				return false
+			}
+		}
+		return len(value) > 0
+	}
+	return false
 }
 
 // parseSingboxContent reads a decoded sing-box / hiddify-core config: a config, one outbound or a list of them.
