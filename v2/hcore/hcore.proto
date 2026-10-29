@@ -158,6 +158,7 @@ message OutboundGroup {
 }
 message OutboundGroupList{
   repeated OutboundGroup items = 1;
+  optional OutboundInfo chain_hop = 2; // main list only: the extra security / unblocker hop the traffic goes through now
 }
 
 message WarpAccount {
