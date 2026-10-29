@@ -263,6 +263,11 @@ message LANIPResponse {
   string ip = 1;
 }
 
+message IsAdminResponse {
+  // True when the core process runs as Administrator (Windows) or root (Unix).
+  bool is_admin = 1;
+}
+
 // --- admin_bgservice (Windows/Linux elevated background core) ---
 
 enum AdminPreference {

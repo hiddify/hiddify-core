@@ -12,11 +12,19 @@ import (
 	"strings"
 	"time"
 
+	"github.com/hiddify/hiddify-core/v2/hcommon"
 	"github.com/hiddify/hiddify-core/v2/hcore/buildid"
 	hutils "github.com/hiddify/hiddify-core/v2/hutils"
 )
 
 const adminBgServicePort uint16 = 18020
+
+// IsAdmin reports whether this core process runs with administrator/root rights. The app
+// is in the same process, so it asks here instead of spawning `id -u` or PowerShell, which
+// antivirus heuristics score against a GUI application.
+func (s *CoreService) IsAdmin(ctx context.Context, _ *hcommon.Empty) (*IsAdminResponse, error) {
+	return &IsAdminResponse{IsAdmin: hutils.IsAdmin()}, nil
+}
 
 // NeedAdminBgService decides whether the elevated admin_bgservice is required for this connect.
 func (s *CoreService) NeedAdminBgService(ctx context.Context, req *NeedAdminBgServiceRequest) (*NeedAdminBgServiceResponse, error) {

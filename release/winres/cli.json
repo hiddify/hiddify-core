@@ -1,0 +1,46 @@
+{
+  "RT_GROUP_ICON": {
+    "APP": {
+      "0000": "../../assets/hiddify-cli.ico"
+    }
+  },
+  "RT_MANIFEST": {
+    "#1": {
+      "0409": {
+        "identity": {
+          "name": "Hiddify.HiddifyCli",
+          "version": "0.0.0.0"
+        },
+        "description": "Hiddify command line interface",
+        "minimum-os": "win7",
+        "execution-level": "",
+        "ui-access": false,
+        "auto-elevate": false,
+        "dpi-awareness": "system",
+        "long-path-aware": true,
+        "use-common-controls-v6": false
+      }
+    }
+  },
+  "RT_VERSION": {
+    "#1": {
+      "0000": {
+        "fixed": {
+          "file_version": "0.0.0.0",
+          "product_version": "0.0.0.0"
+        },
+        "info": {
+          "0409": {
+            "CompanyName": "Hiddify",
+            "FileDescription": "Hiddify command line interface",
+            "InternalName": "HiddifyCli",
+            "LegalCopyright": "Copyright (C) Hiddify.com. All rights reserved.",
+            "OriginalFilename": "HiddifyCli.exe",
+            "ProductName": "Hiddify",
+            "Comments": "https://github.com/hiddify/hiddify-core"
+          }
+        }
+      }
+    }
+  }
+}

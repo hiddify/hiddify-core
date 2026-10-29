@@ -4,13 +4,16 @@ package adminbgservice
 
 import (
 	"fmt"
-	"os/exec"
 	"os/user"
+
+	"github.com/hectane/go-acl"
+	"golang.org/x/sys/windows"
 )
 
 // Restrict the secret to the installing user (read), SYSTEM and Administrators (full).
-// icacls is the supported Windows way to set a small ACL without extra native code; antivirus
-// tools treat this as normal installer behaviour.
+// The DACL is set through the Windows security API (go-acl) rather than by spawning
+// icacls.exe: a process launching icacls with /inheritance:r and /grant is a pattern
+// antivirus heuristics and Sigma rules watch for, the API call is invisible to them.
 func chownSecret(path, owner string) error {
 	account := owner
 	if _, err := user.Lookup(owner); err != nil {
@@ -18,13 +21,13 @@ func chownSecret(path, owner string) error {
 			account = current.Username
 		}
 	}
-	cmd := exec.Command("icacls", path, "/inheritance:r",
-		"/grant:r", account+":(R)",
-		"/grant:r", `NT AUTHORITY\SYSTEM:(F)`,
-		"/grant:r", `BUILTIN\Administrators:(F)`,
+	err := acl.Apply(path, true, false,
+		acl.GrantName(windows.GENERIC_READ, account),
+		acl.GrantName(windows.GENERIC_ALL, `NT AUTHORITY\SYSTEM`),
+		acl.GrantName(windows.GENERIC_ALL, `BUILTIN\Administrators`),
 	)
-	if out, err := cmd.CombinedOutput(); err != nil {
-		return fmt.Errorf("restrict tunnel secret ACL for %s: %w (%s)", account, err, string(out))
+	if err != nil {
+		return fmt.Errorf("restrict tunnel secret ACL for %s: %w", account, err)
 	}
 	return nil
 }

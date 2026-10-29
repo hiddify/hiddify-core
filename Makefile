@@ -37,6 +37,21 @@ LDFLAGS=-w -s -checklinkname=0 -buildid= $${CODE_VERSION} $(EMBED_LDFLAGS)
 GOBUILDLIB=CGO_ENABLED=1 go build -trimpath -ldflags="$(LDFLAGS)" -buildmode=c-shared
 GOBUILDSRV=CGO_ENABLED=1 go build -ldflags="$(LDFLAGS)" -trimpath -tags $(TAGS)
 
+# Windows PE files: keep the Go symbol table (no -s), drop only DWARF (-w).
+# Symbol-less, fully stripped Go PE files are a classic feature of ML/heuristic AV
+# verdicts (Webroot W32.Trojan.Gen, Bkav W32.Malware.*, DeepInstinct) on VirusTotal.
+# The size cost is a few percent; the app logic is unchanged.
+WINDOWS_LDFLAGS=-w -checklinkname=0 -buildid= $${CODE_VERSION} $(EMBED_LDFLAGS)
+GOBUILDLIB_WINDOWS=CGO_ENABLED=1 go build -trimpath -ldflags="$(WINDOWS_LDFLAGS)" -buildmode=c-shared
+GOBUILDSRV_WINDOWS=CGO_ENABLED=1 go build -ldflags="$(WINDOWS_LDFLAGS)" -trimpath -tags $(TAGS)
+
+# go-winres embeds VERSIONINFO (CompanyName/ProductName/...), the icon and an
+# application manifest into the Windows PE files. PE files without a version
+# resource are another strong "unknown dropper" signal for AV engines.
+GO_WINRES_VERSION=v0.3.3
+# "v3.2.1-5-gabcdef" -> "3.2.1.5"; anything unparsable -> "0.0.0.0"
+WIN_FILE_VERSION=$(shell printf '%s\n' "$(VERSION)" | sed -E 's/^v//; s/-([0-9]+)-g[0-9a-f]+.*$$/.\1/; s/[^0-9.].*$$//; s/\.+$$//' | awk -F. '{ printf "%d.%d.%d.%d", $$1, $$2, $$3, $$4 }')
+
 CRONET_DIR=./cronet
 .PHONY: protos
 protos:
@@ -83,20 +98,34 @@ webui:
 	mv Yacd-meta-gh-pages bin/webui
 
 .PHONY: build
-windows-amd64: prepare
+# Generates rsrc_windows_amd64.syso next to the Windows main packages. Go links
+# .syso files automatically (only for GOOS=windows GOARCH=amd64 thanks to the suffix).
+.PHONY: windows-winres
+windows-winres:
+	go install github.com/tc-hib/go-winres@$(GO_WINRES_VERSION)
+	rm -f ./platform/desktop/rsrc_windows_*.syso ./cmd/clilauncher/rsrc_windows_*.syso ./cmd/adminlauncher/rsrc_windows_*.syso ./cmd/bydll/rsrc_windows_*.syso ./cmd/bydll/cli.syso
+	echo "Windows PE file version: $(WIN_FILE_VERSION) (from $(VERSION))"
+	$$(go env GOPATH)/bin/go-winres make --in ./release/winres/core.json --out ./platform/desktop/rsrc --arch amd64 --file-version "$(WIN_FILE_VERSION)" --product-version "$(WIN_FILE_VERSION)"
+	$$(go env GOPATH)/bin/go-winres make --in ./release/winres/cli.json --out ./cmd/clilauncher/rsrc --arch amd64 --file-version "$(WIN_FILE_VERSION)" --product-version "$(WIN_FILE_VERSION)"
+	$$(go env GOPATH)/bin/go-winres make --in ./release/winres/admin.json --out ./cmd/adminlauncher/rsrc --arch amd64 --file-version "$(WIN_FILE_VERSION)" --product-version "$(WIN_FILE_VERSION)"
+	ls -la ./platform/desktop/rsrc_windows_amd64.syso ./cmd/clilauncher/rsrc_windows_amd64.syso ./cmd/adminlauncher/rsrc_windows_amd64.syso
+
+windows-amd64: prepare windows-winres
 	rm -rf $(BINDIR)/*
 	$(MAKE) BINDIR=$(BINDIR) fetch-libcronet-windows_amd64.dll
-	env GOOS=windows GOARCH=amd64 CC=x86_64-w64-mingw32-gcc  $(GOBUILDLIB) -tags $(TAGS),$(WINDOWS_ADD_TAGS)   -o $(BINDIR)/$(LIBNAME).dll ./platform/desktop
+	env GOOS=windows GOARCH=amd64 CC=x86_64-w64-mingw32-gcc  $(GOBUILDLIB_WINDOWS) -tags $(TAGS),$(WINDOWS_ADD_TAGS)   -o $(BINDIR)/$(LIBNAME).dll ./platform/desktop
 	echo "core built, now building cli" 
 	ls -R $(BINDIR)/
-	go install -mod=readonly github.com/akavel/rsrc@latest ||echo "rsrc error in installation"
-	go run ./cli tunnel exit
-	cp $(BINDIR)/$(LIBNAME).dll ./$(LIBNAME).dll
-	$$(go env GOPATH)/bin/rsrc -ico ./assets/hiddify-cli.ico -o ./cmd/bydll/cli.syso ||echo "rsrc error in syso"
-	env GOOS=windows GOARCH=amd64 CC=x86_64-w64-mingw32-gcc CGO_LDFLAGS="$(LIBNAME).dll" $(GOBUILDSRV) -o $(BINDIR)/$(CLINAME).exe ./cmd/bydll
-	rm ./*.dll
-	if [ ! -f $(BINDIR)/$(LIBNAME).dll -o ! -f $(BINDIR)/$(CLINAME).exe -o ! -f $(BINDIR)/libcronet.dll ]; then \
-		echo "Error: $(LIBNAME).dll, $(CLINAME).exe or libcronet.dll missing"; \
+	# HiddifyCli.exe is a small C launcher that calls parseCli() in the DLL (see
+	# cmd/clilauncher/main.c). The former Go stub (cmd/bydll, still used on Linux)
+	# was flagged by ML antivirus engines whatever its link flags; the C launcher
+	# scans clean. The go-winres .syso (icon, VERSIONINFO, manifest) is linked in.
+	x86_64-w64-mingw32-gcc -O2 -Wall -mconsole -o $(BINDIR)/$(CLINAME).exe ./cmd/clilauncher/main.c ./cmd/clilauncher/rsrc_windows_amd64.syso -L $(BINDIR) -l:$(LIBNAME).dll -lshell32
+	# HiddifyAdmin.exe: GUI-subsystem launcher with a requireAdministrator manifest and
+	# the app icon; the only binary that triggers a UAC prompt (VPN service install).
+	x86_64-w64-mingw32-gcc -O2 -Wall -mwindows -municode -o $(BINDIR)/HiddifyAdmin.exe ./cmd/adminlauncher/main.c ./cmd/adminlauncher/rsrc_windows_amd64.syso -L $(BINDIR) -l:$(LIBNAME).dll -lshell32
+	if [ ! -f $(BINDIR)/$(LIBNAME).dll -o ! -f $(BINDIR)/$(CLINAME).exe -o ! -f $(BINDIR)/HiddifyAdmin.exe -o ! -f $(BINDIR)/libcronet.dll ]; then \
+		echo "Error: $(LIBNAME).dll, $(CLINAME).exe, HiddifyAdmin.exe or libcronet.dll missing"; \
 		exit 1; \
 	fi
 

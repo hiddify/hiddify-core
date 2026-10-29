@@ -42,6 +42,7 @@ const (
 	Core_LogListener_FullMethodName           = "/hcore.Core/LogListener"
 	Core_Close_FullMethodName                 = "/hcore.Core/Close"
 	Core_GetLANIP_FullMethodName              = "/hcore.Core/GetLANIP"
+	Core_IsAdmin_FullMethodName               = "/hcore.Core/IsAdmin"
 	Core_NeedAdminBgService_FullMethodName    = "/hcore.Core/NeedAdminBgService"
 	Core_EnsureAdminBgService_FullMethodName  = "/hcore.Core/EnsureAdminBgService"
 )
@@ -77,6 +78,8 @@ type CoreClient interface {
 	LogListener(ctx context.Context, in *LogRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[LogMessage], error)
 	Close(ctx context.Context, in *CloseRequest, opts ...grpc.CallOption) (*hcommon.Empty, error)
 	GetLANIP(ctx context.Context, in *hcommon.Empty, opts ...grpc.CallOption) (*LANIPResponse, error)
+	// Whether this core process already has administrator/root rights (same token as the app).
+	IsAdmin(ctx context.Context, in *hcommon.Empty, opts ...grpc.CallOption) (*IsAdminResponse, error)
 	// Windows/Linux: whether elevated admin_bgservice is required for this connect.
 	NeedAdminBgService(ctx context.Context, in *NeedAdminBgServiceRequest, opts ...grpc.CallOption) (*NeedAdminBgServiceResponse, error)
 	// Windows/Linux: install/start admin_bgservice if needed and start the bg core until STARTED.
@@ -356,6 +359,16 @@ func (c *coreClient) GetLANIP(ctx context.Context, in *hcommon.Empty, opts ...gr
 	return out, nil
 }
 
+func (c *coreClient) IsAdmin(ctx context.Context, in *hcommon.Empty, opts ...grpc.CallOption) (*IsAdminResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(IsAdminResponse)
+	err := c.cc.Invoke(ctx, Core_IsAdmin_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *coreClient) NeedAdminBgService(ctx context.Context, in *NeedAdminBgServiceRequest, opts ...grpc.CallOption) (*NeedAdminBgServiceResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(NeedAdminBgServiceResponse)
@@ -416,6 +429,8 @@ type CoreServer interface {
 	LogListener(*LogRequest, grpc.ServerStreamingServer[LogMessage]) error
 	Close(context.Context, *CloseRequest) (*hcommon.Empty, error)
 	GetLANIP(context.Context, *hcommon.Empty) (*LANIPResponse, error)
+	// Whether this core process already has administrator/root rights (same token as the app).
+	IsAdmin(context.Context, *hcommon.Empty) (*IsAdminResponse, error)
 	// Windows/Linux: whether elevated admin_bgservice is required for this connect.
 	NeedAdminBgService(context.Context, *NeedAdminBgServiceRequest) (*NeedAdminBgServiceResponse, error)
 	// Windows/Linux: install/start admin_bgservice if needed and start the bg core until STARTED.
@@ -495,6 +510,9 @@ func (UnimplementedCoreServer) Close(context.Context, *CloseRequest) (*hcommon.E
 }
 func (UnimplementedCoreServer) GetLANIP(context.Context, *hcommon.Empty) (*LANIPResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetLANIP not implemented")
+}
+func (UnimplementedCoreServer) IsAdmin(context.Context, *hcommon.Empty) (*IsAdminResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method IsAdmin not implemented")
 }
 func (UnimplementedCoreServer) NeedAdminBgService(context.Context, *NeedAdminBgServiceRequest) (*NeedAdminBgServiceResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method NeedAdminBgService not implemented")
@@ -884,6 +902,24 @@ func _Core_GetLANIP_Handler(srv interface{}, ctx context.Context, dec func(inter
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Core_IsAdmin_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(hcommon.Empty)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CoreServer).IsAdmin(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Core_IsAdmin_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CoreServer).IsAdmin(ctx, req.(*hcommon.Empty))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _Core_NeedAdminBgService_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(NeedAdminBgServiceRequest)
 	if err := dec(in); err != nil {
@@ -987,6 +1023,10 @@ var Core_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetLANIP",
 			Handler:    _Core_GetLANIP_Handler,
+		},
+		{
+			MethodName: "IsAdmin",
+			Handler:    _Core_IsAdmin_Handler,
 		},
 		{
 			MethodName: "NeedAdminBgService",
