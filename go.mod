@@ -248,7 +248,6 @@ require (
 	github.com/xtaci/kcp-go/v5 v5.6.70 // indirect
 	github.com/xtaci/smux v1.5.50 // indirect
 	github.com/xtls/reality v0.0.0-20260322125925-9234c772ba8f // indirect
-	github.com/xtls/xray-core v1.260327.1-0.20260728075948-5ca6f4b7d4dc // indirect
 	github.com/yosida95/uritemplate/v3 v3.0.2 // indirect
 	github.com/youmark/pkcs8 v0.0.0-20240726163527-a2c0da244d78 // indirect
 	github.com/zeebo/blake3 v0.2.4 // indirect
@@ -304,6 +303,7 @@ require (
 	github.com/wlynxg/anet v0.0.5
 	github.com/xmdhs/clash2singbox v0.2.0
 	github.com/xtls/libxray v1.260728.0
+	github.com/xtls/xray-core v1.260327.1-0.20260728075948-5ca6f4b7d4dc
 	golang.org/x/crypto v0.54.0
 	golang.org/x/net v0.57.0
 	golang.org/x/sys v0.47.0
