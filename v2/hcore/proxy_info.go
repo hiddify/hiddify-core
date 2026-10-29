@@ -83,6 +83,7 @@ func (h *HiddifyInstance) GetProxyInfo(url_test_history *adapter.URLTestHistory,
 				Latitude:    url_test_history.IpInfo.Latitude,
 				Longitude:   url_test_history.IpInfo.Longitude,
 				PostalCode:  url_test_history.IpInfo.PostalCode,
+				FromCache:   url_test_history.IpInfoFromCache,
 			}
 		}
 
