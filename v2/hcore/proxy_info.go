@@ -7,6 +7,7 @@ import (
 
 	"github.com/hiddify/hiddify-core/v2/config"
 	hcommon "github.com/hiddify/hiddify-core/v2/hcommon"
+	sbox "github.com/sagernet/sing-box"
 	"github.com/sagernet/sing-box/adapter"
 	"github.com/sagernet/sing-box/common/monitoring"
 	G "github.com/sagernet/sing-box/protocol/group"
@@ -15,7 +16,6 @@ import (
 	N "github.com/sagernet/sing/common/network"
 	"github.com/sagernet/sing/service"
 	"google.golang.org/grpc"
-	"google.golang.org/protobuf/proto"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -110,15 +110,6 @@ func (h *HiddifyInstance) GetAllProxiesInfo(hismap map[string]*adapter.URLTestHi
 		his, _ := hismap[it.Tag()]
 		outbounds_converted[it.Tag()] = h.GetProxyInfo(his, it)
 	}
-	for _, it := range outbounds_converted {
-		if it.Detour == "" {
-			continue
-		}
-		if det, ok := outbounds_converted[it.Detour]; ok {
-			it.TagDisplay += " → " + det.TagDisplay
-			it.Type += " → " + det.Type
-		}
-	}
 	for _, it := range box.Outbound().Outbounds() {
 		if group, isGroup := it.(adapter.OutboundGroup); isGroup {
 			iGroups = append(iGroups, group)
@@ -133,16 +124,6 @@ func (h *HiddifyInstance) GetAllProxiesInfo(hismap map[string]*adapter.URLTestHi
 			// }
 			// outbounds_converted[it.Tag()].Upload += int64(up)
 			// outbounds_converted[it.Tag()].Download += int64(down)
-		}
-	}
-
-	// the hops of the selectable chain mode: listed in its own group, not as entries
-	chainMembers := make(map[string]bool)
-	for _, iGroup := range iGroups {
-		if isChainTag(iGroup.Tag()) {
-			for _, member := range iGroup.All() {
-				chainMembers[member] = true
-			}
 		}
 	}
 
@@ -171,9 +152,6 @@ func (h *HiddifyInstance) GetAllProxiesInfo(hismap map[string]*adapter.URLTestHi
 				continue
 			}
 			pinfo.IsSelected = itemTag == selectedTag
-			if onlyGroupitems && pinfo.GroupSelectedTagDisplay != nil && pinfo.TagDisplay != *pinfo.GroupSelectedTagDisplay {
-				pinfo.TagDisplay = pinfo.TagDisplay + " → " + *pinfo.GroupSelectedTagDisplay
-			}
 			group.Items = append(group.Items, pinfo)
 			pinfo.IsVisible = !strings.Contains(itemTag, "§hide§")
 
@@ -181,115 +159,57 @@ func (h *HiddifyInstance) GetAllProxiesInfo(hismap map[string]*adapter.URLTestHi
 		if len(group.Items) == 0 {
 			continue
 		}
-		if isChainTag(group.Tag) {
-			showChainGroup(&group, outbounds_converted)
-		}
 
 		groups.Items = append(groups.Items, &group)
 
-		if onlyGroupitems && group.Tag == config.OutboundSelectTag {
-			showEntryHop(&group, outbounds_converted, chainMembers)
-		}
-
 	}
-
-	appendChainHops(&groups, outbounds_converted, chainMembers)
+	if onlyGroupitems {
+		groups.ChainHop = outbounds_converted[chainHop(box)] // nil with the chain off
+	}
 
 	return &groups
-}
-
-// appendChainHops exposes active extra-security / unblocker hops (normally §hide§) so
-// clients can show status, ping and real IP — named with the WARP mode (WireGuard / MASQUE / AWG).
-func appendChainHops(groups *OutboundGroupList, infos map[string]*OutboundInfo, chainMembers map[string]bool) {
-	var items []*OutboundInfo
-	for tag, info := range infos {
-		if info == nil || !isChainTag(tag) || chainMembers[tag] {
-			continue
-		}
-		cloned := proto.Clone(info).(*OutboundInfo)
-		cloned.IsVisible = true
-		// Prefer DisplayType (keeps the connecting mark) over the static tag name.
-		if hopType := chainHopType(tag, infos); hopType != "" {
-			cloned.TagDisplay = hopType
-		} else {
-			cloned.TagDisplay = TrimTagName(tag)
-		}
-		items = append(items, cloned)
-	}
-	if len(items) == 0 {
-		return
-	}
-	groups.Items = append(groups.Items, &OutboundGroup{
-		Tag:        "chain-hops",
-		Type:       "chain",
-		Selectable: false,
-		IsExpand:   true,
-		Items:      items,
-	})
-}
-
-// showEntryHop makes the hop that traffic enters before the selected proxy (extra security)
-// the active entry of the main group, since its delay and IP are what the user gets.
-// Labelled from DisplayType, e.g. "WARP · WG → my-server", or "WARP · WG → my-server ⏳
-// Connecting..." while the hop is still starting.
-func showEntryHop(group *OutboundGroup, infos map[string]*OutboundInfo, chainMembers map[string]bool) {
-	for entryTag, entry := range infos {
-		if entry == nil || !config.IsChainExtraSecurityTag(entryTag) || chainMembers[entryTag] {
-			continue
-		}
-		base, connecting := adapter.SplitStatus(chainHopType(entryTag, infos))
-		if base == "" {
-			base = TrimTagName(entry.Tag)
-		}
-		entry.TagDisplay = base
-		if selected, ok := infos[group.Selected]; ok {
-			entry.TagDisplay = base + " → " + selected.TagDisplay
-		}
-		if connecting != "" {
-			entry.TagDisplay += " " + connecting
-		}
-		entry.IsVisible = true
-		group.Selected = entry.Tag
-		group.Items = append([]*OutboundInfo{entry}, group.Items...)
-		return
-	}
 }
 
 func isChainTag(tag string) bool {
 	return config.IsChainExtraSecurityTag(tag) || config.IsChainUnblockerTag(tag)
 }
 
-// chainHopType is the display type of the hop that tag sends through now: the hop itself, or
-// for the selector of the selectable mode the hop it (or its lowest-delay balancer) selected.
-func chainHopType(tag string, infos map[string]*OutboundInfo) string {
-	for range 4 {
-		info := infos[tag]
-		if info == nil {
-			return ""
+// chainHop is the tag of the extra security or unblocker hop the traffic goes through now, or ""
+// with the chain off. The selectable mode puts its hops under a selector and a lowest-delay
+// balancer; then it follows their selection down to the hop.
+func chainHop(box *sbox.Box) string {
+	var tags []string
+	members := make(map[string]bool) // what the selectable mode's selector and balancer hold
+	for _, out := range box.Outbound().Outbounds() {
+		if !isChainTag(out.Tag()) {
+			continue
 		}
-		if !info.IsGroup || info.GroupSelectedTag == nil || *info.GroupSelectedTag == "" {
-			return info.Type
-		}
-		tag = *info.GroupSelectedTag
-	}
-	return ""
-}
-
-// showChainGroup makes the hops of the selectable chain mode visible in its selector, named by
-// their display type (with the connecting mark), so the app can list them and move between them.
-func showChainGroup(group *OutboundGroup, infos map[string]*OutboundInfo) {
-	for i, item := range group.Items {
-		cloned := proto.Clone(item).(*OutboundInfo)
-		cloned.IsVisible = true
-		if hopType := chainHopType(item.Tag, infos); hopType != "" {
-			cloned.TagDisplay = hopType
-			if cloned.IsGroup { // the lowest-delay balancer: "Lowest → WARP · AWG"
-				cloned.TagDisplay = strings.TrimPrefix(TrimTagName(item.Tag), config.ChainExtraSecurityPrefix+" · ")
-				cloned.TagDisplay = strings.TrimPrefix(cloned.TagDisplay, config.ChainUnblockerPrefix+" · ") + " → " + hopType
+		tags = append(tags, out.Tag())
+		if group, isGroup := out.(adapter.OutboundGroup); isGroup {
+			for _, member := range group.All() {
+				members[member] = true
 			}
 		}
-		group.Items[i] = cloned
 	}
+	for _, endpoint := range box.Endpoint().Endpoints() {
+		if isChainTag(endpoint.Tag()) {
+			tags = append(tags, endpoint.Tag())
+		}
+	}
+	for _, tag := range tags {
+		if members[tag] {
+			continue
+		}
+		for range 3 {
+			out, _ := box.Outbound().Outbound(tag)
+			group, isGroup := out.(adapter.OutboundGroup)
+			if !isGroup {
+				return tag
+			}
+			tag = groupNow(group)
+		}
+	}
+	return ""
 }
 
 func TrimTagName(tag string) string {
