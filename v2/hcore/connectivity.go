@@ -16,7 +16,9 @@ import (
 // every proxy in that group has timed out (see decideConnectivity). When the profile has only
 // one proxy, "lowest" is not built — then the select group's leaf proxy is used instead.
 // The user's selected outbound does not drive this when "lowest" exists: picking a single dead
-// proxy must not flip the core to NO_AVAILABLE_PROXIES. Clients only display what the core reports.
+// proxy must not flip the core to NO_AVAILABLE_PROXIES. With extra security the traffic leaves
+// through its hop, so the core is STARTED only once the hop has a ping too (see withHop).
+// Clients only display what the core reports.
 
 // connectivityRecheck is how often the ping is looked at when the monitor reports no change.
 const connectivityRecheck = 2 * time.Second
@@ -116,15 +118,33 @@ const (
 func pingAlive(delay int32) bool    { return delay > 0 && delay < maxPing }
 func pingTimedOut(delay int32) bool { return delay >= maxPing }
 
-// proxiesConnectivity reads pings of the built-in "lowest" group from monitoring. It runs often,
-// so it only walks that group's members and their histories — not the user's selected outbound.
-// With a single-proxy profile there is no "lowest"; the select leaf is used instead.
+// proxiesConnectivity is the state by the proxies' pings, and with extra security by its hop's too.
 func (h *HiddifyInstance) proxiesConnectivity() CoreStates {
 	ctx, box := h.Context(), h.Box()
 	if ctx == nil || box == nil || h.UrlTestHistory() == nil {
 		return CoreStates_WAITING
 	}
 	histories := monitoring.Get(ctx).OutboundsHistory("")
+	state := serversConnectivity(box, histories)
+	if hop := chainHop(box); config.IsChainExtraSecurityTag(hop) {
+		return withHop(state, historyDelay(histories[hop]))
+	}
+	return state
+}
+
+// withHop is the state with extra security: its hop dials through the proxies and carries all the
+// traffic, so the proxies' STARTED waits until the hop has a ping too.
+func withHop(servers CoreStates, hopDelay int32) CoreStates {
+	if servers == CoreStates_STARTED && !pingAlive(hopDelay) {
+		return CoreStates_WAITING
+	}
+	return servers
+}
+
+// serversConnectivity reads pings of the built-in "lowest" group from monitoring. It runs often,
+// so it only walks that group's members and their histories — not the user's selected outbound.
+// With a single-proxy profile there is no "lowest"; the select leaf is used instead.
+func serversConnectivity(box *sbox.Box, histories map[string]*adapter.URLTestHistory) CoreStates {
 	lowest, ok := box.Outbound().Outbound(config.OutboundURLTestTag)
 	if !ok {
 		return decideConnectivity(0, true, selectProxyLeaves(box, histories))
