@@ -93,6 +93,7 @@ func parseConfigContent(ctx context.Context, content []byte, debug bool, configO
 }
 
 func parseShareLinks(ctx context.Context, content []byte, configOpt *HiddifyOptions) (*option.Options, error) {
+	content = expandSubscriptionLinks(ctx, content)
 	v2ray, err := ray2sing.Ray2SingboxOptions(ctx, string(content), configOpt.UseXrayCoreWhenPossible)
 	if err != nil {
 		return nil, fmt.Errorf("unable to determine config format")
