@@ -59,14 +59,14 @@ func (h *HiddifyInstance) readStatus(prev *SystemInfo) *SystemInfo {
 			// }
 		}
 
-		if prev == nil || prev.CurrentProfile == "" || message.UplinkTotal < 1000000 {
+		// Always the profile of the current start: the previous cache kept the old name
+		// after a profile switch once more than 1 MB had been sent.
+		message.CurrentProfile = CurrentProfileName()
+		if message.CurrentProfile == "" {
 			settings := db.GetTable[hcommon.AppSettings]()
-			lastName, err := settings.Get("lastStartRequestName")
-			if err == nil {
-				message.CurrentProfile = lastName.Value.(string)
+			if lastName, err := settings.Get("lastStartRequestName"); err == nil {
+				message.CurrentProfile, _ = lastName.Value.(string)
 			}
-		} else {
-			message.CurrentProfile = prev.CurrentProfile
 		}
 	}
 

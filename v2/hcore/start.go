@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"path/filepath"
+	"sync/atomic"
 	"time"
 
 	"github.com/hiddify/hiddify-core/v2/config"
@@ -89,10 +90,23 @@ func cancelledStart(err error) (*CoreInfoResponse, error) {
 	return SetCoreStatus(CoreStates_STOPPED, MessageType_INSTANCE_NOT_STARTED, "start cancelled"), err
 }
 
+// currentProfileName is the name of the profile the core was last started with. It is what
+// SystemInfo.current_profile reports; kept in memory so status readers never hit the database
+// and never show a stale name after a profile switch.
+var currentProfileName atomic.Value
+
+func CurrentProfileName() string {
+	if v, ok := currentProfileName.Load().(string); ok {
+		return v
+	}
+	return ""
+}
+
 func saveLastStartRequest(in *StartRequest) error {
 	if in.ConfigContent == "" && in.ConfigPath == "" {
 		return nil
 	}
+	currentProfileName.Store(in.ConfigName)
 	settings := db.GetTable[hcommon.AppSettings]()
 	return settings.UpdateInsert(
 		&hcommon.AppSettings{
