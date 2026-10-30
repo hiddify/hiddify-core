@@ -75,9 +75,30 @@ func xrayOutboundShareLink(outbound map[string]any) string {
 	if err != nil {
 		return ""
 	}
-	link := strings.TrimSpace(links)
+	link := withCipherSuites(strings.TrimSpace(links), outbound)
 	if strings.HasPrefix(link, "vmess://") {
 		return vmessURIToV2rayN(link)
+	}
+	return link
+}
+
+// withCipherSuites adds the outbound's TLS cipherSuites to its link, which libxray leaves out (links have no field
+// for them); ray2sing reads it back.
+func withCipherSuites(link string, outbound map[string]any) string {
+	stream, _ := outbound["streamSettings"].(map[string]any)
+	tlsSettings, _ := stream["tlsSettings"].(map[string]any)
+	suites, _ := tlsSettings["cipherSuites"].(string)
+	if link == "" || suites == "" {
+		return link
+	}
+	link, fragment, hasFragment := strings.Cut(link, "#")
+	separator := "?"
+	if strings.Contains(link, "?") {
+		separator = "&"
+	}
+	link += separator + "cipherSuites=" + url.QueryEscape(suites)
+	if hasFragment {
+		link += "#" + fragment
 	}
 	return link
 }
