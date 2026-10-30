@@ -160,8 +160,9 @@ func parseSingboxContent(ctx context.Context, structured any, configOpt *Hiddify
 	endpoints, _ := jsonObj["endpoints"].([]interface{})
 	if outbounds, endpoints = ray2sing.MoveLegacyWireGuardOutbounds(outbounds, endpoints); len(endpoints) > 0 {
 		jsonObj["outbounds"] = outbounds
-		jsonObj["endpoints"] = endpoints
+		jsonObj["endpoints"] = ray2sing.MoveAmneziaWireGuardFields(endpoints)
 	}
+	numberSingboxDuplicates(endpoints, outbounds)
 
 	newContent, err := json.MarshalIndent(jsonObj, "", "  ")
 	if err != nil {
@@ -181,6 +182,7 @@ func parseClashContent(ctx context.Context, content []byte, configOpt *HiddifyOp
 	if len(clashObj.Proxies) == 0 {
 		return nil, true, fmt.Errorf("[ClashParser] no outbounds found")
 	}
+	numberClashDuplicates(&clashObj)
 	converted, endpoints, err := convert.Clash2sing(clashObj, clash2singmodel.SINGLATEST)
 	if err != nil {
 		return nil, true, fmt.Errorf("[ClashParser] converting clash to sing-box error: %w", err)
@@ -190,8 +192,151 @@ func parseClashContent(ctx context.Context, content []byte, configOpt *HiddifyOp
 	if err != nil {
 		return nil, true, fmt.Errorf("[ClashParser] patching clash config error: %w", err)
 	}
+	if output, err = addClashWireGuardFields(content, clashObj, output); err != nil {
+		return nil, true, fmt.Errorf("[ClashParser] %w", err)
+	}
 	options, err = patchConfigStr(ctx, output, "ClashParser", configOpt)
 	return options, true, err
+}
+
+// clashAmneziaFields are the keys of Clash.Meta's "amnezia-wg-option" that hiddify-core reads; the
+// AmneziaWG 1.5 drafts' j1–j3 and itime were replaced by i1–i5 and are not read.
+var clashAmneziaFields = map[string]bool{
+	"jc": true, "jmin": true, "jmax": true, "s1": true, "s2": true, "s3": true, "s4": true,
+	"h1": true, "h2": true, "h3": true, "h4": true, "i1": true, "i2": true, "i3": true, "i4": true, "i5": true,
+}
+
+// addClashWireGuardFields adds what clash2singbox drops from Clash WireGuard proxies to their
+// endpoints in output: "amnezia-wg-option", converted as sing-box-lx's values (see
+// ray2sing.MoveAmneziaWireGuardFields), and the single peer's "allowed-ips" and
+// "persistent-keepalive".
+func addClashWireGuardFields(content []byte, clashObj clash.Clash, output []byte) ([]byte, error) {
+	var raw struct {
+		Proxies []map[string]any `yaml:"proxies"`
+	}
+	if err := yaml.Unmarshal(content, &raw); err != nil {
+		return output, nil
+	}
+	options := map[string]map[string]any{} // endpoint tag → AmneziaWG values
+	peerFields := map[string]map[string]any{}
+	for i, proxy := range raw.Proxies {
+		if i >= len(clashObj.Proxies) || proxy["type"] != "wireguard" {
+			continue
+		}
+		name := clashObj.Proxies[i].Name
+		peerFields[name] = map[string]any{}
+		if allowed, ok := proxy["allowed-ips"].([]any); ok && proxy["peers"] == nil {
+			peerFields[name]["allowed_ips"] = allowed
+		}
+		if keepalive, ok := proxy["persistent-keepalive"]; ok {
+			peerFields[name]["persistent_keepalive_interval"] = keepalive
+		}
+		awg, ok := proxy["amnezia-wg-option"].(map[string]any)
+		if !ok {
+			continue
+		}
+		values := map[string]any{}
+		for key, value := range awg {
+			if clashAmneziaFields[key] {
+				values[key] = value
+			} else {
+				fmt.Printf("[ClashParser] %s: amnezia-wg-option %q is not supported\n", name, key)
+			}
+		}
+		options[name] = values
+	}
+	var config map[string]any
+	if err := json.Unmarshal(output, &config); err != nil {
+		return nil, err
+	}
+	endpoints, _ := config["endpoints"].([]any)
+	if len(endpoints) == 0 {
+		return output, nil
+	}
+	for _, item := range endpoints {
+		if endpoint, isObject := item.(map[string]any); isObject {
+			tag, _ := endpoint["tag"].(string)
+			for key, value := range options[tag] {
+				endpoint[key] = value
+			}
+			if peers, isList := endpoint["peers"].([]any); isList && len(peers) == 1 {
+				if peer, isObject := peers[0].(map[string]any); isObject {
+					for key, value := range peerFields[tag] {
+						peer[key] = value
+					}
+				}
+			}
+		}
+	}
+	config["endpoints"] = ray2sing.MoveAmneziaWireGuardFields(endpoints)
+	return json.Marshal(config)
+}
+
+// numberSingboxDuplicates numbers the repeated tags of sing-box outbounds and endpoints (see
+// duplicateNames).
+func numberSingboxDuplicates(lists ...[]any) {
+	var items []map[string]any
+	for _, list := range lists {
+		for _, item := range list {
+			if object, isObject := item.(map[string]any); isObject {
+				items = append(items, object)
+			}
+		}
+	}
+	names := make([]string, len(items))
+	for i, item := range items {
+		names[i], _ = item["tag"].(string)
+	}
+	renamed, duplicates := numberDuplicates(names)
+	if !duplicates.has() {
+		return
+	}
+	for i, item := range items {
+		if names[i] != "" {
+			item["tag"] = renamed[i]
+		}
+		if detour, isText := item["detour"].(string); isText {
+			item["detour"] = duplicates.detour(i, detour)
+		}
+		if list, isList := item["outbounds"].([]any); isList {
+			members := make([]string, len(list))
+			for k, member := range list {
+				members[k], _ = member.(string)
+			}
+			for k, member := range duplicates.members(i, members) {
+				list[k] = member
+			}
+		}
+	}
+}
+
+// numberClashDuplicates numbers the repeated names of Clash proxies and proxy groups (see
+// duplicateNames).
+func numberClashDuplicates(clashObj *clash.Clash) {
+	names := make([]string, 0, len(clashObj.Proxies)+len(clashObj.ProxyGroup))
+	for _, proxy := range clashObj.Proxies {
+		names = append(names, proxy.Name)
+	}
+	for _, group := range clashObj.ProxyGroup {
+		names = append(names, group.Name)
+	}
+	renamed, duplicates := numberDuplicates(names)
+	if !duplicates.has() {
+		return
+	}
+	for i := range clashObj.Proxies {
+		proxy := &clashObj.Proxies[i]
+		proxy.Name = renamed[i]
+		if proxy.DialerProxy != "" {
+			proxy.DialerProxy = duplicates.detour(i, proxy.DialerProxy)
+		}
+	}
+	for j := range clashObj.ProxyGroup {
+		i := len(clashObj.Proxies) + j
+		group := &clashObj.ProxyGroup[j]
+		group.Name = renamed[i]
+		group.Proxies = duplicates.members(i, group.Proxies)
+	}
 }
 
 func patchConfigStr(ctx context.Context, content []byte, name string, configOpt *HiddifyOptions) (*option.Options, error) {
