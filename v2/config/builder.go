@@ -368,10 +368,8 @@ func setExperimental(options *option.Options, hopt *HiddifyOptions) {
 			},
 
 			CacheFile: &option.CacheFileOptions{
-				Enabled:           true,
-				StoreWARPConfig:   true,
-				StoreMASQUEConfig: true,
-				Path:              "data/clash.db",
+				Enabled: true, // WARP and MASQUE devices are stored by default
+				Path:    "data/clash.db",
 			},
 
 			Monitoring: &option.MonitoringOptions{
