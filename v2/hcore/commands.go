@@ -51,7 +51,7 @@ func (h *HiddifyInstance) readStatus(prev *SystemInfo) *SystemInfo {
 			// if message.CurrentOutbound == config.OutboundURLTestTag {
 			if currentOutBound, ok := box.Outbound().Outbound(current); ok {
 				if g, ok := currentOutBound.(adapter.OutboundGroup); ok {
-					if now := groupNow(g); now != "" {
+					if now := connectedVia(g); now != "" {
 						message.CurrentOutbound = fmt.Sprint(message.CurrentOutbound, "→", TrimTagName(now))
 					}
 				}

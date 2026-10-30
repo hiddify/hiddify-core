@@ -27,6 +27,15 @@ func groupNow(group adapter.OutboundGroup) string {
 	return ""
 }
 
+// connectedVia is the outbound a group sends every connection through, or "" when it picks one
+// per connection (a balancer other than lowest-delay), so which one is in use is not known.
+func connectedVia(group adapter.OutboundGroup) string {
+	if b, ok := group.(*balancer.Balancer); ok && b.Strategy() != balancer.StrategyLowestDelay {
+		return ""
+	}
+	return groupNow(group)
+}
+
 func (h *HiddifyInstance) GetProxyInfo(url_test_history *adapter.URLTestHistory, detour adapter.Outbound) *OutboundInfo {
 	// historyStorage := h.UrlTestHistory()
 	// if historyStorage == nil {
