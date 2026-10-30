@@ -99,7 +99,9 @@ func parseToXray(path string) ([]byte, error) {
 	return pretty.Bytes(), nil
 }
 
-// Share links are converted one by one, working around two things libxray gets wrong:
+// Share links are converted one by one, working around three things libxray gets wrong:
+//   - it reads HTML-escaped links ("&amp;" between the parameters, as some subscriptions write them) as
+//     parameters named "amp;pbk", and so on. "&amp;" is turned back into "&", as ray2sing does;
 //   - it decodes a link's xhttp "extra" into Xray's config structs and encodes it again, which turns REALITY's
 //     unset "target" into null: Xray then builds the download leg as a REALITY server and drops the outbound.
 //     Such links are converted without "extra", and the link's own "extra" is put back;
@@ -118,7 +120,7 @@ func convertShareLinksToXray(text string) (*conf.Config, error) {
 	var result *conf.Config
 	var lastErr error
 	for _, line := range strings.Split(text, "\n") {
-		line = strings.TrimSpace(line)
+		line = strings.ReplaceAll(strings.TrimSpace(line), "&amp;", "&")
 		if line == "" {
 			continue
 		}
