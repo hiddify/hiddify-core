@@ -6,6 +6,7 @@ import (
 	"github.com/bepass-org/warp-plus/warp"
 	C "github.com/sagernet/sing-box/constant"
 	"github.com/sagernet/sing-box/option"
+	"github.com/sagernet/sing/common/json/badoption"
 )
 
 // A WireGuard (or AmneziaWG) endpoint whose detour is another WireGuard endpoint (WARP in WARP:
@@ -16,7 +17,8 @@ import (
 //   - the exit hop reaches a WARP peer given by an IPv6 address at an IPv4 WARP address instead, on
 //     the same port (every WARP address serves every account), which needs 20 bytes less. This is
 //     done when the first hop is WARP, and for the extra security hop, which dials through the
-//     main profile;
+//     main profile. A WireGuard exit keeps the IPv6 address as its fallback, used when the IPv4
+//     one gets no handshake;
 //   - the first hop's MTU is raised to the most its own packets allow on a 1500-byte network, so
 //     the exit hop keeps its MTU;
 //   - if the exit hop's packets still do not fit, its MTU is lowered to fit.
@@ -71,13 +73,15 @@ type tunnel struct {
 	mtu     *uint32
 	address []*string
 	warp    bool
+	// fallback is the WireGuard endpoint's fallback addresses (nil for AmneziaWG, which has none)
+	fallback *badoption.Listable[netip.Addr]
 }
 
 func tunnelOf(endpoint option.Endpoint) (*tunnel, bool) {
 	t := &tunnel{tag: endpoint.Tag, warp: isWarp(endpoint)}
 	switch opts := endpoint.Options.(type) {
 	case *option.WireGuardEndpointOptions:
-		t.detour, t.mtu = opts.Detour, &opts.MTU
+		t.detour, t.mtu, t.fallback = opts.Detour, &opts.MTU, &opts.FallbackAddress
 		for i := range opts.Peers {
 			t.address = append(t.address, &opts.Peers[i].Address)
 		}
@@ -104,6 +108,40 @@ func (t *tunnel) overhead() uint32 {
 	return overhead
 }
 
+// warpBehindDetour sets up each WARP tunnel that dials through a detour (the extra security hop,
+// WARP in WARP), where searching for a way in only measures the detour, and is slow:
+//   - the scanner is off, for warp endpoints and MASQUE outbounds: its probes go through the detour;
+//   - a warp endpoint tries two addresses and no other port: the profile's IPv4 address, then an
+//     IPv6 WARP address (every WARP address serves every account) when that gets no handshake.
+//
+// Options a config sets itself are kept.
+func warpBehindDetour(outbounds []option.Outbound, endpoints []option.Endpoint) {
+	for _, outbound := range outbounds {
+		if options, isMASQUE := outbound.Options.(*option.MASQUEOutboundOptions); isMASQUE && options.Detour != "" && options.Scanner != nil {
+			options.Scanner.Enabled = false
+		}
+	}
+	for _, endpoint := range endpoints {
+		options, isWarp := endpoint.Options.(*option.WARPEndpointOptions)
+		if !isWarp || endpoint.Type != C.TypeWARP || options.Detour == "" {
+			continue
+		}
+		if options.Scanner != nil {
+			options.Scanner.Enabled = false
+			options.Scanner.SearchNoise = false
+		}
+		if options.RotatePorts == nil {
+			rotatePorts := false
+			options.RotatePorts = &rotatePorts
+		}
+		if len(options.FallbackAddress) == 0 {
+			if ipv6, err := warp.RandomWarpEndpoint(false, true); err == nil {
+				options.FallbackAddress = badoption.Listable[netip.Addr]{ipv6.Addr()}
+			}
+		}
+	}
+}
+
 // fitWireGuardInWireGuard applies the rules above.
 func fitWireGuardInWireGuard(endpoints []option.Endpoint) {
 	tunnels := map[string]*tunnel{}
@@ -124,6 +162,9 @@ func fitWireGuardInWireGuard(endpoints []option.Endpoint) {
 				if addr, err := netip.ParseAddr(*address); err == nil && isWarpIPv6(addr.Unmap()) {
 					if endpoint, err := warp.RandomWarpEndpoint(true, false); err == nil {
 						*address = endpoint.Addr().String()
+						if exit.fallback != nil && len(exit.address) == 1 {
+							*exit.fallback = append(*exit.fallback, addr.Unmap())
+						}
 					}
 				}
 			}
