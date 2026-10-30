@@ -217,6 +217,7 @@ func setOutbounds(options *option.Options, input *option.Options, opt *HiddifyOp
 	if err := setChainHop(opt, &outbounds, &endpoints); err != nil {
 		return err
 	}
+	fitWireGuardInWireGuard(endpoints)
 	if len(opt.ConnectionTestUrls) == 0 {
 		opt.ConnectionTestUrls = []string{opt.ConnectionTestUrl, "https://www.google.com/generate_204", "http://captive.apple.com/generate_204", "https://cp.cloudflare.com"}
 		if isBlockedConnectionTestUrl(opt.ConnectionTestUrl) {
