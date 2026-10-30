@@ -219,6 +219,11 @@ func setOutbounds(options *option.Options, input *option.Options, opt *HiddifyOp
 	}
 	fitWireGuardInWireGuard(endpoints)
 	warpBehindDetour(outbounds, endpoints)
+	systemEngine := ""
+	if opt.UseSystemTLSEngine == nil || *opt.UseSystemTLSEngine {
+		systemEngine = usableTLSEngine()
+	}
+	chooseTLSEngines(outbounds, systemEngine)
 	if len(opt.ConnectionTestUrls) == 0 {
 		opt.ConnectionTestUrls = []string{opt.ConnectionTestUrl, "https://www.google.com/generate_204", "http://captive.apple.com/generate_204", "https://cp.cloudflare.com"}
 		if isBlockedConnectionTestUrl(opt.ConnectionTestUrl) {

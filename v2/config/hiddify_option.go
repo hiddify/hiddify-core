@@ -31,6 +31,9 @@ type HiddifyOptions struct {
 	Mux       MuxOptions        `json:"mux,omitempty" overridable:"true"`
 	TLSTricks TLSTricks         `json:"tls-tricks,omitempty"`
 	EnableNTP bool              `json:"enable-ntp,omitempty"`
+	// UseSystemTLSEngine lets a TLS client without a fingerprint use the system's TLS (Apple, Windows) when it
+	// passed its check on this device; else it gets Chrome's uTLS. On unless false.
+	UseSystemTLSEngine *bool `json:"use-system-tls-engine,omitempty"`
 
 	DNSOptions
 	InboundOptions
