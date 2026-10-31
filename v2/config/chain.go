@@ -319,6 +319,9 @@ func chainWarpNoise(warp ChainWarpOptions) hiddify.NoiseOptions {
 		Mode:  warp.NoiseMode,
 	}
 	fake.Enabled = fake.Count != (hiddify.Range{})
+	if _, isPreset := hiddify.NoisePresetByName(warp.NoiseMode); isPreset {
+		fake.Enabled = true // a preset brings its own count
+	}
 	return hiddify.NoiseOptions{FakePacket: fake}
 }
 
