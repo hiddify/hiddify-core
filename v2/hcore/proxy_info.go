@@ -36,6 +36,56 @@ func connectedVia(group adapter.OutboundGroup) string {
 	return groupNow(group)
 }
 
+// unreachableDelay is the delay a failed URL test records, as in the monitoring service.
+const unreachableDelay uint16 = 65535
+
+// bestGroupMember returns the member of a group with the lowest known delay. A balancer has no
+// selection before its first pick, and its group tag would otherwise be taken for the outbound
+// carrying traffic.
+func bestGroupMember(group adapter.OutboundGroup, history adapter.URLTestHistoryStorage) string {
+	best := ""
+	bestDelay := unreachableDelay
+	for _, tag := range group.All() {
+		var delay uint16
+		if history != nil {
+			if his := history.LoadURLTestHistory(tag); his != nil {
+				delay = his.Delay
+			}
+		}
+		if delay == 0 || delay >= unreachableDelay {
+			continue
+		}
+		if delay < bestDelay {
+			best, bestDelay = tag, delay
+		}
+	}
+	return best
+}
+
+// resolveActiveOutbound walks down the selected chain to the outbound that actually carries
+// traffic, so re-testing the active proxy tests one config instead of every config in its group.
+func resolveActiveOutbound(box *sbox.Box, tag string, history adapter.URLTestHistoryStorage) string {
+	for depth := 0; depth < 8; depth++ {
+		outbound, loaded := box.Outbound().Outbound(tag)
+		if !loaded {
+			return tag
+		}
+		group, isGroup := outbound.(adapter.OutboundGroup)
+		if !isGroup {
+			return tag
+		}
+		next := groupNow(group)
+		if next == "" {
+			next = bestGroupMember(group, history)
+		}
+		if next == "" || next == tag {
+			return tag
+		}
+		tag = next
+	}
+	return tag
+}
+
 func (h *HiddifyInstance) GetProxyInfo(url_test_history *adapter.URLTestHistory, detour adapter.Outbound) *OutboundInfo {
 	// historyStorage := h.UrlTestHistory()
 	// if historyStorage == nil {
