@@ -2,6 +2,10 @@ module github.com/hiddify/hiddify-core
 
 go 1.27.3
 
+// MPTCP only where tcp_multi_path asks for it: Go 1.24+ listens on MPTCP by default, and the
+// Linux kernel let a remote root listen on IPv4 MPTCP.
+godebug multipathtcp=0
+
 require (
 	filippo.io/bigmod v0.0.1 // indirect
 	filippo.io/edwards25519 v1.2.0 // indirect
