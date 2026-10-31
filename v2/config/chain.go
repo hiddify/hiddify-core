@@ -2,11 +2,14 @@ package config
 
 import (
 	"fmt"
+	"net/netip"
 	"strconv"
 	"strings"
+	"time"
 
 	C "github.com/sagernet/sing-box/constant"
 	"github.com/sagernet/sing-box/option"
+	"github.com/sagernet/sing/common/json/badoption"
 	"github.com/sagernet/wireguard-go/hiddify"
 )
 
@@ -59,14 +62,109 @@ type ChainHopOptions struct {
 	Profile ChainProfileOptions `json:"profile,omitempty"`
 }
 
+// Where the WARP peer of a hop comes from.
+const (
+	// WarpEndpointProfile uses the endpoint Cloudflare assigned to the device.
+	WarpEndpointProfile = "profile"
+	// WarpEndpointScan finds one with the scanner, which remembers what answered per network.
+	WarpEndpointScan = "scan"
+	// WarpEndpointCustom uses CleanIP and CleanPort as given.
+	WarpEndpointCustom = "custom"
+)
+
 type ChainWarpOptions struct {
 	LicenseKey string `json:"license-key,omitempty"`
-	CleanIP    string `json:"clean-ip,omitempty"`
-	CleanPort  uint16 `json:"clean-port,omitempty"`
+
+	// Endpoint is where the peer comes from: WarpEndpointProfile, Scan or Custom. Empty is read
+	// from CleanIP, which carried the same choice as the words auto/default/random before the
+	// source was its own field.
+	Endpoint string `json:"endpoint,omitempty"`
+	// CleanIP and CleanPort are the peer, for the custom source. A literal address or hostname,
+	// never a keyword: an old auto/default/random value now means a scan.
+	CleanIP   string `json:"clean-ip,omitempty"`
+	CleanPort uint16 `json:"clean-port,omitempty"`
+
+	// Scanner tunes the endpoint scan of the scan source; nil is the scanner's default.
+	Scanner *ChainWarpScannerOptions `json:"scanner,omitempty"`
+	// Masque is the tunnel of the masque and auto modes.
+	Masque *ChainWarpMasqueOptions `json:"masque,omitempty"`
+	// Awg is the tunnel of the awg and auto modes; nil keeps the core's AmneziaWG preset.
+	Awg *ChainWarpAwgOptions `json:"awg,omitempty"`
+	// MTU of the tunnel; 0 keeps the mode's default.
+	MTU uint32 `json:"mtu,omitempty"`
+
 	Noise      string `json:"noise,omitempty"`
 	NoiseSize  string `json:"noise-size,omitempty"`
 	NoiseDelay string `json:"noise-delay,omitempty"`
 	NoiseMode  string `json:"noise-mode,omitempty"`
+}
+
+// ChainWarpScannerOptions is the endpoint scan of a hop, over the scanner's own defaults. Zero
+// values keep the default, so a form sends only what the user changed.
+type ChainWarpScannerOptions struct {
+	// SearchNoise tries the noise presets when no endpoint answers with the configured noise, and
+	// keeps the one that works for the network. Nil keeps it on, as for the unblocker hop.
+	SearchNoise *bool `json:"search-noise,omitempty"`
+	// MaxRTT is the slowest accepted handshake, in milliseconds (1000).
+	MaxRTT int `json:"max-rtt,omitempty"`
+	// Timeout is how long one probe waits for its handshake, in milliseconds (2000).
+	Timeout int `json:"timeout,omitempty"`
+	// Count is the most addresses probed in one scan (64).
+	Count int `json:"count,omitempty"`
+	// Concurrency is how many probes run at once (8).
+	Concurrency int `json:"concurrency,omitempty"`
+	// Ports to probe; the protocol's own ports when empty.
+	Ports []uint16 `json:"ports,omitempty"`
+	// CIDRs to draw addresses from; Cloudflare's WARP ranges when empty.
+	CIDRs []string `json:"cidrs,omitempty"`
+	// NoisePresets to try, in order; all of them when empty.
+	NoisePresets []string `json:"noise-presets,omitempty"`
+}
+
+// ChainWarpMasqueOptions is the MASQUE tunnel of the masque and auto modes.
+type ChainWarpMasqueOptions struct {
+	// VHTTP is the HTTP version: "auto" (HTTP/3, falling back to HTTP/2), "h3" or "h2". A hop
+	// behind a detour runs h2 whatever this says, because a detour cannot carry QUIC.
+	VHTTP string `json:"vhttp,omitempty"`
+	// ServerName is the TLS server name; Cloudflare's MASQUE name when empty.
+	ServerName string `json:"server-name,omitempty"`
+	UseIPv6    bool   `json:"use-ipv6,omitempty"`
+	// UDPTimeout, UDPKeepalivePeriod and ReconnectDelay are in seconds.
+	UDPTimeout           int    `json:"udp-timeout,omitempty"`
+	UDPKeepalivePeriod   int    `json:"udp-keepalive,omitempty"`
+	UDPInitialPacketSize uint16 `json:"udp-initial-packet-size,omitempty"`
+	ReconnectDelay       int    `json:"reconnect-delay,omitempty"`
+
+	TLSInsecure bool `json:"tls-insecure,omitempty"`
+	TLSFragment bool `json:"tls-fragment,omitempty"`
+	// TLSFragmentFallbackDelay is in milliseconds.
+	TLSFragmentFallbackDelay int  `json:"tls-fragment-fallback-delay,omitempty"`
+	TLSRecordFragment        bool `json:"tls-record-fragment,omitempty"`
+
+	ECHEnabled         bool   `json:"ech-enabled,omitempty"`
+	ECHConfig          string `json:"ech-config,omitempty"`
+	ECHQueryServerName string `json:"ech-query-server-name,omitempty"`
+}
+
+// ChainWarpAwgOptions is the AmneziaWG tunnel of the awg and auto modes. All zero keeps the
+// core's preset, so an untouched form does not send AmneziaWG without its obfuscation.
+type ChainWarpAwgOptions struct {
+	Jc   int    `json:"jc,omitempty"`
+	Jmin int    `json:"jmin,omitempty"`
+	Jmax int    `json:"jmax,omitempty"`
+	S1   int    `json:"s1,omitempty"`
+	S2   int    `json:"s2,omitempty"`
+	S3   int    `json:"s3,omitempty"`
+	S4   int    `json:"s4,omitempty"`
+	H1   string `json:"h1,omitempty"`
+	H2   string `json:"h2,omitempty"`
+	H3   string `json:"h3,omitempty"`
+	H4   string `json:"h4,omitempty"`
+	I1   string `json:"i1,omitempty"`
+	I2   string `json:"i2,omitempty"`
+	I3   string `json:"i3,omitempty"`
+	I4   string `json:"i4,omitempty"`
+	I5   string `json:"i5,omitempty"`
 }
 
 type ChainPsiphonOptions struct {
@@ -251,9 +349,9 @@ var chainWarpModes = map[string]string{
 	ChainModeWarpAuto:   "auto", // races WireGuard, AmneziaWG and MASQUE and keeps the fastest
 }
 
-// chainWarpEndpoint is a warp endpoint running the tunnel of mode. awg and auto take the AmneziaWG
-// settings of the core's default noise preset; behind a detour (TCP-only, it cannot carry QUIC)
-// MASQUE runs over HTTP/2.
+// chainWarpEndpoint is a warp endpoint running the tunnel of mode, with the peer the hop asks for
+// (see chainWarpEndpointSource). Behind a detour (TCP-only, it cannot carry QUIC) MASQUE runs over
+// HTTP/2 and the tunnel keeps a smaller MTU.
 func chainWarpEndpoint(tag, chainStatus string, warp ChainWarpOptions, detour, mode string) option.Endpoint {
 	warpMode := chainWarpModes[mode]
 	options := &option.WARPEndpointOptions{
@@ -268,20 +366,30 @@ func chainWarpEndpoint(tag, chainStatus string, warp ChainWarpOptions, detour, m
 		Mode:  warpMode,
 	}
 	options.Detour = detour
-	if warpMode != "masque" { // in masque mode server is the MASQUE peer, not the WireGuard one
-		if warp.CleanIP != "" {
-			options.Server = warp.CleanIP
-		}
+	switch chainWarpEndpointSource(warp, detour) {
+	case WarpEndpointCustom:
+		// In masque mode the endpoint reads this as the MASQUE peer, not the WireGuard one; in
+		// auto mode it is the WireGuard peer of every leg that runs WireGuard.
+		options.Server = strings.TrimSpace(warp.CleanIP)
 		options.ServerPort = warp.CleanPort
+	case WarpEndpointScan:
+		options.Scanner = chainWarpScanner(warp.Scanner)
+	}
+	if warp.MTU != 0 {
+		options.MTU = warp.MTU
 	}
 	if warpMode == "masque" || warpMode == "auto" {
-		options.MASQUE = &option.WARPMASQUEOptions{Enabled: true}
-		if detour != "" {
-			options.MASQUE.VHTTP = "h2"
+		options.MASQUE = chainWarpMasque(warp.Masque, detour)
+		if warp.Masque != nil && warp.Masque.UDPTimeout > 0 {
+			options.UDPTimeout = badoption.Duration(time.Duration(warp.Masque.UDPTimeout) * time.Second)
 		}
 	}
-	// Only shrink MTU when packets ride inside another proxy (extra security / explicit detour).
-	if detour != "" {
+	if warpMode == "awg" || warpMode == "auto" {
+		options.AWG = chainWarpAwg(warp.Awg)
+	}
+	// Only shrink MTU when packets ride inside another proxy (extra security / explicit detour),
+	// and only when the hop does not set one itself.
+	if detour != "" && warp.MTU == 0 {
 		switch warpMode {
 		case "wg", "awg":
 			options.MTU = chainNestedWireGuardMTU
@@ -289,19 +397,133 @@ func chainWarpEndpoint(tag, chainStatus string, warp ChainWarpOptions, detour, m
 			// the MASQUE leg refuses an MTU below 1280, and the legs share the MTU
 			options.MTU = chainNestedMASQUEMTU
 		}
-		// Nested Extra Security: no scanner / search_noise — probing CIDRs through a leaf
-		// is slow and delays the first handshake forever.
-	} else if options.Server == "" {
-		// Unblocker dials directly: scan IPs and noise (skipped when CleanIP/Server is set).
-		options.Scanner = chainUnblockerScanner()
 	}
 	return option.Endpoint{Type: C.TypeWARP, Tag: tag, Options: options}
 }
 
-// chainUnblockerScanner finds a working Cloudflare endpoint and a noise preset that gets
-// through. Extra Security must never use this (nested CIDR probes hang through a leaf).
-func chainUnblockerScanner() *option.WARPScannerOptions {
-	return &option.WARPScannerOptions{Enabled: true, SearchNoise: true}
+// chainWarpEndpointSource is where the WARP peer of the hop comes from. Older settings carried the
+// choice in CleanIP as the words auto/default/random (a peer picked at random) and auto4/auto6 (a
+// family); they now mean a scan, which picks by what answers instead of at random. A hop behind a
+// detour never scans: probing CIDRs through a leaf only measures the detour, and delays the first
+// handshake, so it uses the endpoint Cloudflare assigned plus the endpoint's own failover.
+func chainWarpEndpointSource(warp ChainWarpOptions, detour string) string {
+	source := strings.ToLower(strings.TrimSpace(warp.Endpoint))
+	if source == "" {
+		switch strings.ToLower(strings.TrimSpace(warp.CleanIP)) {
+		case "":
+			source = WarpEndpointProfile
+		case "auto", "auto4", "auto6", "default", "random":
+			source = WarpEndpointScan
+		default:
+			source = WarpEndpointCustom
+		}
+	}
+	switch source {
+	case WarpEndpointProfile, WarpEndpointScan, WarpEndpointCustom:
+	case "auto", "auto4", "auto6", "default", "random":
+		source = WarpEndpointScan
+	default:
+		source = WarpEndpointProfile // a source this build does not know
+	}
+	if source == WarpEndpointScan && detour != "" {
+		return WarpEndpointProfile
+	}
+	return source
+}
+
+// chainWarpScanner finds a working Cloudflare endpoint and a noise preset that gets through, on
+// the scanner's defaults for whatever the hop leaves unset.
+func chainWarpScanner(scanner *ChainWarpScannerOptions) *option.WARPScannerOptions {
+	options := &option.WARPScannerOptions{Enabled: true, SearchNoise: true}
+	if scanner == nil {
+		return options
+	}
+	if scanner.SearchNoise != nil {
+		options.SearchNoise = *scanner.SearchNoise
+	}
+	options.MaxRTT = badoption.Duration(time.Duration(scanner.MaxRTT) * time.Millisecond)
+	options.Timeout = badoption.Duration(time.Duration(scanner.Timeout) * time.Millisecond)
+	options.Count = scanner.Count
+	options.Concurrency = scanner.Concurrency
+	options.Ports = scanner.Ports
+	for _, cidr := range scanner.CIDRs {
+		prefix, err := netip.ParsePrefix(strings.TrimSpace(cidr))
+		if err != nil {
+			continue // a range that does not parse is dropped, not fatal
+		}
+		options.CIDRs = append(options.CIDRs, prefix)
+	}
+	options.NoisePresets = scanner.NoisePresets
+	return options
+}
+
+// chainWarpMasque builds the MASQUE tunnel of the hop. A detour cannot carry QUIC, so the tunnel
+// runs HTTP/2 whatever the hop asks for.
+func chainWarpMasque(masque *ChainWarpMasqueOptions, detour string) *option.WARPMASQUEOptions {
+	options := &option.WARPMASQUEOptions{Enabled: true, VHTTP: "auto"}
+	if masque == nil {
+		if detour != "" {
+			options.VHTTP = "h2"
+		}
+		return options
+	}
+	options.VHTTP = strings.TrimSpace(masque.VHTTP)
+	options.ServerName = strings.TrimSpace(masque.ServerName)
+	options.UseIPv6 = masque.UseIPv6
+	options.UDPKeepalivePeriod = badoption.Duration(time.Duration(masque.UDPKeepalivePeriod) * time.Second)
+	options.UDPInitialPacketSize = masque.UDPInitialPacketSize
+	options.ReconnectDelay = badoption.Duration(time.Duration(masque.ReconnectDelay) * time.Second)
+	options.TLS = chainWarpMasqueTLS(masque)
+	if detour != "" {
+		options.VHTTP = "h2"
+	}
+	return options
+}
+
+// chainWarpMasqueTLS maps the transport knobs onto the tunnel's TLS options.
+func chainWarpMasqueTLS(masque *ChainWarpMasqueOptions) option.MASQUEOutboundTLSOptions {
+	tlsOptions := option.MASQUEOutboundTLSOptions{
+		Insecure:              masque.TLSInsecure,
+		Fragment:              masque.TLSFragment,
+		FragmentFallbackDelay: badoption.Duration(time.Duration(masque.TLSFragmentFallbackDelay) * time.Millisecond),
+		RecordFragment:        masque.TLSRecordFragment,
+	}
+	if masque.ECHEnabled {
+		tlsOptions.ECH = &option.OutboundECHOptions{
+			Enabled:         true,
+			QueryServerName: strings.TrimSpace(masque.ECHQueryServerName),
+		}
+		if config := strings.TrimSpace(masque.ECHConfig); config != "" {
+			tlsOptions.ECH.Config = badoption.Listable[string]{config}
+		}
+	}
+	return tlsOptions
+}
+
+// chainWarpAwg builds the AmneziaWG settings of the hop. All zero keeps the core's preset, which
+// is what makes the tunnel look like something other than AmneziaWG.
+func chainWarpAwg(awg *ChainWarpAwgOptions) *option.AwgOptions {
+	if awg == nil || *awg == (ChainWarpAwgOptions{}) {
+		return nil
+	}
+	return &option.AwgOptions{
+		Jc:   awg.Jc,
+		Jmin: awg.Jmin,
+		Jmax: awg.Jmax,
+		S1:   awg.S1,
+		S2:   awg.S2,
+		S3:   awg.S3,
+		S4:   awg.S4,
+		H1:   awg.H1,
+		H2:   awg.H2,
+		H3:   awg.H3,
+		H4:   awg.H4,
+		I1:   awg.I1,
+		I2:   awg.I2,
+		I3:   awg.I3,
+		I4:   awg.I4,
+		I5:   awg.I5,
+	}
 }
 
 func chainWarpNoise(warp ChainWarpOptions) hiddify.NoiseOptions {
