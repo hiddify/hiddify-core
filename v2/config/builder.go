@@ -83,6 +83,7 @@ func BuildConfig(ctx context.Context, hopts *HiddifyOptions, inputOpt *ReadOptio
 	if err := setOutbounds(&options, input, hopts, &staticIPs); err != nil {
 		return nil, err
 	}
+	tuneMonitoring(&options)
 	if err := setDns(&options, hopts, &staticIPs); err != nil {
 		return nil, err
 	}
@@ -387,6 +388,32 @@ func setExperimental(options *option.Options, hopt *HiddifyOptions) {
 			},
 		}
 	}
+}
+
+const (
+	// A subscription of a handful of configs still gets a few tests in parallel.
+	minMonitoringWorkers = 16
+	// Past this, tests fight over the device's sockets instead of finishing sooner.
+	maxMonitoringWorkers = 64
+	// A URL test that has not answered by now is not worth the wait: the next attempt is what
+	// tells whether the config is alive.
+	monitoringURLTestTimeout = 3 * time.Second
+)
+
+// tuneMonitoring sizes URL testing for the subscription it was built from. A fixed worker count
+// left the tail of a large subscription untested for minutes, and the per-test timeout was long
+// enough that one dead config delayed the queue behind it.
+func tuneMonitoring(options *option.Options) {
+	if options.Experimental == nil || options.Experimental.Monitoring == nil {
+		return
+	}
+	monitoring := options.Experimental.Monitoring
+	monitoring.Workers = monitoringWorkers(len(options.Outbounds) + len(options.Endpoints))
+	monitoring.URLTestTimeout = badoption.Duration(monitoringURLTestTimeout)
+}
+
+func monitoringWorkers(outbounds int) int {
+	return min(max(outbounds/10+minMonitoringWorkers, minMonitoringWorkers), maxMonitoringWorkers)
 }
 
 func setLog(options *option.Options, opt *HiddifyOptions) {
