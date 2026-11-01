@@ -33,6 +33,9 @@ TAGS=$(call tags,$(COMMON_TAGS) $(NAIVE_TAGS))
 # Standalone CLI binary (build-binary job).
 CLI_ADD_TAGS=with_dhcp,with_v2ray_api,with_acme,with_tailscale,with_ccm,with_ocm
 CLI_TAGS=$(call tags,$(COMMON_TAGS) $(CLI_ADD_TAGS) $(NAIVE_TAGS))
+# OpenWrt SDK source build (platform/wrt/Makefile, checked against this by CI): no naive (cronet
+# is a native library), no call tunnel (WebRTC), and the low-memory variant for routers.
+WRT_TAGS=$(call tags,$(CORE_TAGS) with_embedded_tor with_openvpn with_openconnect with_masque with_kcp with_sudoku with_bond with_dhcp with_low_memory)
 IOS_ADD_TAGS=with_dhcp,with_low_memory,with_purego
 MACOS_ADD_TAGS=with_dhcp
 WINDOWS_ADD_TAGS=with_purego
@@ -293,6 +296,18 @@ prepare:
 # Print a Makefile variable, e.g. `make -s print-CLI_TAGS` (used by CI).
 print-%:
 	@echo '$($*)'
+
+# OpenWrt packages of an already built CLI binary, for one OpenWrt architecture:
+#   make openwrt-packages WRT_ARCH=x86_64 WRT_BINARY=bin/HiddifyCli WRT_VERSION=5.3.0
+# The .apk needs apk-tools 3 (`apk mkpkg`) on the PATH; without it only the .ipk is built.
+WRT_ARCH ?= x86_64
+WRT_BINARY ?= $(BINDIR)/$(CLINAME)
+WRT_VERSION ?= $(shell git describe --tags --match 'v[0-9]*' --abbrev=0 2>/dev/null || echo 0.0.0)
+.PHONY: openwrt-packages
+openwrt-packages:
+	release/openwrt/build-ipk.sh $(WRT_ARCH) $(WRT_VERSION) $(WRT_BINARY) $(BINDIR)/openwrt/$(WRT_ARCH)/hiddify-core_$(patsubst v%,%,$(WRT_VERSION))_$(WRT_ARCH).ipk
+	command -v apk >/dev/null && release/openwrt/build-apk.sh $(WRT_ARCH) $(WRT_VERSION) $(WRT_BINARY) $(BINDIR)/openwrt/$(WRT_ARCH) || echo "apk-tools 3 not found: .apk skipped"
+	release/openwrt/make-feed.sh $(BINDIR)/openwrt/$(WRT_ARCH)
 
 clean:
 	rm $(BINDIR)/*

@@ -31,3 +31,33 @@ jobs:
     with:
       upload-artifact: ${{ github.event_name == 'push' }}
       
+
+  # The OpenWrt packaging stays buildable and consistent without a release: the .ipk and the feed
+  # index from a stand-in binary, and the SDK package's tags against the Makefile's WRT_TAGS.
+  openwrt-packaging:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
+      - name: Build an ipk and its feed index from a stand-in binary
+        run: |
+          set -euo pipefail
+          printf '#!/bin/sh\necho hiddify\n' > /tmp/hiddify-core && chmod +x /tmp/hiddify-core
+          release/openwrt/build-ipk.sh x86_64 0.0.0 /tmp/hiddify-core /tmp/feed/hiddify-core_0.0.0_x86_64.ipk
+          release/openwrt/make-feed.sh /tmp/feed
+          grep -q '^Package: hiddify-core$' /tmp/feed/Packages
+          grep -q '^Architecture: x86_64$' /tmp/feed/Packages
+          tar -xzOf /tmp/feed/hiddify-core_0.0.0_x86_64.ipk ./data.tar.gz | tar -tzf - | grep -q '^./etc/init.d/hiddify-core$'
+      - name: Build an apk from the stand-in binary
+        run: |
+          set -euo pipefail
+          docker run --rm -v /usr/local/bin:/mnt alpine:edge sh -c "apk add --no-cache apk-tools-static && cp /sbin/apk.static /mnt/apk && chmod +x /mnt/apk"
+          release/openwrt/build-apk.sh x86_64 0.0.0 /tmp/hiddify-core /tmp/feed
+          mv /tmp/feed/hiddify-core-0.0.0-r0_x86_64.apk /tmp/feed/hiddify-core-0.0.0-r0.apk
+          release/openwrt/make-feed.sh /tmp/feed
+          test -s /tmp/feed/packages.adb
+      - name: SDK package tags match the Makefile
+        run: |
+          set -euo pipefail
+          want="$(make -s --no-print-directory print-WRT_TAGS)"
+          have="$(sed -n 's/^GO_PKG_TAGS:=//p' platform/wrt/Makefile)"
+          [ "$want" = "$have" ] || { echo "platform/wrt/Makefile GO_PKG_TAGS is '$have', WRT_TAGS is '$want'"; exit 1; }

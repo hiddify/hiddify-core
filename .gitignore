@@ -20,3 +20,6 @@ node_modules
 
 # go-winres resource definitions for the Windows PE files (see make windows-winres)
 !/release/winres/*.json
+
+# the old WRT hash job committed the downloaded release tarball; never again
+/hiddify-core.tar.gz

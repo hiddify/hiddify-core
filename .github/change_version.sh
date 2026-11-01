@@ -14,7 +14,9 @@ echo "version: ${VERSION_STR}+${BUILD_NUMBER}"
 SED -e "s|<key>CFBundleVersion</key>\s*<string>[^<]*</string>|<key>CFBundleVersion</key><string>${VERSION_STR}</string>|" Info.plist 
 SED -e "s|<key>CFBundleShortVersionString</key>\s*<string>[^<]*</string>|<key>CFBundleShortVersionString</key><string>${VERSION_STR}</string>|" Info.plist 
 SED "s|ENV VERSION=.*|ENV VERSION=v${TAG}|g" platform/docker/Dockerfile 
-git add Info.plist platform/docker/Dockerfile 
+# the OpenWrt SDK package builds the tag this makes; .dev is not a version for it
+SED "s|^PKG_VERSION:=.*|PKG_VERSION:=${VERSION_STR}|" platform/wrt/Makefile
+git add Info.plist platform/docker/Dockerfile platform/wrt/Makefile
 git commit -m "release: version ${TAG}" 
 echo "creating git tag : v${TAG}" 
 git push 

@@ -60,6 +60,61 @@ if [ "$OS" != "openwrt" ]; then
     fi
 fi
 
+# OpenWrt: the release ships a package for every OpenWrt architecture, in the format the router's
+# package manager reads (opkg: .ipk, apk: .apk). The package brings the procd service, the UCI
+# config and the sysupgrade keep list, and later versions come through the feed. The tarball
+# below is the fallback for an architecture with no package.
+install_openwrt_package() {
+    local tag="$1" manager arch pkg url
+    if command -v apk >/dev/null 2>&1 && [ -d /etc/apk ]; then
+        manager=apk
+        arch=$(apk --print-arch 2>/dev/null)
+    elif command -v opkg >/dev/null 2>&1; then
+        manager=opkg
+        arch=$(opkg print-architecture 2>/dev/null | awk '{print $2}' | tail -n1)
+    else
+        return 1
+    fi
+    [ -n "$arch" ] || return 1
+    local version="${tag#v}"
+    case "$manager" in
+        # apk versions: 5.3.0 -> 5.3.0-r0, 5.3.0-beta.2 -> 5.3.0_beta2-r0 (as release/openwrt/build-apk.sh)
+        apk) pkg="hiddify-core-$(echo "$version" | sed -E 's/-([a-z]+)\.?([0-9]+)/_\1\2/; s/\.dev$/_pre0/')-r0_${arch}.apk" ;;
+        opkg) pkg="hiddify-core_${version}_${arch}.ipk" ;;
+    esac
+    url="https://github.com/$REPO/releases/download/$tag/$pkg"
+    echo -e "Installing ${BLUE}$pkg${NC} with $manager..."
+    if ! curl -fL "$url" -o "$WORKDIR/$pkg"; then
+        echo -e "No $manager package for ${arch} in $tag; falling back to the archive."
+        return 1
+    fi
+    case "$manager" in
+        apk) apk add --allow-untrusted "$WORKDIR/$pkg" ;;
+        opkg) opkg install "$WORKDIR/$pkg" ;;
+    esac || return 1
+    # the feed, so `opkg upgrade` / `apk upgrade` bring the next version
+    local feed="https://github.com/$REPO/releases/download/openwrt-$arch"
+    case "$manager" in
+        apk)
+            if curl -fsL "$feed/hiddify-apk.pem" -o /etc/apk/keys/hiddify-apk.pem 2>/dev/null; then
+                echo "$feed/packages.adb" > /etc/apk/repositories.d/hiddify.list
+            fi ;;
+        opkg)
+            if curl -fsL "$feed/hiddify.pub" -o "$WORKDIR/hiddify.pub" 2>/dev/null; then
+                opkg-key add "$WORKDIR/hiddify.pub" >/dev/null 2>&1 || true
+                grep -q "^src/gz hiddify " /etc/opkg/customfeeds.conf 2>/dev/null \
+                    || echo "src/gz hiddify $feed" >> /etc/opkg/customfeeds.conf
+            fi ;;
+    esac
+    /etc/init.d/hiddify-core enable
+    /etc/init.d/hiddify-core restart
+    echo -e "${GREEN}Installation successful!${NC}"
+    echo -e "Config:  /etc/hiddify-core/config.json (uci: /etc/config/hiddify-core)"
+    echo -e "Service: /etc/init.d/hiddify-core   Logs: logread -e hiddify-core"
+    echo -e "Update:  $manager update && $manager upgrade hiddify-core"
+    return 0
+}
+
 # Determine artifact name
 # Note: For OpenWrt, we usually prefer generic or musl. 
 # For standard Linux, we use the specific libc variant if available, otherwise generic.
@@ -75,10 +130,15 @@ if [ -z "$LATEST_TAG" ]; then
     LATEST_TAG="v4.0.4" # Fallback
 fi
 
+WORKDIR=$(mktemp -d)
+if [ "$OS" = "openwrt" ] && install_openwrt_package "$LATEST_TAG"; then
+    rm -rf "$WORKDIR"
+    exit 0
+fi
+
 DOWNLOAD_URL="https://github.com/$REPO/releases/download/$LATEST_TAG/$ARTIFACT"
 
 echo -e "Downloading ${BLUE}$ARTIFACT${NC} ($LATEST_TAG)..."
-WORKDIR=$(mktemp -d)
 curl -L "$DOWNLOAD_URL" -o "$WORKDIR/$ARTIFACT" || {
     # If specific libc variant fails, try generic
     if [ -n "$LIBC" ]; then
