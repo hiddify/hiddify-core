@@ -84,7 +84,8 @@ func setDns(options *option.Options, opt *HiddifyOptions, staticIps *map[string]
 	if err != nil {
 		return err
 	}
-	// through the proxy UDP is what fails most often, so each host is tried over TCP first
+	// through a blocked proxy a UDP query only times out, while TCP fails at once, so every TCP
+	// server goes first, then UDP, then TLS
 	remoteGroup, remoteMembers, err := getDNSGroupOptions(DNSMultiRemoteTag, *remote_dns, remoteAddr, DNSDirectTag, true, func(string) string {
 		return OutboundMainDetour
 	})
@@ -380,9 +381,12 @@ func dnsGroupAddresses(selected string) []string {
 	if host == fallback {
 		fallback = "1.1.1.1"
 	}
+	// the selected server, then every transport of its host, so a tcp:// or tls:// selection
+	// keeps its plain UDP twin as the next thing to try: a proxy that refuses TCP 53 and drops
+	// TLS 853 used to leave only the fallback host's UDP, four failures down the list
 	candidates := []string{selected}
 	if host != "" {
-		candidates = append(candidates, "tcp://"+host, "tls://"+host)
+		candidates = append(candidates, "udp://"+host, "tcp://"+host, "tls://"+host)
 	}
 	candidates = append(candidates, "udp://"+fallback, "tcp://"+fallback, "tls://"+fallback)
 	var addresses []string
@@ -396,33 +400,34 @@ func dnsGroupAddresses(selected string) []string {
 
 // tcpBeforeUDP moves each host's TCP address in front of its UDP address, so a group tries TCP first
 // and falls back to UDP.
-func tcpBeforeUDP(addresses []string) []string {
-	out := slices.Clone(addresses)
-	for i := 0; i < len(out); i++ {
-		host, isUDP := strings.CutPrefix(out[i], "udp://")
-		if !isUDP {
-			continue
+// tcpFirstOrder puts every TCP server first, then UDP, then TLS, each host in its listed order
+// within a transport. A UDP query through a blocked proxy only times out, where a TCP connection
+// is refused at once, so UDP goes after TCP; TLS, a TCP port a proxy's exit blocks more often
+// than 53, goes last. DoH and the system resolver count as TCP: they fail as fast. The selected
+// server keeps the front of its transport.
+func tcpFirstOrder(addresses []string) []string {
+	rank := func(address string) int {
+		switch {
+		case strings.HasPrefix(address, "udp://"), strings.HasPrefix(address, "h3://"), strings.HasPrefix(address, "quic://"):
+			return 1
+		case strings.HasPrefix(address, "tls://"):
+			return 2
 		}
-		j := slices.Index(out[i+1:], "tcp://"+host)
-		if j < 0 {
-			continue
-		}
-		j += i + 1
-		tcp := out[j]
-		copy(out[i+1:j+1], out[i:j])
-		out[i] = tcp
+		return 0
 	}
+	out := slices.Clone(addresses)
+	sort.SliceStable(out, func(i, j int) bool { return rank(out[i]) < rank(out[j]) })
 	return out
 }
 
 // getDNSGroupOptions builds a sequential DNS group: the already built selected server and a member
-// per remaining address of dnsGroupAddresses, in that order, or with each host's TCP before its UDP
-// when [tcpFirst].
+// per remaining address of dnsGroupAddresses, in that order, or with every TCP server first, then
+// UDP, then TLS, when [tcpFirst].
 func getDNSGroupOptions(tag string, selected option.DNSServerOptions, selectedAddress, domainResolver string, tcpFirst bool, detour func(address string) string) (*option.DNSServerOptions, []option.DNSServerOptions, error) {
 	addresses := dnsGroupAddresses(selectedAddress)
 	ordered := addresses
 	if tcpFirst {
-		ordered = tcpBeforeUDP(addresses)
+		ordered = tcpFirstOrder(addresses)
 	}
 	var members []string
 	var servers []option.DNSServerOptions
