@@ -13,6 +13,7 @@ var (
 	sUserID               int
 	sGroupID              int
 	statusPropagationPort int64
+	sSetupMode            SetupMode // which core this process is: the app's own, or the background one
 )
 
 func InitHiddifyService() error {

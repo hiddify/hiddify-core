@@ -261,6 +261,28 @@ message LogRequest {
 message StopRequest{
 }
 
+message CrashReport {
+  string name = 1;        // the report directory or file name
+  string crashed_at = 2;  // RFC 3339
+  string source = 3;      // crash_reports, oom_reports, or the live file name
+  bool is_crash = 4;      // the content is a crash (panic, fatal error, signal), not other stderr output
+}
+
+message CrashReportList {
+  repeated CrashReport reports = 1;
+}
+
+message ExportDiagnosticsRequest {
+  string destination_path = 1;         // where to write the zip; empty is a file in the temp directory
+  map<string, bytes> extra_files = 2;  // more files for the zip, by name (the app's logs, another core's dump)
+  bool inline = 3;                     // also return the zip's bytes
+}
+
+message ExportDiagnosticsResponse {
+  string path = 1;
+  bytes content = 2;
+}
+
 message LANIPResponse {
   string ip = 1;
 }

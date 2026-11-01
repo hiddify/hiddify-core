@@ -45,6 +45,8 @@ const (
 	Core_IsAdmin_FullMethodName               = "/hcore.Core/IsAdmin"
 	Core_NeedAdminBgService_FullMethodName    = "/hcore.Core/NeedAdminBgService"
 	Core_EnsureAdminBgService_FullMethodName  = "/hcore.Core/EnsureAdminBgService"
+	Core_ListCrashReports_FullMethodName      = "/hcore.Core/ListCrashReports"
+	Core_ExportDiagnostics_FullMethodName     = "/hcore.Core/ExportDiagnostics"
 )
 
 // CoreClient is the client API for Core service.
@@ -84,6 +86,16 @@ type CoreClient interface {
 	NeedAdminBgService(ctx context.Context, in *NeedAdminBgServiceRequest, opts ...grpc.CallOption) (*NeedAdminBgServiceResponse, error)
 	// Windows/Linux: install/start admin_bgservice if needed and start the bg core until STARTED.
 	EnsureAdminBgService(ctx context.Context, in *EnsureAdminBgServiceRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[EnsureAdminBgServiceEvent], error)
+	// The crash reports in this core's working directory: the archived ones (crash_reports,
+	// oom_reports) and the live stderr files that hold a crash, newest last.
+	ListCrashReports(ctx context.Context, in *hcommon.Empty, opts ...grpc.CallOption) (*CrashReportList, error)
+	// A zip of this core's diagnostics: the crash, OOM and power reports, the stderr and core log
+	// files, the previous run's goroutines (a snapshot the core writes every minute while connected,
+	// kept aside at the next start), the running config with servers and secrets removed, and the
+	// files the request adds. Text is scrubbed of addresses, links and secrets. Returns the zip's
+	// path, and its bytes when the request asks for them (a core in another process, whose files the
+	// app cannot read).
+	ExportDiagnostics(ctx context.Context, in *ExportDiagnosticsRequest, opts ...grpc.CallOption) (*ExportDiagnosticsResponse, error)
 }
 
 type coreClient struct {
@@ -398,6 +410,26 @@ func (c *coreClient) EnsureAdminBgService(ctx context.Context, in *EnsureAdminBg
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type Core_EnsureAdminBgServiceClient = grpc.ServerStreamingClient[EnsureAdminBgServiceEvent]
 
+func (c *coreClient) ListCrashReports(ctx context.Context, in *hcommon.Empty, opts ...grpc.CallOption) (*CrashReportList, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CrashReportList)
+	err := c.cc.Invoke(ctx, Core_ListCrashReports_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *coreClient) ExportDiagnostics(ctx context.Context, in *ExportDiagnosticsRequest, opts ...grpc.CallOption) (*ExportDiagnosticsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ExportDiagnosticsResponse)
+	err := c.cc.Invoke(ctx, Core_ExportDiagnostics_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // CoreServer is the server API for Core service.
 // All implementations must embed UnimplementedCoreServer
 // for forward compatibility.
@@ -435,6 +467,16 @@ type CoreServer interface {
 	NeedAdminBgService(context.Context, *NeedAdminBgServiceRequest) (*NeedAdminBgServiceResponse, error)
 	// Windows/Linux: install/start admin_bgservice if needed and start the bg core until STARTED.
 	EnsureAdminBgService(*EnsureAdminBgServiceRequest, grpc.ServerStreamingServer[EnsureAdminBgServiceEvent]) error
+	// The crash reports in this core's working directory: the archived ones (crash_reports,
+	// oom_reports) and the live stderr files that hold a crash, newest last.
+	ListCrashReports(context.Context, *hcommon.Empty) (*CrashReportList, error)
+	// A zip of this core's diagnostics: the crash, OOM and power reports, the stderr and core log
+	// files, the previous run's goroutines (a snapshot the core writes every minute while connected,
+	// kept aside at the next start), the running config with servers and secrets removed, and the
+	// files the request adds. Text is scrubbed of addresses, links and secrets. Returns the zip's
+	// path, and its bytes when the request asks for them (a core in another process, whose files the
+	// app cannot read).
+	ExportDiagnostics(context.Context, *ExportDiagnosticsRequest) (*ExportDiagnosticsResponse, error)
 	mustEmbedUnimplementedCoreServer()
 }
 
@@ -519,6 +561,12 @@ func (UnimplementedCoreServer) NeedAdminBgService(context.Context, *NeedAdminBgS
 }
 func (UnimplementedCoreServer) EnsureAdminBgService(*EnsureAdminBgServiceRequest, grpc.ServerStreamingServer[EnsureAdminBgServiceEvent]) error {
 	return status.Errorf(codes.Unimplemented, "method EnsureAdminBgService not implemented")
+}
+func (UnimplementedCoreServer) ListCrashReports(context.Context, *hcommon.Empty) (*CrashReportList, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListCrashReports not implemented")
+}
+func (UnimplementedCoreServer) ExportDiagnostics(context.Context, *ExportDiagnosticsRequest) (*ExportDiagnosticsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ExportDiagnostics not implemented")
 }
 func (UnimplementedCoreServer) mustEmbedUnimplementedCoreServer() {}
 func (UnimplementedCoreServer) testEmbeddedByValue()              {}
@@ -949,6 +997,42 @@ func _Core_EnsureAdminBgService_Handler(srv interface{}, stream grpc.ServerStrea
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type Core_EnsureAdminBgServiceServer = grpc.ServerStreamingServer[EnsureAdminBgServiceEvent]
 
+func _Core_ListCrashReports_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(hcommon.Empty)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CoreServer).ListCrashReports(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Core_ListCrashReports_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CoreServer).ListCrashReports(ctx, req.(*hcommon.Empty))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Core_ExportDiagnostics_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ExportDiagnosticsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CoreServer).ExportDiagnostics(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Core_ExportDiagnostics_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CoreServer).ExportDiagnostics(ctx, req.(*ExportDiagnosticsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Core_ServiceDesc is the grpc.ServiceDesc for Core service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -1031,6 +1115,14 @@ var Core_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "NeedAdminBgService",
 			Handler:    _Core_NeedAdminBgService_Handler,
+		},
+		{
+			MethodName: "ListCrashReports",
+			Handler:    _Core_ListCrashReports_Handler,
+		},
+		{
+			MethodName: "ExportDiagnostics",
+			Handler:    _Core_ExportDiagnostics_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

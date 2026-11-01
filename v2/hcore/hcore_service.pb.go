@@ -28,7 +28,7 @@ var file_v2_hcore_hcore_service_proto_rawDesc = []byte{
 	0x68, 0x63, 0x6f, 0x72, 0x65, 0x1a, 0x17, 0x76, 0x32, 0x2f, 0x68, 0x63, 0x6f, 0x6d, 0x6d, 0x6f,
 	0x6e, 0x2f, 0x63, 0x6f, 0x6d, 0x6d, 0x6f, 0x6e, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x1a, 0x14,
 	0x76, 0x32, 0x2f, 0x68, 0x63, 0x6f, 0x72, 0x65, 0x2f, 0x68, 0x63, 0x6f, 0x72, 0x65, 0x2e, 0x70,
-	0x72, 0x6f, 0x74, 0x6f, 0x32, 0xa4, 0x0c, 0x0a, 0x04, 0x43, 0x6f, 0x72, 0x65, 0x12, 0x35, 0x0a,
+	0x72, 0x6f, 0x74, 0x6f, 0x32, 0xb8, 0x0d, 0x0a, 0x04, 0x43, 0x6f, 0x72, 0x65, 0x12, 0x35, 0x0a,
 	0x05, 0x53, 0x74, 0x61, 0x72, 0x74, 0x12, 0x13, 0x2e, 0x68, 0x63, 0x6f, 0x72, 0x65, 0x2e, 0x53,
 	0x74, 0x61, 0x72, 0x74, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x17, 0x2e, 0x68, 0x63,
 	0x6f, 0x72, 0x65, 0x2e, 0x43, 0x6f, 0x72, 0x65, 0x49, 0x6e, 0x66, 0x6f, 0x52, 0x65, 0x73, 0x70,
@@ -126,12 +126,22 @@ var file_v2_hcore_hcore_service_proto_rawDesc = []byte{
 	0x72, 0x65, 0x41, 0x64, 0x6d, 0x69, 0x6e, 0x42, 0x67, 0x53, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65,
 	0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x20, 0x2e, 0x68, 0x63, 0x6f, 0x72, 0x65, 0x2e,
 	0x45, 0x6e, 0x73, 0x75, 0x72, 0x65, 0x41, 0x64, 0x6d, 0x69, 0x6e, 0x42, 0x67, 0x53, 0x65, 0x72,
-	0x76, 0x69, 0x63, 0x65, 0x45, 0x76, 0x65, 0x6e, 0x74, 0x30, 0x01, 0x42, 0x49, 0x0a, 0x1d, 0x63,
-	0x6f, 0x6d, 0x2e, 0x68, 0x69, 0x64, 0x64, 0x69, 0x66, 0x79, 0x2e, 0x63, 0x6f, 0x72, 0x65, 0x2e,
-	0x61, 0x70, 0x69, 0x2e, 0x76, 0x32, 0x2e, 0x68, 0x63, 0x6f, 0x72, 0x65, 0x5a, 0x28, 0x67, 0x69,
-	0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x68, 0x69, 0x64, 0x64, 0x69, 0x66, 0x79,
-	0x2f, 0x68, 0x69, 0x64, 0x64, 0x69, 0x66, 0x79, 0x2d, 0x63, 0x6f, 0x72, 0x65, 0x2f, 0x76, 0x32,
-	0x2f, 0x68, 0x63, 0x6f, 0x72, 0x65, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x76, 0x69, 0x63, 0x65, 0x45, 0x76, 0x65, 0x6e, 0x74, 0x30, 0x01, 0x12, 0x3a, 0x0a, 0x10, 0x4c,
+	0x69, 0x73, 0x74, 0x43, 0x72, 0x61, 0x73, 0x68, 0x52, 0x65, 0x70, 0x6f, 0x72, 0x74, 0x73, 0x12,
+	0x0e, 0x2e, 0x68, 0x63, 0x6f, 0x6d, 0x6d, 0x6f, 0x6e, 0x2e, 0x45, 0x6d, 0x70, 0x74, 0x79, 0x1a,
+	0x16, 0x2e, 0x68, 0x63, 0x6f, 0x72, 0x65, 0x2e, 0x43, 0x72, 0x61, 0x73, 0x68, 0x52, 0x65, 0x70,
+	0x6f, 0x72, 0x74, 0x4c, 0x69, 0x73, 0x74, 0x12, 0x56, 0x0a, 0x11, 0x45, 0x78, 0x70, 0x6f, 0x72,
+	0x74, 0x44, 0x69, 0x61, 0x67, 0x6e, 0x6f, 0x73, 0x74, 0x69, 0x63, 0x73, 0x12, 0x1f, 0x2e, 0x68,
+	0x63, 0x6f, 0x72, 0x65, 0x2e, 0x45, 0x78, 0x70, 0x6f, 0x72, 0x74, 0x44, 0x69, 0x61, 0x67, 0x6e,
+	0x6f, 0x73, 0x74, 0x69, 0x63, 0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x20, 0x2e,
+	0x68, 0x63, 0x6f, 0x72, 0x65, 0x2e, 0x45, 0x78, 0x70, 0x6f, 0x72, 0x74, 0x44, 0x69, 0x61, 0x67,
+	0x6e, 0x6f, 0x73, 0x74, 0x69, 0x63, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x42,
+	0x49, 0x0a, 0x1d, 0x63, 0x6f, 0x6d, 0x2e, 0x68, 0x69, 0x64, 0x64, 0x69, 0x66, 0x79, 0x2e, 0x63,
+	0x6f, 0x72, 0x65, 0x2e, 0x61, 0x70, 0x69, 0x2e, 0x76, 0x32, 0x2e, 0x68, 0x63, 0x6f, 0x72, 0x65,
+	0x5a, 0x28, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x68, 0x69, 0x64,
+	0x64, 0x69, 0x66, 0x79, 0x2f, 0x68, 0x69, 0x64, 0x64, 0x69, 0x66, 0x79, 0x2d, 0x63, 0x6f, 0x72,
+	0x65, 0x2f, 0x76, 0x32, 0x2f, 0x68, 0x63, 0x6f, 0x72, 0x65, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74,
+	0x6f, 0x33,
 }
 
 var file_v2_hcore_hcore_service_proto_goTypes = []any{
@@ -148,18 +158,21 @@ var file_v2_hcore_hcore_service_proto_goTypes = []any{
 	(*CloseRequest)(nil),                 // 10: hcore.CloseRequest
 	(*NeedAdminBgServiceRequest)(nil),    // 11: hcore.NeedAdminBgServiceRequest
 	(*EnsureAdminBgServiceRequest)(nil),  // 12: hcore.EnsureAdminBgServiceRequest
-	(*CoreInfoResponse)(nil),             // 13: hcore.CoreInfoResponse
-	(*OutboundGroupList)(nil),            // 14: hcore.OutboundGroupList
-	(*SystemInfo)(nil),                   // 15: hcore.SystemInfo
-	(*hcommon.Response)(nil),             // 16: hcommon.Response
-	(*ParseResponse)(nil),                // 17: hcore.ParseResponse
-	(*WarpGenerationResponse)(nil),       // 18: hcore.WarpGenerationResponse
-	(*SystemProxyStatus)(nil),            // 19: hcore.SystemProxyStatus
-	(*LogMessage)(nil),                   // 20: hcore.LogMessage
-	(*LANIPResponse)(nil),                // 21: hcore.LANIPResponse
-	(*IsAdminResponse)(nil),              // 22: hcore.IsAdminResponse
-	(*NeedAdminBgServiceResponse)(nil),   // 23: hcore.NeedAdminBgServiceResponse
-	(*EnsureAdminBgServiceEvent)(nil),    // 24: hcore.EnsureAdminBgServiceEvent
+	(*ExportDiagnosticsRequest)(nil),     // 13: hcore.ExportDiagnosticsRequest
+	(*CoreInfoResponse)(nil),             // 14: hcore.CoreInfoResponse
+	(*OutboundGroupList)(nil),            // 15: hcore.OutboundGroupList
+	(*SystemInfo)(nil),                   // 16: hcore.SystemInfo
+	(*hcommon.Response)(nil),             // 17: hcommon.Response
+	(*ParseResponse)(nil),                // 18: hcore.ParseResponse
+	(*WarpGenerationResponse)(nil),       // 19: hcore.WarpGenerationResponse
+	(*SystemProxyStatus)(nil),            // 20: hcore.SystemProxyStatus
+	(*LogMessage)(nil),                   // 21: hcore.LogMessage
+	(*LANIPResponse)(nil),                // 22: hcore.LANIPResponse
+	(*IsAdminResponse)(nil),              // 23: hcore.IsAdminResponse
+	(*NeedAdminBgServiceResponse)(nil),   // 24: hcore.NeedAdminBgServiceResponse
+	(*EnsureAdminBgServiceEvent)(nil),    // 25: hcore.EnsureAdminBgServiceEvent
+	(*CrashReportList)(nil),              // 26: hcore.CrashReportList
+	(*ExportDiagnosticsResponse)(nil),    // 27: hcore.ExportDiagnosticsResponse
 }
 var file_v2_hcore_hcore_service_proto_depIdxs = []int32{
 	0,  // 0: hcore.Core.Start:input_type -> hcore.StartRequest
@@ -187,33 +200,37 @@ var file_v2_hcore_hcore_service_proto_depIdxs = []int32{
 	1,  // 22: hcore.Core.IsAdmin:input_type -> hcommon.Empty
 	11, // 23: hcore.Core.NeedAdminBgService:input_type -> hcore.NeedAdminBgServiceRequest
 	12, // 24: hcore.Core.EnsureAdminBgService:input_type -> hcore.EnsureAdminBgServiceRequest
-	13, // 25: hcore.Core.Start:output_type -> hcore.CoreInfoResponse
-	13, // 26: hcore.Core.CoreInfoListener:output_type -> hcore.CoreInfoResponse
-	14, // 27: hcore.Core.OutboundsInfo:output_type -> hcore.OutboundGroupList
-	14, // 28: hcore.Core.MainOutboundsInfo:output_type -> hcore.OutboundGroupList
-	15, // 29: hcore.Core.GetSystemInfo:output_type -> hcore.SystemInfo
-	15, // 30: hcore.Core.GetSystemInfoStream:output_type -> hcore.SystemInfo
-	16, // 31: hcore.Core.Setup:output_type -> hcommon.Response
-	17, // 32: hcore.Core.Parse:output_type -> hcore.ParseResponse
-	13, // 33: hcore.Core.ChangeHiddifySettings:output_type -> hcore.CoreInfoResponse
-	13, // 34: hcore.Core.StartService:output_type -> hcore.CoreInfoResponse
-	13, // 35: hcore.Core.Stop:output_type -> hcore.CoreInfoResponse
-	13, // 36: hcore.Core.Restart:output_type -> hcore.CoreInfoResponse
-	13, // 37: hcore.Core.HotReload:output_type -> hcore.CoreInfoResponse
-	16, // 38: hcore.Core.SelectOutbound:output_type -> hcommon.Response
-	16, // 39: hcore.Core.UrlTest:output_type -> hcommon.Response
-	16, // 40: hcore.Core.UrlTestActive:output_type -> hcommon.Response
-	18, // 41: hcore.Core.GenerateWarpConfig:output_type -> hcore.WarpGenerationResponse
-	19, // 42: hcore.Core.GetSystemProxyStatus:output_type -> hcore.SystemProxyStatus
-	16, // 43: hcore.Core.SetSystemProxyEnabled:output_type -> hcommon.Response
-	20, // 44: hcore.Core.LogListener:output_type -> hcore.LogMessage
-	1,  // 45: hcore.Core.Close:output_type -> hcommon.Empty
-	21, // 46: hcore.Core.GetLANIP:output_type -> hcore.LANIPResponse
-	22, // 47: hcore.Core.IsAdmin:output_type -> hcore.IsAdminResponse
-	23, // 48: hcore.Core.NeedAdminBgService:output_type -> hcore.NeedAdminBgServiceResponse
-	24, // 49: hcore.Core.EnsureAdminBgService:output_type -> hcore.EnsureAdminBgServiceEvent
-	25, // [25:50] is the sub-list for method output_type
-	0,  // [0:25] is the sub-list for method input_type
+	1,  // 25: hcore.Core.ListCrashReports:input_type -> hcommon.Empty
+	13, // 26: hcore.Core.ExportDiagnostics:input_type -> hcore.ExportDiagnosticsRequest
+	14, // 27: hcore.Core.Start:output_type -> hcore.CoreInfoResponse
+	14, // 28: hcore.Core.CoreInfoListener:output_type -> hcore.CoreInfoResponse
+	15, // 29: hcore.Core.OutboundsInfo:output_type -> hcore.OutboundGroupList
+	15, // 30: hcore.Core.MainOutboundsInfo:output_type -> hcore.OutboundGroupList
+	16, // 31: hcore.Core.GetSystemInfo:output_type -> hcore.SystemInfo
+	16, // 32: hcore.Core.GetSystemInfoStream:output_type -> hcore.SystemInfo
+	17, // 33: hcore.Core.Setup:output_type -> hcommon.Response
+	18, // 34: hcore.Core.Parse:output_type -> hcore.ParseResponse
+	14, // 35: hcore.Core.ChangeHiddifySettings:output_type -> hcore.CoreInfoResponse
+	14, // 36: hcore.Core.StartService:output_type -> hcore.CoreInfoResponse
+	14, // 37: hcore.Core.Stop:output_type -> hcore.CoreInfoResponse
+	14, // 38: hcore.Core.Restart:output_type -> hcore.CoreInfoResponse
+	14, // 39: hcore.Core.HotReload:output_type -> hcore.CoreInfoResponse
+	17, // 40: hcore.Core.SelectOutbound:output_type -> hcommon.Response
+	17, // 41: hcore.Core.UrlTest:output_type -> hcommon.Response
+	17, // 42: hcore.Core.UrlTestActive:output_type -> hcommon.Response
+	19, // 43: hcore.Core.GenerateWarpConfig:output_type -> hcore.WarpGenerationResponse
+	20, // 44: hcore.Core.GetSystemProxyStatus:output_type -> hcore.SystemProxyStatus
+	17, // 45: hcore.Core.SetSystemProxyEnabled:output_type -> hcommon.Response
+	21, // 46: hcore.Core.LogListener:output_type -> hcore.LogMessage
+	1,  // 47: hcore.Core.Close:output_type -> hcommon.Empty
+	22, // 48: hcore.Core.GetLANIP:output_type -> hcore.LANIPResponse
+	23, // 49: hcore.Core.IsAdmin:output_type -> hcore.IsAdminResponse
+	24, // 50: hcore.Core.NeedAdminBgService:output_type -> hcore.NeedAdminBgServiceResponse
+	25, // 51: hcore.Core.EnsureAdminBgService:output_type -> hcore.EnsureAdminBgServiceEvent
+	26, // 52: hcore.Core.ListCrashReports:output_type -> hcore.CrashReportList
+	27, // 53: hcore.Core.ExportDiagnostics:output_type -> hcore.ExportDiagnosticsResponse
+	27, // [27:54] is the sub-list for method output_type
+	0,  // [0:27] is the sub-list for method input_type
 	0,  // [0:0] is the sub-list for extension type_name
 	0,  // [0:0] is the sub-list for extension extendee
 	0,  // [0:0] is the sub-list for field type_name

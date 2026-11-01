@@ -40,6 +40,16 @@ service Core {
   rpc NeedAdminBgService (NeedAdminBgServiceRequest) returns (NeedAdminBgServiceResponse);
   // Windows/Linux: install/start admin_bgservice if needed and start the bg core until STARTED.
   rpc EnsureAdminBgService (EnsureAdminBgServiceRequest) returns (stream EnsureAdminBgServiceEvent);
+  // The crash reports in this core's working directory: the archived ones (crash_reports,
+  // oom_reports) and the live stderr files that hold a crash, newest last.
+  rpc ListCrashReports (hcommon.Empty) returns (CrashReportList);
+  // A zip of this core's diagnostics: the crash, OOM and power reports, the stderr and core log
+  // files, the previous run's goroutines (a snapshot the core writes every minute while connected,
+  // kept aside at the next start), the running config with servers and secrets removed, and the
+  // files the request adds. Text is scrubbed of addresses, links and secrets. Returns the zip's
+  // path, and its bytes when the request asks for them (a core in another process, whose files the
+  // app cannot read).
+  rpc ExportDiagnostics (ExportDiagnosticsRequest) returns (ExportDiagnosticsResponse);
 }
 
 
