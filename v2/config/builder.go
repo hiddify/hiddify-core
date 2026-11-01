@@ -36,6 +36,8 @@ const (
 	// all DNS rules and the DNS final use these
 	DNSMultiDirectTag = "dns-direct-group"
 	DNSMultiRemoteTag = "dns-remote-group"
+	// DoH through the profile alone, past the extra security hop: the remote group's last resort
+	DNSRemoteViaProfileTag = "dns-remote-via-profile"
 
 	OutboundDirectTag = "direct §hide§"
 	OutboundBypassTag = "bypass §hide§"
