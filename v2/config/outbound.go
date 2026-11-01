@@ -53,12 +53,16 @@ func patchOutboundTLSTricks(base option.Outbound, configOpt HiddifyOptions) opti
 		}
 	}
 
+	// Outbound options are pointers, from the parser's registry and from ray2sing alike. Matching
+	// the value types never found a transport, so the fragment and mixed-case SNI settings were
+	// skipped for every VLESS, VMess and Trojan outbound.
 	var transport *option.V2RayTransportOptions
-	if opts, ok := base.Options.(option.VLESSOutboundOptions); ok {
+	switch opts := base.Options.(type) {
+	case *option.VLESSOutboundOptions:
 		transport = opts.Transport
-	} else if opts, ok := base.Options.(option.TrojanOutboundOptions); ok {
+	case *option.TrojanOutboundOptions:
 		transport = opts.Transport
-	} else if opts, ok := base.Options.(option.VMessOutboundOptions); ok {
+	case *option.VMessOutboundOptions:
 		transport = opts.Transport
 	}
 
