@@ -11,7 +11,28 @@ ifeq ($(OS),Windows_NT)
 Not available for Windows! use bash in WSL
 endif
 CRONET_GO_VERSION := $(shell cat hiddify-sing-box/.github/CRONET_GO_VERSION)
-TAGS=with_gvisor,with_quic,with_wireguard,with_utls,with_clash_api,with_grpc,with_awg,tfogo_checklinkname0,with_naive_outbound,with_conntrack,with_embedded_tor,with_openvpn,with_openconnect,with_masque,with_kcp,with_sudoku,with_bond,with_call
+# Build tags: single source of truth for every build, including CI (.github/workflows/build.yml
+# reads them with `make -s print-<VAR>`). Only add platform-specific tags in the *_ADD_TAGS vars.
+CORE_TAGS=with_gvisor,with_quic,with_wireguard,with_utls,with_clash_api,with_grpc,with_awg,tfogo_checklinkname0,with_conntrack
+PROTOCOL_TAGS=with_embedded_tor,with_openvpn,with_openconnect,with_masque,with_kcp,with_sudoku,with_bond,with_call
+# Naive (cronet) is part of every build unless disabled explicitly: `make NAIVE=0 <target>`
+# (targets with no cronet library, e.g. CLI for mips/s390x and purego variants).
+NAIVE ?= 1
+ifeq ($(NAIVE),0)
+NAIVE_TAGS=
+else
+NAIVE_TAGS=with_naive_outbound
+endif
+# tags(list...): joins tag lists with commas, skipping the empty ones.
+empty :=
+space := $(empty) $(empty)
+comma := ,
+tags = $(subst $(space),$(comma),$(strip $(1)))
+COMMON_TAGS=$(call tags,$(CORE_TAGS) $(PROTOCOL_TAGS))
+TAGS=$(call tags,$(COMMON_TAGS) $(NAIVE_TAGS))
+# Standalone CLI binary (build-binary job).
+CLI_ADD_TAGS=with_dhcp,with_v2ray_api,with_acme,with_tailscale,with_ccm,with_ocm
+CLI_TAGS=$(call tags,$(COMMON_TAGS) $(CLI_ADD_TAGS) $(NAIVE_TAGS))
 IOS_ADD_TAGS=with_dhcp,with_low_memory,with_purego
 MACOS_ADD_TAGS=with_dhcp
 WINDOWS_ADD_TAGS=with_purego
@@ -215,7 +236,7 @@ linux-custom: prepare  install_cronet
 	mkdir -p $(BINDIR)/
 	#env GOARCH=mips $(GOBUILDSRV) -o $(BINDIR)/$(CLINAME) ./cmd/
 	$(load_cronet_env)
-	go build -ldflags="$(LDFLAGS)" -trimpath -tags $(TAGS) -o $(BINDIR)/$(CLINAME) ./cmd/main
+	go build -ldflags="$(LDFLAGS)" -trimpath -tags $(CLI_TAGS) -o $(BINDIR)/$(CLINAME) ./cmd/main
 	chmod +x $(BINDIR)/$(CLINAME)
 	make webui
 
@@ -225,7 +246,7 @@ macos-arm64:
 	env GOOS=darwin GOARCH=arm64 CGO_CFLAGS="-mmacosx-version-min=10.11 -O2" CGO_LDFLAGS="-mmacosx-version-min=10.11 -O2 -lpthread" CGO_ENABLED=1 go build -trimpath -ldflags="$(EMBED_LDFLAGS)" -tags $(TAGS),$(MACOS_ADD_TAGS) -buildmode=c-shared -o $(BINDIR)/$(LIBNAME)-arm64.dylib ./platform/desktop
 
 # Packet-tunnel / system-extension bind (same tags as hiddify-app macos/scripts/build-admin-bgservice-core.sh).
-TUNNEL_TAGS=with_gvisor,with_quic,with_wireguard,with_utls,with_clash_api,with_grpc,with_awg,tfogo_checklinkname0,with_naive_outbound,with_conntrack,with_dhcp
+TUNNEL_TAGS=$(call tags,$(CORE_TAGS) $(NAIVE_TAGS) with_dhcp)
 
 .PHONY: macos-tunnel
 macos-tunnel:
@@ -268,6 +289,10 @@ macos-lite: prepare
 
 prepare: 
 	go mod tidy
+
+# Print a Makefile variable, e.g. `make -s print-CLI_TAGS` (used by CI).
+print-%:
+	@echo '$($*)'
 
 clean:
 	rm $(BINDIR)/*
