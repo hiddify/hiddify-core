@@ -14,7 +14,7 @@ CRONET_GO_VERSION := $(shell cat hiddify-sing-box/.github/CRONET_GO_VERSION)
 # Build tags: single source of truth for every build, including CI (.github/workflows/build.yml
 # reads them with `make -s print-<VAR>`). Only add platform-specific tags in the *_ADD_TAGS vars.
 CORE_TAGS=with_gvisor,with_quic,with_wireguard,with_utls,with_clash_api,with_grpc,with_awg,tfogo_checklinkname0,with_conntrack
-PROTOCOL_TAGS=with_embedded_tor,with_openvpn,with_openconnect,with_masque,with_kcp,with_sudoku,with_bond,with_call
+PROTOCOL_TAGS=with_embedded_tor,with_openvpn,with_openconnect,with_masque,with_kcp,with_sudoku,with_bond,with_call,with_xdrive
 # Naive (cronet) is part of every build unless disabled explicitly: `make NAIVE=0 <target>`
 # (targets with no cronet library, e.g. CLI for mips/s390x and purego variants).
 NAIVE ?= 1
