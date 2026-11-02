@@ -99,6 +99,20 @@ func parseToXray(path string) ([]byte, error) {
 	return pretty.Bytes(), nil
 }
 
+// shareLinksToXray converts plain share links with libxray, which returns the outbounds as JSON
+// ({"outbounds": [...]}) since v1.261031.0; the empty key is for links that are not Age-encrypted.
+func shareLinksToXray(text string) (*conf.Config, error) {
+	raw, err := share.ConvertShareLinksToXrayJson(text, "")
+	if err != nil {
+		return nil, err
+	}
+	cfg := &conf.Config{}
+	if err := json.Unmarshal(raw, cfg); err != nil {
+		return nil, err
+	}
+	return cfg, nil
+}
+
 // Share links are converted one by one, working around three things libxray gets wrong:
 //   - it reads HTML-escaped links ("&amp;" between the parameters, as some subscriptions write them) as
 //     parameters named "amp;pbk", and so on. "&amp;" is turned back into "&", as ray2sing does;
@@ -115,7 +129,7 @@ func convertShareLinksToXray(text string) (*conf.Config, error) {
 		}
 	}
 	if !strings.Contains(text, "://") {
-		return share.ConvertShareLinksToXrayJson(text)
+		return shareLinksToXray(text)
 	}
 	var result *conf.Config
 	var lastErr error
@@ -129,7 +143,7 @@ func convertShareLinksToXray(text string) (*conf.Config, error) {
 		if vmessExtra != "" {
 			extra = vmessExtra
 		}
-		cfg, err := share.ConvertShareLinksToXrayJson(line)
+		cfg, err := shareLinksToXray(line)
 		if err != nil {
 			lastErr = err
 			continue
