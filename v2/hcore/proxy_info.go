@@ -295,6 +295,12 @@ func (h *HiddifyInstance) AllProxiesInfoStream(stream grpc.ServerStreamingServer
 	if monitor == nil {
 		return E.New("outbound monitoring not ready")
 	}
+	// The app is reading the proxies, so it wants their pings: that is activity for the
+	// monitoring, which otherwise stops testing once the core has routed nothing for its idle
+	// time (three URL test intervals), and the rows it had not reached stayed waiting for good.
+	monitor.Touch()
+	keepActive := time.NewTicker(time.Minute)
+	defer keepActive.Stop()
 
 	if err := stream.Send(h.GetAllProxiesInfo(monitor.OutboundsHistory(""), onlyMain)); err != nil {
 		return err
@@ -337,6 +343,8 @@ func (h *HiddifyInstance) AllProxiesInfoStream(stream grpc.ServerStreamingServer
 			return nil
 		case <-ctx.Done():
 			return nil
+		case <-keepActive.C:
+			monitor.Touch()
 		case ev, ok := <-urltestch:
 			if !ok {
 				return nil
