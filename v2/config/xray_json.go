@@ -64,8 +64,9 @@ func xrayOutboundShareLink(outbound map[string]any) string {
 	if settings, ok := outbound["settings"].(map[string]any); ok {
 		flattened["settings"] = flattenXraySettings(settings)
 	}
+	var xdrive map[string]any
 	if stream, ok := outbound["streamSettings"].(map[string]any); ok {
-		flattened["streamSettings"] = normalizeXrayStream(stream)
+		flattened["streamSettings"], xdrive = splitXDrive(normalizeXrayStream(stream))
 	}
 	content, err := json.Marshal(map[string]any{"outbounds": []any{flattened}})
 	if err != nil {
@@ -75,7 +76,7 @@ func xrayOutboundShareLink(outbound map[string]any) string {
 	if err != nil {
 		return ""
 	}
-	link := withCipherSuites(strings.TrimSpace(links), outbound)
+	link := withXDrive(withDialMode(withCipherSuites(strings.TrimSpace(links), outbound), outbound), xdrive)
 	if strings.HasPrefix(link, "vmess://") {
 		return vmessURIToV2rayN(link)
 	}
@@ -88,7 +89,22 @@ func withCipherSuites(link string, outbound map[string]any) string {
 	stream, _ := outbound["streamSettings"].(map[string]any)
 	tlsSettings, _ := stream["tlsSettings"].(map[string]any)
 	suites, _ := tlsSettings["cipherSuites"].(string)
-	if link == "" || suites == "" {
+	return withQuery(link, "cipherSuites", suites)
+}
+
+// withDialMode adds the outbound's sockopt dialMode (patterniha's Xray-core: "oob.0,32,65" sends the first writes
+// with an extra byte as TCP urgent data) to its link; libxray's Xray-core has no such field and drops it. ray2sing
+// reads it back as the oob finalmask.
+func withDialMode(link string, outbound map[string]any) string {
+	stream, _ := outbound["streamSettings"].(map[string]any)
+	sockopt, _ := stream["sockopt"].(map[string]any)
+	mode, _ := sockopt["dialMode"].(string)
+	return withQuery(link, "dialMode", mode)
+}
+
+// withQuery adds key=value to the query of link, before its fragment; an empty value adds nothing.
+func withQuery(link string, key string, value string) string {
+	if link == "" || value == "" {
 		return link
 	}
 	link, fragment, hasFragment := strings.Cut(link, "#")
@@ -96,11 +112,58 @@ func withCipherSuites(link string, outbound map[string]any) string {
 	if strings.Contains(link, "?") {
 		separator = "&"
 	}
-	link += separator + "cipherSuites=" + url.QueryEscape(suites)
+	link += separator + key + "=" + url.QueryEscape(value)
 	if hasFragment {
 		link += "#" + fragment
 	}
 	return link
+}
+
+// splitXDrive takes an XDRIVE stream apart, as libxray writes no link for it: the link is written for raw TCP,
+// and the xdriveSettings, with the stream's address and port (the fronting address of the storage requests), are
+// returned for withXDrive.
+func splitXDrive(stream map[string]any) (map[string]any, map[string]any) {
+	if network, _ := stream["network"].(string); !strings.EqualFold(network, "xdrive") {
+		return stream, nil
+	}
+	settings := map[string]any{}
+	if xdriveSettings, ok := stream["xdriveSettings"].(map[string]any); ok {
+		for key, value := range xdriveSettings {
+			settings[key] = value
+		}
+	}
+	for _, key := range []string{"address", "port"} {
+		if value, ok := stream[key]; ok {
+			settings[key] = value
+		}
+	}
+	stream["network"] = "raw"
+	for _, key := range []string{"xdriveSettings", "address", "port"} {
+		delete(stream, key)
+	}
+	return stream, settings
+}
+
+// withXDrive makes a VLESS link an XDRIVE one: type=xdrive and the settings as JSON in xdrive=, which ray2sing reads.
+// Xray allows XDRIVE only for VLESS.
+func withXDrive(link string, settings map[string]any) string {
+	if settings == nil || !strings.HasPrefix(link, "vless://") {
+		return link
+	}
+	u, err := url.Parse(link)
+	if err != nil {
+		return ""
+	}
+	content, err := json.Marshal(settings)
+	if err != nil {
+		return ""
+	}
+	query := u.Query()
+	query.Set("type", "xdrive")
+	query.Del("headerType")
+	query.Set("xdrive", string(content))
+	u.RawQuery = query.Encode()
+	return u.String()
 }
 
 // vmessURIToV2rayN rewrites libxray's vmess://id@host:port?... link as the v2rayN JSON link ray2sing reads.
