@@ -5,8 +5,27 @@ Changelog
 (unreleased)
 ------------
 
+New
+~~~
+- Add the MasterDNS outbound (MasterDnsVPN over public resolvers), with
+  masterdns:// links, and read SlipNet slipnet:// DNS tunnel profiles
+  (DNSTT, NoizDNS, VayDNS, with SSH) as dnstt outbounds. [hiddify]
+- Read dnst:// links (the dnst URL spec, both forms) for the dnstt, vaydns
+  and masterdns transports with the socks, ssh, shadowsocks and custom
+  backends. [hiddify]
+- The smart resolver pool is one shared module inside the dnstt and masterdns
+  outbounds (smart_pool as true or a settings object); the separate
+  smart_dns_pool service is removed. [hiddify]
+- The smart resolver pool relays tunnel queries asynchronously and learns
+  each resolver's rate (hmrd_multi_resolver_dns aaf22d9): MasterDNS with
+  limited resolvers is about 8 times faster, DNSTT matches its own resolver
+  handling, and the pool's sockets now use the outbound's socket protection.
+  [hiddify]
+
 Fix
 ~~~
+- Read share links again with libxray v1.261031.0, whose converter takes a
+  key and returns JSON; the core did not build. [hiddify]
 - Ios build. [hiddify]
 - Version. [hiddify]
 
