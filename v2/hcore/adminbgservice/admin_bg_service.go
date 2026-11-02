@@ -21,6 +21,7 @@ import (
 	"github.com/sagernet/sing-box/experimental/libbox"
 	"github.com/sagernet/sing-box/option"
 
+	"github.com/hiddify/hiddify-core/v2/config"
 	hcommon "github.com/hiddify/hiddify-core/v2/hcommon"
 	"github.com/hiddify/hiddify-core/v2/hcore"
 	"github.com/hiddify/hiddify-core/v2/hcore/adminbg"
@@ -60,6 +61,13 @@ func (s *hiddifyAdminBG) startBridge(in *AdminBgStartRequest) (*AdminBgResponse,
 	}
 	option := makeTunnelConfig(in)
 	box, err := hcore.NewService(libbox.BaseContext(nil), option, nil)
+	if err != nil && config.AutoRedirectFailed(&option, err) {
+		// the system lacks nftables, iptables or the nfqueue module: the TUN works without
+		// auto_redirect, as it did before
+		log.Printf("admin_bgservice: auto-redirect is not available here, starting the TUN without it: %v", err)
+		option = makeTunnelConfig(in)
+		box, err = hcore.NewService(libbox.BaseContext(nil), option, nil)
+	}
 	if err != nil {
 		return &AdminBgResponse{Message: err.Error()}, err
 	}
@@ -246,12 +254,14 @@ func makeTunnelConfig(in *AdminBgStartRequest) option.Options {
 				Type: C.TypeTun,
 				Tag:  "tun-in",
 				Options: &option.TunInboundOptions{
-					EndpointIndependentNat: in.EndpointIndependentNat,
-					StrictRoute:            in.StrictRoute,
-					AutoRoute:              true,
-					Address:                ips,
-					InterfaceName:          tunInterfaceName(),
-					Stack:                  in.Stack,
+					StrictRoute:   in.StrictRoute,
+					AutoRoute:     true,
+					Address:       ips,
+					InterfaceName: tunInterfaceName(),
+					Stack:         config.TunStack(in.Stack),
+					// the service runs as root on Linux: nftables routing with nfqueue pre-matching,
+					// unless this system cannot (see config.AutoRedirectAvailable)
+					AutoRedirect: config.AutoRedirectAvailable(),
 				},
 			},
 		},

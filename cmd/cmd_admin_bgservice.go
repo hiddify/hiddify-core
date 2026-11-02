@@ -30,7 +30,6 @@ var commandService = &cobra.Command{
 			adminbgservice.ActivateAdminBgService(&adminbgservice.AdminBgStartRequest{
 				Ipv6:       true,
 				ServerPort: 12334,
-				Stack:      "gvisor",
 			})
 			<-time.After(1 * time.Second)
 		case "deactivate":

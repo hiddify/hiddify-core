@@ -62,7 +62,12 @@ type InboundOptions struct {
 	DirectPort       uint16 `json:"direct-port,omitempty"`
 	MTU              uint32 `json:"mtu,omitempty"`
 	StrictRoute      bool   `json:"strict-route,omitempty"`
-	TUNStack         string `json:"tun-implementation,omitempty"`
+	// TUNStack is the TUN's TCP/IP stack: "sing15" (or empty) for sing-tun's own, the default; the
+	// legacy "system", "gvisor" and "mixed" are accepted until sing-box 1.17 (see TunStack).
+	TUNStack string `json:"tun-implementation,omitempty"`
+	// AutoRedirect lets a Linux TUN use nftables routing (sing-box auto_redirect) where the process
+	// can; on by default, off only to force the plain TUN. Nothing elsewhere (see AutoRedirectAvailable).
+	AutoRedirect bool `json:"auto-redirect"`
 }
 
 type URLTestOptions struct {
@@ -134,7 +139,8 @@ func DefaultHiddifyOptions() *HiddifyOptions {
 			DirectPort:     12337,
 			MTU:            9000,
 			StrictRoute:    true,
-			TUNStack:       "mixed",
+			TUNStack:       "sing15",
+			AutoRedirect:   true,
 		},
 		URLTestOptions: URLTestOptions{
 			ConnectionTestUrl: "http://cp.cloudflare.com/",
