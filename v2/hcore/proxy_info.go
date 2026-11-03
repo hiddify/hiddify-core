@@ -150,6 +150,9 @@ func (h *HiddifyInstance) GetProxyInfo(url_test_history *adapter.URLTestHistory,
 	if deps := detour.Dependencies(); len(deps) == 1 {
 		out.Detour = deps[0]
 	}
+	speedTag := h.speedTestTagOf(detour)
+	out.UploadSpeed, out.UploadTesting = speedInfo(upload, speedTag)
+	out.DownloadSpeed, out.DownloadTesting = speedInfo(download, speedTag)
 	return out
 }
 
@@ -311,6 +314,8 @@ func (h *HiddifyInstance) AllProxiesInfoStream(stream grpc.ServerStreamingServer
 		return err
 	}
 	defer monitor.UnsubscribeGroup("", urltestch)
+	speedch, unsubscribeSpeedTests := subscribeSpeedTests()
+	defer unsubscribeSpeedTests()
 
 	// Debounce URL-test / traffic bursts; selection events (GroupEvent.Priority) flush at once.
 	const debounceWindow = 1000 * time.Millisecond
@@ -345,6 +350,12 @@ func (h *HiddifyInstance) AllProxiesInfoStream(stream grpc.ServerStreamingServer
 			return nil
 		case <-keepActive.C:
 			monitor.Touch()
+		case <-speedch:
+			// a speed test began or ended: shown with the next send
+			if timer == nil {
+				timer = time.NewTimer(debounceWindow)
+				timerCh = timer.C
+			}
 		case ev, ok := <-urltestch:
 			if !ok {
 				return nil

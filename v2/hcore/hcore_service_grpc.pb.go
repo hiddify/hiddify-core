@@ -36,6 +36,8 @@ const (
 	Core_SelectOutbound_FullMethodName        = "/hcore.Core/SelectOutbound"
 	Core_UrlTest_FullMethodName               = "/hcore.Core/UrlTest"
 	Core_UrlTestActive_FullMethodName         = "/hcore.Core/UrlTestActive"
+	Core_UploadTest_FullMethodName            = "/hcore.Core/UploadTest"
+	Core_DownloadTest_FullMethodName          = "/hcore.Core/DownloadTest"
 	Core_GenerateWarpConfig_FullMethodName    = "/hcore.Core/GenerateWarpConfig"
 	Core_GetSystemProxyStatus_FullMethodName  = "/hcore.Core/GetSystemProxyStatus"
 	Core_SetSystemProxyEnabled_FullMethodName = "/hcore.Core/SetSystemProxyEnabled"
@@ -74,6 +76,10 @@ type CoreClient interface {
 	SelectOutbound(ctx context.Context, in *SelectOutboundRequest, opts ...grpc.CallOption) (*hcommon.Response, error)
 	UrlTest(ctx context.Context, in *UrlTestRequest, opts ...grpc.CallOption) (*hcommon.Response, error)
 	UrlTestActive(ctx context.Context, in *hcommon.Empty, opts ...grpc.CallOption) (*hcommon.Response, error)
+	// Measure the upload or download speed through a proxy, or each proxy of a group, at
+	// speed.cloudflare.com; the results come with the outbounds info (upload_speed, download_speed).
+	UploadTest(ctx context.Context, in *SpeedTestRequest, opts ...grpc.CallOption) (*hcommon.Response, error)
+	DownloadTest(ctx context.Context, in *SpeedTestRequest, opts ...grpc.CallOption) (*hcommon.Response, error)
 	GenerateWarpConfig(ctx context.Context, in *GenerateWarpConfigRequest, opts ...grpc.CallOption) (*WarpGenerationResponse, error)
 	GetSystemProxyStatus(ctx context.Context, in *hcommon.Empty, opts ...grpc.CallOption) (*SystemProxyStatus, error)
 	SetSystemProxyEnabled(ctx context.Context, in *SetSystemProxyEnabledRequest, opts ...grpc.CallOption) (*hcommon.Response, error)
@@ -302,6 +308,26 @@ func (c *coreClient) UrlTestActive(ctx context.Context, in *hcommon.Empty, opts 
 	return out, nil
 }
 
+func (c *coreClient) UploadTest(ctx context.Context, in *SpeedTestRequest, opts ...grpc.CallOption) (*hcommon.Response, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(hcommon.Response)
+	err := c.cc.Invoke(ctx, Core_UploadTest_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *coreClient) DownloadTest(ctx context.Context, in *SpeedTestRequest, opts ...grpc.CallOption) (*hcommon.Response, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(hcommon.Response)
+	err := c.cc.Invoke(ctx, Core_DownloadTest_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *coreClient) GenerateWarpConfig(ctx context.Context, in *GenerateWarpConfigRequest, opts ...grpc.CallOption) (*WarpGenerationResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(WarpGenerationResponse)
@@ -455,6 +481,10 @@ type CoreServer interface {
 	SelectOutbound(context.Context, *SelectOutboundRequest) (*hcommon.Response, error)
 	UrlTest(context.Context, *UrlTestRequest) (*hcommon.Response, error)
 	UrlTestActive(context.Context, *hcommon.Empty) (*hcommon.Response, error)
+	// Measure the upload or download speed through a proxy, or each proxy of a group, at
+	// speed.cloudflare.com; the results come with the outbounds info (upload_speed, download_speed).
+	UploadTest(context.Context, *SpeedTestRequest) (*hcommon.Response, error)
+	DownloadTest(context.Context, *SpeedTestRequest) (*hcommon.Response, error)
 	GenerateWarpConfig(context.Context, *GenerateWarpConfigRequest) (*WarpGenerationResponse, error)
 	GetSystemProxyStatus(context.Context, *hcommon.Empty) (*SystemProxyStatus, error)
 	SetSystemProxyEnabled(context.Context, *SetSystemProxyEnabledRequest) (*hcommon.Response, error)
@@ -534,6 +564,12 @@ func (UnimplementedCoreServer) UrlTest(context.Context, *UrlTestRequest) (*hcomm
 }
 func (UnimplementedCoreServer) UrlTestActive(context.Context, *hcommon.Empty) (*hcommon.Response, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UrlTestActive not implemented")
+}
+func (UnimplementedCoreServer) UploadTest(context.Context, *SpeedTestRequest) (*hcommon.Response, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UploadTest not implemented")
+}
+func (UnimplementedCoreServer) DownloadTest(context.Context, *SpeedTestRequest) (*hcommon.Response, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DownloadTest not implemented")
 }
 func (UnimplementedCoreServer) GenerateWarpConfig(context.Context, *GenerateWarpConfigRequest) (*WarpGenerationResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GenerateWarpConfig not implemented")
@@ -849,6 +885,42 @@ func _Core_UrlTestActive_Handler(srv interface{}, ctx context.Context, dec func(
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Core_UploadTest_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SpeedTestRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CoreServer).UploadTest(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Core_UploadTest_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CoreServer).UploadTest(ctx, req.(*SpeedTestRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Core_DownloadTest_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SpeedTestRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CoreServer).DownloadTest(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Core_DownloadTest_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CoreServer).DownloadTest(ctx, req.(*SpeedTestRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _Core_GenerateWarpConfig_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(GenerateWarpConfigRequest)
 	if err := dec(in); err != nil {
@@ -1087,6 +1159,14 @@ var Core_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "UrlTestActive",
 			Handler:    _Core_UrlTestActive_Handler,
+		},
+		{
+			MethodName: "UploadTest",
+			Handler:    _Core_UploadTest_Handler,
+		},
+		{
+			MethodName: "DownloadTest",
+			Handler:    _Core_DownloadTest_Handler,
 		},
 		{
 			MethodName: "GenerateWarpConfig",

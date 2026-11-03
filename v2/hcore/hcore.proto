@@ -134,6 +134,10 @@ message OutboundInfo {
   int64 download = 16;
   string detour = 17;
   Status status = 18; // ready / connecting / registering / … (outbound or endpoint)
+  int64 upload_speed = 19; // bytes a second the last upload test reached; 0 untested, -1 failed
+  bool upload_testing = 20; // an upload test runs through it now
+  int64 download_speed = 21; // bytes a second the last download test reached; 0 untested, -1 failed
+  bool download_testing = 22; // a download test runs through it now
 }
 
 message IpInfo {
@@ -222,6 +226,11 @@ message SelectOutboundRequest {
 
 message UrlTestRequest {
   string tag = 1;
+}
+
+message SpeedTestRequest {
+  string tag = 1; // a proxy, or a group: each of its proxies; none: the proxy the selection uses
+  int64 size = 2; // bytes to move through each; 1 MB when 0, at most 50 MB
 }
 
 message GenerateWarpConfigRequest {

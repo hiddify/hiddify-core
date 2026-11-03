@@ -28,6 +28,10 @@ service Core {
   rpc SelectOutbound (SelectOutboundRequest) returns (hcommon.Response);
   rpc UrlTest (UrlTestRequest) returns (hcommon.Response);
   rpc UrlTestActive (hcommon.Empty) returns (hcommon.Response);
+  // Measure the upload or download speed through a proxy, or each proxy of a group, at
+  // speed.cloudflare.com; the results come with the outbounds info (upload_speed, download_speed).
+  rpc UploadTest (SpeedTestRequest) returns (hcommon.Response);
+  rpc DownloadTest (SpeedTestRequest) returns (hcommon.Response);
   rpc GenerateWarpConfig (GenerateWarpConfigRequest) returns (WarpGenerationResponse);
   rpc GetSystemProxyStatus (hcommon.Empty) returns (SystemProxyStatus);
   rpc SetSystemProxyEnabled (SetSystemProxyEnabledRequest) returns (hcommon.Response);
