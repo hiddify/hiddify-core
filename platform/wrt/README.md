@@ -19,41 +19,21 @@ sh <(wget -qO- https://raw.githubusercontent.com/hiddify/hiddify-core/main/insta
 It tells opkg from apk, finds the router's architecture, installs the package of the latest
 release and starts the service. Run it again to update.
 
-### The feed
-
-A feed keeps the package updated with `opkg upgrade` / `apk upgrade`. Each architecture has its
-own feed, the assets of the release tagged `openwrt-<arch>` in this repository, replaced on every
-version. Find the architecture with `opkg print-architecture` (the last line, e.g. `x86_64`,
-`aarch64_cortex-a53`, `mipsel_24kc`) or `apk --print-arch`.
-
-opkg (24.10 and earlier):
-
-```sh
-ARCH=$(opkg print-architecture | awk '{print $2}' | tail -n1)
-FEED=https://github.com/hiddify/hiddify-core/releases/download/openwrt-$ARCH
-wget -qO /tmp/hiddify.pub "$FEED/hiddify.pub" && opkg-key add /tmp/hiddify.pub
-echo "src/gz hiddify $FEED" >> /etc/opkg/customfeeds.conf
-opkg update && opkg install hiddify-core
-```
-
-apk (25.12 and later):
-
-```sh
-ARCH=$(apk --print-arch)
-FEED=https://github.com/hiddify/hiddify-core/releases/download/openwrt-$ARCH
-wget -qO /etc/apk/keys/hiddify-apk.pem "$FEED/hiddify-apk.pem"
-echo "$FEED/packages.adb" > /etc/apk/repositories.d/hiddify.list
-apk update && apk add hiddify-core
-```
-
-The keys verify the feed's index. They are kept across `sysupgrade` by the package's
-`/lib/upgrade/keep.d/hiddify-core`, along with `/etc/hiddify-core/`.
-
 ### One package by hand
 
-Download the package for the architecture from the
-[release](https://github.com/hiddify/hiddify-core/releases/latest), then
-`opkg install ./hiddify-core_*.ipk` or `apk add --allow-untrusted ./hiddify-core-*.apk`.
+Every release carries a package for each OpenWrt architecture: `hiddify-core_<version>_<arch>.ipk`
+for opkg (24.10 and earlier) and `hiddify-core-<version>-r0_<arch>.apk` for apk (25.12 and
+later). Find the architecture with `opkg print-architecture` (the last line, e.g. `x86_64`,
+`aarch64_cortex-a53`, `mipsel_24kc`) or `apk --print-arch`, download its package from the
+[latest release](https://github.com/hiddify/hiddify-core/releases/latest), then:
+
+```sh
+opkg install ./hiddify-core_*.ipk                  # opkg
+apk add --allow-untrusted ./hiddify-core-*.apk     # apk
+```
+
+To update, run the installer again, or install the next release's package the same way. The
+package keeps `/etc/hiddify-core/` across `sysupgrade` (`/lib/upgrade/keep.d/hiddify-core`).
 
 ## Configure
 
@@ -93,6 +73,7 @@ Makefile's `WRT_TAGS`: no naive outbound (cronet is a native library) and no cal
 
 `release/openwrt/build-ipk.sh` and `build-apk.sh` package a cross-built binary for one
 architecture (`make openwrt-packages WRT_ARCH=x86_64` does both for a local binary), and
-`make-feed.sh` writes and signs the indexes the way OpenWrt's own build does: `usign` for
-`Packages.sig`, `apk mkndx --sign` for `packages.adb`. The signing keys are described in
+`make-feed.sh` writes and signs a feed's indexes the way OpenWrt's own build does: `usign` for
+`Packages.sig`, `apk mkndx --sign` for `packages.adb`, for anyone hosting a feed of their own; the
+releases publish the packages alone. The signing keys are described in
 [keys/README.md](keys/README.md).

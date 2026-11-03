@@ -48,7 +48,7 @@ jobs:
       - name: Calculate version
         if: github.event_name != 'workflow_dispatch' && "${{ inputs.tag-name }}" == "draft"
         run: |-
-          # feed releases carry openwrt-* tags on the same commits: only version tags count
+          # only version tags count
           echo "hiddify_version=$(git describe --tags --match 'v[0-9]*')" >> "$GITHUB_ENV"
       - name: Calculate singbox version
         run: |-
@@ -626,107 +626,9 @@ jobs:
             bin/*.rpm
             bin/*.pkg.tar.zst
 
-
-
-  # The OpenWrt package feeds: one directory per OpenWrt architecture with the .ipk, the .apk and
-  # their signed indexes, published as the assets of a release per architecture (tag
-  # openwrt-<architecture>, replaced on every version), so a router can add
-  #   src/gz hiddify https://github.com/hiddify/hiddify-core/releases/download/openwrt-<arch>
-  # to opkg, or the packages.adb there to apk. GitHub Pages cannot hold the packages (about
-  # 35 MB each, over 1 GB in all) and GitHub release assets have no directories, hence one
-  # release per architecture. See platform/wrt/README.md.
-  openwrt-feed:
-    name: OpenWrt feed
-    permissions: write-all
-    if: ${{ inputs.channel=='prod' }}
-    needs: [upload-release]
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
-        with:
-          ref: ${{ inputs.tag-name }}
-      - uses: actions/download-artifact@v4
-        with:
-          merge-multiple: true
-          pattern: hiddify-*
-          path: bin/
-      - name: Install usign and apk-tools
-        run: |-
-          set -xeuo pipefail
-          sudo apt-get update && sudo apt-get install -y cmake build-essential
-          git clone --depth=1 https://git.openwrt.org/project/usign.git /tmp/usign
-          cmake -S /tmp/usign -B /tmp/usign/build && cmake --build /tmp/usign/build
-          sudo install -m755 /tmp/usign/build/usign /usr/local/bin/usign
-          docker run --rm -v /usr/local/bin:/mnt alpine:edge sh -c "apk add --no-cache apk-tools-static && cp /sbin/apk.static /mnt/apk && chmod +x /mnt/apk"
-      - name: Feed keys
-        env:
-          OPENWRT_USIGN_KEY: ${{ secrets.OPENWRT_USIGN_KEY }}
-          OPENWRT_APK_KEY: ${{ secrets.OPENWRT_APK_KEY }}
-        run: |-
-          set -euo pipefail
-          mkdir -p /tmp/keys
-          if [ -n "$OPENWRT_USIGN_KEY" ]; then
-            printf '%s\n' "$OPENWRT_USIGN_KEY" > /tmp/keys/usign.sec
-            echo "USIGN_KEY=/tmp/keys/usign.sec" >> "$GITHUB_ENV"
-          else
-            echo "::warning::OPENWRT_USIGN_KEY is not set: the opkg feed is unsigned (routers need 'option check_signature 0')"
-          fi
-          if [ -n "$OPENWRT_APK_KEY" ]; then
-            printf '%s\n' "$OPENWRT_APK_KEY" > /tmp/keys/apk.pem
-            echo "APK_KEY=/tmp/keys/apk.pem" >> "$GITHUB_ENV"
-          else
-            echo "::warning::OPENWRT_APK_KEY is not set: the apk feed is unsigned (routers need --allow-untrusted)"
-          fi
-          # the public halves ship in the repository, so a router can verify what it installs
-          cmp <(usign -F -p platform/wrt/keys/hiddify.pub 2>/dev/null || true) <(usign -F -s /tmp/keys/usign.sec 2>/dev/null || true) || echo "::warning::platform/wrt/keys/hiddify.pub does not match OPENWRT_USIGN_KEY"
-      - name: Build the feeds
-        run: |-
-          set -xeuo pipefail
-          mkdir -p feed
-          # hiddify-core_<version>_<arch>.ipk and hiddify-core-<version>_<arch>.apk: the architecture
-          # after the last "_" picks the feed; the .apk loses it there, since apk fetches
-          # <name>-<version>.apk
-          for pkg in bin/*.ipk bin/*.apk; do
-            [ -f "$pkg" ] || continue
-            name="${pkg##*/}"
-            arch="${name##*_}"; arch="${arch%.*}"
-            mkdir -p "feed/$arch"
-            case "$name" in
-              *.apk) cp "$pkg" "feed/$arch/${name%_*}.apk" ;;
-              *) cp "$pkg" "feed/$arch/" ;;
-            esac
-          done
-          for dir in feed/*/; do
-            release/openwrt/make-feed.sh "$dir" "${USIGN_KEY:-}" "${APK_KEY:-}"
-            cp platform/wrt/keys/*.pub platform/wrt/keys/*.pem "$dir" 2>/dev/null || true
-          done
-          ls -R feed | head -100
-      - name: Publish the feeds
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |-
-          set -euo pipefail
-          sha="$(git rev-parse HEAD)"
-          for dir in feed/*/; do
-            arch="$(basename "$dir")"
-            tag="openwrt-$arch"
-            if gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
-              gh release view "$tag" --repo "$GITHUB_REPOSITORY" --json assets --jq '.assets[].name' \
-                | xargs -r -n1 gh release delete-asset "$tag" --repo "$GITHUB_REPOSITORY" --yes
-            else
-              gh release create "$tag" --repo "$GITHUB_REPOSITORY" --target "$sha" --prerelease \
-                --title "OpenWrt feed: $arch" \
-                --notes "Package feed for OpenWrt routers of architecture $arch; see platform/wrt/README.md. Do not download by hand: opkg and apk read this release."
-            fi
-            gh release upload "$tag" "$dir"/* --repo "$GITHUB_REPOSITORY" --clobber
-            # the feed follows the version just released
-            gh release edit "$tag" --repo "$GITHUB_REPOSITORY" --notes "Package feed for OpenWrt routers of architecture $arch, at ${{ inputs.tag-name }}; see platform/wrt/README.md. Do not download by hand: opkg and apk read this release."
-          done
-
   delete-artifact:
     runs-on: ubuntu-latest
-    needs: [upload-prerelease, upload-release, openwrt-feed]
+    needs: [upload-prerelease, upload-release]
     if: |
       always() &&
       (

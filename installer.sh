@@ -62,8 +62,8 @@ fi
 
 # OpenWrt: the release ships a package for every OpenWrt architecture, in the format the router's
 # package manager reads (opkg: .ipk, apk: .apk). The package brings the procd service, the UCI
-# config and the sysupgrade keep list, and later versions come through the feed. The tarball
-# below is the fallback for an architecture with no package.
+# config and the sysupgrade keep list; running this installer again brings the next version. The
+# tarball below is the fallback for an architecture with no package.
 install_openwrt_package() {
     local tag="$1" manager arch pkg url
     if command -v apk >/dev/null 2>&1 && [ -d /etc/apk ]; then
@@ -92,26 +92,12 @@ install_openwrt_package() {
         apk) apk add --allow-untrusted "$WORKDIR/$pkg" ;;
         opkg) opkg install "$WORKDIR/$pkg" ;;
     esac || return 1
-    # the feed, so `opkg upgrade` / `apk upgrade` bring the next version
-    local feed="https://github.com/$REPO/releases/download/openwrt-$arch"
-    case "$manager" in
-        apk)
-            if curl -fsL "$feed/hiddify-apk.pem" -o /etc/apk/keys/hiddify-apk.pem 2>/dev/null; then
-                echo "$feed/packages.adb" > /etc/apk/repositories.d/hiddify.list
-            fi ;;
-        opkg)
-            if curl -fsL "$feed/hiddify.pub" -o "$WORKDIR/hiddify.pub" 2>/dev/null; then
-                opkg-key add "$WORKDIR/hiddify.pub" >/dev/null 2>&1 || true
-                grep -q "^src/gz hiddify " /etc/opkg/customfeeds.conf 2>/dev/null \
-                    || echo "src/gz hiddify $feed" >> /etc/opkg/customfeeds.conf
-            fi ;;
-    esac
     /etc/init.d/hiddify-core enable
     /etc/init.d/hiddify-core restart
     echo -e "${GREEN}Installation successful!${NC}"
     echo -e "Config:  /etc/hiddify-core/config.json (uci: /etc/config/hiddify-core)"
     echo -e "Service: /etc/init.d/hiddify-core   Logs: logread -e hiddify-core"
-    echo -e "Update:  $manager update && $manager upgrade hiddify-core"
+    echo -e "Update:  run this installer again"
     return 0
 }
 
