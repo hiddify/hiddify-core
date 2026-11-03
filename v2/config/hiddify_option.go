@@ -25,6 +25,9 @@ type HiddifyOptions struct {
 	// pings, once the profile has more (see hcore's keep top); 0 or -1 runs them all. The profile
 	// sets it, from its `keep-top` header or the user's choice.
 	KeepTop int `json:"keep-top,omitempty" overridable:"true"`
+	// KeepTags are the tags of the profile's proxies the user chose to run: while any of them is in
+	// the profile, only those run, whatever KeepTop says; none of them left, KeepTop decides again.
+	KeepTags []string `json:"keep-tags,omitempty"`
 	// GeoIPPath        string      `json:"geoip-path"`
 	// GeoSitePath      string      `json:"geosite-path"`
 	Rules []Rule `json:"rules,omitempty" overridable:"true"`

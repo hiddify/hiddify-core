@@ -1,6 +1,7 @@
 package config
 
 import (
+	"encoding/json"
 	"slices"
 	"testing"
 
@@ -70,5 +71,27 @@ func TestKeepOnlyProxiesKeepsDetoursAndHidden(t *testing.T) {
 	}
 	if items := selectorItems(options); slices.Contains(items, "a") || !slices.Contains(items, "b") {
 		t.Fatalf("select = %v", items)
+	}
+}
+
+func TestChosenProxiesAreTheProfilesOnly(t *testing.T) {
+	ctx := libbox.BaseContext(nil)
+	input, _ := ReadSingOptions(ctx, &ReadOptions{Content: keepTopProfile})
+	keep := ChosenProxies(input, []string{"b", "e", "gone", "direct", "hidden §hide§"})
+	if len(keep) != 2 || !keep["b"] || !keep["e"] {
+		t.Fatalf("kept %v, want b and e", keep)
+	}
+	if len(ChosenProxies(input, []string{"gone"})) != 0 {
+		t.Fatal("a choice none of whose proxies is left kept something")
+	}
+}
+
+func TestKeepTagsReadFromTheSettings(t *testing.T) {
+	var options HiddifyOptions
+	if err := json.Unmarshal([]byte(`{"keep-tags":["a","b"],"keep-top":5}`), &options); err != nil {
+		t.Fatal(err)
+	}
+	if !slices.Equal(options.KeepTags, []string{"a", "b"}) || options.KeepTop != 5 {
+		t.Fatalf("read %v, %d", options.KeepTags, options.KeepTop)
 	}
 }

@@ -32,3 +32,25 @@ func TestPickTopProxies(t *testing.T) {
 		})
 	}
 }
+
+func TestWithSelectedKeepsTheCount(t *testing.T) {
+	tests := []struct {
+		name     string
+		pick     []string
+		count    int
+		selected string
+		want     []string
+	}{
+		{"no selection", []string{"a", "b"}, 2, "", []string{"a", "b"}},
+		{"selected among the fastest", []string{"a", "b"}, 2, "b", []string{"a", "b"}},
+		{"selected takes the slowest's place", []string{"a", "b", "c"}, 3, "x", []string{"a", "b", "x"}},
+		{"room left: selected joins", []string{"a"}, 3, "x", []string{"a", "x"}},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			if got := withSelected(slices.Clone(test.pick), test.count, test.selected); !slices.Equal(got, test.want) {
+				t.Fatalf("got %v, want %v", got, test.want)
+			}
+		})
+	}
+}

@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 
+	sbox "github.com/sagernet/sing-box"
 	"github.com/sagernet/sing-box/adapter"
 	"github.com/sagernet/sing-box/common/monitoring"
 	"github.com/sagernet/sing-box/option"
@@ -16,6 +17,9 @@ import (
 	"github.com/hiddify/hiddify-core/v2/config"
 )
 
+// Keep chosen: with keep-tags set, the proxies of the profile the user chose run, and only them
+// (and the ones they go through), as long as any of them is still in the profile.
+//
 // Keep top: with keep-top set and a profile with more proxies than that, the core starts
 // with all of them, and once their first pings are in it keeps only the fastest (and the one the
 // user selected) and stops the rest, by a hot reload the clients do not see. A hot reload keeps
@@ -49,10 +53,12 @@ var keepTop struct {
 // static.lock must be held.
 func buildRunningConfig(ctx context.Context, in *StartRequest) (*option.Options, error) {
 	count := 0
+	var chosen []string
 	if static.HiddifyOptions != nil {
 		count = static.HiddifyOptions.KeepTop
+		chosen = static.HiddifyOptions.KeepTags
 	}
-	if in.EnableRawConfig || count <= 0 {
+	if in.EnableRawConfig || (count <= 0 && len(chosen) == 0) {
 		clearKeepTop()
 		return BuildConfig(ctx, in)
 	}
@@ -61,7 +67,14 @@ func buildRunningConfig(ctx context.Context, in *StartRequest) (*option.Options,
 		return nil, err
 	}
 	total := len(config.UserProxyTags(input))
-	if total <= count {
+	// the proxies the user chose run, and only them, while any of them is still in the profile
+	if keep := config.ChosenProxies(input, chosen); len(keep) > 0 {
+		clearKeepTop()
+		stopped := config.KeepOnlyProxies(ctx, input, keep)
+		Log(LogLevel_INFO, LogType_CORE, fmt.Sprintf("keep chosen: running %d of the %d proxies", total-stopped, total))
+		return config.BuildConfig(ctx, static.HiddifyOptions, &config.ReadOptions{Options: input})
+	}
+	if count <= 0 || total <= count {
 		clearKeepTop()
 		return config.BuildConfig(ctx, static.HiddifyOptions, &config.ReadOptions{Options: input})
 	}
@@ -70,7 +83,10 @@ func buildRunningConfig(ctx context.Context, in *StartRequest) (*option.Options,
 	keepTop.Lock()
 	keepTop.generation++
 	keepTop.fingerprints = fingerprints
-	if keepTop.path == in.ConfigPath && keepTop.count == count && keptStillGood(fingerprints) {
+	// the same proxies stay while they are good; fewer of them, the fastest of those, with no new
+	// pings; more of them, the whole list runs again to find them
+	if keepTop.path == in.ConfigPath && keptStillGood(fingerprints) &&
+		(keepTop.count == count || (count < keepTop.count && trimKeptLocked(count))) {
 		keep := make(map[string]bool, len(keepTop.kept))
 		for tag := range keepTop.kept {
 			keep[tag] = true
@@ -167,18 +183,84 @@ func (h *HiddifyInstance) followKeepTop(state CoreStates) {
 	if pick == nil {
 		return
 	}
-	// the proxy the user chose stays as well
-	if sel, ok := box.Outbound().Outbound(config.OutboundSelectTag); ok {
-		if selector, ok := sel.(adapter.OutboundGroup); ok {
-			if selected := selector.Selected(N.NetworkTCP); selected != nil {
-				if now := selected.Tag(); isProxyTag(now) && !isGroupTag(box, now) && !slices.Contains(pick, now) {
-					pick = append(pick, now)
-				}
-			}
-		}
-	}
+	pick = withSelected(pick, count, selectedProxy(box))
 	Log(LogLevel_INFO, LogType_CORE, fmt.Sprintf("keep top: keeping %d of the %d proxies, stopping the others", len(pick), len(delays)))
 	queueKeepTop(generation, pick)
+}
+
+// selectedProxy is the profile's proxy the user selected; "" for a group, or none.
+func selectedProxy(box *sbox.Box) string {
+	sel, ok := box.Outbound().Outbound(config.OutboundSelectTag)
+	if !ok {
+		return ""
+	}
+	selector, ok := sel.(adapter.OutboundGroup)
+	if !ok {
+		return ""
+	}
+	selected := selector.Selected(N.NetworkTCP)
+	if selected == nil {
+		return ""
+	}
+	if now := selected.Tag(); isProxyTag(now) && !isGroupTag(box, now) {
+		return now
+	}
+	return ""
+}
+
+// withSelected is pick, fastest first, with the proxy the user selected in it: in place of the
+// slowest when pick is full, so count proxies run, not one more.
+func withSelected(pick []string, count int, selected string) []string {
+	if selected == "" || slices.Contains(pick, selected) {
+		return pick
+	}
+	if len(pick) >= count && count > 0 {
+		pick = pick[:count-1]
+	}
+	return append(pick, selected)
+}
+
+// trimKeptLocked keeps the count fastest of the kept proxies by the pings they already have, with
+// the one the user selected; keepTop must be locked, and keptStillGood true.
+func trimKeptLocked(count int) bool {
+	ctx := static.Context()
+	if ctx == nil || static.StartedService == nil {
+		return false
+	}
+	histories := monitoring.Get(ctx).OutboundsHistory("")
+	tags := make([]string, 0, len(keepTop.kept))
+	delays := make(map[string]int32, len(keepTop.kept))
+	for tag := range keepTop.kept {
+		tags = append(tags, tag)
+		delays[tag] = historyDelay(histories[tag])
+	}
+	// the ones that answer first, the fastest of them first
+	sort.Slice(tags, func(i, j int) bool {
+		a, b := delays[tags[i]], delays[tags[j]]
+		if pingAlive(a) != pingAlive(b) {
+			return pingAlive(a)
+		}
+		if a != b {
+			return a < b
+		}
+		return tags[i] < tags[j]
+	})
+	if len(tags) > count {
+		tags = tags[:count]
+	}
+	selected := ""
+	if instance := static.StartedService.Instance(); instance != nil && instance.Box() != nil {
+		selected = selectedProxy(instance.Box())
+		if _, kept := keepTop.kept[selected]; !kept {
+			selected = ""
+		}
+	}
+	kept := make(map[string]string, count)
+	for _, tag := range withSelected(tags, count, selected) {
+		kept[tag] = keepTop.kept[tag]
+	}
+	keepTop.kept, keepTop.count = kept, count
+	return true
 }
 
 // pickTopProxies is the count fastest proxies by delays (see historyDelay), once enough first pings

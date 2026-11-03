@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"slices"
 	"strings"
 
 	C "github.com/sagernet/sing-box/constant"
@@ -31,6 +32,17 @@ func UserProxyTags(input *option.Options) []string {
 		}
 	}
 	return tags
+}
+
+// ChosenProxies are the tags of chosen that are the profile's proxies (UserProxyTags), to keep.
+func ChosenProxies(input *option.Options, chosen []string) map[string]bool {
+	keep := make(map[string]bool)
+	for _, tag := range UserProxyTags(input) {
+		if slices.Contains(chosen, tag) {
+			keep[tag] = true
+		}
+	}
+	return keep
 }
 
 func isUserProxy(tag, typ string) bool {
