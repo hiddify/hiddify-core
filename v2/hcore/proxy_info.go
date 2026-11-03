@@ -63,7 +63,9 @@ func bestGroupMember(group adapter.OutboundGroup, history adapter.URLTestHistory
 }
 
 // resolveActiveOutbound walks down the selected chain to the outbound that actually carries
-// traffic, so re-testing the active proxy tests one config instead of every config in its group.
+// traffic, so re-testing the active proxy tests one config instead of every config in its group. A
+// balancer that spreads connections (round robin, ...) uses each member in turn, so the one it
+// picked last says nothing: it stands for its fastest member, by ping.
 func resolveActiveOutbound(box *sbox.Box, tag string, history adapter.URLTestHistoryStorage) string {
 	for depth := 0; depth < 8; depth++ {
 		outbound, loaded := box.Outbound().Outbound(tag)
@@ -74,7 +76,7 @@ func resolveActiveOutbound(box *sbox.Box, tag string, history adapter.URLTestHis
 		if !isGroup {
 			return tag
 		}
-		next := groupNow(group)
+		next := connectedVia(group)
 		if next == "" {
 			next = bestGroupMember(group, history)
 		}
@@ -171,6 +173,15 @@ func (h *HiddifyInstance) GetAllProxiesInfo(hismap map[string]*adapter.URLTestHi
 	}
 	for _, it := range box.Outbound().Outbounds() {
 		his, _ := hismap[it.Tag()]
+		// a balancer spreading connections shows the ping of the member it stands for, its fastest,
+		// as its speeds do (speedTestTagOf), not of the one it picked last
+		if group, isGroup := it.(adapter.OutboundGroup); isGroup && connectedVia(group) == "" {
+			if member := resolveActiveOutbound(box, it.Tag(), h.UrlTestHistory()); member != it.Tag() {
+				if memberHis, ok := hismap[member]; ok && memberHis != nil {
+					his = memberHis
+				}
+			}
+		}
 		outbounds_converted[it.Tag()] = h.GetProxyInfo(his, it)
 	}
 	for _, it := range box.Outbound().Outbounds() {
