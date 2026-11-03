@@ -46,8 +46,8 @@ func stopLocked() (*CoreInfoResponse, error) {
 	watch := newStopwatch("stop")
 	stopConnectivityWatcher()
 	watch.step("ending the connectivity watcher")
-	// the next run may be on another network: its speeds are its own
-	clearSpeedTests()
+	// the next run may be on another network: this run's speeds show as from an earlier one
+	cacheSpeedTests()
 	// already reported when the stop was called, unless a restart runs it
 	setCoreStatusIf(stoppable, CoreStates_STOPPING, MessageType_EMPTY, "")
 	ss := static.StartedService

@@ -151,8 +151,8 @@ func (h *HiddifyInstance) GetProxyInfo(url_test_history *adapter.URLTestHistory,
 		out.Detour = deps[0]
 	}
 	speedTag := h.speedTestTagOf(detour)
-	out.UploadSpeed, out.UploadTesting = speedInfo(upload, speedTag)
-	out.DownloadSpeed, out.DownloadTesting = speedInfo(download, speedTag)
+	out.UploadSpeed, out.UploadTesting, out.UploadSpeedCached = speedInfo(upload, speedTag)
+	out.DownloadSpeed, out.DownloadTesting, out.DownloadSpeedCached = speedInfo(download, speedTag)
 	return out
 }
 

@@ -4,11 +4,14 @@ import (
 	"context"
 	"crypto/rand"
 	"crypto/tls"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net"
 	"net/http"
 	"net/http/httptrace"
+	"os"
+	"path/filepath"
 	"sync"
 	"time"
 
@@ -23,8 +26,10 @@ import (
 
 // Speed test: how fast a proxy uploads and downloads, through Cloudflare's speed test. An upload
 // sends a few megabytes, which the server answers once it has them all; a download receives them.
-// The results are kept by tag until the core stops and go out with the outbounds info
-// (upload_speed, download_speed).
+// The results are kept by tag and go out with the outbounds info (upload_speed, download_speed).
+// They outlive the run, in speedTestsFile: the next run may be on another network, so they go out
+// marked as from an earlier run (upload_speed_cached, download_speed_cached) until tested again,
+// or until ClearSpeedTests forgets them.
 
 type direction int
 
@@ -95,19 +100,103 @@ func (b *uploadBody) Read(p []byte) (int, error) {
 type speedResults struct {
 	speed   map[string]int64 // tag → bytes a second; -1 failed
 	testing map[string]bool
+	cached  map[string]bool // the speed is from an earlier run
 }
 
 var speedTests struct {
 	sync.Mutex
 	results   [2]speedResults // by direction
 	listeners map[chan struct{}]struct{}
+	loaded    bool // the results of earlier runs were read
 }
 
 // speedInfo is what the outbounds info tells of tag's test in direction d.
-func speedInfo(d direction, tag string) (speed int64, testing bool) {
+func speedInfo(d direction, tag string) (speed int64, testing bool, cached bool) {
 	speedTests.Lock()
 	defer speedTests.Unlock()
-	return speedTests.results[d].speed[tag], speedTests.results[d].testing[tag]
+	loadSpeedTestsLocked()
+	results := speedTests.results[d]
+	return results.speed[tag], results.testing[tag], results.cached[tag]
+}
+
+// savedSpeedTests is speedTestsFile's content: the last speed of each tag, by direction.
+type savedSpeedTests struct {
+	Upload   map[string]int64 `json:"upload,omitempty"`
+	Download map[string]int64 `json:"download,omitempty"`
+}
+
+// speedTestsFile keeps the speed test results across runs and restarts; "" until set up.
+func speedTestsFile() string {
+	if sWorkingPath == "" {
+		return ""
+	}
+	return filepath.Join(sWorkingPath, "data", "speed_tests.json")
+}
+
+// loadSpeedTestsLocked reads the results of earlier runs, once, as cached; speedTests must be
+// locked.
+func loadSpeedTestsLocked() {
+	path := speedTestsFile()
+	if speedTests.loaded || path == "" {
+		return
+	}
+	speedTests.loaded = true
+	content, err := os.ReadFile(path)
+	if err != nil {
+		return
+	}
+	var saved savedSpeedTests
+	if json.Unmarshal(content, &saved) != nil {
+		return
+	}
+	for d, speeds := range map[direction]map[string]int64{upload: saved.Upload, download: saved.Download} {
+		results := resultsLocked(d)
+		for tag, speed := range speeds {
+			if _, known := results.speed[tag]; !known {
+				results.speed[tag], results.cached[tag] = speed, true
+			}
+		}
+	}
+}
+
+// saveSpeedTestsLocked writes every speed to speedTestsFile; speedTests must be locked.
+func saveSpeedTestsLocked() {
+	path := speedTestsFile()
+	if path == "" {
+		return
+	}
+	content, err := json.Marshal(savedSpeedTests{
+		Upload:   speedTests.results[upload].speed,
+		Download: speedTests.results[download].speed,
+	})
+	if err == nil {
+		err = os.MkdirAll(filepath.Dir(path), 0o755)
+	}
+	if err == nil {
+		err = os.WriteFile(path, content, 0o644)
+	}
+	if err != nil {
+		Log(LogLevel_DEBUG, LogType_CORE, "saving the speed tests: ", err.Error())
+	}
+}
+
+// resultsLocked is direction d's results, made ready; speedTests must be locked.
+func resultsLocked(d direction) *speedResults {
+	results := &speedTests.results[d]
+	if results.speed == nil {
+		results.speed, results.testing, results.cached = make(map[string]int64), make(map[string]bool), make(map[string]bool)
+	}
+	return results
+}
+
+// notifyLocked tells the listeners a speed test changed; speedTests must be locked.
+func notifyLocked() {
+	for ch := range speedTests.listeners {
+		select {
+		case ch <- struct{}{}:
+		default:
+		}
+	}
 }
 
 // subscribeSpeedTests is told of each change of a speed test, until unsubscribed.
@@ -126,31 +215,60 @@ func subscribeSpeedTests() (<-chan struct{}, func()) {
 	}
 }
 
-// setSpeedLocked records tag's test in direction d, testing or done with speed, and tells the
-// listeners; speedTests must be locked.
+// setSpeedLocked records tag's test in direction d, testing or done with speed, keeps it, and tells
+// the listeners; speedTests must be locked.
 func setSpeedLocked(d direction, tag string, testing bool, speed int64) {
-	results := &speedTests.results[d]
-	if results.speed == nil {
-		results.speed, results.testing = make(map[string]int64), make(map[string]bool)
-	}
+	loadSpeedTestsLocked()
+	results := resultsLocked(d)
 	if testing {
 		results.testing[tag] = true
 	} else {
 		delete(results.testing, tag)
+		delete(results.cached, tag)
 		results.speed[tag] = speed
+		saveSpeedTestsLocked()
 	}
-	for ch := range speedTests.listeners {
-		select {
-		case ch <- struct{}{}:
-		default:
-		}
-	}
+	notifyLocked()
 }
 
+// dropTestLocked ends tag's test in direction d with no result, as one the core stopped; the speed
+// it had stays. speedTests must be locked.
+func dropTestLocked(d direction, tag string) {
+	delete(resultsLocked(d).testing, tag)
+	notifyLocked()
+}
+
+// cacheSpeedTests marks every speed as from an earlier run, as the core stops: the next run may be
+// on another network.
+func cacheSpeedTests() {
+	speedTests.Lock()
+	defer speedTests.Unlock()
+	for d := range speedTests.results {
+		results := resultsLocked(direction(d))
+		for tag := range results.speed {
+			results.cached[tag] = true
+		}
+		clear(results.testing)
+	}
+	notifyLocked()
+}
+
+// clearSpeedTests forgets every speed, of this run and the earlier ones.
 func clearSpeedTests() {
 	speedTests.Lock()
 	defer speedTests.Unlock()
 	speedTests.results = [2]speedResults{}
+	// nothing left to read: the file goes with them
+	speedTests.loaded = true
+	if path := speedTestsFile(); path != "" {
+		_ = os.Remove(path)
+	}
+	notifyLocked()
+}
+
+func (s *CoreService) ClearSpeedTests(ctx context.Context, empty *hcommon.Empty) (*hcommon.Response, error) {
+	clearSpeedTests()
+	return &hcommon.Response{Code: hcommon.ResponseCode_OK}, nil
 }
 
 func (s *CoreService) UploadTest(ctx context.Context, in *SpeedTestRequest) (*hcommon.Response, error) {
@@ -214,6 +332,13 @@ func (h *HiddifyInstance) SpeedTest(d direction, in *SpeedTestRequest) (*hcommon
 				release := lockProxyTest(out.Tag())
 				speed, err := measureSpeed(ctx, d, out, size)
 				release()
+				// the core stopped under it: no result, rather than a failure of the proxy
+				if err != nil && ctx.Err() != nil {
+					speedTests.Lock()
+					dropTestLocked(d, out.Tag())
+					speedTests.Unlock()
+					return
+				}
 				if err != nil {
 					Log(LogLevel_DEBUG, LogType_CORE, d.String(), " test of ", out.Tag(), ": ", err.Error())
 					speed = -1

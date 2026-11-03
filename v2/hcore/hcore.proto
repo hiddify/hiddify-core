@@ -138,6 +138,8 @@ message OutboundInfo {
   bool upload_testing = 20; // an upload test runs through it now
   int64 download_speed = 21; // bytes a second the last download test reached; 0 untested, -1 failed
   bool download_testing = 22; // a download test runs through it now
+  bool upload_speed_cached = 23; // upload_speed is from an earlier run, kept until a new test
+  bool download_speed_cached = 24; // download_speed is from an earlier run, kept until a new test
 }
 
 message IpInfo {

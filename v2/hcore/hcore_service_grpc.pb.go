@@ -38,6 +38,7 @@ const (
 	Core_UrlTestActive_FullMethodName         = "/hcore.Core/UrlTestActive"
 	Core_UploadTest_FullMethodName            = "/hcore.Core/UploadTest"
 	Core_DownloadTest_FullMethodName          = "/hcore.Core/DownloadTest"
+	Core_ClearSpeedTests_FullMethodName       = "/hcore.Core/ClearSpeedTests"
 	Core_GenerateWarpConfig_FullMethodName    = "/hcore.Core/GenerateWarpConfig"
 	Core_GetSystemProxyStatus_FullMethodName  = "/hcore.Core/GetSystemProxyStatus"
 	Core_SetSystemProxyEnabled_FullMethodName = "/hcore.Core/SetSystemProxyEnabled"
@@ -64,7 +65,7 @@ type CoreClient interface {
 	Setup(ctx context.Context, in *SetupRequest, opts ...grpc.CallOption) (*hcommon.Response, error)
 	Parse(ctx context.Context, in *ParseRequest, opts ...grpc.CallOption) (*ParseResponse, error)
 	ChangeHiddifySettings(ctx context.Context, in *ChangeHiddifySettingsRequest, opts ...grpc.CallOption) (*CoreInfoResponse, error)
-	// rpc GenerateConfig (GenerateConfigRequest) returns (GenerateConfigResponse);
+	//rpc GenerateConfig (GenerateConfigRequest) returns (GenerateConfigResponse);
 	StartService(ctx context.Context, in *StartRequest, opts ...grpc.CallOption) (*CoreInfoResponse, error)
 	Stop(ctx context.Context, in *hcommon.Empty, opts ...grpc.CallOption) (*CoreInfoResponse, error)
 	Restart(ctx context.Context, in *StartRequest, opts ...grpc.CallOption) (*CoreInfoResponse, error)
@@ -80,6 +81,8 @@ type CoreClient interface {
 	// speed.cloudflare.com; the results come with the outbounds info (upload_speed, download_speed).
 	UploadTest(ctx context.Context, in *SpeedTestRequest, opts ...grpc.CallOption) (*hcommon.Response, error)
 	DownloadTest(ctx context.Context, in *SpeedTestRequest, opts ...grpc.CallOption) (*hcommon.Response, error)
+	// Forgets every speed test result, of this run and the earlier ones kept.
+	ClearSpeedTests(ctx context.Context, in *hcommon.Empty, opts ...grpc.CallOption) (*hcommon.Response, error)
 	GenerateWarpConfig(ctx context.Context, in *GenerateWarpConfigRequest, opts ...grpc.CallOption) (*WarpGenerationResponse, error)
 	GetSystemProxyStatus(ctx context.Context, in *hcommon.Empty, opts ...grpc.CallOption) (*SystemProxyStatus, error)
 	SetSystemProxyEnabled(ctx context.Context, in *SetSystemProxyEnabledRequest, opts ...grpc.CallOption) (*hcommon.Response, error)
@@ -328,6 +331,16 @@ func (c *coreClient) DownloadTest(ctx context.Context, in *SpeedTestRequest, opt
 	return out, nil
 }
 
+func (c *coreClient) ClearSpeedTests(ctx context.Context, in *hcommon.Empty, opts ...grpc.CallOption) (*hcommon.Response, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(hcommon.Response)
+	err := c.cc.Invoke(ctx, Core_ClearSpeedTests_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *coreClient) GenerateWarpConfig(ctx context.Context, in *GenerateWarpConfigRequest, opts ...grpc.CallOption) (*WarpGenerationResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(WarpGenerationResponse)
@@ -469,7 +482,7 @@ type CoreServer interface {
 	Setup(context.Context, *SetupRequest) (*hcommon.Response, error)
 	Parse(context.Context, *ParseRequest) (*ParseResponse, error)
 	ChangeHiddifySettings(context.Context, *ChangeHiddifySettingsRequest) (*CoreInfoResponse, error)
-	// rpc GenerateConfig (GenerateConfigRequest) returns (GenerateConfigResponse);
+	//rpc GenerateConfig (GenerateConfigRequest) returns (GenerateConfigResponse);
 	StartService(context.Context, *StartRequest) (*CoreInfoResponse, error)
 	Stop(context.Context, *hcommon.Empty) (*CoreInfoResponse, error)
 	Restart(context.Context, *StartRequest) (*CoreInfoResponse, error)
@@ -485,6 +498,8 @@ type CoreServer interface {
 	// speed.cloudflare.com; the results come with the outbounds info (upload_speed, download_speed).
 	UploadTest(context.Context, *SpeedTestRequest) (*hcommon.Response, error)
 	DownloadTest(context.Context, *SpeedTestRequest) (*hcommon.Response, error)
+	// Forgets every speed test result, of this run and the earlier ones kept.
+	ClearSpeedTests(context.Context, *hcommon.Empty) (*hcommon.Response, error)
 	GenerateWarpConfig(context.Context, *GenerateWarpConfigRequest) (*WarpGenerationResponse, error)
 	GetSystemProxyStatus(context.Context, *hcommon.Empty) (*SystemProxyStatus, error)
 	SetSystemProxyEnabled(context.Context, *SetSystemProxyEnabledRequest) (*hcommon.Response, error)
@@ -570,6 +585,9 @@ func (UnimplementedCoreServer) UploadTest(context.Context, *SpeedTestRequest) (*
 }
 func (UnimplementedCoreServer) DownloadTest(context.Context, *SpeedTestRequest) (*hcommon.Response, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DownloadTest not implemented")
+}
+func (UnimplementedCoreServer) ClearSpeedTests(context.Context, *hcommon.Empty) (*hcommon.Response, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ClearSpeedTests not implemented")
 }
 func (UnimplementedCoreServer) GenerateWarpConfig(context.Context, *GenerateWarpConfigRequest) (*WarpGenerationResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GenerateWarpConfig not implemented")
@@ -921,6 +939,24 @@ func _Core_DownloadTest_Handler(srv interface{}, ctx context.Context, dec func(i
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Core_ClearSpeedTests_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(hcommon.Empty)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CoreServer).ClearSpeedTests(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Core_ClearSpeedTests_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CoreServer).ClearSpeedTests(ctx, req.(*hcommon.Empty))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _Core_GenerateWarpConfig_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(GenerateWarpConfigRequest)
 	if err := dec(in); err != nil {
@@ -1167,6 +1203,10 @@ var Core_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "DownloadTest",
 			Handler:    _Core_DownloadTest_Handler,
+		},
+		{
+			MethodName: "ClearSpeedTests",
+			Handler:    _Core_ClearSpeedTests_Handler,
 		},
 		{
 			MethodName: "GenerateWarpConfig",

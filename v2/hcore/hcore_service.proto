@@ -32,6 +32,8 @@ service Core {
   // speed.cloudflare.com; the results come with the outbounds info (upload_speed, download_speed).
   rpc UploadTest (SpeedTestRequest) returns (hcommon.Response);
   rpc DownloadTest (SpeedTestRequest) returns (hcommon.Response);
+  // Forgets every speed test result, of this run and the earlier ones kept.
+  rpc ClearSpeedTests (hcommon.Empty) returns (hcommon.Response);
   rpc GenerateWarpConfig (GenerateWarpConfigRequest) returns (WarpGenerationResponse);
   rpc GetSystemProxyStatus (hcommon.Empty) returns (SystemProxyStatus);
   rpc SetSystemProxyEnabled (SetSystemProxyEnabledRequest) returns (hcommon.Response);
