@@ -12,7 +12,6 @@ import (
 	sync "sync"
 	"time"
 
-	"github.com/hiddify/hiddify-core/v2/hutils"
 	mDNS "github.com/miekg/dns"
 	C "github.com/sagernet/sing-box/constant"
 	sdns "github.com/sagernet/sing-box/dns"
@@ -47,11 +46,13 @@ const (
 	OutboundRoundRobinTag     = "balance"
 	OutboundDirectFragmentTag = "direct-fragment §hide§"
 
-	InboundTUNTag    = "tun-in"
-	InboundMixedTag  = "mixed-in"
-	InboundTProxy    = "tproxy-in"
-	InboundRedirect  = "redirect-in"
-	InboundDirectTag = "dns-in"
+	InboundTUNTag   = "tun-in"
+	InboundMixedTag = "mixed-in"
+	// the LAN sharing port, apart from this device's own (proxyListeners)
+	InboundLanSharingTag = "lan-sharing-in"
+	InboundTProxy        = "tproxy-in"
+	InboundRedirect      = "redirect-in"
+	InboundDirectTag     = "dns-in"
 )
 
 var (
@@ -545,87 +546,60 @@ func setInbound(options *option.Options, hopt *HiddifyOptions) {
 
 	}
 
-	binds := []string{}
-
-	if hopt.AllowConnectionFromLAN {
-		if ipv6Enable {
-			binds = append(binds, "::")
-		} else {
-			binds = append(binds, "0.0.0.0")
-		}
-	} else {
-		if ipv6Enable {
-			binds = append(binds, "::1")
-		}
-		binds = append(binds, "127.0.0.1")
+	for _, listener := range proxyListeners(hopt, ipv6Enable) {
+		addr := badoption.Addr(listener.addr)
+		options.Inbounds = append(options.Inbounds, option.Inbound{
+			Type: C.TypeMixed,
+			Tag:  listener.tag,
+			Options: &option.HTTPMixedInboundOptions{
+				ListenOptions:  option.ListenOptions{Listen: &addr, ListenPort: listener.port},
+				Users:          listener.users,
+				SetSystemProxy: listener.systemProxy,
+			},
+		})
 	}
 
+	if !transparentPortsOpen(hopt) {
+		return
+	}
+	// the transparent ports, on the addresses they always had: every one while shared (a Linux
+	// gateway sends the network's traffic to them), this device's own otherwise
+	binds := []string{"127.0.0.1"}
+	if ipv6Enable {
+		binds = append(binds, "::1")
+	}
+	if hopt.AllowConnectionFromLAN {
+		binds = []string{"0.0.0.0"}
+		if ipv6Enable {
+			binds = []string{"::"}
+		}
+	}
 	for _, bind := range binds {
 		addr := badoption.Addr(netip.MustParseAddr(bind))
-
-		options.Inbounds = append(
-			options.Inbounds,
-			option.Inbound{
-				Type: C.TypeMixed,
-				Tag:  InboundMixedTag + bind,
-				Options: &option.HTTPMixedInboundOptions{
-					ListenOptions: option.ListenOptions{
-						Listen:     &addr,
-						ListenPort: hopt.MixedPort,
-						// InboundOptions: option.InboundOptions{
-						// 	SniffEnabled:             true,
-						// 	SniffOverrideDestination: true,
-						// 	DomainStrategy:           inboundDomainStrategy,
-						// },
-					},
-					SetSystemProxy: hopt.SetSystemProxy,
-				},
-			},
-		)
-		if C.IsLinux && !C.IsAndroid && hopt.TProxyPort > 0 && hutils.IsAdmin() {
-			options.Inbounds = append(
-				options.Inbounds,
-				option.Inbound{
-					Type: C.TypeTProxy,
-					Tag:  InboundTProxy + bind,
-					Options: &option.TProxyInboundOptions{
-						ListenOptions: option.ListenOptions{
-							Listen:     &addr,
-							ListenPort: hopt.TProxyPort,
-						},
-					},
-				},
-			)
+		listen := option.ListenOptions{Listen: &addr}
+		if tproxyAvailable() && portEnabled(hopt.EnableTProxyPort, hopt.TProxyPort, false) {
+			listen.ListenPort = hopt.TProxyPort
+			options.Inbounds = append(options.Inbounds, option.Inbound{
+				Type:    C.TypeTProxy,
+				Tag:     InboundTProxy + bind,
+				Options: &option.TProxyInboundOptions{ListenOptions: listen},
+			})
 		}
-		if (C.IsLinux || C.IsDarwin) && !C.IsAndroid && hopt.RedirectPort > 0 {
-			options.Inbounds = append(
-				options.Inbounds,
-				option.Inbound{
-					Type: C.TypeRedirect,
-					Tag:  InboundRedirect + bind,
-					Options: &option.RedirectInboundOptions{
-						ListenOptions: option.ListenOptions{
-							Listen:     &addr,
-							ListenPort: hopt.RedirectPort,
-						},
-					},
-				},
-			)
+		if redirectAvailable() && portEnabled(hopt.EnableRedirectPort, hopt.RedirectPort, false) {
+			listen.ListenPort = hopt.RedirectPort
+			options.Inbounds = append(options.Inbounds, option.Inbound{
+				Type:    C.TypeRedirect,
+				Tag:     InboundRedirect + bind,
+				Options: &option.RedirectInboundOptions{ListenOptions: listen},
+			})
 		}
-		if hopt.DirectPort > 0 {
-			options.Inbounds = append(
-				options.Inbounds,
-				option.Inbound{
-					Type: C.TypeDirect,
-					Tag:  InboundDirectTag + bind,
-					Options: &option.DirectInboundOptions{
-						ListenOptions: option.ListenOptions{
-							Listen:     &addr,
-							ListenPort: hopt.DirectPort,
-						},
-					},
-				},
-			)
+		if !C.IsAndroid && !C.IsIos && portEnabled(hopt.EnableDirectPort, hopt.DirectPort, false) {
+			listen.ListenPort = hopt.DirectPort
+			options.Inbounds = append(options.Inbounds, option.Inbound{
+				Type:    C.TypeDirect,
+				Tag:     InboundDirectTag + bind,
+				Options: &option.DirectInboundOptions{ListenOptions: listen},
+			})
 		}
 	}
 }

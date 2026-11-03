@@ -64,8 +64,26 @@ type InboundOptions struct {
 	TProxyPort       uint16 `json:"tproxy-port,omitempty"`
 	RedirectPort     uint16 `json:"redirect-port,omitempty"`
 	DirectPort       uint16 `json:"direct-port,omitempty"`
-	MTU              uint32 `json:"mtu,omitempty"`
-	StrictRoute      bool   `json:"strict-route,omitempty"`
+	// Each local port opens only while its switch is on; unset is on for the mixed port, off for the
+	// transparent ones, which serve setups made by hand (see portEnabled).
+	EnableMixedPort    *bool `json:"enable-mixed-port,omitempty"`
+	EnableTProxyPort   *bool `json:"enable-tproxy-port,omitempty"`
+	EnableRedirectPort *bool `json:"enable-redirect-port,omitempty"`
+	EnableDirectPort   *bool `json:"enable-direct-port,omitempty"`
+	// LanSharingPort is the port the local network uses while the VPN is shared with it, apart from
+	// this device's own (MixedPort), and asking for ProxySecret (see proxyListeners).
+	LanSharingPort uint16 `json:"lan-sharing-port,omitempty"`
+	// ProxySecret is the password (of the user "hiddify") of the LAN sharing port, and of the local
+	// port too while LocalProxyAuth is on.
+	ProxySecret string `json:"lan-sharing-password,omitempty"`
+	// LocalProxyAuth makes the local port ask for ProxySecret as well. Off by default: browsers can not
+	// send a SOCKS5 password, nor can a system proxy, which never asks for it.
+	LocalProxyAuth bool `json:"local-proxy-auth,omitempty"`
+	// LocalProxyInVpn keeps the local port open in VPN mode, where every app already goes through the
+	// TUN. Off by default.
+	LocalProxyInVpn bool   `json:"local-proxy-in-vpn,omitempty"`
+	MTU             uint32 `json:"mtu,omitempty"`
+	StrictRoute     bool   `json:"strict-route,omitempty"`
 	// TUNStack is the TUN's TCP/IP stack: "sing15" (or empty) for sing-tun's own, the default; the
 	// legacy "system", "gvisor" and "mixed" are accepted until sing-box 1.17 (see TunStack).
 	TUNStack string `json:"tun-implementation,omitempty"`
@@ -141,6 +159,7 @@ func DefaultHiddifyOptions() *HiddifyOptions {
 			TProxyPort:     12335,
 			RedirectPort:   12336,
 			DirectPort:     12337,
+			LanSharingPort: 12338,
 			MTU:            9000,
 			StrictRoute:    true,
 			TUNStack:       "sing15",
