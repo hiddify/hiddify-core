@@ -74,7 +74,9 @@ func (h *HiddifyInstance) watchConnectivity(ctx context.Context) {
 	ticker := time.NewTicker(connectivityRecheck)
 	defer ticker.Stop()
 	for {
-		h.updateConnectivity(ctx)
+		if state, ok := h.updateConnectivity(ctx); ok {
+			h.followKeepTop(state)
+		}
 		select {
 		case <-ctx.Done():
 			return
@@ -91,13 +93,14 @@ func (h *HiddifyInstance) watchConnectivity(ctx context.Context) {
 }
 
 // updateConnectivity moves the running core between WAITING, STARTED and NO_AVAILABLE_PROXIES by
-// what the monitoring knows of the proxies.
-func (h *HiddifyInstance) updateConnectivity(ctx context.Context) {
+// what the monitoring knows of the proxies, and reports that state; not ok once ctx is done.
+func (h *HiddifyInstance) updateConnectivity(ctx context.Context) (CoreStates, bool) {
 	if ctx.Err() != nil {
-		return
+		return 0, false
 	}
 	state := probeConnectivity(h)
 	setCoreStatusIf(running, state, MessageType_EMPTY, "")
+	return state, true
 }
 
 // connectedState is the state of a running core by its proxies.

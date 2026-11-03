@@ -21,6 +21,10 @@ type HiddifyOptions struct {
 	BlockAds                bool   `json:"block-ads,omitempty" overridable:"true"`
 	UseXrayCoreWhenPossible bool   `json:"use-xray-core-when-possible,omitempty" overridable:"true"`
 	BalancerStrategy        string `json:"balancer-strategy,omitempty" overridable:"true"`
+	// KeepTop, when above 0, runs only that many of a profile's proxies, the fastest by their first
+	// pings, once the profile has more (see hcore's keep top); 0 or -1 runs them all. The profile
+	// sets it, from its `keep-top` header or the user's choice.
+	KeepTop int `json:"keep-top,omitempty" overridable:"true"`
 	// GeoIPPath        string      `json:"geoip-path"`
 	// GeoSitePath      string      `json:"geosite-path"`
 	Rules []Rule `json:"rules,omitempty" overridable:"true"`
