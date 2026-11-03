@@ -3,14 +3,6 @@
 
 ## Table of Contents
 
-- [v2/config/route_rule.proto](#v2_config_route_rule-proto)
-    - [RouteRule](#config-RouteRule)
-    - [Rule](#config-Rule)
-  
-    - [Network](#config-Network)
-    - [Outbound](#config-Outbound)
-    - [Protocol](#config-Protocol)
-  
 - [v2/ezytel/ezytel.proto](#v2_ezytel_ezytel-proto)
     - [ChannelInfo](#ezytel-ChannelInfo)
     - [ChannelInfoRequest](#ezytel-ChannelInfoRequest)
@@ -24,23 +16,37 @@
 - [v2/ezytel/ezytel_service.proto](#v2_ezytel_ezytel_service-proto)
     - [Ezytel](#ezytel-Ezytel)
   
-- [v2/hcommon/common.proto](#v2_hcommon_common-proto)
-    - [Empty](#hcommon-Empty)
-    - [Response](#hcommon-Response)
+- [v2/config/route_rule.proto](#v2_config_route_rule-proto)
+    - [RouteRule](#config-RouteRule)
+    - [Rule](#config-Rule)
   
-    - [ResponseCode](#hcommon-ResponseCode)
+    - [Network](#config-Network)
+    - [Outbound](#config-Outbound)
+    - [Protocol](#config-Protocol)
   
 - [v2/hcore/hcore.proto](#v2_hcore_hcore-proto)
+    - [AdminNeededProxy](#hcore-AdminNeededProxy)
     - [ChangeHiddifySettingsRequest](#hcore-ChangeHiddifySettingsRequest)
     - [CloseRequest](#hcore-CloseRequest)
     - [CoreInfoResponse](#hcore-CoreInfoResponse)
+    - [CrashReport](#hcore-CrashReport)
+    - [CrashReportList](#hcore-CrashReportList)
+    - [EnsureAdminBgServiceEvent](#hcore-EnsureAdminBgServiceEvent)
+    - [EnsureAdminBgServiceRequest](#hcore-EnsureAdminBgServiceRequest)
+    - [EnsureAdminBgServiceRequest.ResourcesEntry](#hcore-EnsureAdminBgServiceRequest-ResourcesEntry)
+    - [ExportDiagnosticsRequest](#hcore-ExportDiagnosticsRequest)
+    - [ExportDiagnosticsRequest.ExtraFilesEntry](#hcore-ExportDiagnosticsRequest-ExtraFilesEntry)
+    - [ExportDiagnosticsResponse](#hcore-ExportDiagnosticsResponse)
     - [GenerateConfigRequest](#hcore-GenerateConfigRequest)
     - [GenerateConfigResponse](#hcore-GenerateConfigResponse)
     - [GenerateWarpConfigRequest](#hcore-GenerateWarpConfigRequest)
     - [IpInfo](#hcore-IpInfo)
+    - [IsAdminResponse](#hcore-IsAdminResponse)
     - [LANIPResponse](#hcore-LANIPResponse)
     - [LogMessage](#hcore-LogMessage)
     - [LogRequest](#hcore-LogRequest)
+    - [NeedAdminBgServiceRequest](#hcore-NeedAdminBgServiceRequest)
+    - [NeedAdminBgServiceResponse](#hcore-NeedAdminBgServiceResponse)
     - [OutboundGroup](#hcore-OutboundGroup)
     - [OutboundGroupList](#hcore-OutboundGroupList)
     - [OutboundInfo](#hcore-OutboundInfo)
@@ -58,28 +64,26 @@
     - [WarpGenerationResponse](#hcore-WarpGenerationResponse)
     - [WarpWireguardConfig](#hcore-WarpWireguardConfig)
   
+    - [AdminBgServiceDecision](#hcore-AdminBgServiceDecision)
+    - [AdminPreference](#hcore-AdminPreference)
     - [CoreStates](#hcore-CoreStates)
+    - [EnsureAdminBgServiceProgress](#hcore-EnsureAdminBgServiceProgress)
     - [LogLevel](#hcore-LogLevel)
     - [LogType](#hcore-LogType)
     - [MessageType](#hcore-MessageType)
     - [SetupMode](#hcore-SetupMode)
+    - [Status](#hcore-Status)
   
 - [v2/hcore/hcore_service.proto](#v2_hcore_hcore_service-proto)
     - [Core](#hcore-Core)
   
-- [v2/hcore/tunnelservice/tunnel.proto](#v2_hcore_tunnelservice_tunnel-proto)
-    - [TunnelResponse](#tunnelservice-TunnelResponse)
-    - [TunnelStartRequest](#tunnelservice-TunnelStartRequest)
+- [v2/hcore/adminbgservice/admin_bg_service.proto](#v2_hcore_adminbgservice_admin_bg_service-proto)
+    - [HiddifyAdminBG](#adminbgservice-HiddifyAdminBG)
   
-- [v2/hcore/tunnelservice/tunnel_service.proto](#v2_hcore_tunnelservice_tunnel_service-proto)
-    - [TunnelService](#tunnelservice-TunnelService)
-  
-- [v2/hello/hello.proto](#v2_hello_hello-proto)
-    - [HelloRequest](#hello-HelloRequest)
-    - [HelloResponse](#hello-HelloResponse)
-  
-- [v2/hello/hello_service.proto](#v2_hello_hello_service-proto)
-    - [Hello](#hello-Hello)
+- [v2/hcore/adminbgservice/admin_bg.proto](#v2_hcore_adminbgservice_admin_bg-proto)
+    - [AdminBgResponse](#adminbgservice-AdminBgResponse)
+    - [AdminBgStartRequest](#adminbgservice-AdminBgStartRequest)
+    - [AdminBgStartRequest.ResourcesEntry](#adminbgservice-AdminBgStartRequest-ResourcesEntry)
   
 - [v2/hiddifyoptions/hiddify_options.proto](#v2_hiddifyoptions_hiddify_options-proto)
     - [DNSOptions](#hiddifyoptions-DNSOptions)
@@ -97,11 +101,6 @@
   
     - [DomainStrategy](#hiddifyoptions-DomainStrategy)
   
-- [v2/profile/profile.proto](#v2_profile_profile-proto)
-    - [ProfileEntity](#profile-ProfileEntity)
-    - [ProfileOptions](#profile-ProfileOptions)
-    - [SubscriptionInfo](#profile-SubscriptionInfo)
-  
 - [v2/profile/profile_service.proto](#v2_profile_profile_service-proto)
     - [AddProfileRequest](#profile-AddProfileRequest)
     - [MultiProfilesResponse](#profile-MultiProfilesResponse)
@@ -109,6 +108,27 @@
     - [ProfileResponse](#profile-ProfileResponse)
   
     - [ProfileService](#profile-ProfileService)
+  
+- [v2/profile/profile.proto](#v2_profile_profile-proto)
+    - [ProfileEntity](#profile-ProfileEntity)
+    - [ProfileOptions](#profile-ProfileOptions)
+    - [SubscriptionInfo](#profile-SubscriptionInfo)
+  
+- [v2/hcommon/common.proto](#v2_hcommon_common-proto)
+    - [Empty](#hcommon-Empty)
+    - [Response](#hcommon-Response)
+  
+    - [ResponseCode](#hcommon-ResponseCode)
+  
+- [v2/hello/hello_service.proto](#v2_hello_hello_service-proto)
+    - [Hello](#hello-Hello)
+  
+- [v2/hello/hello.proto](#v2_hello_hello-proto)
+    - [HelloRequest](#hello-HelloRequest)
+    - [HelloResponse](#hello-HelloResponse)
+  
+- [extension/extension_service.proto](#extension_extension_service-proto)
+    - [ExtensionHostService](#extension-ExtensionHostService)
   
 - [extension/extension.proto](#extension_extension-proto)
     - [EditExtensionRequest](#extension-EditExtensionRequest)
@@ -123,116 +143,7 @@
   
     - [ExtensionResponseType](#extension-ExtensionResponseType)
   
-- [extension/extension_service.proto](#extension_extension_service-proto)
-    - [ExtensionHostService](#extension-ExtensionHostService)
-  
 - [Scalar Value Types](#scalar-value-types)
-
-
-
-<a name="v2_config_route_rule-proto"></a>
-<p align="right"><a href="#top">Top</a></p>
-
-## v2/config/route_rule.proto
-
-
-
-<a name="config-RouteRule"></a>
-
-### RouteRule
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| rules | [Rule](#config-Rule) | repeated |  |
-
-
-
-
-
-
-<a name="config-Rule"></a>
-
-### Rule
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| list_order | [uint32](#uint32) |  |  |
-| enabled | [bool](#bool) |  |  |
-| name | [string](#string) |  |  |
-| outbound | [Outbound](#config-Outbound) |  |  |
-| rule_sets | [string](#string) | repeated |  |
-| package_names | [string](#string) | repeated |  |
-| process_names | [string](#string) | repeated |  |
-| process_paths | [string](#string) | repeated |  |
-| network | [Network](#config-Network) |  |  |
-| port_ranges | [string](#string) | repeated |  |
-| source_port_ranges | [string](#string) | repeated |  |
-| protocols | [Protocol](#config-Protocol) | repeated |  |
-| ip_cidrs | [string](#string) | repeated |  |
-| source_ip_cidrs | [string](#string) | repeated |  |
-| domains | [string](#string) | repeated |  |
-| domain_suffixes | [string](#string) | repeated |  |
-| domain_keywords | [string](#string) | repeated |  |
-| domain_regexes | [string](#string) | repeated |  |
-
-
-
-
-
- 
-
-
-<a name="config-Network"></a>
-
-### Network
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| all | 0 |  |
-| tcp | 1 |  |
-| udp | 2 |  |
-
-
-
-<a name="config-Outbound"></a>
-
-### Outbound
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| proxy | 0 |  |
-| direct | 1 |  |
-| direct_with_fragment | 2 |  |
-| block | 3 |  |
-
-
-
-<a name="config-Protocol"></a>
-
-### Protocol
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| tls | 0 |  |
-| http | 1 |  |
-| quic | 2 |  |
-| stun | 3 |  |
-| dns | 4 |  |
-| bittorrent | 5 |  |
-
-
- 
-
- 
-
- 
 
 
 
@@ -421,33 +332,54 @@ translate.goog domain front so it reaches users behind GFW-style filters.
 
 
 
-<a name="v2_hcommon_common-proto"></a>
+<a name="v2_config_route_rule-proto"></a>
 <p align="right"><a href="#top">Top</a></p>
 
-## v2/hcommon/common.proto
+## v2/config/route_rule.proto
 
 
 
-<a name="hcommon-Empty"></a>
+<a name="config-RouteRule"></a>
 
-### Empty
-
-
-
-
-
-
-
-<a name="hcommon-Response"></a>
-
-### Response
+### RouteRule
 
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| code | [ResponseCode](#hcommon-ResponseCode) |  |  |
-| message | [string](#string) |  |  |
+| rules | [Rule](#config-Rule) | repeated |  |
+
+
+
+
+
+
+<a name="config-Rule"></a>
+
+### Rule
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| list_order | [uint32](#uint32) |  |  |
+| enabled | [bool](#bool) |  |  |
+| name | [string](#string) |  |  |
+| outbound | [Outbound](#config-Outbound) |  |  |
+| rule_sets | [string](#string) | repeated |  |
+| package_names | [string](#string) | repeated |  |
+| process_names | [string](#string) | repeated |  |
+| process_paths | [string](#string) | repeated |  |
+| network | [Network](#config-Network) |  |  |
+| port_ranges | [string](#string) | repeated |  |
+| source_port_ranges | [string](#string) | repeated |  |
+| protocols | [Protocol](#config-Protocol) | repeated |  |
+| ip_cidrs | [string](#string) | repeated |  |
+| source_ip_cidrs | [string](#string) | repeated |  |
+| domains | [string](#string) | repeated |  |
+| domain_suffixes | [string](#string) | repeated |  |
+| domain_keywords | [string](#string) | repeated |  |
+| domain_regexes | [string](#string) | repeated |  |
 
 
 
@@ -456,16 +388,46 @@ translate.goog domain front so it reaches users behind GFW-style filters.
  
 
 
-<a name="hcommon-ResponseCode"></a>
+<a name="config-Network"></a>
 
-### ResponseCode
+### Network
 
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
-| OK | 0 |  |
-| FAILED | 1 |  |
-| AUTH_NEED | 2 |  |
+| all | 0 |  |
+| tcp | 1 |  |
+| udp | 2 |  |
+
+
+
+<a name="config-Outbound"></a>
+
+### Outbound
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| proxy | 0 |  |
+| direct | 1 |  |
+| direct_with_fragment | 2 |  |
+| block | 3 |  |
+
+
+
+<a name="config-Protocol"></a>
+
+### Protocol
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| tls | 0 |  |
+| http | 1 |  |
+| quic | 2 |  |
+| stun | 3 |  |
+| dns | 4 |  |
+| bittorrent | 5 |  |
 
 
  
@@ -480,6 +442,23 @@ translate.goog domain front so it reaches users behind GFW-style filters.
 <p align="right"><a href="#top">Top</a></p>
 
 ## v2/hcore/hcore.proto
+
+
+
+<a name="hcore-AdminNeededProxy"></a>
+
+### AdminNeededProxy
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| tag | [string](#string) |  |  |
+| summary | [string](#string) |  |  |
+| detail | [string](#string) |  |  |
+
+
+
 
 
 
@@ -524,6 +503,143 @@ translate.goog domain front so it reaches users behind GFW-style filters.
 | core_state | [CoreStates](#hcore-CoreStates) |  |  |
 | message_type | [MessageType](#hcore-MessageType) |  |  |
 | message | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="hcore-CrashReport"></a>
+
+### CrashReport
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | the report directory or file name |
+| crashed_at | [string](#string) |  | RFC 3339 |
+| source | [string](#string) |  | crash_reports, oom_reports, or the live file name |
+| is_crash | [bool](#bool) |  | the content is a crash (panic, fatal error, signal), not other stderr output |
+
+
+
+
+
+
+<a name="hcore-CrashReportList"></a>
+
+### CrashReportList
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| reports | [CrashReport](#hcore-CrashReport) | repeated |  |
+
+
+
+
+
+
+<a name="hcore-EnsureAdminBgServiceEvent"></a>
+
+### EnsureAdminBgServiceEvent
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| progress | [EnsureAdminBgServiceProgress](#hcore-EnsureAdminBgServiceProgress) |  |  |
+| message | [string](#string) |  |  |
+| service_port | [uint32](#uint32) |  |  |
+
+
+
+
+
+
+<a name="hcore-EnsureAdminBgServiceRequest"></a>
+
+### EnsureAdminBgServiceRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| config_content | [string](#string) |  |  |
+| config_name | [string](#string) |  |  |
+| settings_json | [string](#string) |  |  |
+| resources | [EnsureAdminBgServiceRequest.ResourcesEntry](#hcore-EnsureAdminBgServiceRequest-ResourcesEntry) | repeated |  |
+| disable_memory_limit | [bool](#bool) |  |  |
+| owner_pid | [int32](#int32) |  |  |
+| cli_path | [string](#string) |  | Absolute path to this app&#39;s HiddifyCli / HiddifyCli.exe (used for elevate install). |
+| owner_user | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="hcore-EnsureAdminBgServiceRequest-ResourcesEntry"></a>
+
+### EnsureAdminBgServiceRequest.ResourcesEntry
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| key | [string](#string) |  |  |
+| value | [bytes](#bytes) |  |  |
+
+
+
+
+
+
+<a name="hcore-ExportDiagnosticsRequest"></a>
+
+### ExportDiagnosticsRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| destination_path | [string](#string) |  | where to write the zip; empty is a file in the temp directory |
+| extra_files | [ExportDiagnosticsRequest.ExtraFilesEntry](#hcore-ExportDiagnosticsRequest-ExtraFilesEntry) | repeated | more files for the zip, by name (the app&#39;s logs, another core&#39;s dump) |
+| inline | [bool](#bool) |  | also return the zip&#39;s bytes |
+
+
+
+
+
+
+<a name="hcore-ExportDiagnosticsRequest-ExtraFilesEntry"></a>
+
+### ExportDiagnosticsRequest.ExtraFilesEntry
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| key | [string](#string) |  |  |
+| value | [bytes](#bytes) |  |  |
+
+
+
+
+
+
+<a name="hcore-ExportDiagnosticsResponse"></a>
+
+### ExportDiagnosticsResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| path | [string](#string) |  |  |
+| content | [bytes](#bytes) |  |  |
 
 
 
@@ -596,6 +712,22 @@ translate.goog domain front so it reaches users behind GFW-style filters.
 | latitude | [double](#double) |  | The latitude (optional). |
 | longitude | [double](#double) |  | The longitude (optional). |
 | postal_code | [string](#string) |  | The postal code (optional). |
+| from_cache | [bool](#bool) |  | Of a previous run, not looked up in this one yet; it may have changed. |
+
+
+
+
+
+
+<a name="hcore-IsAdminResponse"></a>
+
+### IsAdminResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| is_admin | [bool](#bool) |  | True when the core process runs as Administrator (Windows) or root (Unix). |
 
 
 
@@ -650,6 +782,40 @@ translate.goog domain front so it reaches users behind GFW-style filters.
 
 
 
+<a name="hcore-NeedAdminBgServiceRequest"></a>
+
+### NeedAdminBgServiceRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| service_mode | [string](#string) |  | proxy | system-proxy | vpn |
+| hiddify_settings_json | [string](#string) |  |  |
+| admin_preference | [AdminPreference](#hcore-AdminPreference) |  |  |
+| privilege_error_remembered | [bool](#bool) |  | True after an in-process start failed with a privilege error. |
+
+
+
+
+
+
+<a name="hcore-NeedAdminBgServiceResponse"></a>
+
+### NeedAdminBgServiceResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| decision | [AdminBgServiceDecision](#hcore-AdminBgServiceDecision) |  |  |
+| admin_needed_proxies | [AdminNeededProxy](#hcore-AdminNeededProxy) | repeated |  |
+
+
+
+
+
+
 <a name="hcore-OutboundGroup"></a>
 
 ### OutboundGroup
@@ -679,6 +845,7 @@ translate.goog domain front so it reaches users behind GFW-style filters.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | items | [OutboundGroup](#hcore-OutboundGroup) | repeated |  |
+| chain_hop | [OutboundInfo](#hcore-OutboundInfo) | optional | main list only: the extra security / unblocker hop the traffic goes through now |
 
 
 
@@ -710,6 +877,7 @@ translate.goog domain front so it reaches users behind GFW-style filters.
 | upload | [int64](#int64) |  |  |
 | download | [int64](#int64) |  |  |
 | detour | [string](#string) |  |  |
+| status | [Status](#hcore-Status) |  | ready / connecting / registering / … (outbound or endpoint) |
 
 
 
@@ -946,17 +1114,64 @@ Define the message equivalent of SetupParameters
  
 
 
-<a name="hcore-CoreStates"></a>
+<a name="hcore-AdminBgServiceDecision"></a>
 
-### CoreStates
+### AdminBgServiceDecision
 
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
+| ADMIN_BG_SERVICE_NO | 0 |  |
+| ADMIN_BG_SERVICE_ALREADY_CONNECTED | 1 |  |
+| ADMIN_BG_SERVICE_NEEDS_ADMIN | 2 |  |
+| ADMIN_BG_SERVICE_OPTIONAL_PROXY_NEED_ADMIN | 3 |  |
+
+
+
+<a name="hcore-AdminPreference"></a>
+
+### AdminPreference
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| ADMIN_PREFERENCE_UNSET | 0 |  |
+| ADMIN_PREFERENCE_PREFER_ADMIN | 1 |  |
+| ADMIN_PREFERENCE_PREFER_NO_ADMIN | 2 |  |
+
+
+
+<a name="hcore-CoreStates"></a>
+
+### CoreStates
+The lifecycle is owned by the core: STOPPED -&gt; STARTING -&gt; WAITING -&gt; STARTED, and STOPPING
+from any running state. A start is accepted only from STOPPED. While the core runs, its
+monitoring moves it between WAITING, STARTED and NO_AVAILABLE_PROXIES.
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
 | STOPPED | 0 |  |
-| STARTING | 1 |  |
-| STARTED | 2 |  |
-| STOPPING | 3 |  |
+| STARTING | 1 | the background core is starting up completely |
+| STARTED | 2 | the core is up and at least one proxy has a positive ping; a lost ping moves it back to WAITING |
+| STOPPING | 3 | a stop was requested: reported at once, and every queued start is dropped |
+| HOT_RELOADING | 4 | the running core is applying a new config (HotReload); traffic keeps flowing |
+| WAITING | 5 | the core is up and no proxy has a ping yet (not tested, or the ping was lost); a positive ping moves it to STARTED |
+| NO_AVAILABLE_PROXIES | 6 | the core is up and every proxy was tested and timed out; not an error, a positive ping moves it to STARTED |
+
+
+
+<a name="hcore-EnsureAdminBgServiceProgress"></a>
+
+### EnsureAdminBgServiceProgress
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| ENSURE_ADMIN_BG_WAITING_FOR_ELEVATION | 0 |  |
+| ENSURE_ADMIN_BG_SERVICE_STARTING | 1 |  |
+| ENSURE_ADMIN_BG_SERVICE_CONNECTED | 2 |  |
+| ENSURE_ADMIN_BG_FAILED_PERMISSION_DENIED | 3 |  |
+| ENSURE_ADMIN_BG_FAILED_OTHER | 4 |  |
 
 
 
@@ -1011,6 +1226,7 @@ Define the message equivalent of SetupParameters
 | ERROR_PARSING_CONFIG | 12 |  |
 | ERROR_READING_CONFIG | 13 |  |
 | ERROR_EXTENSION | 14 |  |
+| HOT_RELOAD_FAILED | 15 | HotReload could not apply the config (e.g. the TUN inbound changed); the running core is unchanged, restart it to apply the config |
 
 
 
@@ -1026,6 +1242,22 @@ Define the message equivalent of SetupParameters
 | GRPC_BACKGROUND | 2 |  |
 | GRPC_NORMAL_INSECURE | 3 |  |
 | GRPC_BACKGROUND_INSECURE | 4 |  |
+
+
+
+<a name="hcore-Status"></a>
+
+### Status
+Connection state of an outbound or endpoint (mirrors adapter.Status).
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| READY | 0 |  |
+| CONNECTING | 1 |  |
+| RECONNECTING | 2 |  |
+| SEARCHING | 3 |  |
+| FAILED | 4 |  |
+| REGISTERING | 5 |  |
 
 
  
@@ -1068,6 +1300,7 @@ Define the message equivalent of SetupParameters
 | StartService | [StartRequest](#hcore-StartRequest) | [CoreInfoResponse](#hcore-CoreInfoResponse) | rpc GenerateConfig (GenerateConfigRequest) returns (GenerateConfigResponse); |
 | Stop | [.hcommon.Empty](#hcommon-Empty) | [CoreInfoResponse](#hcore-CoreInfoResponse) |  |
 | Restart | [StartRequest](#hcore-StartRequest) | [CoreInfoResponse](#hcore-CoreInfoResponse) |  |
+| HotReload | [StartRequest](#hcore-StartRequest) | [CoreInfoResponse](#hcore-CoreInfoResponse) | Apply the config to the running core without restarting it: outbounds, endpoints, inbounds (not TUN), DNS servers/rules/final and route rules/rule sets/final may change. Anything else, or a changed TUN inbound, returns HOT_RELOAD_FAILED and leaves the core running unchanged. When the core is stopped, it is started like Start. |
 | SelectOutbound | [SelectOutboundRequest](#hcore-SelectOutboundRequest) | [.hcommon.Response](#hcommon-Response) |  |
 | UrlTest | [UrlTestRequest](#hcore-UrlTestRequest) | [.hcommon.Response](#hcommon-Response) |  |
 | UrlTestActive | [.hcommon.Empty](#hcommon-Empty) | [.hcommon.Response](#hcommon-Response) |  |
@@ -1077,21 +1310,55 @@ Define the message equivalent of SetupParameters
 | LogListener | [LogRequest](#hcore-LogRequest) | [LogMessage](#hcore-LogMessage) stream |  |
 | Close | [CloseRequest](#hcore-CloseRequest) | [.hcommon.Empty](#hcommon-Empty) |  |
 | GetLANIP | [.hcommon.Empty](#hcommon-Empty) | [LANIPResponse](#hcore-LANIPResponse) |  |
+| IsAdmin | [.hcommon.Empty](#hcommon-Empty) | [IsAdminResponse](#hcore-IsAdminResponse) | Whether this core process already has administrator/root rights (same token as the app). |
+| NeedAdminBgService | [NeedAdminBgServiceRequest](#hcore-NeedAdminBgServiceRequest) | [NeedAdminBgServiceResponse](#hcore-NeedAdminBgServiceResponse) | Windows/Linux: whether elevated admin_bgservice is required for this connect. |
+| EnsureAdminBgService | [EnsureAdminBgServiceRequest](#hcore-EnsureAdminBgServiceRequest) | [EnsureAdminBgServiceEvent](#hcore-EnsureAdminBgServiceEvent) stream | Windows/Linux: install/start admin_bgservice if needed and start the bg core until STARTED. |
+| ListCrashReports | [.hcommon.Empty](#hcommon-Empty) | [CrashReportList](#hcore-CrashReportList) | The crash reports in this core&#39;s working directory: the archived ones (crash_reports, oom_reports) and the live stderr files that hold a crash, newest last. |
+| ExportDiagnostics | [ExportDiagnosticsRequest](#hcore-ExportDiagnosticsRequest) | [ExportDiagnosticsResponse](#hcore-ExportDiagnosticsResponse) | A zip of this core&#39;s diagnostics: the crash, OOM and power reports, the stderr and core log files, the previous run&#39;s goroutines (a snapshot the core writes every minute while connected, kept aside at the next start), the running config with servers and secrets removed, and the files the request adds. Text is scrubbed of addresses, links and secrets. Returns the zip&#39;s path, and its bytes when the request asks for them (a core in another process, whose files the app cannot read). |
 
  
 
 
 
-<a name="v2_hcore_tunnelservice_tunnel-proto"></a>
+<a name="v2_hcore_adminbgservice_admin_bg_service-proto"></a>
 <p align="right"><a href="#top">Top</a></p>
 
-## v2/hcore/tunnelservice/tunnel.proto
+## v2/hcore/adminbgservice/admin_bg_service.proto
+
+
+ 
+
+ 
+
+ 
+
+
+<a name="adminbgservice-HiddifyAdminBG"></a>
+
+### HiddifyAdminBG
+Elevated background core control API (Windows/Linux OS service, macOS root daemon).
+
+| Method Name | Request Type | Response Type | Description |
+| ----------- | ------------ | ------------- | ------------|
+| Start | [AdminBgStartRequest](#adminbgservice-AdminBgStartRequest) | [AdminBgResponse](#adminbgservice-AdminBgResponse) |  |
+| Stop | [.hcommon.Empty](#hcommon-Empty) | [AdminBgResponse](#adminbgservice-AdminBgResponse) |  |
+| Status | [.hcommon.Empty](#hcommon-Empty) | [AdminBgResponse](#adminbgservice-AdminBgResponse) |  |
+| Exit | [.hcommon.Empty](#hcommon-Empty) | [AdminBgResponse](#adminbgservice-AdminBgResponse) |  |
+
+ 
 
 
 
-<a name="tunnelservice-TunnelResponse"></a>
+<a name="v2_hcore_adminbgservice_admin_bg-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
 
-### TunnelResponse
+## v2/hcore/adminbgservice/admin_bg.proto
+
+
+
+<a name="adminbgservice-AdminBgResponse"></a>
+
+### AdminBgResponse
 
 
 
@@ -1104,9 +1371,9 @@ Define the message equivalent of SetupParameters
 
 
 
-<a name="tunnelservice-TunnelStartRequest"></a>
+<a name="adminbgservice-AdminBgStartRequest"></a>
 
-### TunnelStartRequest
+### AdminBgStartRequest
 
 
 
@@ -1119,81 +1386,28 @@ Define the message equivalent of SetupParameters
 | strict_route | [bool](#bool) |  |  |
 | endpoint_independent_nat | [bool](#bool) |  |  |
 | stack | [string](#string) |  |  |
+| config_content | [string](#string) |  | Full-core start (macOS root daemon): config snapshot, settings, and local resources. |
+| config_name | [string](#string) |  |  |
+| settings_json | [string](#string) |  |  |
+| resources | [AdminBgStartRequest.ResourcesEntry](#adminbgservice-AdminBgStartRequest-ResourcesEntry) | repeated |  |
+| disable_memory_limit | [bool](#bool) |  |  |
+| owner_pid | [int32](#int32) |  | When set, the daemon stops once this process is gone (app quit or crash). |
 
 
 
 
 
- 
 
- 
+<a name="adminbgservice-AdminBgStartRequest-ResourcesEntry"></a>
 
- 
-
- 
-
-
-
-<a name="v2_hcore_tunnelservice_tunnel_service-proto"></a>
-<p align="right"><a href="#top">Top</a></p>
-
-## v2/hcore/tunnelservice/tunnel_service.proto
-
-
- 
-
- 
-
- 
-
-
-<a name="tunnelservice-TunnelService"></a>
-
-### TunnelService
-
-
-| Method Name | Request Type | Response Type | Description |
-| ----------- | ------------ | ------------- | ------------|
-| Start | [TunnelStartRequest](#tunnelservice-TunnelStartRequest) | [TunnelResponse](#tunnelservice-TunnelResponse) |  |
-| Stop | [.hcommon.Empty](#hcommon-Empty) | [TunnelResponse](#tunnelservice-TunnelResponse) |  |
-| Status | [.hcommon.Empty](#hcommon-Empty) | [TunnelResponse](#tunnelservice-TunnelResponse) |  |
-| Exit | [.hcommon.Empty](#hcommon-Empty) | [TunnelResponse](#tunnelservice-TunnelResponse) |  |
-
- 
-
-
-
-<a name="v2_hello_hello-proto"></a>
-<p align="right"><a href="#top">Top</a></p>
-
-## v2/hello/hello.proto
-
-
-
-<a name="hello-HelloRequest"></a>
-
-### HelloRequest
+### AdminBgStartRequest.ResourcesEntry
 
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  |  |
-
-
-
-
-
-
-<a name="hello-HelloResponse"></a>
-
-### HelloResponse
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| message | [string](#string) |  |  |
+| key | [string](#string) |  |  |
+| value | [bytes](#bytes) |  |  |
 
 
 
@@ -1204,33 +1418,6 @@ Define the message equivalent of SetupParameters
  
 
  
-
- 
-
-
-
-<a name="v2_hello_hello_service-proto"></a>
-<p align="right"><a href="#top">Top</a></p>
-
-## v2/hello/hello_service.proto
-
-
- 
-
- 
-
- 
-
-
-<a name="hello-Hello"></a>
-
-### Hello
-
-
-| Method Name | Request Type | Response Type | Description |
-| ----------- | ------------ | ------------- | ------------|
-| SayHello | [HelloRequest](#hello-HelloRequest) | [HelloResponse](#hello-HelloResponse) |  |
-| SayHelloStream | [HelloRequest](#hello-HelloRequest) stream | [HelloResponse](#hello-HelloResponse) stream |  |
 
  
 
@@ -1514,80 +1701,6 @@ DomainStrategy defines the strategies for IP address preference when resolving d
 
 
 
-<a name="v2_profile_profile-proto"></a>
-<p align="right"><a href="#top">Top</a></p>
-
-## v2/profile/profile.proto
-
-
-
-<a name="profile-ProfileEntity"></a>
-
-### ProfileEntity
-ProfileEntity defines a profile entity.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| id | [string](#string) |  | Unique identifier for the profile. |
-| name | [string](#string) |  | bool active = 2; // Indicates if the profile is active.
-
-Name of the profile. |
-| url | [string](#string) |  | URL associated with the profile. |
-| last_update | [int64](#int64) |  | Last update time in milliseconds of the profile. |
-| options | [ProfileOptions](#profile-ProfileOptions) |  | Options associated with the profile. |
-| sub_info | [SubscriptionInfo](#profile-SubscriptionInfo) |  | Subscription-related information. |
-| override_hiddify_options | [hiddifyoptions.HiddifyOptions](#hiddifyoptions-HiddifyOptions) |  | Override Hiddify options. |
-
-
-
-
-
-
-<a name="profile-ProfileOptions"></a>
-
-### ProfileOptions
-ProfileOptions defines options for a profile.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| update_interval | [int64](#int64) |  | Update interval in milliseconds. |
-
-
-
-
-
-
-<a name="profile-SubscriptionInfo"></a>
-
-### SubscriptionInfo
-SubscriptionInfo defines subscription-related information.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| upload | [int64](#int64) |  | Upload speed in bytes. |
-| download | [int64](#int64) |  | Download speed in bytes. |
-| total | [int64](#int64) |  | Total data in bytes. |
-| expire | [int64](#int64) |  | Expiration time in milliseconds of the subscription. |
-| web_page_url | [string](#string) |  | URL for the web page. |
-| support_url | [string](#string) |  | URL for support. |
-
-
-
-
-
- 
-
- 
-
- 
-
- 
-
-
-
 <a name="v2_profile_profile_service-proto"></a>
 <p align="right"><a href="#top">Top</a></p>
 
@@ -1686,6 +1799,239 @@ ProfileService defines the RPC methods available for managing profiles.
 | SetActiveProfile | [ProfileRequest](#profile-ProfileRequest) | [.hcommon.Response](#hcommon-Response) | SetActiveProfile sets a profile as active, identified by ID, name, or URL. |
 | AddProfile | [AddProfileRequest](#profile-AddProfileRequest) | [ProfileResponse](#profile-ProfileResponse) | AddProfile adds a new profile using either a URL or the raw profile content. |
 | DeleteProfile | [ProfileRequest](#profile-ProfileRequest) | [.hcommon.Response](#hcommon-Response) | DeleteProfile deletes a profile identified by ID, name, or URL. |
+
+ 
+
+
+
+<a name="v2_profile_profile-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## v2/profile/profile.proto
+
+
+
+<a name="profile-ProfileEntity"></a>
+
+### ProfileEntity
+ProfileEntity defines a profile entity.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| id | [string](#string) |  | Unique identifier for the profile. |
+| name | [string](#string) |  | bool active = 2; // Indicates if the profile is active.
+
+Name of the profile. |
+| url | [string](#string) |  | URL associated with the profile. |
+| last_update | [int64](#int64) |  | Last update time in milliseconds of the profile. |
+| options | [ProfileOptions](#profile-ProfileOptions) |  | Options associated with the profile. |
+| sub_info | [SubscriptionInfo](#profile-SubscriptionInfo) |  | Subscription-related information. |
+| override_hiddify_options | [hiddifyoptions.HiddifyOptions](#hiddifyoptions-HiddifyOptions) |  | Override Hiddify options. |
+
+
+
+
+
+
+<a name="profile-ProfileOptions"></a>
+
+### ProfileOptions
+ProfileOptions defines options for a profile.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| update_interval | [int64](#int64) |  | Update interval in milliseconds. |
+
+
+
+
+
+
+<a name="profile-SubscriptionInfo"></a>
+
+### SubscriptionInfo
+SubscriptionInfo defines subscription-related information.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| upload | [int64](#int64) |  | Upload speed in bytes. |
+| download | [int64](#int64) |  | Download speed in bytes. |
+| total | [int64](#int64) |  | Total data in bytes. |
+| expire | [int64](#int64) |  | Expiration time in milliseconds of the subscription. |
+| web_page_url | [string](#string) |  | URL for the web page. |
+| support_url | [string](#string) |  | URL for support. |
+
+
+
+
+
+ 
+
+ 
+
+ 
+
+ 
+
+
+
+<a name="v2_hcommon_common-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## v2/hcommon/common.proto
+
+
+
+<a name="hcommon-Empty"></a>
+
+### Empty
+
+
+
+
+
+
+
+<a name="hcommon-Response"></a>
+
+### Response
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| code | [ResponseCode](#hcommon-ResponseCode) |  |  |
+| message | [string](#string) |  |  |
+
+
+
+
+
+ 
+
+
+<a name="hcommon-ResponseCode"></a>
+
+### ResponseCode
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| OK | 0 |  |
+| FAILED | 1 |  |
+| AUTH_NEED | 2 |  |
+
+
+ 
+
+ 
+
+ 
+
+
+
+<a name="v2_hello_hello_service-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## v2/hello/hello_service.proto
+
+
+ 
+
+ 
+
+ 
+
+
+<a name="hello-Hello"></a>
+
+### Hello
+
+
+| Method Name | Request Type | Response Type | Description |
+| ----------- | ------------ | ------------- | ------------|
+| SayHello | [HelloRequest](#hello-HelloRequest) | [HelloResponse](#hello-HelloResponse) |  |
+| SayHelloStream | [HelloRequest](#hello-HelloRequest) stream | [HelloResponse](#hello-HelloResponse) stream |  |
+
+ 
+
+
+
+<a name="v2_hello_hello-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## v2/hello/hello.proto
+
+
+
+<a name="hello-HelloRequest"></a>
+
+### HelloRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="hello-HelloResponse"></a>
+
+### HelloResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| message | [string](#string) |  |  |
+
+
+
+
+
+ 
+
+ 
+
+ 
+
+ 
+
+
+
+<a name="extension_extension_service-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## extension/extension_service.proto
+
+
+ 
+
+ 
+
+ 
+
+
+<a name="extension-ExtensionHostService"></a>
+
+### ExtensionHostService
+
+
+| Method Name | Request Type | Response Type | Description |
+| ----------- | ------------ | ------------- | ------------|
+| ListExtensions | [.hcommon.Empty](#hcommon-Empty) | [ExtensionList](#extension-ExtensionList) |  |
+| Connect | [ExtensionRequest](#extension-ExtensionRequest) | [ExtensionResponse](#extension-ExtensionResponse) stream |  |
+| EditExtension | [EditExtensionRequest](#extension-EditExtensionRequest) | [ExtensionActionResult](#extension-ExtensionActionResult) |  |
+| SubmitForm | [SendExtensionDataRequest](#extension-SendExtensionDataRequest) | [ExtensionActionResult](#extension-ExtensionActionResult) |  |
+| Close | [ExtensionRequest](#extension-ExtensionRequest) | [ExtensionActionResult](#extension-ExtensionActionResult) |  |
+| GetUI | [ExtensionRequest](#extension-ExtensionRequest) | [ExtensionActionResult](#extension-ExtensionActionResult) |  |
 
  
 
@@ -1864,37 +2210,6 @@ ProfileService defines the RPC methods available for managing profiles.
  
 
  
-
- 
-
-
-
-<a name="extension_extension_service-proto"></a>
-<p align="right"><a href="#top">Top</a></p>
-
-## extension/extension_service.proto
-
-
- 
-
- 
-
- 
-
-
-<a name="extension-ExtensionHostService"></a>
-
-### ExtensionHostService
-
-
-| Method Name | Request Type | Response Type | Description |
-| ----------- | ------------ | ------------- | ------------|
-| ListExtensions | [.hcommon.Empty](#hcommon-Empty) | [ExtensionList](#extension-ExtensionList) |  |
-| Connect | [ExtensionRequest](#extension-ExtensionRequest) | [ExtensionResponse](#extension-ExtensionResponse) stream |  |
-| EditExtension | [EditExtensionRequest](#extension-EditExtensionRequest) | [ExtensionActionResult](#extension-ExtensionActionResult) |  |
-| SubmitForm | [SendExtensionDataRequest](#extension-SendExtensionDataRequest) | [ExtensionActionResult](#extension-ExtensionActionResult) |  |
-| Close | [ExtensionRequest](#extension-ExtensionRequest) | [ExtensionActionResult](#extension-ExtensionActionResult) |  |
-| GetUI | [ExtensionRequest](#extension-ExtensionRequest) | [ExtensionActionResult](#extension-ExtensionActionResult) |  |
 
  
 

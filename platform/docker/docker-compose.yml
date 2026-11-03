@@ -8,4 +8,3 @@ services:
       CONFIG: "https://github.com/hiddify/hiddify-app/raw/refs/heads/main/test.configs/warp"
     volumes:
       - ./hiddify.json:/hiddify/hiddify.json
-    command: ["/opt/hiddify.sh"]
