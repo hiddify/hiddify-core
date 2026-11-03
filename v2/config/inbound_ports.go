@@ -64,6 +64,10 @@ type proxyListener struct {
 // while the VPN is shared, the LAN sharing port on every address, always asking for the secret
 // (open only if the user removed it). The two are apart, so the local port can stay without a
 // password; on the same port, the shared one takes both, asking for the secret.
+//
+// Only the IPv4 loopback listener sets the system proxy: each listener that does so overwrites the
+// setting as it starts, and the ::1 one, starting last, left Windows pointed at http://[::1]:port,
+// which Telegram and other apps that read the system proxy can not use (5.5.1).
 func proxyListeners(hopt *HiddifyOptions, ipv6 bool) []proxyListener {
 	shared := hopt.AllowConnectionFromLAN && hopt.LanSharingPort > 0
 	var listeners []proxyListener
@@ -78,7 +82,7 @@ func proxyListeners(hopt *HiddifyOptions, ipv6 bool) []proxyListener {
 				addr:        addr,
 				port:        hopt.MixedPort,
 				users:       localUsers(hopt),
-				systemProxy: hopt.SetSystemProxy,
+				systemProxy: hopt.SetSystemProxy && addr.Is4(),
 			})
 		}
 	}

@@ -87,6 +87,18 @@ func TestSystemProxyNeverAsksThisDevice(t *testing.T) {
 	}
 }
 
+// The ::1 listener starts after the 127.0.0.1 one; were it the system proxy too, Windows would be
+// left pointed at http://[::1]:port, which Telegram can not use.
+func TestSystemProxyIsTheIPv4LoopbackOnly(t *testing.T) {
+	got := mixedInbounds(t, `{"set-system-proxy":true,`+ports+`}`)
+	if opts := got["127.0.0.1 12334"]; opts == nil || !opts.SetSystemProxy {
+		t.Fatalf("the IPv4 loopback listener = %+v", opts)
+	}
+	if opts := got["::1 12334"]; opts == nil || opts.SetSystemProxy {
+		t.Fatalf("the IPv6 loopback listener = %+v", opts)
+	}
+}
+
 func TestSharingOnTheLocalPortTakesItOver(t *testing.T) {
 	got := mixedInbounds(t, `{"allow-connection-from-lan":true,`+ports+`,"lan-sharing-port":12334}`)
 	opts := got[":: 12334"]
