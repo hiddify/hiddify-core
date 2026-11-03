@@ -51,6 +51,22 @@ const (
 	speedTestSlowest = 256 << 10
 )
 
+// speedTestSlots are the tests that run at once, of every batch together: a download and an
+// upload asked for together share them, as they share this device's link.
+var speedTestSlots = make(chan struct{}, speedTestParallel)
+
+// proxyTests keeps the tests of one proxy to one at a time: its download and upload at once would
+// share its link, and each measure less than it can.
+var proxyTests sync.Map // tag → *sync.Mutex
+
+// lockProxyTest waits for tag's turn, and returns its release.
+func lockProxyTest(tag string) func() {
+	lock, _ := proxyTests.LoadOrStore(tag, &sync.Mutex{})
+	mutex := lock.(*sync.Mutex)
+	mutex.Lock()
+	return mutex.Unlock
+}
+
 // uploadBlock is what an upload test sends, again and again: random, so nothing on the way can
 // make it smaller, and one block for every test, so 50 MB tests do not take 50 MB of memory each.
 var uploadBlock = sync.OnceValue(func() []byte {
@@ -189,14 +205,15 @@ func (h *HiddifyInstance) SpeedTest(d direction, in *SpeedTestRequest) (*hcommon
 	speedTests.Unlock()
 
 	go func() {
-		slots := make(chan struct{}, speedTestParallel)
 		var wg sync.WaitGroup
 		for _, out := range queued {
 			wg.Add(1)
-			slots <- struct{}{}
+			speedTestSlots <- struct{}{}
 			go func(out adapter.Outbound) {
-				defer func() { <-slots; wg.Done() }()
+				defer func() { <-speedTestSlots; wg.Done() }()
+				release := lockProxyTest(out.Tag())
 				speed, err := measureSpeed(ctx, d, out, size)
+				release()
 				if err != nil {
 					Log(LogLevel_DEBUG, LogType_CORE, d.String(), " test of ", out.Tag(), ": ", err.Error())
 					speed = -1
