@@ -208,6 +208,15 @@ func (h *HiddifyInstance) GetAllProxiesInfo(hismap map[string]*adapter.URLTestHi
 		group.Type = iGroup.Type()
 		_, group.Selectable = iGroup.(*G.Selector)
 		selectedTag := groupNow(iGroup)
+		// a balancer spreading connections (round robin, ...) has no one member in use: the one it
+		// picks next turns with every connection and can be one whose ping failed, which the home
+		// screen took for the user's pick being down. It stands for its fastest member, as its ping
+		// and speeds do.
+		if connectedVia(iGroup) == "" {
+			if best := bestGroupMember(iGroup, h.UrlTestHistory()); best != "" {
+				selectedTag = best
+			}
+		}
 		group.Selected = selectedTag
 
 		// outbounds_converted[iGroup.Tag()].GroupSelectedOutbound = &group.Selected

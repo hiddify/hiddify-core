@@ -112,3 +112,57 @@ func TestBalancerRowSpeaksForItsFastestProxy(t *testing.T) {
 	require.NotNil(t, row, "the balancer has a row")
 	require.Equal(t, int32(120), row.UrlTestDelay, "its ping is its fastest member's")
 }
+
+// The home screen reads the main list, where each group shows the member it uses. A round robin
+// balancer has no one member in use: what it picks next turns with every connection, so a member
+// whose ping failed came up there in turn, and the home screen said the selected proxy was not
+// responding while the balancer, by its ping, worked. It shows its fastest member instead.
+func TestBalancerMainItemIsItsFastestProxy(t *testing.T) {
+	dir := t.TempDir()
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, "data"), 0o755))
+	require.NoError(t, Setup(&SetupRequest{BasePath: dir, WorkingDir: dir, TempDir: dir, Mode: SetupMode_OLD}, nil))
+	plain := hotReloadSettings(t, freeTCPPort(t), "warn")
+	settings := strings.Replace(plain, "{", `{"balancer-strategy":"round-robin",`, 1)
+	_, err := ChangeHiddifySettings(&ChangeHiddifySettingsRequest{HiddifySettingsJson: settings}, false)
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		Stop()
+		_, _ = ChangeHiddifySettings(&ChangeHiddifySettingsRequest{HiddifySettingsJson: plain}, false)
+	})
+	_, err = StartService(static.BaseContext, &StartRequest{ConfigContent: profile(socks("proxy-a", 1080), socks("proxy-b", 1081), socks("proxy-c", 1082))})
+	require.NoError(t, err)
+
+	balance, loaded := static.Box().Outbound().Outbound(config.OutboundRoundRobinTag)
+	require.True(t, loaded)
+	group := balance.(adapter.OutboundGroup)
+	// the member round robin picks next failed its ping; of the other two, the fastest is c
+	next := groupNow(group)
+	require.NotEmpty(t, next)
+	var others []string
+	for _, name := range []string{"proxy-a", "proxy-b", "proxy-c"} {
+		if tag := runningOutbound(t, name).Tag(); tag != next {
+			others = append(others, tag)
+		}
+	}
+	require.Len(t, others, 2)
+	c := others[1]
+	delays := map[string]uint16{next: unreachableDelay, others[0]: 300, c: 120}
+	history := static.UrlTestHistory()
+	hismap := map[string]*adapter.URLTestHistory{}
+	for tag, delay := range delays {
+		history.StoreURLTestHistory(tag, &adapter.URLTestHistory{Delay: delay})
+		hismap[tag] = &adapter.URLTestHistory{Delay: delay}
+	}
+	require.Equal(t, next, groupNow(group), "round robin picks the dead member next")
+
+	info := static.GetAllProxiesInfo(hismap, true)
+	var items []*OutboundInfo
+	for _, g := range info.Items {
+		if g.Tag == config.OutboundRoundRobinTag {
+			items = g.Items
+		}
+	}
+	require.Len(t, items, 1, "the main list shows one member of the balancer")
+	require.Equal(t, c, items[0].Tag, "the member it shows is its fastest")
+	require.True(t, items[0].IsSelected)
+}
