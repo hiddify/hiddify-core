@@ -140,6 +140,7 @@ message OutboundInfo {
   bool download_testing = 22; // a download test runs through it now
   bool upload_speed_cached = 23; // upload_speed is from an earlier run, kept until a new test
   bool download_speed_cached = 24; // download_speed is from an earlier run, kept until a new test
+  string error = 25; // why it failed: the error of its last URL test, or why it is not ready (WARP, MASQUE); empty when it works or does not say
 }
 
 message IpInfo {

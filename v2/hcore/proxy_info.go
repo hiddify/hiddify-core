@@ -132,6 +132,8 @@ func (h *HiddifyInstance) GetProxyInfo(url_test_history *adapter.URLTestHistory,
 		out.UrlTestDelay = int32(url_test_history.Delay)
 		if url_test_history.IsFromCache {
 			out.UrlTestDelay = 0
+		} else {
+			out.Error = url_test_history.Error // why its last URL test failed
 		}
 		if url_test_history.IpInfo != nil {
 			out.Ipinfo = &IpInfo{
@@ -148,6 +150,10 @@ func (h *HiddifyInstance) GetProxyInfo(url_test_history *adapter.URLTestHistory,
 			}
 		}
 
+	}
+	// not ready, so not tested: why it is not ready says more than an earlier test did
+	if err := adapter.StatusError(detour); err != nil {
+		out.Error = err.Error()
 	}
 	if deps := detour.Dependencies(); len(deps) == 1 {
 		out.Detour = deps[0]

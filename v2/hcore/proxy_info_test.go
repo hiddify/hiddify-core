@@ -166,3 +166,31 @@ func TestBalancerMainItemIsItsFastestProxy(t *testing.T) {
 	require.Equal(t, c, items[0].Tag, "the member it shows is its fastest")
 	require.True(t, items[0].IsSelected)
 }
+
+// fakeFailing is an outbound that is not ready and says why.
+type fakeFailing struct {
+	fakeGroup
+	err error
+}
+
+func (f *fakeFailing) Status() adapter.Status { return adapter.StatusFailed }
+func (f *fakeFailing) StatusError() error     { return f.err }
+
+// The app shows why a proxy failed: the error of its last URL test, or why it is not ready. A
+// result from the cache has no error to show, as it has no ping.
+func TestProxyInfoCarriesTheError(t *testing.T) {
+	h := &HiddifyInstance{}
+	ready := &fakeGroup{tag: "proxy"}
+	info := h.GetProxyInfo(&adapter.URLTestHistory{Delay: unreachableDelay, Error: "tls: handshake failure"}, ready)
+	require.Equal(t, "tls: handshake failure", info.Error)
+
+	info = h.GetProxyInfo(&adapter.URLTestHistory{Delay: unreachableDelay, Error: "old", IsFromCache: true}, ready)
+	require.Empty(t, info.Error, "a cached result is from an earlier run")
+
+	info = h.GetProxyInfo(&adapter.URLTestHistory{Delay: 120}, ready)
+	require.Empty(t, info.Error)
+
+	failing := &fakeFailing{fakeGroup: fakeGroup{tag: "warp"}, err: errors.New("register WARP MASQUE device: 403")}
+	info = h.GetProxyInfo(&adapter.URLTestHistory{Delay: unreachableDelay, Error: "dial: endpoint not initialized"}, failing)
+	require.Equal(t, "register WARP MASQUE device: 403", info.Error, "why it is not ready comes first")
+}
