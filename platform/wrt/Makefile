@@ -31,7 +31,7 @@ GO_PKG_LDFLAGS_X:= \
 	$(GO_PKG)/v2/hcommon/constants.Version=$(PKG_VERSION) \
 	github.com/sagernet/sing-box/constant.Version=$(PKG_VERSION)
 # keep in sync with WRT_TAGS in the repository's Makefile
-GO_PKG_TAGS:=with_gvisor,with_quic,with_wireguard,with_utls,with_clash_api,with_grpc,with_awg,tfogo_checklinkname0,with_conntrack,with_embedded_tor,with_openvpn,with_openconnect,with_masque,with_kcp,with_sudoku,with_bond,with_dhcp,with_low_memory
+GO_PKG_TAGS:=with_gvisor,with_quic,with_wireguard,with_utls,with_clash_api,with_grpc,with_awg,tfogo_checklinkname0,with_conntrack,with_embedded_tor,with_openvpn,with_openconnect,with_masque,with_kcp,with_sudoku,with_bond,with_call,with_xdrive,with_v2ray_api,with_dhcp,with_low_memory
 
 include $(INCLUDE_DIR)/package.mk
 include $(TOPDIR)/feeds/packages/lang/golang/golang-package.mk
