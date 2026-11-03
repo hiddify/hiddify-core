@@ -15,7 +15,6 @@ require (
 	github.com/improbable-eng/grpc-web v0.15.0
 	github.com/jellydator/validation v1.1.0
 	github.com/kardianos/service v1.2.2
-	github.com/miekg/dns v1.1.73
 	github.com/quic-go/quic-go v0.59.0
 	github.com/sagernet/gomobile v0.1.12
 	github.com/sagernet/sing v0.9.7-0.20261023115510-03a6cce64bf7
@@ -162,6 +161,7 @@ require (
 	github.com/metacubex/mlkem v0.1.0 // indirect
 	github.com/metacubex/utls v1.8.7 // indirect
 	github.com/mholt/acmez/v3 v3.1.6 // indirect
+	github.com/miekg/dns v1.1.73 // indirect
 	github.com/mitchellh/go-ps v1.0.0 // indirect
 	github.com/mroth/weightedrand v1.0.0 // indirect
 	github.com/net2share/vaydns v0.2.8 // indirect
