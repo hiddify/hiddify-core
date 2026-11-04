@@ -21,10 +21,20 @@ func chownSecret(path, owner string) error {
 			account = current.Username
 		}
 	}
-	err := acl.Apply(path, true, false,
+	// SYSTEM and Administrators are granted by well-known SID: their names are
+	// localized on non-English Windows, so a name lookup fails there.
+	system, err := windows.CreateWellKnownSid(windows.WinLocalSystemSid)
+	if err != nil {
+		return fmt.Errorf("resolve SYSTEM sid: %w", err)
+	}
+	admins, err := windows.CreateWellKnownSid(windows.WinBuiltinAdministratorsSid)
+	if err != nil {
+		return fmt.Errorf("resolve Administrators sid: %w", err)
+	}
+	err = acl.Apply(path, true, false,
 		acl.GrantName(windows.GENERIC_READ, account),
-		acl.GrantName(windows.GENERIC_ALL, `NT AUTHORITY\SYSTEM`),
-		acl.GrantName(windows.GENERIC_ALL, `BUILTIN\Administrators`),
+		acl.GrantSid(windows.GENERIC_ALL, system),
+		acl.GrantSid(windows.GENERIC_ALL, admins),
 	)
 	if err != nil {
 		return fmt.Errorf("restrict tunnel secret ACL for %s: %w", account, err)
