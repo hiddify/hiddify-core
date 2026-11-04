@@ -5,7 +5,7 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=hiddify-core
-PKG_VERSION:=5.5.0
+PKG_VERSION:=5.5.5
 PKG_RELEASE:=1
 
 # From git at the version's tag, with the submodules (hiddify-sing-box, ray2sing, the forks under
