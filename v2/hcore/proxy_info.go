@@ -196,6 +196,9 @@ func (h *HiddifyInstance) GetProxyInfo(url_test_history *adapter.URLTestHistory,
 	if url_test_history != nil {
 		out.UrlTestTime = timestamppb.New(url_test_history.Time)
 		out.UrlTestDelay = int32(url_test_history.Delay)
+		// a ping cached from the previous run is not shown and decides nothing; it only orders
+		// the list, and the tests, until the real one arrives
+		out.SortDelay = out.UrlTestDelay
 		if url_test_history.IsFromCache {
 			out.UrlTestDelay = 0
 		} else {

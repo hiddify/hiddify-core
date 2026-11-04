@@ -141,6 +141,7 @@ message OutboundInfo {
   bool upload_speed_cached = 23; // upload_speed is from an earlier run, kept until a new test
   bool download_speed_cached = 24; // download_speed is from an earlier run, kept until a new test
   string error = 25; // why it failed: the error of its last URL test, or why it is not ready (WARP, MASQUE); empty when it works or does not say
+  int32 sort_delay = 26; // what to sort by: url_test_delay, or the delay cached from the previous run, which is not shown; 0 untested
 }
 
 message IpInfo {
