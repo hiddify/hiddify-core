@@ -28,6 +28,8 @@ github.com/Leadaxe/utls-lx v1.8.8-0.20261011005638-ad69b191e2f8 h1:zPtCcZOcrs251
 github.com/Leadaxe/utls-lx v1.8.8-0.20261011005638-ad69b191e2f8/go.mod h1:kncGGVhFaoGn5M3pFe3SXhZCzsbCJayNOH4UEqTKTko=
 github.com/OneOfOne/xxhash v1.2.2 h1:KMrpdQIwFcEqXDklaen+P1axHaj9BSKzvpUUfnHldSE=
 github.com/OneOfOne/xxhash v1.2.2/go.mod h1:HSdplMjZKSmBqAxg5vPj2TmRDmfkzw+cTzAElWljhcU=
+github.com/PoriyaVali/mirage v0.2.1-0.20261024195444-7c21af6f60d8 h1:mQm6jWXMZCaQ8wz5klwH8L2G10Ozk5pZ3IG5D2FR91s=
+github.com/PoriyaVali/mirage v0.2.1-0.20261024195444-7c21af6f60d8/go.mod h1:r7kBmGTEQc/t78oI5lDOLRWu6xA9XHmbeiGQbJMtkk4=
 github.com/Psiphon-Inc/rotate-safe-writer v0.0.0-20210303140923-464a7a37606e h1:NPfqIbzmijrl0VclX2t8eO5EPBhqe47LLGKpRrcVjXk=
 github.com/Psiphon-Inc/rotate-safe-writer v0.0.0-20210303140923-464a7a37606e/go.mod h1:ZdY5pBfat/WVzw3eXbIf7N1nZN0XD5H5+X8ZMDWbCs4=
 github.com/Psiphon-Inc/uds-ipc v1.0.1 h1:K3Z0cS1XfzDdhxWTIwh/hiLrkRR83ZxUo2bqgBOGuZE=

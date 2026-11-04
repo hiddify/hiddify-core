@@ -47,6 +47,7 @@ require (
 	github.com/DataDog/zstd v1.4.1 // indirect
 	github.com/Diniboy1123/connect-ip-go v0.0.0-20260613064811-66cba32d7d33 // indirect
 	github.com/Jigsaw-Code/outline-sdk v0.0.20 // indirect
+	github.com/PoriyaVali/mirage v0.2.1-0.20261024195444-7c21af6f60d8 // indirect
 	github.com/Psiphon-Labs/bolt v0.0.0-20200624191537-23cedaef7ad7 // indirect
 	github.com/Psiphon-Labs/consistent v0.0.0-20240322131436-20aaa4e05737 // indirect
 	github.com/Psiphon-Labs/goptlib v0.0.0-20200406165125-c0e32a7a3464 // indirect
