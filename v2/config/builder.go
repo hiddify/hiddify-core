@@ -23,8 +23,8 @@ import (
 // against the jitter of close pings (25 ms is not left for 22 ms). An absolute 100 ms kept a
 // 59 ms member over a 25 ms one.
 const (
-	BalancerTolerance      uint16 = 20
-	BalancerToleranceRatio        = 0.3
+	BalancerTolerance      uint16 = 30
+	BalancerToleranceRatio        = 0.2
 )
 
 const (
@@ -297,8 +297,8 @@ func setOutbounds(options *option.Options, input *option.Options, opt *HiddifyOp
 			// URLs:      opt.ConnectionTestUrls,
 			// Interval:  badoption.Duration(opt.URLTestInterval.Duration()),
 			// IdleTimeout: badoption.Duration(opt.URLTestIdleTimeout.Duration()),
-			Tolerance:      BalancerTolerance,
-			ToleranceRatio: BalancerToleranceRatio,
+			// no tolerance: it is lowest-delay's, and the pool reads it too, and with it a faster
+			// member outside would take a slot, moving its sticky keys
 			// IdleTimeout:               badoption.Duration(opt.URLTestInterval.Duration().Nanoseconds() * 3),
 			InterruptExistConnections: true,
 		},
