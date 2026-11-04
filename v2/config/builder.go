@@ -18,6 +18,15 @@ import (
 	"github.com/sagernet/sing/common/json/badoption"
 )
 
+// A balancer's member takes the selection when faster by more than the larger of the two: a
+// share of the selected member's delay (100 ms is left for 60 ms, not for 90 ms), with a floor
+// against the jitter of close pings (25 ms is not left for 22 ms). An absolute 100 ms kept a
+// 59 ms member over a 25 ms one.
+const (
+	BalancerTolerance      uint16 = 20
+	BalancerToleranceRatio        = 0.3
+)
+
 const (
 	DNSRemoteTag         = "dns-remote"
 	DNSRemoteTagFallback = "dns-remote-fallback"
@@ -270,8 +279,8 @@ func setOutbounds(options *option.Options, input *option.Options, opt *HiddifyOp
 			// URLs:      opt.ConnectionTestUrls,
 			// Interval:  badoption.Duration(opt.URLTestInterval.Duration()),
 			// IdleTimeout: badoption.Duration(opt.URLTestIdleTimeout.Duration()),
-			Tolerance:      100,
-			ToleranceRatio: 0.1,
+			Tolerance:      BalancerTolerance,
+			ToleranceRatio: BalancerToleranceRatio,
 			// IdleTimeout:               badoption.Duration(opt.URLTestInterval.Duration().Nanoseconds() * 3),
 			InterruptExistConnections: true,
 		},
@@ -288,8 +297,8 @@ func setOutbounds(options *option.Options, input *option.Options, opt *HiddifyOp
 			// URLs:      opt.ConnectionTestUrls,
 			// Interval:  badoption.Duration(opt.URLTestInterval.Duration()),
 			// IdleTimeout: badoption.Duration(opt.URLTestIdleTimeout.Duration()),
-			Tolerance:      100,
-			ToleranceRatio: 0.1,
+			Tolerance:      BalancerTolerance,
+			ToleranceRatio: BalancerToleranceRatio,
 			// IdleTimeout:               badoption.Duration(opt.URLTestInterval.Duration().Nanoseconds() * 3),
 			InterruptExistConnections: true,
 		},
@@ -309,7 +318,13 @@ func setOutbounds(options *option.Options, input *option.Options, opt *HiddifyOp
 	if len(tags) > 1 {
 		outbounds = append([]option.Outbound{balancer, urlTest}, outbounds...)
 		selectorTags = append([]string{urlTest.Tag, balancer.Tag}, selectorTags...)
-		defaultSelect = balancer.Tag
+		switch opt.DefaultProxy {
+		case DefaultProxyLowest:
+			defaultSelect = urlTest.Tag
+		case DefaultProxyFirst:
+		default:
+			defaultSelect = balancer.Tag
+		}
 	}
 	selector := option.Outbound{
 		Type: C.TypeSelector,

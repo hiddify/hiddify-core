@@ -10,6 +10,12 @@ import (
 	"github.com/sagernet/sing-box/option"
 )
 
+// The values of HiddifyOptions.DefaultProxy besides the balancer, its default.
+const (
+	DefaultProxyLowest = "lowest"
+	DefaultProxyFirst  = "first"
+)
+
 type HiddifyOptions struct {
 	EnableFullConfig        bool   `json:"enable-full-config,omitempty" overridable:"true"`
 	LogLevel                string `json:"log-level,omitempty"`
@@ -21,6 +27,10 @@ type HiddifyOptions struct {
 	BlockAds                bool   `json:"block-ads,omitempty" overridable:"true"`
 	UseXrayCoreWhenPossible bool   `json:"use-xray-core-when-possible,omitempty" overridable:"true"`
 	BalancerStrategy        string `json:"balancer-strategy,omitempty" overridable:"true"`
+	// DefaultProxy is what the select group starts on while the user has picked nothing in it yet:
+	// DefaultProxyLowest (the fastest proxy), DefaultProxyFirst (the profile's first proxy, or its
+	// §default§ one) or, unset, the balancer.
+	DefaultProxy string `json:"default-proxy,omitempty" overridable:"true"`
 	// KeepTop, when above 0, runs only that many of a profile's proxies, the fastest by their first
 	// pings, once the profile has more (see hcore's keep top); 0 or -1 runs them all. The profile
 	// sets it, from its `keep-top` header or the user's choice.

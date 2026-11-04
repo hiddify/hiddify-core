@@ -65,7 +65,7 @@ type CoreClient interface {
 	Setup(ctx context.Context, in *SetupRequest, opts ...grpc.CallOption) (*hcommon.Response, error)
 	Parse(ctx context.Context, in *ParseRequest, opts ...grpc.CallOption) (*ParseResponse, error)
 	ChangeHiddifySettings(ctx context.Context, in *ChangeHiddifySettingsRequest, opts ...grpc.CallOption) (*CoreInfoResponse, error)
-	//rpc GenerateConfig (GenerateConfigRequest) returns (GenerateConfigResponse);
+	// rpc GenerateConfig (GenerateConfigRequest) returns (GenerateConfigResponse);
 	StartService(ctx context.Context, in *StartRequest, opts ...grpc.CallOption) (*CoreInfoResponse, error)
 	Stop(ctx context.Context, in *hcommon.Empty, opts ...grpc.CallOption) (*CoreInfoResponse, error)
 	Restart(ctx context.Context, in *StartRequest, opts ...grpc.CallOption) (*CoreInfoResponse, error)
@@ -482,7 +482,7 @@ type CoreServer interface {
 	Setup(context.Context, *SetupRequest) (*hcommon.Response, error)
 	Parse(context.Context, *ParseRequest) (*ParseResponse, error)
 	ChangeHiddifySettings(context.Context, *ChangeHiddifySettingsRequest) (*CoreInfoResponse, error)
-	//rpc GenerateConfig (GenerateConfigRequest) returns (GenerateConfigResponse);
+	// rpc GenerateConfig (GenerateConfigRequest) returns (GenerateConfigResponse);
 	StartService(context.Context, *StartRequest) (*CoreInfoResponse, error)
 	Stop(context.Context, *hcommon.Empty) (*CoreInfoResponse, error)
 	Restart(context.Context, *StartRequest) (*CoreInfoResponse, error)

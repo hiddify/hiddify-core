@@ -41,18 +41,19 @@ func numberDuplicates(names []string) ([]string, *duplicateNames) {
 			continue
 		}
 		if n > 0 {
-			result[i] = d.freeName(name, n+1, count)
+			result[i] = freeName(name, n+1, func(candidate string) bool { return count[candidate] != 0 })
+			count[result[i]] = 1
 		}
 		d.renamed[name] = append(d.renamed[name], result[i])
 	}
 	return result, d
 }
 
-func (d *duplicateNames) freeName(name string, n int, taken map[string]int) string {
+// freeName numbers name ("name § n"), from n up to the first number taken does not know.
+func freeName(name string, n int, taken func(string) bool) string {
 	for {
 		candidate := strings.TrimSpace(name) + " § " + strconv.Itoa(n)
-		if taken[candidate] == 0 {
-			taken[candidate] = 1
+		if !taken(candidate) {
 			return candidate
 		}
 		n++

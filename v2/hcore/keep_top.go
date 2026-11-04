@@ -58,13 +58,18 @@ func buildRunningConfig(ctx context.Context, in *StartRequest) (*option.Options,
 		count = static.HiddifyOptions.KeepTop
 		chosen = static.HiddifyOptions.KeepTags
 	}
-	if in.EnableRawConfig || (count <= 0 && len(chosen) == 0) {
+	if in.EnableRawConfig { // a raw config keeps the tags the user wrote
 		clearKeepTop()
 		return BuildConfig(ctx, in)
 	}
 	input, err := config.ReadSingOptions(ctx, &config.ReadOptions{Content: in.ConfigContent, Path: in.ConfigPath})
 	if err != nil {
 		return nil, err
+	}
+	items := stableProfileTags(ctx, in.ConfigPath, input)
+	if count <= 0 && len(chosen) == 0 {
+		clearKeepTop()
+		return config.BuildConfig(ctx, static.HiddifyOptions, &config.ReadOptions{Options: input})
 	}
 	total := len(config.UserProxyTags(input))
 	// the proxies the user chose run, and only them, while any of them is still in the profile
@@ -78,7 +83,7 @@ func buildRunningConfig(ctx context.Context, in *StartRequest) (*option.Options,
 		clearKeepTop()
 		return config.BuildConfig(ctx, static.HiddifyOptions, &config.ReadOptions{Options: input})
 	}
-	fingerprints := config.ProxyFingerprints(ctx, input)
+	fingerprints := config.Fingerprints(items) // the stable tags' own, so one pass tells both
 
 	keepTop.Lock()
 	keepTop.generation++
@@ -114,8 +119,10 @@ func clearKeepTop() {
 	keepTop.picking, keepTop.freshOnly = false, false
 }
 
-// keptStillGood reports whether every kept proxy is still in the profile, unchanged, and one of
-// them answers; keepTop must be locked.
+// keptStillGood reports whether every kept proxy is still in the profile, unchanged, none of them
+// timed out and one of them answers; keepTop must be locked. A kept proxy that died is replaced
+// by running the whole list again, as at the first pick; the pings of the proxies that did not
+// change stay, so only the others are tested.
 func keptStillGood(fingerprints map[string]string) bool {
 	if len(keepTop.kept) == 0 {
 		return false
@@ -130,12 +137,17 @@ func keptStillGood(fingerprints map[string]string) bool {
 		return false
 	}
 	histories := monitoring.Get(ctx).OutboundsHistory("")
+	alive := false
 	for tag := range keepTop.kept {
-		if pingAlive(historyDelay(histories[tag])) {
-			return true
+		delay := historyDelay(histories[tag])
+		if pingTimedOut(delay) {
+			return false
+		}
+		if pingAlive(delay) {
+			alive = true
 		}
 	}
-	return false
+	return alive
 }
 
 // followKeepTop, run by the connectivity watcher, picks the fastest proxies once their first pings

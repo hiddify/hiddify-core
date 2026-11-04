@@ -55,6 +55,7 @@
     - [SelectOutboundRequest](#hcore-SelectOutboundRequest)
     - [SetSystemProxyEnabledRequest](#hcore-SetSystemProxyEnabledRequest)
     - [SetupRequest](#hcore-SetupRequest)
+    - [SpeedTestRequest](#hcore-SpeedTestRequest)
     - [StartRequest](#hcore-StartRequest)
     - [StopRequest](#hcore-StopRequest)
     - [SystemInfo](#hcore-SystemInfo)
@@ -878,6 +879,13 @@ translate.goog domain front so it reaches users behind GFW-style filters.
 | download | [int64](#int64) |  |  |
 | detour | [string](#string) |  |  |
 | status | [Status](#hcore-Status) |  | ready / connecting / registering / … (outbound or endpoint) |
+| upload_speed | [int64](#int64) |  | bytes a second the last upload test reached; 0 untested, -1 failed |
+| upload_testing | [bool](#bool) |  | an upload test runs through it now |
+| download_speed | [int64](#int64) |  | bytes a second the last download test reached; 0 untested, -1 failed |
+| download_testing | [bool](#bool) |  | a download test runs through it now |
+| upload_speed_cached | [bool](#bool) |  | upload_speed is from an earlier run, kept until a new test |
+| download_speed_cached | [bool](#bool) |  | download_speed is from an earlier run, kept until a new test |
+| error | [string](#string) |  | why it failed: the error of its last URL test, or why it is not ready (WARP, MASQUE); empty when it works or does not say |
 
 
 
@@ -967,6 +975,22 @@ Define the message equivalent of SetupParameters
 | debug | [bool](#bool) |  |  |
 | mode | [SetupMode](#hcore-SetupMode) |  |  |
 | fix_android_stack | [bool](#bool) |  |  |
+
+
+
+
+
+
+<a name="hcore-SpeedTestRequest"></a>
+
+### SpeedTestRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| tag | [string](#string) |  | a proxy, or a group: each of its proxies; none: the proxy the selection uses |
+| size | [int64](#int64) |  | bytes to move through each; 1 MB when 0, at most 50 MB |
 
 
 
@@ -1304,6 +1328,9 @@ Connection state of an outbound or endpoint (mirrors adapter.Status).
 | SelectOutbound | [SelectOutboundRequest](#hcore-SelectOutboundRequest) | [.hcommon.Response](#hcommon-Response) |  |
 | UrlTest | [UrlTestRequest](#hcore-UrlTestRequest) | [.hcommon.Response](#hcommon-Response) |  |
 | UrlTestActive | [.hcommon.Empty](#hcommon-Empty) | [.hcommon.Response](#hcommon-Response) |  |
+| UploadTest | [SpeedTestRequest](#hcore-SpeedTestRequest) | [.hcommon.Response](#hcommon-Response) | Measure the upload or download speed through a proxy, or each proxy of a group, at speed.cloudflare.com; the results come with the outbounds info (upload_speed, download_speed). |
+| DownloadTest | [SpeedTestRequest](#hcore-SpeedTestRequest) | [.hcommon.Response](#hcommon-Response) |  |
+| ClearSpeedTests | [.hcommon.Empty](#hcommon-Empty) | [.hcommon.Response](#hcommon-Response) | Forgets every speed test result, of this run and the earlier ones kept. |
 | GenerateWarpConfig | [GenerateWarpConfigRequest](#hcore-GenerateWarpConfigRequest) | [WarpGenerationResponse](#hcore-WarpGenerationResponse) |  |
 | GetSystemProxyStatus | [.hcommon.Empty](#hcommon-Empty) | [SystemProxyStatus](#hcore-SystemProxyStatus) |  |
 | SetSystemProxyEnabled | [SetSystemProxyEnabledRequest](#hcore-SetSystemProxyEnabledRequest) | [.hcommon.Response](#hcommon-Response) |  |

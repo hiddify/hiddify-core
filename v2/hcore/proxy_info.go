@@ -2,7 +2,9 @@ package hcore
 
 import (
 	"context"
+	"slices"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/hiddify/hiddify-core/v2/config"
@@ -36,30 +38,94 @@ func connectedVia(group adapter.OutboundGroup) string {
 	return groupNow(group)
 }
 
-// unreachableDelay is the delay a failed URL test records, as in the monitoring service.
-const unreachableDelay uint16 = 65535
+// unreachableDelay is the delay a failed URL test records.
+const unreachableDelay = monitoring.TimeoutDelay
 
 // bestGroupMember returns the member of a group with the lowest known delay. A balancer has no
 // selection before its first pick, and its group tag would otherwise be taken for the outbound
 // carrying traffic.
 func bestGroupMember(group adapter.OutboundGroup, history adapter.URLTestHistoryStorage) string {
 	best := ""
-	bestDelay := unreachableDelay
+	var bestRank uint32
 	for _, tag := range group.All() {
-		var delay uint16
-		if history != nil {
-			if his := history.LoadURLTestHistory(tag); his != nil {
-				delay = his.Delay
-			}
-		}
-		if delay == 0 || delay >= unreachableDelay {
-			continue
-		}
-		if delay < bestDelay {
-			best, bestDelay = tag, delay
+		if rank := memberRank(history, tag); rank > 0 && (best == "" || rank < bestRank) {
+			best, bestRank = tag, rank
 		}
 	}
 	return best
+}
+
+// memberRank orders members by ping as the balancers do (balancer.Rank: a real ping that works
+// before a cached one), and 0 for none or a failed one, which does not count.
+func memberRank(history adapter.URLTestHistoryStorage, tag string) uint32 {
+	his := memberHistory(history, tag)
+	if his == nil || his.Delay == 0 || his.Delay >= unreachableDelay {
+		return 0
+	}
+	return uint32(balancer.Rank(his))
+}
+
+func memberHistory(history adapter.URLTestHistoryStorage, tag string) *adapter.URLTestHistory {
+	if history == nil {
+		return nil
+	}
+	return history.LoadURLTestHistory(tag)
+}
+
+// spreadMember is the member a balancer that spreads connections stands for, in the app: its
+// fastest by ping (memberRank: a real ping before a cached one), kept as the results come. Another
+// member takes the place of one with a real ping only when faster by more than the balancers'
+// tolerance, or when it stops answering; of one with a cached ping, when better at all; while a
+// regular test cycle runs, only when it stops answering. Taking the fastest at every result moved
+// the row between members a few milliseconds apart, so the ping the app showed jumped up and down
+// with every test.
+func spreadMember(group adapter.OutboundGroup, history adapter.URLTestHistoryStorage) string {
+	best := bestGroupMember(group, history)
+	shown.access.Lock()
+	defer shown.access.Unlock()
+	current := shown.members[group.Tag()]
+	if current != "" && slices.Contains(group.All(), current) && keepsShown(history, current, best) {
+		return current
+	}
+	if best != "" {
+		shown.members[group.Tag()] = best
+	}
+	return best
+}
+
+// keepsShown says whether the member shown stays for best, the fastest now (see spreadMember).
+func keepsShown(history adapter.URLTestHistoryStorage, current, best string) bool {
+	rank := memberRank(history, current)
+	if rank == 0 {
+		return false // it stopped answering
+	}
+	if periodicCycleRunning() || best == "" || best == current {
+		return true
+	}
+	// the balancers' rule: the tolerance keeps a real ping from jitter, a cached one is left for
+	// any better
+	threshold := balancer.SelectedThreshold(memberHistory(history, current), config.BalancerTolerance, config.BalancerToleranceRatio)
+	return memberRank(history, best)+threshold >= rank
+}
+
+// shown is the member each spreading balancer stands for now (spreadMember).
+var shown = struct {
+	access  sync.Mutex
+	members map[string]string
+}{members: map[string]string{}}
+
+// periodicCycleRunning reports a regular test cycle of the schedule in progress, during which the
+// balancer holds its members (not the first cycle after start, nor one after a network change).
+func periodicCycleRunning() bool {
+	if static == nil {
+		return false
+	}
+	if ctx := static.Context(); ctx != nil {
+		if monitor := monitoring.Get(ctx); monitor != nil {
+			return monitor.PeriodicCycleRunning()
+		}
+	}
+	return false
 }
 
 // resolveActiveOutbound walks down the selected chain to the outbound that actually carries
@@ -78,7 +144,7 @@ func resolveActiveOutbound(box *sbox.Box, tag string, history adapter.URLTestHis
 		}
 		next := connectedVia(group)
 		if next == "" {
-			next = bestGroupMember(group, history)
+			next = spreadMember(group, history)
 		}
 		if next == "" || next == tag {
 			return tag
@@ -216,11 +282,11 @@ func (h *HiddifyInstance) GetAllProxiesInfo(hismap map[string]*adapter.URLTestHi
 		selectedTag := groupNow(iGroup)
 		// a balancer spreading connections (round robin, ...) has no one member in use: the one it
 		// picks next turns with every connection and can be one whose ping failed, which the home
-		// screen took for the user's pick being down. It stands for its fastest member, as its ping
-		// and speeds do.
+		// screen took for the user's pick being down. It stands for the member it ranks first, as
+		// its ping and speeds do (spreadMember).
 		if connectedVia(iGroup) == "" {
-			if best := bestGroupMember(iGroup, h.UrlTestHistory()); best != "" {
-				selectedTag = best
+			if member := spreadMember(iGroup, h.UrlTestHistory()); member != "" {
+				selectedTag = member
 			}
 		}
 		group.Selected = selectedTag

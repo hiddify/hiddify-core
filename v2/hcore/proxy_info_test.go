@@ -9,6 +9,9 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
+
+	"github.com/sagernet/sing-box/common/monitoring"
 
 	"github.com/hiddify/hiddify-core/v2/config"
 	"github.com/sagernet/sing-box/adapter"
@@ -86,6 +89,7 @@ func TestBalancerRowSpeaksForItsFastestProxy(t *testing.T) {
 	require.NoError(t, err)
 
 	a, b, c := runningOutbound(t, "proxy-a").Tag(), runningOutbound(t, "proxy-b").Tag(), runningOutbound(t, "proxy-c").Tag()
+	waitForMonitorQuiet(t, a, b, c) // its own results of the refused proxies would overwrite the test's
 	delays := map[string]uint16{a: 300, b: 120, c: 200}
 	history := static.UrlTestHistory()
 	hismap := map[string]*adapter.URLTestHistory{}
@@ -193,4 +197,84 @@ func TestProxyInfoCarriesTheError(t *testing.T) {
 	failing := &fakeFailing{fakeGroup: fakeGroup{tag: "warp"}, err: errors.New("register WARP MASQUE device: 403")}
 	info = h.GetProxyInfo(&adapter.URLTestHistory{Delay: unreachableDelay, Error: "dial: endpoint not initialized"}, failing)
 	require.Equal(t, "register WARP MASQUE device: 403", info.Error, "why it is not ready comes first")
+}
+
+// A spreading balancer's row keeps the member it shows while another is faster by no more than
+// the balancers' tolerance (the larger of 20 ms and 0.3 of its delay): taking the fastest at every result
+// moved the row between members a few milliseconds apart, and the ping it showed jumped up and
+// down. A member clearly faster, or the shown one failing, moves it.
+func TestSpreadMemberKeepsItsMemberWithinTheTolerance(t *testing.T) {
+	group := &fakeGroup{tag: "spread-test", all: []string{"a", "b", "c"}}
+	history := urltest.NewHistoryStorage()
+	set := func(delays map[string]uint16) {
+		for tag, delay := range delays {
+			storePing(history, tag, delay, false)
+		}
+	}
+	set(map[string]uint16{"a": 29, "b": 44, "c": 33})
+	require.Equal(t, "a", spreadMember(group, history), "the fastest at first")
+	set(map[string]uint16{"a": 44, "b": 33, "c": 40})
+	require.Equal(t, "a", spreadMember(group, history), "11 ms faster is within the 20 ms floor")
+	set(map[string]uint16{"a": 600, "b": 33, "c": 40})
+	require.Equal(t, "b", spreadMember(group, history), "far faster")
+	set(map[string]uint16{"a": 1020, "b": 1000, "c": 940})
+	require.Equal(t, "b", spreadMember(group, history), "60 ms faster is within 0.3 of 1000 ms")
+	set(map[string]uint16{"a": 30, "b": unreachableDelay, "c": 940})
+	require.Equal(t, "a", spreadMember(group, history), "the shown one failed: the fastest")
+}
+
+// A real ping comes before every cached one in the row, and a cached one before a failed one; the
+// tolerance keeps only a real ping.
+func TestSpreadMemberRanksRealPingsBeforeCached(t *testing.T) {
+	group := &fakeGroup{tag: "rank-test", all: []string{"a", "b", "c"}}
+	history := urltest.NewHistoryStorage()
+	set := func(tag string, delay uint16, cached bool) { storePing(history, tag, delay, cached) }
+	set("a", 15, true)
+	set("b", 40, true)
+	require.Equal(t, "a", spreadMember(group, history), "only cached pings: the best of them")
+	set("b", 10, true)
+	require.Equal(t, "b", spreadMember(group, history), "a cached one is left for any better")
+	set("c", 300, false)
+	require.Equal(t, "c", spreadMember(group, history), "a real ping before every cached one")
+	set("a", 260, false)
+	require.Equal(t, "c", spreadMember(group, history), "between real pings, the tolerance")
+	set("c", unreachableDelay, false)
+	require.Equal(t, "a", spreadMember(group, history), "a failed one is left for a real ping that works")
+	set("a", unreachableDelay, false)
+	require.Equal(t, "b", spreadMember(group, history), "with no real ping that works, a cached one")
+}
+
+// storePing records a result for tag with the flag given: the storage's own store keeps an
+// existing entry's flags and updates its delay only.
+func storePing(history adapter.URLTestHistoryStorage, tag string, delay uint16, cached bool) {
+	if his := history.LoadURLTestHistory(tag); his != nil {
+		his.Delay, his.IsFromCache = delay, cached
+		return
+	}
+	history.StoreURLTestHistory(tag, &adapter.URLTestHistory{Delay: delay, IsFromCache: cached})
+}
+
+// waitForMonitorQuiet waits until the running monitor has a result for each tag and has written
+// none for a while: the first cycle and the selection's staged test are over.
+func waitForMonitorQuiet(t *testing.T, tags ...string) {
+	t.Helper()
+	monitor := monitoring.Get(static.Context())
+	require.NotNil(t, monitor)
+	last := map[string]time.Time{}
+	quietSince := time.Now()
+	require.Eventually(t, func() bool {
+		histories := monitor.OutboundsHistory("")
+		for _, tag := range tags {
+			his := histories[tag]
+			if his == nil || his.Delay == 0 {
+				quietSince = time.Now()
+				return false
+			}
+			if !his.Time.Equal(last[tag]) {
+				last[tag] = his.Time
+				quietSince = time.Now()
+			}
+		}
+		return time.Since(quietSince) > 1500*time.Millisecond
+	}, 20*time.Second, 50*time.Millisecond, "the monitor did not go quiet")
 }

@@ -5,6 +5,8 @@ import (
 	"slices"
 	"testing"
 
+	"github.com/sagernet/sing-box/option"
+
 	"github.com/sagernet/sing-box/experimental/libbox"
 )
 
@@ -35,7 +37,14 @@ func TestFingerprintsChangeWithTheProxy(t *testing.T) {
 	before, _ := ReadSingOptions(ctx, &ReadOptions{Content: keepTopProfile})
 	after, _ := ReadSingOptions(ctx, &ReadOptions{Content: keepTopProfile})
 	after.Outbounds[0].Options = before.Outbounds[4].Options // a now points where e does
-	old, new := ProxyFingerprints(ctx, before), ProxyFingerprints(ctx, after)
+	fingerprints := func(options *option.Options) map[string]string {
+		items, _, err := StableProxyTags(ctx, options, nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return Fingerprints(items)
+	}
+	old, new := fingerprints(before), fingerprints(after)
 	if old["a"] == new["a"] {
 		t.Fatal("a changed, its fingerprint did not")
 	}

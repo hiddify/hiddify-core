@@ -2,8 +2,6 @@ package config
 
 import (
 	"context"
-	"crypto/sha256"
-	"encoding/hex"
 	"encoding/json"
 	"slices"
 	"strings"
@@ -59,34 +57,6 @@ func isUserProxy(tag, typ string) bool {
 	return true
 }
 
-// ProxyFingerprints tells each proxy of the profile by its options, so a proxy whose tag stayed
-// but whose server or settings changed is seen as another one.
-func ProxyFingerprints(ctx context.Context, input *option.Options) map[string]string {
-	fingerprints := make(map[string]string)
-	add := func(tag string, content []byte, err error) {
-		if err != nil {
-			return
-		}
-		sum := sha256.Sum256(content)
-		fingerprints[tag] = hex.EncodeToString(sum[:])
-	}
-	for i := range input.Outbounds {
-		out := &input.Outbounds[i]
-		if isUserProxy(out.Tag, out.Type) && !isDNSOutbound(*out) {
-			content, err := out.MarshalJSONContext(ctx)
-			add(out.Tag, content, err)
-		}
-	}
-	for i := range input.Endpoints {
-		end := &input.Endpoints[i]
-		if isUserProxy(end.Tag, end.Type) {
-			content, err := end.MarshalJSONContext(ctx)
-			add(end.Tag, content, err)
-		}
-	}
-	return fingerprints
-}
-
 // KeepOnlyProxies drops the profile's proxies that are not in keep, except those a kept one goes
 // through (its detour, and theirs), and returns how many were dropped.
 func KeepOnlyProxies(ctx context.Context, input *option.Options, keep map[string]bool) int {
@@ -140,22 +110,27 @@ func addDetours(content []byte, needed map[string]bool) {
 	if json.Unmarshal(content, &value) != nil {
 		return
 	}
-	var walk func(any)
-	walk = func(v any) {
-		switch v := v.(type) {
-		case map[string]any:
-			for key, item := range v {
-				if tag, ok := item.(string); ok && key == "detour" && tag != "" {
-					needed[tag] = true
-				} else {
-					walk(item)
-				}
-			}
-		case []any:
-			for _, item := range v {
-				walk(item)
+	walkJSON(value, func(object map[string]any, key string, field any) bool {
+		if tag, ok := field.(string); ok && key == "detour" && tag != "" {
+			needed[tag] = true
+		}
+		return true
+	})
+}
+
+// walkJSON visits every field of every object in a JSON tree, depth first: visit gets the object,
+// the key and the field, and says whether to go on into the field.
+func walkJSON(value any, visit func(object map[string]any, key string, field any) bool) {
+	switch v := value.(type) {
+	case map[string]any:
+		for key, field := range v {
+			if visit(v, key, field) {
+				walkJSON(field, visit)
 			}
 		}
+	case []any:
+		for _, field := range v {
+			walkJSON(field, visit)
+		}
 	}
-	walk(value)
 }
