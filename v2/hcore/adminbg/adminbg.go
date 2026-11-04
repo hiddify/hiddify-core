@@ -58,7 +58,9 @@ func Authenticate(ctx context.Context, secret string) error {
 	return nil
 }
 
-// AllowCoreMethod exposes only observability and proxy selection. Lifecycle, file paths and
+// AllowCoreMethod exposes only observability, proxy selection and proxy tests (URL and speed
+// tests, which take a proxy tag and a size of at most 50 MB), and the diagnostics the app adds to
+// its own report (AllowCoreRequest limits those to the inline form). Lifecycle, file paths and
 // system proxy settings must never reach the privileged engine over these methods.
 func AllowCoreMethod(method string) error {
 	switch method {
@@ -66,10 +68,26 @@ func AllowCoreMethod(method string) error {
 		hcore.Core_OutboundsInfo_FullMethodName, hcore.Core_MainOutboundsInfo_FullMethodName,
 		hcore.Core_GetSystemInfo_FullMethodName, hcore.Core_GetSystemInfoStream_FullMethodName,
 		hcore.Core_LogListener_FullMethodName, hcore.Core_SelectOutbound_FullMethodName,
-		hcore.Core_UrlTest_FullMethodName, hcore.Core_UrlTestActive_FullMethodName:
+		hcore.Core_UrlTest_FullMethodName, hcore.Core_UrlTestActive_FullMethodName,
+		hcore.Core_UploadTest_FullMethodName, hcore.Core_DownloadTest_FullMethodName,
+		hcore.Core_ClearSpeedTests_FullMethodName, hcore.Core_ExportDiagnostics_FullMethodName:
 		return nil
 	}
 	return status.Error(codes.PermissionDenied, "method not allowed on the tunnel control service")
+}
+
+// AllowCoreRequest checks the arguments of an allowed call. Diagnostics are only returned inline:
+// a destination path would let the caller write as the privileged engine anywhere, and extra
+// files would let it put its own files there.
+func AllowCoreRequest(method string, req any) error {
+	if method != hcore.Core_ExportDiagnostics_FullMethodName {
+		return nil
+	}
+	diagnostics, ok := req.(*hcore.ExportDiagnosticsRequest)
+	if !ok || !diagnostics.Inline || diagnostics.DestinationPath != "" || len(diagnostics.ExtraFiles) > 0 {
+		return status.Error(codes.PermissionDenied, "only inline diagnostics, without a path or files, on the tunnel control service")
+	}
+	return nil
 }
 
 func ServerOptions(secret string, allow func(string) error) []grpc.ServerOption {
@@ -82,6 +100,9 @@ func ServerOptions(secret string, allow func(string) error) []grpc.ServerOption 
 				return nil, err
 			}
 			if err := allow(info.FullMethod); err != nil {
+				return nil, err
+			}
+			if err := AllowCoreRequest(info.FullMethod, req); err != nil {
 				return nil, err
 			}
 			return handler(ctx, req)
