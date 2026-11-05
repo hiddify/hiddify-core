@@ -370,3 +370,5 @@ replace github.com/metacubex/utls => github.com/Leadaxe/utls-lx v1.8.8-0.2026101
 replace masterdnsvpn-go => ./hiddify-sing-box/replace/MasterDnsVPN
 
 replace github.com/getlantern/soar => ./hiddify-sing-box/replace/soar
+
+replace github.com/sagernet/sing => ./hiddify-sing-box/replace/sing
