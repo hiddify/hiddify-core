@@ -130,12 +130,13 @@ webui:
 .PHONY: windows-winres
 windows-winres:
 	go install github.com/tc-hib/go-winres@$(GO_WINRES_VERSION)
-	rm -f ./platform/desktop/rsrc_windows_*.syso ./cmd/clilauncher/rsrc_windows_*.syso ./cmd/adminlauncher/rsrc_windows_*.syso ./cmd/bydll/rsrc_windows_*.syso ./cmd/bydll/cli.syso
+	rm -f ./platform/desktop/rsrc_windows_*.syso ./cmd/launcher/*_windows_*.syso ./cmd/bydll/rsrc_windows_*.syso ./cmd/bydll/cli.syso
 	echo "Windows PE file version: $(WIN_FILE_VERSION) (from $(VERSION))"
 	$$(go env GOPATH)/bin/go-winres make --in ./release/winres/core.json --out ./platform/desktop/rsrc --arch amd64 --file-version "$(WIN_FILE_VERSION)" --product-version "$(WIN_FILE_VERSION)"
-	$$(go env GOPATH)/bin/go-winres make --in ./release/winres/cli.json --out ./cmd/clilauncher/rsrc --arch amd64 --file-version "$(WIN_FILE_VERSION)" --product-version "$(WIN_FILE_VERSION)"
-	$$(go env GOPATH)/bin/go-winres make --in ./release/winres/admin.json --out ./cmd/adminlauncher/rsrc --arch amd64 --file-version "$(WIN_FILE_VERSION)" --product-version "$(WIN_FILE_VERSION)"
-	ls -la ./platform/desktop/rsrc_windows_amd64.syso ./cmd/clilauncher/rsrc_windows_amd64.syso ./cmd/adminlauncher/rsrc_windows_amd64.syso
+	$$(go env GOPATH)/bin/go-winres make --in ./release/winres/cli.json --out ./cmd/launcher/cli --arch amd64 --file-version "$(WIN_FILE_VERSION)" --product-version "$(WIN_FILE_VERSION)"
+	$$(go env GOPATH)/bin/go-winres make --in ./release/winres/admin.json --out ./cmd/launcher/admin --arch amd64 --file-version "$(WIN_FILE_VERSION)" --product-version "$(WIN_FILE_VERSION)"
+	$$(go env GOPATH)/bin/go-winres make --in ./release/winres/corelauncher.json --out ./cmd/launcher/core --arch amd64 --file-version "$(WIN_FILE_VERSION)" --product-version "$(WIN_FILE_VERSION)"
+	ls -la ./platform/desktop/rsrc_windows_amd64.syso ./cmd/launcher/cli_windows_amd64.syso ./cmd/launcher/admin_windows_amd64.syso ./cmd/launcher/core_windows_amd64.syso
 
 windows-amd64: prepare windows-winres
 	rm -rf $(BINDIR)/*
@@ -143,16 +144,20 @@ windows-amd64: prepare windows-winres
 	env GOOS=windows GOARCH=amd64 CC=x86_64-w64-mingw32-gcc  $(GOBUILDLIB_WINDOWS) -tags $(TAGS),$(WINDOWS_ADD_TAGS)   -o $(BINDIR)/$(LIBNAME).dll ./platform/desktop
 	echo "core built, now building cli" 
 	ls -R $(BINDIR)/
-	# HiddifyCli.exe is a small C launcher that calls parseCli() in the DLL (see
-	# cmd/clilauncher/main.c). The former Go stub (cmd/bydll, still used on Linux)
-	# was flagged by ML antivirus engines whatever its link flags; the C launcher
-	# scans clean. The go-winres .syso (icon, VERSIONINFO, manifest) is linked in.
-	x86_64-w64-mingw32-gcc -O2 -Wall -mconsole -o $(BINDIR)/$(CLINAME).exe ./cmd/clilauncher/main.c ./cmd/clilauncher/rsrc_windows_amd64.syso -L $(BINDIR) -l:$(LIBNAME).dll -lshell32
-	# HiddifyAdmin.exe: GUI-subsystem launcher with a requireAdministrator manifest and
-	# the app icon; the only binary that triggers a UAC prompt (VPN service install).
-	x86_64-w64-mingw32-gcc -O2 -Wall -mwindows -municode -o $(BINDIR)/HiddifyAdmin.exe ./cmd/adminlauncher/main.c ./cmd/adminlauncher/rsrc_windows_amd64.syso -L $(BINDIR) -l:$(LIBNAME).dll -lshell32
-	if [ ! -f $(BINDIR)/$(LIBNAME).dll -o ! -f $(BINDIR)/$(CLINAME).exe -o ! -f $(BINDIR)/HiddifyAdmin.exe -o ! -f $(BINDIR)/libcronet.dll ]; then \
-		echo "Error: $(LIBNAME).dll, $(CLINAME).exe, HiddifyAdmin.exe or libcronet.dll missing"; \
+	# The launchers are one small C program (cmd/launcher/main.c) built three ways; each calls
+	# parseCli() in the DLL. The former Go stub (cmd/bydll, still used on Linux) was flagged by ML
+	# antivirus engines whatever its link flags; the C launcher scans clean. Each links its
+	# go-winres .syso (icon, VERSIONINFO, manifest).
+	x86_64-w64-mingw32-gcc -O2 -Wall -mconsole -o $(BINDIR)/$(CLINAME).exe ./cmd/launcher/main.c ./cmd/launcher/cli_windows_amd64.syso -L $(BINDIR) -l:$(LIBNAME).dll -lshell32
+	# HiddifyAdmin.exe: GUI subsystem, requireAdministrator manifest and the app icon; the only
+	# binary that triggers a UAC prompt (VPN service install).
+	x86_64-w64-mingw32-gcc -O2 -Wall -mwindows -municode -DHIDDIFY_LAUNCHER_GUI -o $(BINDIR)/HiddifyAdmin.exe ./cmd/launcher/main.c ./cmd/launcher/admin_windows_amd64.syso -L $(BINDIR) -l:$(LIBNAME).dll -lshell32
+	# core/Hiddify.exe: the app's core in its own process, named Hiddify with the core icon. The app
+	# installs it in a subfolder (its own Hiddify.exe sits beside the DLL), so it loads the DLL from there.
+	mkdir -p $(BINDIR)/core
+	x86_64-w64-mingw32-gcc -O2 -Wall -mwindows -municode -DHIDDIFY_LAUNCHER_GUI -DHIDDIFY_LAUNCHER_LIBRARY='"../$(LIBNAME).dll"' -o $(BINDIR)/core/Hiddify.exe ./cmd/launcher/main.c ./cmd/launcher/core_windows_amd64.syso -lshell32
+	if [ ! -f $(BINDIR)/$(LIBNAME).dll -o ! -f $(BINDIR)/$(CLINAME).exe -o ! -f $(BINDIR)/HiddifyAdmin.exe -o ! -f $(BINDIR)/core/Hiddify.exe -o ! -f $(BINDIR)/libcronet.dll ]; then \
+		echo "Error: $(LIBNAME).dll, $(CLINAME).exe, HiddifyAdmin.exe, core/Hiddify.exe or libcronet.dll missing"; \
 		exit 1; \
 	fi
 
@@ -226,7 +231,10 @@ build-linux: prepare
 	mkdir lib
 	cp $(BINDIR)/lib/$(LIBNAME).so ./lib/$(LIBNAME).so
 
-	GOOS=linux GOARCH=$(ARCH) CGO_LDFLAGS="./lib/$(LIBNAME).so -Wl,-rpath,\$$ORIGIN/lib -fuse-ld=lld" $(GOBUILDSRV) -o $(BINDIR)/$(CLINAME) ./cmd/bydll
+	# Linked by name, not as ./lib/...: a path in DT_NEEDED is resolved against the working directory,
+	# so the CLI failed to start anywhere but its own folder (the root VPN service runs it from its data
+	# directory). By name, the $$ORIGIN/lib runpath finds the library wherever it is started.
+	GOOS=linux GOARCH=$(ARCH) CGO_LDFLAGS="-L./lib -l:$(LIBNAME).so -Wl,-rpath,\$$ORIGIN/lib -fuse-ld=lld" $(GOBUILDSRV) -o $(BINDIR)/$(CLINAME) ./cmd/bydll
 	
 	rm -rf ./lib/*.so
 	chmod +x $(BINDIR)/$(CLINAME)

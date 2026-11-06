@@ -9,6 +9,7 @@ import (
 	"runtime"
 
 	"github.com/hiddify/hiddify-core/v2/hcore/adminbg"
+	"github.com/hiddify/hiddify-core/v2/hcore/hprocess"
 	"github.com/kardianos/service"
 	"google.golang.org/grpc"
 )
@@ -175,6 +176,8 @@ func StartAdminBgService(goArg string) (int, string) {
 	if err != nil {
 		log.Printf("Error: %v", err)
 	}
+	// the service must not be slowed down as a background job (a launchd job has no ProcessType)
+	hprocess.RaisePriority()
 	err = s.Run()
 	if err != nil {
 		logger.Error(err)

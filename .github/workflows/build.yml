@@ -180,7 +180,8 @@ jobs:
                 -o -name "HiddifyTunnelCore.xcframework" \
                 -o -name "HiddifyCli" \
                 -o -name "HiddifyCli.exe" \
-                -o -name "HiddifyAdmin.exe" \))
+                -o -name "HiddifyAdmin.exe" \
+                -o -path "./core/Hiddify.exe" \))
           echo tar -czvf ${{ matrix.job.name }}.tar.gz  $files
           tar -czvf ${{ matrix.job.name }}.tar.gz  $files
           

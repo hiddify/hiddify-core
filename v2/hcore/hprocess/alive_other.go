@@ -1,6 +1,6 @@
 //go:build !unix
 
-package adminbgservice
+package hprocess
 
 import "os"
 

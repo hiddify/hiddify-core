@@ -36,7 +36,12 @@ func init() {
 
 }
 
+// cliArgs are the arguments ParseCli was given. A c-shared library does not always see os.Args (musl
+// passes none to it), so a command that runs itself again uses these.
+var cliArgs []string
+
 func ParseCli(args []string) error {
+	cliArgs = append([]string(nil), args...)
 	mainCommand.SetArgs(args)
 	err := mainCommand.Execute()
 	if err != nil {

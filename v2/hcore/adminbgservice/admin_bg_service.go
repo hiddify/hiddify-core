@@ -16,6 +16,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/hiddify/hiddify-core/v2/hcore/hprocess"
+
 	C "github.com/sagernet/sing-box/constant"
 	"github.com/sagernet/sing-box/daemon"
 	"github.com/sagernet/sing-box/experimental/libbox"
@@ -180,42 +182,16 @@ func (s *hiddifyAdminBG) watchPort(port int32, done <-chan struct{}) {
 // process listening. Exiting the process would require another administrator prompt to start
 // it again; an idle authenticated listener is enough to avoid a background VPN.
 func (s *hiddifyAdminBG) watchOwner(pid int32, done <-chan struct{}) {
-	if pid <= 0 {
+	if !hprocess.WaitOwnerGone(pid, done) {
 		return
 	}
-	failures := 0
-	ticker := time.NewTicker(2 * time.Second)
-	defer ticker.Stop()
-	for {
-		select {
-		case <-done:
-			return
-		case <-ticker.C:
-		}
-		if processAlive(pid) {
-			failures = 0
-			continue
-		}
-		if failures++; failures < 2 {
-			continue
-		}
-		s.mutex.Lock()
-		select {
-		case <-done:
-		default:
-			s.closeRunning()
-		}
-		s.mutex.Unlock()
-		return
+	s.mutex.Lock()
+	select {
+	case <-done:
+	default:
+		s.closeRunning()
 	}
-}
-
-func processAlive(pid int32) bool {
-	process, err := os.FindProcess(int(pid))
-	if err != nil {
-		return false
-	}
-	return processSignalAlive(process)
+	s.mutex.Unlock()
 }
 
 func (s *hiddifyAdminBG) closeRunning() error {
