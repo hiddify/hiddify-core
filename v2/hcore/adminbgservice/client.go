@@ -19,6 +19,8 @@ type ConnectRequest struct {
 	Resources          map[string][]byte `json:"resources"`
 	DisableMemoryLimit bool              `json:"disableMemoryLimit"`
 	OwnerPID           int32             `json:"ownerPid"`
+	// ProxyOnly runs the engine without its TUN: a proxy mode whose profile needs administrator rights.
+	ProxyOnly bool `json:"proxyOnly"`
 }
 
 // ConnectFromFile starts the full core in the root daemon from a JSON request file.
@@ -72,6 +74,7 @@ func ConnectFromFile(path string) error {
 		Resources:          request.Resources,
 		DisableMemoryLimit: request.DisableMemoryLimit,
 		OwnerPid:           request.OwnerPID,
+		ProxyOnly:          request.ProxyOnly,
 	})
 	log.Printf("tunnel connect: Start took %s (err=%v)", time.Since(startStarted), err)
 	if err != nil {

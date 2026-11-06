@@ -29,6 +29,10 @@ func Close(mode SetupMode) error {
 	log.Debug("[Service] Closing")
 
 	_, err := Stop()
+	// a system proxy this core set for a root core's engine (SetSystemProxyEnabled) goes with it
+	if proxyErr := DisableUserSystemProxy(); proxyErr != nil {
+		Log(LogLevel_WARNING, LogType_CORE, "restoring the system proxy: ", proxyErr.Error())
+	}
 	CloseGrpcServer(mode)
 
 	return err

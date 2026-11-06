@@ -115,7 +115,17 @@ func outsideCountries(countries []string, country string, tested bool) bool {
 
 // buildRunningConfig is BuildConfig for the core to run, without the proxies keep top stopped;
 // static.lock must be held.
+// buildRunningConfig builds the config the core runs. A core that delegates the system proxy (see
+// config.InboundOptions.DelegateSystemProxy) takes it out of the config here and keeps its address.
 func buildRunningConfig(ctx context.Context, in *StartRequest) (*option.Options, error) {
+	options, err := buildConfigToRun(ctx, in)
+	if err == nil {
+		recordDelegatedSystemProxy(options)
+	}
+	return options, err
+}
+
+func buildConfigToRun(ctx context.Context, in *StartRequest) (*option.Options, error) {
 	count, chosen, countries := keepTopSettings()
 	if in.EnableRawConfig { // a raw config keeps the tags the user wrote
 		clearKeepTop()

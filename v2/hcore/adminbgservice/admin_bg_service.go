@@ -111,6 +111,7 @@ func (s *hiddifyAdminBG) startFullCore(in *AdminBgStartRequest) error {
 		SettingsJSON:       settings,
 		Secret:             secret,
 		DisableMemoryLimit: in.GetDisableMemoryLimit(),
+		ProxyOnly:          in.GetProxyOnly(),
 		NativeTun:          true,
 	}, nil); err != nil {
 		return err
@@ -306,7 +307,13 @@ func (s *hiddifyAdminBG) Status(ctx context.Context, _ *hcommon.Empty) (*AdminBg
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 	if s.fullCore || s.box != nil {
-		return &AdminBgResponse{Message: "started"}, nil
+		response := &AdminBgResponse{Message: "started"}
+		// the app's own core points the user's system proxy at the engine (see hcore.DelegatedSystemProxy)
+		if target := hcore.DelegatedSystemProxy(); target != nil {
+			response.SystemProxy = target.Address
+			response.SystemProxySocks = target.SupportSOCKS
+		}
+		return response, nil
 	}
 	return &AdminBgResponse{Message: "stopped"}, nil
 }

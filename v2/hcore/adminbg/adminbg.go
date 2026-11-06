@@ -159,11 +159,19 @@ func applyLocked(options *Options, platform libbox.PlatformInterface) error {
 		hcore.Stop()
 		return err
 	}
-	// VPN mode must not install a separate system proxy or a privileged listener
-	// on the LAN, even if those options came from a custom profile.
+	// The engine runs as root. On Windows and Linux it cannot set the user's system proxy (the
+	// user's D-Bus/Wayland session and registry are out of its reach), so every system proxy in the
+	// config, the app's and a profile's own inbound beside the TUN, is handed to the app's core,
+	// which runs as the user. macOS sets it from root (networksetup applies to every user), but its
+	// VPN never asks for one.
 	settings["enable-tun"] = !options.ProxyOnly
 	settings["enable-tun-service"] = false
-	settings["set-system-proxy"] = false
+	if hcore.SystemProxyDelegationSupported() {
+		settings["delegate-system-proxy"] = true
+	} else {
+		settings["set-system-proxy"] = false
+	}
+	// no privileged listener on the LAN, even if the option came from a custom profile
 	settings["allow-connection-from-lan"] = false
 	settings["tproxy-port"] = 0
 	settingsBytes, err := json.Marshal(settings)

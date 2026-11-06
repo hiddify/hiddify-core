@@ -78,13 +78,17 @@ type DNSOptions struct {
 }
 
 type InboundOptions struct {
-	EnableTun        bool   `json:"enable-tun,omitempty"`
-	EnableTunService bool   `json:"enable-tun-service,omitempty"`
-	SetSystemProxy   bool   `json:"set-system-proxy,omitempty"`
-	MixedPort        uint16 `json:"mixed-port,omitempty"`
-	TProxyPort       uint16 `json:"tproxy-port,omitempty"`
-	RedirectPort     uint16 `json:"redirect-port,omitempty"`
-	DirectPort       uint16 `json:"direct-port,omitempty"`
+	EnableTun        bool `json:"enable-tun,omitempty"`
+	EnableTunService bool `json:"enable-tun-service,omitempty"`
+	SetSystemProxy   bool `json:"set-system-proxy,omitempty"`
+	// DelegateSystemProxy is set by a core that runs as root for a user (the admin_bgservice on
+	// Windows and Linux). It cannot reach the user's desktop session, so no inbound sets the system
+	// proxy itself: the address is reported, and the user's own core sets it (SetSystemProxyEnabled).
+	DelegateSystemProxy bool   `json:"delegate-system-proxy,omitempty"`
+	MixedPort           uint16 `json:"mixed-port,omitempty"`
+	TProxyPort          uint16 `json:"tproxy-port,omitempty"`
+	RedirectPort        uint16 `json:"redirect-port,omitempty"`
+	DirectPort          uint16 `json:"direct-port,omitempty"`
 	// Each local port opens only while its switch is on; unset is on for the mixed port, off for the
 	// transparent ones, which serve setups made by hand (see portEnabled).
 	EnableMixedPort    *bool `json:"enable-mixed-port,omitempty"`

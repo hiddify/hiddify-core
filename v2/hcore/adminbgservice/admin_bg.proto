@@ -21,8 +21,14 @@ message AdminBgStartRequest {
     bool disable_memory_limit = 12;
     // When set, the daemon stops once this process is gone (app quit or crash).
     int32 owner_pid = 13;
+    // Runs the engine without its TUN (a proxy mode that needs administrator rights).
+    bool proxy_only = 14;
 }
 
 message AdminBgResponse {
     string message = 1;
+    // Where the running engine's system proxy points (host:port), empty when it has none. The
+    // service runs as root and cannot set the user's system proxy: the app's own core sets it.
+    string system_proxy = 2;
+    bool system_proxy_socks = 3;
 }

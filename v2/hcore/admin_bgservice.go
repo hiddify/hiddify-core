@@ -314,6 +314,7 @@ func writeAdminBgConnectRequest(req *EnsureAdminBgServiceRequest) (string, error
 		Resources          map[string][]byte `json:"resources"`
 		DisableMemoryLimit bool              `json:"disableMemoryLimit"`
 		OwnerPID           int32             `json:"ownerPid"`
+		ProxyOnly          bool              `json:"proxyOnly"`
 	}{
 		ConfigContent:      req.GetConfigContent(),
 		ConfigName:         req.GetConfigName(),
@@ -321,6 +322,7 @@ func writeAdminBgConnectRequest(req *EnsureAdminBgServiceRequest) (string, error
 		Resources:          req.GetResources(),
 		DisableMemoryLimit: req.GetDisableMemoryLimit(),
 		OwnerPID:           req.GetOwnerPid(),
+		ProxyOnly:          req.GetProxyOnly(),
 	}
 	raw, err := json.Marshal(body)
 	if err != nil {

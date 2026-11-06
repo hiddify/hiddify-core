@@ -245,6 +245,10 @@ message GenerateWarpConfigRequest {
 
 message SetSystemProxyEnabledRequest {
   bool is_enabled = 1;
+  // Where the system proxy points (host:port), when enabling: the local proxy of a core that runs
+  // as root and cannot set the user's system proxy itself.
+  string address = 2;
+  bool support_socks = 3;
 }
 
 enum LogLevel {
@@ -358,6 +362,8 @@ message EnsureAdminBgServiceRequest {
   // Absolute path to this app's HiddifyCli / HiddifyCli.exe (used for elevate install).
   string cli_path = 7;
   string owner_user = 8;
+  // Runs the engine without its TUN: a proxy mode whose profile needs administrator rights.
+  bool proxy_only = 9;
 }
 
 message EnsureAdminBgServiceEvent {
