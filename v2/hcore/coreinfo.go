@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"slices"
 	"sync"
+	"sync/atomic"
 
 	hcommon "github.com/hiddify/hiddify-core/v2/hcommon"
 	"google.golang.org/grpc"
@@ -13,6 +14,10 @@ import (
 // states in the order they were set. The ping watcher changes the state without static.lock,
 // hence the separate lock.
 var stateMu sync.Mutex
+
+// lastCoreInfo is the last state published, with its message: why the core stopped, when it
+// failed. A listener that comes after it is told it as well.
+var lastCoreInfo atomic.Pointer[CoreInfoResponse]
 
 func SetCoreStatus(state CoreStates, msgType MessageType, message string) *CoreInfoResponse {
 	stateMu.Lock()
@@ -47,9 +52,21 @@ func setCoreStatusLocked(state CoreStates, msgType MessageType, message string) 
 		MessageType: msgType,
 		Message:     message,
 	}
+	lastCoreInfo.Store(&info)
 	static.coreInfoObserver.Publish(&info)
 
 	return &info
+}
+
+// currentCoreInfo is the state a new listener is told first: the last one published, with why the
+// core stopped, while the core is still in it. A start answers at once and fails a moment later,
+// often before the app listens; told only "stopped", it waited for the start for good.
+func currentCoreInfo() *CoreInfoResponse {
+	state := currentCoreState()
+	if last := lastCoreInfo.Load(); last != nil && last.CoreState == state {
+		return last
+	}
+	return &CoreInfoResponse{CoreState: state, MessageType: MessageType_EMPTY}
 }
 
 // setCoreState changes the state without publishing it; stateMu must be held.
@@ -63,11 +80,7 @@ func (s *CoreService) CoreInfoListener(req *hcommon.Empty, stream grpc.ServerStr
 	// states (STOPPING, STOPPED, STARTING, ...) so none is dropped before it is sent
 	coreSub := static.coreInfoObserver.Subscribe(32)
 	defer static.coreInfoObserver.Unsubscribe(coreSub)
-	stream.Send(&CoreInfoResponse{
-		CoreState:   currentCoreState(),
-		MessageType: MessageType_EMPTY,
-		Message:     "",
-	})
+	stream.Send(currentCoreInfo())
 	for {
 		select {
 		case <-stream.Context().Done():
