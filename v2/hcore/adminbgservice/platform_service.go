@@ -25,8 +25,9 @@ var port int = 18020
 
 func allowAdminBgMethod(method string) error {
 	switch method {
-	case HiddifyAdminBG_Start_FullMethodName, HiddifyAdminBG_Stop_FullMethodName,
-		HiddifyAdminBG_Status_FullMethodName, HiddifyAdminBG_Exit_FullMethodName:
+	case HiddifyAdminBG_Start_FullMethodName, HiddifyAdminBG_Reload_FullMethodName, HiddifyAdminBG_Restart_FullMethodName,
+		HiddifyAdminBG_Stop_FullMethodName, HiddifyAdminBG_Status_FullMethodName,
+		HiddifyAdminBG_Exit_FullMethodName:
 		return nil
 	}
 	return adminbg.AllowCoreMethod(method)

@@ -20,10 +20,12 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	HiddifyAdminBG_Start_FullMethodName  = "/adminbgservice.HiddifyAdminBG/Start"
-	HiddifyAdminBG_Stop_FullMethodName   = "/adminbgservice.HiddifyAdminBG/Stop"
-	HiddifyAdminBG_Status_FullMethodName = "/adminbgservice.HiddifyAdminBG/Status"
-	HiddifyAdminBG_Exit_FullMethodName   = "/adminbgservice.HiddifyAdminBG/Exit"
+	HiddifyAdminBG_Start_FullMethodName   = "/adminbgservice.HiddifyAdminBG/Start"
+	HiddifyAdminBG_Reload_FullMethodName  = "/adminbgservice.HiddifyAdminBG/Reload"
+	HiddifyAdminBG_Restart_FullMethodName = "/adminbgservice.HiddifyAdminBG/Restart"
+	HiddifyAdminBG_Stop_FullMethodName    = "/adminbgservice.HiddifyAdminBG/Stop"
+	HiddifyAdminBG_Status_FullMethodName  = "/adminbgservice.HiddifyAdminBG/Status"
+	HiddifyAdminBG_Exit_FullMethodName    = "/adminbgservice.HiddifyAdminBG/Exit"
 )
 
 // HiddifyAdminBGClient is the client API for HiddifyAdminBG service.
@@ -33,6 +35,10 @@ const (
 // Elevated background core control API (Windows/Linux OS service, macOS root daemon).
 type HiddifyAdminBGClient interface {
 	Start(ctx context.Context, in *AdminBgStartRequest, opts ...grpc.CallOption) (*AdminBgResponse, error)
+	// Applies a changed configuration to the running engine without restarting it.
+	Reload(ctx context.Context, in *AdminBgStartRequest, opts ...grpc.CallOption) (*AdminBgResponse, error)
+	// Stops the running engine and starts it with the request: a change a reload cannot apply.
+	Restart(ctx context.Context, in *AdminBgStartRequest, opts ...grpc.CallOption) (*AdminBgResponse, error)
 	Stop(ctx context.Context, in *hcommon.Empty, opts ...grpc.CallOption) (*AdminBgResponse, error)
 	Status(ctx context.Context, in *hcommon.Empty, opts ...grpc.CallOption) (*AdminBgResponse, error)
 	Exit(ctx context.Context, in *hcommon.Empty, opts ...grpc.CallOption) (*AdminBgResponse, error)
@@ -50,6 +56,26 @@ func (c *hiddifyAdminBGClient) Start(ctx context.Context, in *AdminBgStartReques
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(AdminBgResponse)
 	err := c.cc.Invoke(ctx, HiddifyAdminBG_Start_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *hiddifyAdminBGClient) Reload(ctx context.Context, in *AdminBgStartRequest, opts ...grpc.CallOption) (*AdminBgResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AdminBgResponse)
+	err := c.cc.Invoke(ctx, HiddifyAdminBG_Reload_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *hiddifyAdminBGClient) Restart(ctx context.Context, in *AdminBgStartRequest, opts ...grpc.CallOption) (*AdminBgResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AdminBgResponse)
+	err := c.cc.Invoke(ctx, HiddifyAdminBG_Restart_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -93,6 +119,10 @@ func (c *hiddifyAdminBGClient) Exit(ctx context.Context, in *hcommon.Empty, opts
 // Elevated background core control API (Windows/Linux OS service, macOS root daemon).
 type HiddifyAdminBGServer interface {
 	Start(context.Context, *AdminBgStartRequest) (*AdminBgResponse, error)
+	// Applies a changed configuration to the running engine without restarting it.
+	Reload(context.Context, *AdminBgStartRequest) (*AdminBgResponse, error)
+	// Stops the running engine and starts it with the request: a change a reload cannot apply.
+	Restart(context.Context, *AdminBgStartRequest) (*AdminBgResponse, error)
 	Stop(context.Context, *hcommon.Empty) (*AdminBgResponse, error)
 	Status(context.Context, *hcommon.Empty) (*AdminBgResponse, error)
 	Exit(context.Context, *hcommon.Empty) (*AdminBgResponse, error)
@@ -108,6 +138,12 @@ type UnimplementedHiddifyAdminBGServer struct{}
 
 func (UnimplementedHiddifyAdminBGServer) Start(context.Context, *AdminBgStartRequest) (*AdminBgResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Start not implemented")
+}
+func (UnimplementedHiddifyAdminBGServer) Reload(context.Context, *AdminBgStartRequest) (*AdminBgResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Reload not implemented")
+}
+func (UnimplementedHiddifyAdminBGServer) Restart(context.Context, *AdminBgStartRequest) (*AdminBgResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Restart not implemented")
 }
 func (UnimplementedHiddifyAdminBGServer) Stop(context.Context, *hcommon.Empty) (*AdminBgResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Stop not implemented")
@@ -153,6 +189,42 @@ func _HiddifyAdminBG_Start_Handler(srv interface{}, ctx context.Context, dec fun
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(HiddifyAdminBGServer).Start(ctx, req.(*AdminBgStartRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _HiddifyAdminBG_Reload_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AdminBgStartRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(HiddifyAdminBGServer).Reload(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: HiddifyAdminBG_Reload_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(HiddifyAdminBGServer).Reload(ctx, req.(*AdminBgStartRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _HiddifyAdminBG_Restart_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AdminBgStartRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(HiddifyAdminBGServer).Restart(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: HiddifyAdminBG_Restart_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(HiddifyAdminBGServer).Restart(ctx, req.(*AdminBgStartRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -221,6 +293,14 @@ var HiddifyAdminBG_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Start",
 			Handler:    _HiddifyAdminBG_Start_Handler,
+		},
+		{
+			MethodName: "Reload",
+			Handler:    _HiddifyAdminBG_Reload_Handler,
+		},
+		{
+			MethodName: "Restart",
+			Handler:    _HiddifyAdminBG_Restart_Handler,
 		},
 		{
 			MethodName: "Stop",

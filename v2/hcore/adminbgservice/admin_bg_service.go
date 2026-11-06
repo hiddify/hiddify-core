@@ -80,29 +80,30 @@ func (s *hiddifyAdminBG) startBridge(in *AdminBgStartRequest) (*AdminBgResponse,
 	return &AdminBgResponse{Message: "OK"}, nil
 }
 
-func (s *hiddifyAdminBG) startFullCore(in *AdminBgStartRequest) error {
-	s.closeRunning()
+// fullCoreOptions writes the request's resources and returns the engine options for it: the same
+// for a start and a reload, which differ only in how the engine applies them.
+func fullCoreOptions(in *AdminBgStartRequest) (*adminbg.Options, error) {
 	dataDirectory := serviceDataDirectory()
 	base := filepath.Join(dataDirectory, "core")
 	work := filepath.Join(base, "work")
 	temp := filepath.Join(base, "temp")
 	for _, directory := range []string{base, work, temp, filepath.Join(work, "data")} {
 		if err := os.MkdirAll(directory, 0o700); err != nil {
-			return err
+			return nil, err
 		}
 	}
 	if err := writeResources(filepath.Join(work, "resources"), in.GetResources()); err != nil {
-		return err
+		return nil, err
 	}
 	secret, err := LoadControlSecret()
 	if err != nil {
-		return err
+		return nil, err
 	}
 	settings := in.GetSettingsJson()
 	if settings == "" {
 		settings = "{}"
 	}
-	if err := adminbg.Apply(&adminbg.Options{
+	return &adminbg.Options{
 		BasePath:           base,
 		WorkingPath:        work,
 		TempPath:           temp,
@@ -113,13 +114,71 @@ func (s *hiddifyAdminBG) startFullCore(in *AdminBgStartRequest) error {
 		DisableMemoryLimit: in.GetDisableMemoryLimit(),
 		ProxyOnly:          in.GetProxyOnly(),
 		NativeTun:          true,
-	}, nil); err != nil {
+	}, nil
+}
+
+func (s *hiddifyAdminBG) startFullCore(in *AdminBgStartRequest) error {
+	s.closeRunning()
+	options, err := fullCoreOptions(in)
+	if err != nil {
+		return err
+	}
+	if err := adminbg.Apply(options, nil); err != nil {
 		return err
 	}
 	s.fullCore = true
 	s.watching = make(chan struct{})
 	go s.watchOwner(in.GetOwnerPid(), s.watching)
 	return nil
+}
+
+// Restart stops the running engine and starts it again with the request, in one call: a change a
+// reload cannot apply (the TUN changed, for one). The app keeps its connection to the service, and
+// the engine stops again once the app is gone, as after a start.
+func (s *hiddifyAdminBG) Restart(ctx context.Context, in *AdminBgStartRequest) (response *AdminBgResponse, err error) {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+	defer func() {
+		if recovered := recover(); recovered != nil {
+			err = fmt.Errorf("restart tunnel: %v", recovered)
+			response = &AdminBgResponse{Message: err.Error()}
+		}
+	}()
+	if in.GetConfigContent() == "" {
+		err := fmt.Errorf("missing tunnel configuration")
+		return &AdminBgResponse{Message: err.Error()}, err
+	}
+	// startFullCore stops what runs first
+	if err := s.startFullCore(in); err != nil {
+		return &AdminBgResponse{Message: err.Error()}, err
+	}
+	return &AdminBgResponse{Message: "OK"}, nil
+}
+
+// Reload applies a changed configuration (a profile update, a changed option) to the running
+// engine, keeping the TUN and the connections: the same request as Start. When the change cannot
+// be hot reloaded the engine keeps running unchanged and the app starts it again.
+func (s *hiddifyAdminBG) Reload(ctx context.Context, in *AdminBgStartRequest) (response *AdminBgResponse, err error) {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+	defer func() {
+		if recovered := recover(); recovered != nil {
+			err = fmt.Errorf("reload tunnel: %v", recovered)
+			response = &AdminBgResponse{Message: err.Error()}
+		}
+	}()
+	if !s.fullCore || in.GetConfigContent() == "" {
+		err := fmt.Errorf("no running engine to reload")
+		return &AdminBgResponse{Message: err.Error()}, err
+	}
+	options, err := fullCoreOptions(in)
+	if err == nil {
+		err = adminbg.Reload(options, nil)
+	}
+	if err != nil {
+		return &AdminBgResponse{Message: err.Error()}, err
+	}
+	return &AdminBgResponse{Message: "OK"}, nil
 }
 
 var resourceNamePattern = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._-]*$`)

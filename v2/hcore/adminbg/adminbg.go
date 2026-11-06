@@ -154,34 +154,7 @@ func applyLocked(options *Options, platform libbox.PlatformInterface) error {
 	}, platform); err != nil {
 		return err
 	}
-	var settings map[string]any
-	if err := json.Unmarshal([]byte(options.SettingsJSON), &settings); err != nil {
-		hcore.Stop()
-		return err
-	}
-	// The engine runs as root. On Windows and Linux it cannot set the user's system proxy (the
-	// user's D-Bus/Wayland session and registry are out of its reach), so every system proxy in the
-	// config, the app's and a profile's own inbound beside the TUN, is handed to the app's core,
-	// which runs as the user. macOS sets it from root (networksetup applies to every user), but its
-	// VPN never asks for one.
-	settings["enable-tun"] = !options.ProxyOnly
-	settings["enable-tun-service"] = false
-	if hcore.SystemProxyDelegationSupported() {
-		settings["delegate-system-proxy"] = true
-	} else {
-		settings["set-system-proxy"] = false
-	}
-	// no privileged listener on the LAN, even if the option came from a custom profile
-	settings["allow-connection-from-lan"] = false
-	settings["tproxy-port"] = 0
-	settingsBytes, err := json.Marshal(settings)
-	if err != nil {
-		hcore.Stop()
-		return err
-	}
-	if _, err = hcore.ChangeHiddifySettings(&hcore.ChangeHiddifySettingsRequest{
-		HiddifySettingsJson: string(settingsBytes),
-	}, false); err != nil {
+	if err := applySettings(options); err != nil {
 		hcore.Stop()
 		return err
 	}
@@ -205,6 +178,69 @@ func applyLocked(options *Options, platform libbox.PlatformInterface) error {
 		return fmt.Errorf("background core did not start: %s", detail)
 	}
 	engineRunning = true
+	return nil
+}
+
+// applySettings applies the app's settings with what a root engine must never run: on Windows
+// and Linux it cannot set the user's system proxy (the user's D-Bus/Wayland session and registry
+// are out of its reach), so every system proxy in the config, the app's and a profile's own inbound
+// beside the TUN, is handed to the app's core, which runs as the user. macOS sets it from root
+// (networksetup applies to every user), but its VPN never asks for one. No privileged listener on
+// the LAN either, even if the option came from a custom profile.
+func applySettings(options *Options) error {
+	var settings map[string]any
+	if err := json.Unmarshal([]byte(options.SettingsJSON), &settings); err != nil {
+		return err
+	}
+	settings["enable-tun"] = !options.ProxyOnly
+	settings["enable-tun-service"] = false
+	if hcore.SystemProxyDelegationSupported() {
+		settings["delegate-system-proxy"] = true
+	} else {
+		settings["set-system-proxy"] = false
+	}
+	settings["allow-connection-from-lan"] = false
+	settings["tproxy-port"] = 0
+	settingsBytes, err := json.Marshal(settings)
+	if err != nil {
+		return err
+	}
+	_, err = hcore.ChangeHiddifySettings(&hcore.ChangeHiddifySettingsRequest{
+		HiddifySettingsJson: string(settingsBytes),
+	}, false)
+	return err
+}
+
+// Reload applies a new configuration to the running engine without restarting it: the same request
+// and the same hardening as a start, then the core's hot reload, which keeps the TUN and the
+// connections. It fails, leaving the engine running unchanged, when the change cannot be hot
+// reloaded (the TUN changed, for one); the caller then starts the engine again.
+func Reload(options *Options, platform libbox.PlatformInterface) error {
+	lifecycle.Lock()
+	defer lifecycle.Unlock()
+	if err := validate(options, platform); err != nil {
+		return err
+	}
+	if !engineRunning {
+		return fmt.Errorf("tunnel is not running")
+	}
+	if err := applySettings(options); err != nil {
+		return err
+	}
+	res, err := hcore.HotReload(libbox.BaseContext(platform), &hcore.StartRequest{
+		ConfigContent: options.ConfigContent, ConfigName: options.ConfigName,
+		DisableMemoryLimit: options.DisableMemoryLimit,
+	})
+	if err != nil {
+		return err
+	}
+	if res.GetMessageType() != hcore.MessageType_EMPTY {
+		detail := res.GetMessage()
+		if detail == "" {
+			detail = res.GetMessageType().String()
+		}
+		return fmt.Errorf("hot reload not applied: %s", detail)
+	}
 	return nil
 }
 
