@@ -33,6 +33,10 @@ var DnsRemoteTags = []string{
 var DEFAULT_DNS_TTL = uint32(60 * 60 * 24)
 
 func getDnsAddress(d string) string {
+	// the system resolver is no host: "udp://local" was a server named "local"
+	if d == C.DNSTypeLocal {
+		return d
+	}
 	if !strings.Contains(d, "://") {
 		return "udp://" + d
 	}
