@@ -32,9 +32,17 @@ type HiddifyOptions struct {
 	// §default§ one) or, unset, the balancer.
 	DefaultProxy string `json:"default-proxy,omitempty" overridable:"true"`
 	// KeepTop, when above 0, runs only that many of a profile's proxies, the fastest by their first
-	// pings, once the profile has more (see hcore's keep top); 0 or -1 runs them all. The profile
-	// sets it, from its `keep-top` header or the user's choice.
+	// pings, once the profile has more (see hcore's keep top); KeepTopAnswering runs the ones that
+	// answer their first ping; 0 or -1 runs them all. The profile sets it, from its `keep-top`
+	// header or the user's choice.
 	KeepTop int `json:"keep-top,omitempty" overridable:"true"`
+	// KeepTopQuick lets keep top pick before every proxy has its first ping: once the proxies
+	// still to test were slower in their last ping, and every one without a ping of the last day
+	// has been tested (see hcore's pickTopEarly).
+	KeepTopQuick bool `json:"keep-top-quick,omitempty" overridable:"true"`
+	// KeepTopCountries, when set, keeps only proxies of these countries (two-letter codes), by
+	// where their IP is, else by the flag in their name; with keep-top 0 or -1, all of them.
+	KeepTopCountries []string `json:"keep-top-countries,omitempty"`
 	// KeepTags are the tags of the profile's proxies the user chose to run: while any of them is in
 	// the profile, only those run, whatever KeepTop says; none of them left, KeepTop decides again.
 	KeepTags []string `json:"keep-tags,omitempty"`

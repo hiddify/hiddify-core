@@ -15,6 +15,10 @@ import (
 // its options before the config is built; the extra security and unblocker hops are not the
 // profile's, so they always stay.
 
+// KeepTopAnswering is the keep-top that keeps every proxy answering its first ping and stops
+// the ones that do not.
+const KeepTopAnswering = -2
+
 // UserProxyTags are the proxies of the profile that end up in the select group: what setOutbounds
 // lists, before the chain hop is added.
 func UserProxyTags(input *option.Options) []string {
