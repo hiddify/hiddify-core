@@ -6,5 +6,10 @@ services:
     network_mode: host
     environment:
       CONFIG: "https://github.com/hiddify/hiddify-app/raw/refs/heads/main/test.configs/warp"
+      # 1: router mode, the whole network this host is the gateway of goes through the proxy
+      # (docs/router-mode.md); needs the two lines below and the host's nfqueue module
+      ROUTER_MODE: "0"
+    # cap_add: [NET_ADMIN]
+    # devices: ["/dev/net/tun:/dev/net/tun"]
     volumes:
       - ./hiddify.json:/hiddify/hiddify.json

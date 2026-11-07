@@ -1,40 +1,13 @@
 #!/bin/sh
-# sysctl -w net.ipv4.ip_forward=1
-# sysctl -w net.ipv6.ip_forward=1
+# CONFIG: the profile (a subscription link or a config).
+# ROUTER_MODE=1: router mode, the whole network behind this host goes through the proxy (TCP, UDP
+# and ICMP) - with network_mode host on a Linux gateway, or as a RouterOS container that the router
+# sends its LAN to (docs/router-mode.md). It needs NET_ADMIN, /dev/net/tun, and the host's nfqueue
+# kernel module (a container can not load it).
 
-# ip rule add fwmark 1 table 100 ; 
-# ip route add local 0.0.0.0/0 dev lo table 100 
-
-# # CREATE TABLE
-# iptables -t mangle -N hiddify
-
-# # RETURN LOCAL AND LANS
-# iptables -t mangle -A OUTPUT -j RETURN
-# iptables -t nat -A hiddify --dport 2334 -j RETURN
-
-# iptables -t mangle -A hiddify -d 10.0.0.0/8 -j RETURN
-# iptables -t mangle -A hiddify -d 127.0.0.0/8 -j RETURN
-# iptables -t mangle -A hiddify -d 169.254.0.0/16 -j RETURN
-# iptables -t mangle -A hiddify -d 172.16.0.0/12 -j RETURN
-# iptables -t mangle -A hiddify -d 192.168.50.0/16 -j RETURN
-# iptables -t mangle -A hiddify -d 192.168.9.0/16 -j RETURN
-# iptables -t mangle -A hiddify -d 224.0.0.0/4 -j RETURN
-# iptables -t mangle -A hiddify -d 240.0.0.0/4 -j RETURN
-
-# iptables -t mangle -A hiddify -p udp -j TPROXY --on-port 2334 --tproxy-mark 1
-# iptables -t mangle -A hiddify -p tcp -j TPROXY --on-port 2334 --tproxy-mark 1
-
-# # HIJACK ICMP (untested)
-# # iptables -t mangle -A hiddify -p icmp -j DNAT --to-destination 127.0.0.1
-
-# # REDIRECT
-# iptables -t mangle -A PREROUTING -j hiddify
-
-
-if [ -f "/hiddify/hiddify.json" ]; then
-    exec /hiddify/hiddify-core run --config "$CONFIG" -d /hiddify/hiddify.json
-else
-    exec /hiddify/hiddify-core run --config "$CONFIG"
-fi
-
-
+set -- run --config "$CONFIG"
+[ -f "/hiddify/hiddify.json" ] && set -- "$@" -d /hiddify/hiddify.json
+case "$ROUTER_MODE" in
+1 | true | yes) set -- "$@" --router ;;
+esac
+exec /hiddify/hiddify-core "$@"

@@ -63,10 +63,11 @@ type Options struct {
 // uiSettings are the Hiddify options the harness exposes (proxy/VPN/chain).
 type uiSettings struct {
 	MixedPort      int    `json:"mixedPort"`
-	ServiceMode    string `json:"serviceMode"` // proxy | system-proxy | vpn
+	ServiceMode    string `json:"serviceMode"` // proxy | system-proxy | vpn | router
 	Chain          string `json:"chain"`       // off | extra_security_{warp_auto,warp,warp_masque,warp_awg,psiphon} | unblocker_{warp_auto,warp,warp_masque,warp_awg,psiphon}
 	EnableTun      bool   `json:"enableTun"`
 	SetSystemProxy bool   `json:"setSystemProxy"`
+	RouterMode     bool   `json:"routerMode"`
 }
 
 type server struct {
@@ -808,13 +809,20 @@ func normalizeServiceMode(st *uiSettings) {
 	case "vpn":
 		st.EnableTun = true
 		st.SetSystemProxy = false
+		st.RouterMode = false
+	case "router":
+		st.EnableTun = true
+		st.SetSystemProxy = false
+		st.RouterMode = true
 	case "system-proxy":
 		st.EnableTun = false
 		st.SetSystemProxy = true
+		st.RouterMode = false
 	default:
 		st.ServiceMode = "proxy"
 		st.EnableTun = false
 		st.SetSystemProxy = false
+		st.RouterMode = false
 	}
 }
 
@@ -838,6 +846,7 @@ func (s *server) settingsJSON() (string, error) {
 		"log-level":          "warn",
 		"enable-tun":         st.EnableTun,
 		"set-system-proxy":   st.SetSystemProxy,
+		"router-mode":        st.RouterMode,
 		"enable-tun-service": false,
 		"chain-status":       "off",
 	}

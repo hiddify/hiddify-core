@@ -39,7 +39,7 @@ package keeps `/etc/hiddify-core/` across `sysupgrade` (`/lib/upgrade/keep.d/hid
 
 | File | What |
 |---|---|
-| `/etc/config/hiddify-core` | UCI: `enabled`, `conffile`, `workdir`, `log_stderr` |
+| `/etc/config/hiddify-core` | UCI: `enabled`, `conffile`, `workdir`, `log_stderr`, `mode` |
 | `/etc/hiddify-core/config.json` | the sing-box config, or a Hiddify subscription link in a file |
 | `/usr/share/hiddify-core/` | working directory: cache, geo data, logs |
 
@@ -49,6 +49,11 @@ uci commit hiddify-core
 /etc/init.d/hiddify-core restart
 logread -e hiddify-core
 ```
+
+`mode` is `router` (the default of a new install): the whole network behind the router goes
+through the proxy, TCP, UDP and ICMP, and connections from outside still reach the router and its
+port forwards (see [router mode](../../docs/router-mode.md)). `proxy` opens only the proxy ports; an
+install from before this option has no `mode` and keeps that.
 
 The service is `/etc/init.d/hiddify-core` (`start`, `stop`, `restart`, `enable`, `disable`);
 it runs `hiddify-core run -c <conffile> -D <workdir>`. TUN mode needs `kmod-tun` and nftables

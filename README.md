@@ -41,7 +41,7 @@ bash <(curl -Ls https://raw.githubusercontent.com/hiddify/hiddify-core/main/inst
 - **📱 Cross-Platform**: Powering Hiddify on Android, macOS, Linux, Windows, and iOS.
 - **🔌 Extension System**: Powerful third-party extension capability to modify configs and add custom features.
 - **⚡ High Performance**: Optimized core built on top of `sing-box` for maximum speed and stability.
-- **🏠 Router Ready**: Native support for OpenWrt and other router platforms.
+- **🏠 Router Ready**: Native support for OpenWrt and other router platforms. [Router mode](docs/router-mode.md) makes a Linux router, gateway or MikroTik a transparent proxy for its whole network (TCP, UDP, ICMP), with incoming connections and port forwards still working.
 
 ---
 

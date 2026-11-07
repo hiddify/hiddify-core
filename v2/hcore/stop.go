@@ -57,6 +57,8 @@ func stopLocked() (*CoreInfoResponse, error) {
 
 	err := closeService(ss)
 	watch.step("closing the service")
+	// router mode's forwarding goes back to what it was, once nothing routes through the TUN
+	restoreRouterHost()
 	if err != nil {
 		static.StartedService = nil
 		dumpGoroutinesToFile(fmt.Sprint(sWorkingPath, "/data/goroutine-stop.log"))

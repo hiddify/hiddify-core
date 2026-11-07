@@ -142,7 +142,8 @@ func sendEnsureEvent(stream Core_EnsureAdminBgServiceServer, progress EnsureAdmi
 
 func isVpnServiceMode(mode string, settingsJSON string) bool {
 	switch strings.ToLower(strings.TrimSpace(mode)) {
-	case "vpn", "tun":
+	case "vpn", "tun", "router":
+		// router mode is the TUN too, for the whole network
 		return true
 	case "proxy", "system-proxy", "system_proxy":
 		return false
@@ -150,6 +151,9 @@ func isVpnServiceMode(mode string, settingsJSON string) bool {
 	root, err := parseSettingsMap(settingsJSON)
 	if err != nil {
 		return false
+	}
+	if v, ok := root["router-mode"].(bool); ok && v {
+		return true
 	}
 	if v, ok := root["enable-tun"].(bool); ok {
 		return v

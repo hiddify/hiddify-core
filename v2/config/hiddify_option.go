@@ -115,6 +115,11 @@ type InboundOptions struct {
 	// AutoRedirect lets a Linux TUN use nftables routing (sing-box auto_redirect) where the process
 	// can; on by default, off only to force the plain TUN. Nothing elsewhere (see AutoRedirectAvailable).
 	AutoRedirect bool `json:"auto-redirect"`
+	// RouterMode makes a Linux router or gateway a transparent proxy for its whole network: the
+	// TUN with auto_redirect takes the TCP, UDP and ICMP the router forwards and its own, and lets
+	// connections from outside (to the router, or port forwarded) and their replies pass. It turns
+	// the TUN on (see forRouterMode).
+	RouterMode bool `json:"router-mode,omitempty"`
 }
 
 type URLTestOptions struct {

@@ -223,19 +223,33 @@ func startServiceLocked(ctx context.Context, in *StartRequest) (coreResponse *Co
 	}
 	watch.step("preparing the platform and the delay")
 	libbox.SetMemoryLimit(C.IsIos || !in.DisableMemoryLimit)
+	routerMode := static.HiddifyOptions.RouterMode
+	if routerMode {
+		prepareRouterHost()
+	}
 	instance, err := NewService(serviceContext(ctx), *options, stopSignal(ctx))
 	watch.step("starting the service")
 	if err != nil && config.AutoRedirectFailed(options, err) {
-		// the system lacks nftables, iptables or the nfqueue module: the TUN works without
-		// auto_redirect, as it did before, so build the config again and start it once more
-		Log(LogLevel_WARNING, LogType_CORE, "auto-redirect is not available here, starting the TUN without it: ", err.Error())
-		if options, err = buildRunningConfig(ctx, in); err == nil {
-			config.SaveCurrentConfig(ctx, currentBuildConfigPath, *options)
-			instance, err = NewService(serviceContext(ctx), *options, stopSignal(ctx))
-			watch.step("starting the service without auto-redirect")
+		if routerMode {
+			// no router without auto_redirect: the plain TUN breaks the network behind it
+			err = config.RouterModeError(err)
+		} else {
+			// the system lacks nftables, iptables or the nfqueue module: the TUN works without
+			// auto_redirect, as it did before, so build the config again and start it once more
+			Log(LogLevel_WARNING, LogType_CORE, "auto-redirect is not available here, starting the TUN without it: ", err.Error())
+			if options, err = buildRunningConfig(ctx, in); err == nil {
+				// a raw config comes back as it was
+				config.DropAutoRedirect(options)
+				config.SaveCurrentConfig(ctx, currentBuildConfigPath, *options)
+				instance, err = NewService(serviceContext(ctx), *options, stopSignal(ctx))
+				watch.step("starting the service without auto-redirect")
+			}
 		}
 	}
 	if err != nil {
+		if routerMode {
+			restoreRouterHost()
+		}
 		watch.done("failed: " + err.Error())
 		return errorWrapper(MessageType_START_SERVICE, err)
 	}
@@ -244,6 +258,7 @@ func startServiceLocked(ctx context.Context, in *StartRequest) (coreResponse *Co
 		if closeErr := closeService(instance); closeErr != nil {
 			Log(LogLevel_ERROR, LogType_CORE, "closing cancelled service: ", closeErr.Error())
 		}
+		restoreRouterHost()
 		return cancelledStart(err)
 	}
 	static.StartedService = instance

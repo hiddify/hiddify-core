@@ -26,6 +26,8 @@ func RunStandalone(ctx context.Context, hiddifySettingPath string, configPath st
 		fmt.Printf("Error in read and build config %v", err)
 		return err
 	}
+	// the start sees the settings the config was built with: router mode, for one
+	static.HiddifyOptions = current.HiddifyHiddifyOptions
 
 	_, err = StartService(ctx, &StartRequest{
 		ConfigContent:          current.Config,
@@ -74,6 +76,10 @@ func readAndBuildConfig(ctx context.Context, hiddifySettingPath string, configPa
 		hiddifyconfig, err = ReadHiddifyOptionsAt(hiddifySettingPath)
 		if err != nil {
 			return result, err
+		}
+		// --router holds with a settings file too (the docker image's ROUTER_MODE, the OpenWrt mode)
+		if defaultConfig != nil && defaultConfig.RouterMode {
+			hiddifyconfig.RouterMode = true
 		}
 	}
 

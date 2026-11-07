@@ -73,6 +73,10 @@ var (
 func BuildConfig(ctx context.Context, hopts *HiddifyOptions, inputOpt *ReadOptions) (*option.Options, error) {
 	ipv6Only := !hostHasIPv4()
 	hopts = forIPv6OnlyHost(hopts, ipv6Only)
+	hopts, err := forRouterMode(hopts)
+	if err != nil {
+		return nil, err
+	}
 
 	input, err := ReadSingOptions(ctx, inputOpt)
 	if err != nil {
@@ -528,8 +532,9 @@ func setInbound(options *option.Options, hopt *HiddifyOptions) {
 			StrictRoute: hopt.StrictRoute,
 			// nftables routing on Linux, with pre-matching through nfqueue: better routing and
 			// performance than the TUN alone, and no conflict with Docker bridges. Left out where it
-			// cannot run, and after a start it made fail (see AutoRedirectFailed).
-			AutoRedirect: hopt.AutoRedirect && AutoRedirectAvailable(),
+			// cannot run, and after a start it made fail (see AutoRedirectFailed). Router mode
+			// always asks for it (see router_mode.go).
+			AutoRedirect: tunAutoRedirect(hopt),
 
 			// EndpointIndependentNat: true,
 			// GSO:                    runtime.GOOS != "windows",
