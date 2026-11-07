@@ -121,6 +121,7 @@ func buildRunningConfig(ctx context.Context, in *StartRequest) (*option.Options,
 	options, err := buildConfigToRun(ctx, in)
 	if err == nil {
 		recordDelegatedSystemProxy(options)
+		markEngineLeftovers(options)
 	}
 	return options, err
 }

@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"runtime"
 
+	"github.com/hiddify/hiddify-core/v2/hcore"
 	"github.com/hiddify/hiddify-core/v2/hcore/adminbg"
 	"github.com/hiddify/hiddify-core/v2/hcore/hprocess"
 	"github.com/kardianos/service"
@@ -33,7 +34,17 @@ func allowAdminBgMethod(method string) error {
 	return adminbg.AllowCoreMethod(method)
 }
 
+// CleanupLeftovers undoes what the service's engine left in the host when it died with the
+// service: the routing of its TUN (see hcore.CleanupLeftovers).
+func CleanupLeftovers() {
+	_, work := fullCoreDirectories()
+	hcore.CleanupLeftovers(work, func(_ hcore.LogLevel, message string) { log.Print(message) })
+}
+
 func (m *hiddifyNext) StartAdminBgGrpcServer(listenAddressG string) (*grpc.Server, error) {
+	// an engine killed with the service (a crash, SIGKILL) left its TUN's routing behind: the host
+	// has no network until the app connects again, so undo it before waiting for the app
+	CleanupLeftovers()
 	lis, err := net.Listen("tcp", listenAddressG)
 	if err != nil {
 		log.Printf("failed to listen: %v", err)
@@ -156,7 +167,8 @@ func StartAdminBgService(goArg string) (int, string) {
 		Description:      "Hiddify virtual private network",
 		WorkingDirectory: dataDirectory,
 		Option: map[string]interface{}{
-			"RunAtLoad": true,
+			"RunAtLoad":     true,
+			"SystemdScript": systemdUnit,
 		},
 	}
 

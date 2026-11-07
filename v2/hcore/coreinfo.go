@@ -47,6 +47,10 @@ func setCoreStatusLocked(state CoreStates, msgType MessageType, message string) 
 	}
 	Log(LogLevel_INFO, LogType_CORE, msg)
 	setCoreState(state)
+	if state == CoreStates_STOPPED {
+		// the engine and its inbounds are closed: they undid what they changed in the host
+		markEngineLeftovers(nil)
+	}
 	info := CoreInfoResponse{
 		CoreState:   state,
 		MessageType: msgType,

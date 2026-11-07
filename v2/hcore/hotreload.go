@@ -107,7 +107,7 @@ func reloadRunning(ctx context.Context, in *StartRequest) (MessageType, error) {
 		return MessageType_HOT_RELOAD_FAILED, err
 	}
 	if tunChanged {
-		return MessageType_HOT_RELOAD_FAILED, errors.New("tun inbound has changed, hot reload can not be applied")
+		return MessageType_HOT_RELOAD_FAILED, errTunChanged
 	}
 	// last point to give up: once applied, the reload is kept and recorded below
 	if err := contextErr(ctx); err != nil {
@@ -124,9 +124,17 @@ func reloadRunning(ctx context.Context, in *StartRequest) (MessageType, error) {
 	return MessageType_EMPTY, nil
 }
 
+// errTunChanged: the TUN cannot change in place, so the app restarts the core instead; expected,
+// not an error.
+var errTunChanged = errors.New("tun inbound has changed, hot reload can not be applied")
+
 // hotReloadError reports a failed hot reload; the core keeps running unchanged.
 func hotReloadError(messageType MessageType, err error) (*CoreInfoResponse, error) {
-	Log(LogLevel_ERROR, LogType_CORE, "hot reload: ", err.Error())
+	level := LogLevel_ERROR
+	if errors.Is(err, errTunChanged) {
+		level = LogLevel_INFO
+	}
+	Log(level, LogType_CORE, "hot reload: ", err.Error())
 	state := currentCoreState()
 	if state == CoreStates_HOT_RELOADING {
 		state = static.connectedState()

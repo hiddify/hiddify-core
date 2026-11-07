@@ -82,10 +82,14 @@ func (s *hiddifyAdminBG) startBridge(in *AdminBgStartRequest) (*AdminBgResponse,
 
 // fullCoreOptions writes the request's resources and returns the engine options for it: the same
 // for a start and a reload, which differ only in how the engine applies them.
+// fullCoreDirectories are the base and working dirs of the engine the service runs.
+func fullCoreDirectories() (base string, work string) {
+	base = filepath.Join(serviceDataDirectory(), "core")
+	return base, filepath.Join(base, "work")
+}
+
 func fullCoreOptions(in *AdminBgStartRequest) (*adminbg.Options, error) {
-	dataDirectory := serviceDataDirectory()
-	base := filepath.Join(dataDirectory, "core")
-	work := filepath.Join(base, "work")
+	base, work := fullCoreDirectories()
 	temp := filepath.Join(base, "temp")
 	for _, directory := range []string{base, work, temp, filepath.Join(work, "data")} {
 		if err := os.MkdirAll(directory, 0o700); err != nil {

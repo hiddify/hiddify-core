@@ -71,6 +71,8 @@ var (
 
 // TODO include selectors
 func BuildConfig(ctx context.Context, hopts *HiddifyOptions, inputOpt *ReadOptions) (*option.Options, error) {
+	ipv6Only := !hostHasIPv4()
+	hopts = forIPv6OnlyHost(hopts, ipv6Only)
 
 	input, err := ReadSingOptions(ctx, inputOpt)
 	if err != nil {
@@ -101,6 +103,9 @@ func BuildConfig(ctx context.Context, hopts *HiddifyOptions, inputOpt *ReadOptio
 
 	if err := setRoutingOptions(&options, hopts); err != nil {
 		return nil, err
+	}
+	if ipv6Only {
+		useIPv6Resolvers(&options)
 	}
 
 	return &options, nil

@@ -85,6 +85,9 @@ func EnsureControlSecret(owner string) (string, error) {
 }
 
 func LoadControlSecret() (string, error) {
+	if foregroundSecret != "" {
+		return foregroundSecret, nil
+	}
 	secret, err := os.ReadFile(controlSecretPath())
 	if err != nil {
 		legacy := filepath.Join(legacyControlDataDir(), controlSecretFileName)

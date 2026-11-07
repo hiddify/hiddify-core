@@ -88,7 +88,7 @@ func runCore() int {
 	// before it stops cleanly. Its log reaches the app over gRPC.
 	hprocess.DetachStdio()
 
-	reason := waitForCoreEnd(coreOptions.ownerPID)
+	reason := waitForCoreEnd(bufio.NewReader(os.Stdin), coreOptions.ownerPID)
 	fmt.Fprintf(os.Stderr, "hiddify core: stopping (%s)\n", reason)
 	stopped := make(chan struct{})
 	go func() {
@@ -106,10 +106,10 @@ func runCore() int {
 // waitForCoreEnd returns once the app is gone or asks the core to stop. The app holds the write end
 // of stdin and never writes to it: it closes when the app exits, even when it is killed. Its
 // process is watched as well, for a stdin that a wrapper keeps open.
-func waitForCoreEnd(ownerPID int32) string {
+func waitForCoreEnd(stdin io.Reader, ownerPID int32) string {
 	end := make(chan string, 3)
 	go func() {
-		_, _ = io.Copy(io.Discard, bufio.NewReader(os.Stdin))
+		_, _ = io.Copy(io.Discard, stdin)
 		end <- "the app closed its pipe"
 	}()
 	signals := make(chan os.Signal, 1)

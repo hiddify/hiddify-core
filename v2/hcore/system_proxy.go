@@ -96,6 +96,7 @@ func EnableUserSystemProxy(address string, supportSOCKS bool) error {
 		return E.Cause(err, "set system proxy")
 	}
 	systemProxyState.proxy = proxy
+	markUserSystemProxy(server.String())
 	return nil
 }
 
@@ -113,6 +114,7 @@ func disableUserSystemProxyLocked() error {
 	}
 	systemProxyState.proxy = nil
 	err := proxy.Disable()
+	markUserSystemProxy("")
 	_ = proxy.Close()
 	return err
 }

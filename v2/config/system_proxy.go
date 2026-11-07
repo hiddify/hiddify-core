@@ -18,6 +18,15 @@ type SystemProxyTarget struct {
 // full config can bring a mixed or HTTP inbound beside the TUN), and returns where the first one
 // pointed. A wildcard listen address is reached on the loopback.
 func TakeSystemProxy(options *option.Options) *SystemProxyTarget {
+	return systemProxy(options, true)
+}
+
+// SystemProxyOf is where the config's first set_system_proxy inbound points, nil when none has it.
+func SystemProxyOf(options *option.Options) *SystemProxyTarget {
+	return systemProxy(options, false)
+}
+
+func systemProxy(options *option.Options, take bool) *SystemProxyTarget {
 	if options == nil {
 		return nil
 	}
@@ -27,7 +36,9 @@ func TakeSystemProxy(options *option.Options) *SystemProxyTarget {
 		if !ok || mixed == nil || !mixed.SetSystemProxy {
 			continue
 		}
-		mixed.SetSystemProxy = false
+		if take {
+			mixed.SetSystemProxy = false
+		}
 		if target != nil {
 			continue
 		}
@@ -40,6 +51,9 @@ func TakeSystemProxy(options *option.Options) *SystemProxyTarget {
 		target = &SystemProxyTarget{
 			Address:      M.SocksaddrFrom(host, mixed.ListenPort).String(),
 			SupportSOCKS: inbound.Type == C.TypeMixed,
+		}
+		if !take {
+			break
 		}
 	}
 	return target

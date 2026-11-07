@@ -76,6 +76,7 @@ func Setup(params *SetupRequest, platformInterface libbox.PlatformInterface) err
 
 	sWorkingPath = params.WorkingDir
 	sSetupMode = params.Mode
+	cleanupLeftovers()
 	keepPreviousGoroutineSnapshot(sWorkingPath, sSetupMode)
 	go writeGoroutineSnapshots(static.BaseContext, sWorkingPath, sSetupMode)
 	os.Chdir(sWorkingPath)
