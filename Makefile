@@ -39,7 +39,9 @@ CLI_TAGS=$(call tags,$(COMMON_TAGS) $(CLI_ADD_TAGS) $(NAIVE_TAGS))
 # OpenWrt SDK source build (platform/wrt/Makefile, checked against this by CI): no naive (cronet
 # is a native library) and the low-memory variant for routers.
 WRT_TAGS=$(call tags,$(COMMON_TAGS) with_dhcp with_low_memory)
-IOS_ADD_TAGS=with_dhcp,with_low_memory,with_purego
+# No with_purego on Apple: it makes cronet dlopen a libcronet that iOS never ships ("cronet: library
+# not found", hiddify-app#2475). Without it cronet-go links its static lib/ios_* and lib/tvos_* archives.
+IOS_ADD_TAGS=with_dhcp,with_low_memory
 MACOS_ADD_TAGS=with_dhcp
 WINDOWS_ADD_TAGS=with_purego
 # Optional build-time secrets (GitHub Actions): HIDDIFY_SECRET_KEY (base64 AES-256 key) is embedded,
