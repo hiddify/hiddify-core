@@ -210,31 +210,8 @@ func StartGrpcServerByMode(listenAddressG string, mode SetupMode) (*grpc.Server,
 	if mode == SetupMode_GRPC_BACKGROUND_INSECURE || mode == SetupMode_GRPC_NORMAL_INSECURE {
 		grpcServer[mode] = grpc.NewServer()
 	} else {
-		table := db.GetTable[hcommon.AppSettings]()
-		Log(LogLevel_DEBUG, LogType_CORE, table)
-		grpcServerPrivateKey, err := table.Get("grpc_server_private_key")
-		grpcServerPublicKey, err2 := table.Get("grpc_server_public_key")
-		needNew := err != nil || err2 != nil
-		if !needNew {
-			pub, ok1 := grpcServerPublicKey.Value.([]byte)
-			priv, ok2 := grpcServerPrivateKey.Value.([]byte)
-			if !ok1 || !ok2 || !hutils.CertificateHasLoopbackSAN(pub) {
-				needNew = true
-			} else {
-				certpair = &hutils.CertificatePair{Certificate: pub, PrivateKey: priv}
-			}
-		}
-		if needNew {
-			Log(LogLevel_DEBUG, LogType_CORE, fmt.Sprintf("generating new grpc server certificate (load err: %v %v)\n", err, err2))
-			certpair, err = hutils.GenerateCertificatePair()
-			if err != nil {
-				Log(LogLevel_ERROR, LogType_CORE, fmt.Sprintf("failed to generate certificate pair: %v", err))
-				return nil, err
-			}
-			table.UpdateInsert(
-				&hcommon.AppSettings{Id: "grpc_server_public_key", Value: certpair.Certificate},
-				&hcommon.AppSettings{Id: "grpc_server_private_key", Value: certpair.PrivateKey},
-			)
+		if err := loadServerCertificate(); err != nil {
+			return nil, err
 		}
 		// Load server certificate and private key
 		serverCert, err := tls.X509KeyPair(certpair.Certificate, certpair.PrivateKey)
@@ -282,6 +259,45 @@ func StartGrpcServerByMode(listenAddressG string, mode SetupMode) (*grpc.Server,
 	}()
 
 	return grpcServer[mode], nil
+}
+
+// loadServerCertificate sets certpair, the certificate every mTLS server of this process presents.
+//
+// It is loaded once per process. On Android the app's core and the VPN service's core run in the
+// same process, and the app pins the certificate it fetched when it set its core up. Reading it
+// again for the second server could fail (the store busy or not written yet on a first run), and
+// the new certificate made then replaced the pinned one: the app's call to the VPN service's core
+// failed with "self signed certificate" (hiddify-app#2473).
+func loadServerCertificate() error {
+	if certpair != nil {
+		return nil
+	}
+	table := db.GetTable[hcommon.AppSettings]()
+	grpcServerPrivateKey, err := table.Get("grpc_server_private_key")
+	grpcServerPublicKey, err2 := table.Get("grpc_server_public_key")
+	if err == nil && err2 == nil {
+		pub, ok1 := grpcServerPublicKey.Value.([]byte)
+		priv, ok2 := grpcServerPrivateKey.Value.([]byte)
+		if ok1 && ok2 && hutils.CertificateHasLoopbackSAN(pub) {
+			certpair = &hutils.CertificatePair{Certificate: pub, PrivateKey: priv}
+			return nil
+		}
+	}
+	Log(LogLevel_DEBUG, LogType_CORE, fmt.Sprintf("generating new grpc server certificate (load err: %v %v)\n", err, err2))
+	pair, err := hutils.GenerateCertificatePair()
+	if err != nil {
+		Log(LogLevel_ERROR, LogType_CORE, fmt.Sprintf("failed to generate certificate pair: %v", err))
+		return err
+	}
+	certpair = pair
+	if err := table.UpdateInsert(
+		&hcommon.AppSettings{Id: "grpc_server_public_key", Value: pair.Certificate},
+		&hcommon.AppSettings{Id: "grpc_server_private_key", Value: pair.PrivateKey},
+	); err != nil {
+		// this process keeps using it; another process (the iOS extension) reads it from the store
+		Log(LogLevel_WARNING, LogType_CORE, fmt.Sprintf("failed to store grpc server certificate: %v", err))
+	}
+	return nil
 }
 
 // GetGrpcServerPublicKey returns the gRPC server's certificate (PEM).
