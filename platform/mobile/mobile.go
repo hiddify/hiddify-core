@@ -18,9 +18,14 @@ type SetupOptions struct {
 	Debug           bool
 	Mode            int
 	FixAndroidStack bool
+	// MemoryLimit is what the core may use on this device, in bytes; 0 for none of its own.
+	MemoryLimit int64
+	// LowMemory is set on a device short of memory (a low-RAM TV): relaying trades speed for memory.
+	LowMemory bool
 }
 
 func Setup(opt *SetupOptions, platformInterface libbox.PlatformInterface) error {
+	hcore.SetDeviceMemory(opt.MemoryLimit, opt.LowMemory)
 	return hcore.Setup(&hcore.SetupRequest{
 		BasePath:          opt.BasePath,
 		WorkingDir:        opt.WorkingDir,

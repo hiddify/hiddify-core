@@ -68,11 +68,15 @@ func Setup(params *SetupRequest, platformInterface libbox.PlatformInterface) err
 			FixAndroidStack: params.FixAndroidStack,
 			LogMaxLines:     100,
 			Debug:           params.Debug,
+			OomMemoryLimit:  deviceMemoryLimit,
 		})
 
 	hutils.RedirectStderr(fmt.Sprint(params.WorkingDir, "/data/stderr", params.Mode, ".log"))
 
 	Log(LogLevel_DEBUG, LogType_CORE, fmt.Sprintf("libbox.Setup success %s %s %s %v", params.BasePath, params.WorkingDir, params.TempDir, tcpConn))
+	if deviceMemoryLimit > 0 || deviceLowMemory {
+		Log(LogLevel_DEBUG, LogType_CORE, fmt.Sprintf("device memory limit %d MB, low memory %v", deviceMemoryLimit>>20, deviceLowMemory))
+	}
 
 	sWorkingPath = params.WorkingDir
 	sSetupMode = params.Mode
