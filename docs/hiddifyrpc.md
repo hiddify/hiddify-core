@@ -576,6 +576,7 @@ translate.goog domain front so it reaches users behind GFW-style filters.
 | owner_pid | [int32](#int32) |  |  |
 | cli_path | [string](#string) |  | Absolute path to this app&#39;s HiddifyCli / HiddifyCli.exe (used for elevate install). |
 | owner_user | [string](#string) |  |  |
+| proxy_only | [bool](#bool) |  | Runs the engine without its TUN: a proxy mode whose profile needs administrator rights. |
 
 
 
@@ -886,6 +887,7 @@ translate.goog domain front so it reaches users behind GFW-style filters.
 | upload_speed_cached | [bool](#bool) |  | upload_speed is from an earlier run, kept until a new test |
 | download_speed_cached | [bool](#bool) |  | download_speed is from an earlier run, kept until a new test |
 | error | [string](#string) |  | why it failed: the error of its last URL test, or why it is not ready (WARP, MASQUE); empty when it works or does not say |
+| sort_delay | [int32](#int32) |  | what to sort by: url_test_delay, or the delay cached from the previous run, which is not shown; 0 untested |
 
 
 
@@ -952,6 +954,8 @@ translate.goog domain front so it reaches users behind GFW-style filters.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | is_enabled | [bool](#bool) |  |  |
+| address | [string](#string) |  | Where the system proxy points (host:port), when enabling: the local proxy of a core that runs as root and cannot set the user&#39;s system proxy itself. |
+| support_socks | [bool](#bool) |  |  |
 
 
 
@@ -1368,6 +1372,8 @@ Elevated background core control API (Windows/Linux OS service, macOS root daemo
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
 | Start | [AdminBgStartRequest](#adminbgservice-AdminBgStartRequest) | [AdminBgResponse](#adminbgservice-AdminBgResponse) |  |
+| Reload | [AdminBgStartRequest](#adminbgservice-AdminBgStartRequest) | [AdminBgResponse](#adminbgservice-AdminBgResponse) | Applies a changed configuration to the running engine without restarting it. |
+| Restart | [AdminBgStartRequest](#adminbgservice-AdminBgStartRequest) | [AdminBgResponse](#adminbgservice-AdminBgResponse) | Stops the running engine and starts it with the request: a change a reload cannot apply. |
 | Stop | [.hcommon.Empty](#hcommon-Empty) | [AdminBgResponse](#adminbgservice-AdminBgResponse) |  |
 | Status | [.hcommon.Empty](#hcommon-Empty) | [AdminBgResponse](#adminbgservice-AdminBgResponse) |  |
 | Exit | [.hcommon.Empty](#hcommon-Empty) | [AdminBgResponse](#adminbgservice-AdminBgResponse) |  |
@@ -1392,6 +1398,8 @@ Elevated background core control API (Windows/Linux OS service, macOS root daemo
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | message | [string](#string) |  |  |
+| system_proxy | [string](#string) |  | Where the running engine&#39;s system proxy points (host:port), empty when it has none. The service runs as root and cannot set the user&#39;s system proxy: the app&#39;s own core sets it. |
+| system_proxy_socks | [bool](#bool) |  |  |
 
 
 
@@ -1419,6 +1427,7 @@ Elevated background core control API (Windows/Linux OS service, macOS root daemo
 | resources | [AdminBgStartRequest.ResourcesEntry](#adminbgservice-AdminBgStartRequest-ResourcesEntry) | repeated |  |
 | disable_memory_limit | [bool](#bool) |  |  |
 | owner_pid | [int32](#int32) |  | When set, the daemon stops once this process is gone (app quit or crash). |
+| proxy_only | [bool](#bool) |  | Runs the engine without its TUN (a proxy mode that needs administrator rights). |
 
 
 
