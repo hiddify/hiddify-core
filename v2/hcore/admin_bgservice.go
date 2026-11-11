@@ -298,11 +298,12 @@ func ensureAdminBgServiceInstalled(cliPath, ownerUser string) error {
 func runCli(cliPath string, args ...string) error {
 	cmd := exec.Command(cliPath, args...)
 	cmd.Dir = filepath.Dir(cliPath)
+	prepareCliCommand(cmd)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		msg := strings.TrimSpace(string(out))
 		if msg == "" {
-			return err
+			return explainCliError(cliPath, err)
 		}
 		return fmt.Errorf("%s", msg)
 	}
