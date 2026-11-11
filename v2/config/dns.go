@@ -362,8 +362,14 @@ func addForceDirect(options *option.Options, hopt *HiddifyOptions) ([]option.Def
 
 }
 
-// dnsGroupIgnoreRange: answers in this range count as failures, so the group tries the next server
-const dnsGroupIgnoreRange = "10.10.34.0/24"
+// dnsGroupIgnoreRanges: answers in these ranges count as failures, so the group tries the next
+// server. They are the addresses Iran's DNS injection answers with, for A and for AAAA. With
+// only the IPv4 one, a filtered domain that has no AAAA record resolved to the injected IPv6
+// address alone, and a WireGuard peer given by that domain was sent there for good.
+var dnsGroupIgnoreRanges = []badoption.Prefix{
+	badoption.Prefix(netip.MustParsePrefix("10.10.34.0/24")),
+	badoption.Prefix(netip.MustParsePrefix("2001:4188:2:600:10:10:34:0/120")),
+}
 
 // dnsGroupAddresses lists the group members in order: the selected address, its TCP and TLS variants,
 // then a fallback resolver (8.8.8.8, or 1.1.1.1 when the selection already is 8.8.8.8) over UDP, TCP and TLS.
@@ -453,7 +459,7 @@ func getDNSGroupOptions(tag string, selected option.DNSServerOptions, selectedAd
 		Options: &option.GroupDNSServerOptions{
 			Servers:      members,
 			Mode:         C.DNSGroupModeSequential,
-			IgnoreRanges: []badoption.Prefix{badoption.Prefix(netip.MustParsePrefix(dnsGroupIgnoreRange))},
+			IgnoreRanges: dnsGroupIgnoreRanges,
 		},
 	}, servers, nil
 }
@@ -659,12 +665,9 @@ func getMultiDnsServerOptions(tag string, servers []string, parallel bool) (*opt
 		Tag:  tag,
 		Type: C.DNSTypeMulti,
 		Options: &option.MultiDNSServerOptions{
-			Servers:  servers,
-			Parallel: parallel,
-			IgnoreRanges: []badoption.Prefix{
-				badoption.Prefix(netip.MustParsePrefix("10.10.34.0/24")),
-				badoption.Prefix(netip.MustParsePrefix("001:4188:2:600::/64")),
-			},
+			Servers:      servers,
+			Parallel:     parallel,
+			IgnoreRanges: dnsGroupIgnoreRanges,
 		},
 	}
 	return &o, nil

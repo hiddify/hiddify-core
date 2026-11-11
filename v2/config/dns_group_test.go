@@ -8,6 +8,7 @@ import (
 	C "github.com/sagernet/sing-box/constant"
 	"github.com/sagernet/sing-box/experimental/libbox"
 	"github.com/sagernet/sing-box/option"
+	"github.com/sagernet/sing/common/json/badoption"
 )
 
 func TestDNSGroupAddresses(t *testing.T) {
@@ -84,8 +85,13 @@ func TestBuildConfigDNSGroups(t *testing.T) {
 		if g.Mode != C.DNSGroupModeSequential {
 			t.Fatalf("%s: mode %q, want sequential", tag, g.Mode)
 		}
-		if len(g.IgnoreRanges) != 1 || netip.Prefix(g.IgnoreRanges[0]).String() != dnsGroupIgnoreRange {
-			t.Fatalf("%s: ignore ranges %v", tag, g.IgnoreRanges)
+		// the injected answers, A and AAAA
+		for _, injected := range []string{"10.10.34.35", "2001:4188:2:600:10:10:34:35"} {
+			if !slices.ContainsFunc(g.IgnoreRanges, func(p badoption.Prefix) bool {
+				return netip.Prefix(p).Contains(netip.MustParseAddr(injected))
+			}) {
+				t.Fatalf("%s: ignore ranges %v do not have %s", tag, g.IgnoreRanges, injected)
+			}
 		}
 		if len(g.Servers) != 6 || g.Servers[want.selected] != selectedTags[tag] {
 			t.Fatalf("%s: members %v, want 6 with %s at %d", tag, g.Servers, selectedTags[tag], want.selected)
