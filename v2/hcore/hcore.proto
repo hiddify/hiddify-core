@@ -142,6 +142,7 @@ message OutboundInfo {
   bool download_speed_cached = 24; // download_speed is from an earlier run, kept until a new test
   string error = 25; // why it failed: the error of its last URL test, or why it is not ready (WARP, MASQUE); empty when it works or does not say
   int32 sort_delay = 26; // what to sort by: url_test_delay, or the delay cached from the previous run, which is not shown; 0 untested
+  bool resting = 27; // keep top left it at rest: not loaded, not tested and not used, until it is selected, tested by its tag or pinned
 }
 
 message IpInfo {
@@ -163,7 +164,7 @@ message OutboundGroup {
   bool selectable=4;
   bool Is_expand=5;
   repeated OutboundInfo items = 6;
-  
+  bool keep_top_picking = 7; // keep top still goes through the proxies: which of them stay in use is not settled
 }
 message OutboundGroupList{
   repeated OutboundGroup items = 1;
@@ -230,6 +231,7 @@ message SelectOutboundRequest {
 
 message UrlTestRequest {
   string tag = 1;
+  repeated string tags = 2; // instead of tag: these proxies, a few at a time, also the ones keep top left at rest
 }
 
 message SpeedTestRequest {

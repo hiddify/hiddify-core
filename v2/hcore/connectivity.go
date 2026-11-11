@@ -74,9 +74,7 @@ func (h *HiddifyInstance) watchConnectivity(ctx context.Context) {
 	ticker := time.NewTicker(connectivityRecheck)
 	defer ticker.Stop()
 	for {
-		if state, ok := h.updateConnectivity(ctx); ok {
-			h.followKeepTop(state)
-		}
+		h.updateConnectivity(ctx)
 		select {
 		case <-ctx.Done():
 			return
@@ -98,14 +96,14 @@ func (h *HiddifyInstance) updateConnectivity(ctx context.Context) (CoreStates, b
 	if ctx.Err() != nil {
 		return 0, false
 	}
-	state := probeConnectivity(h)
+	state := keepTopConnectivity(h, probeConnectivity(h))
 	setCoreStatusIf(running, state, MessageType_EMPTY, "")
 	return state, true
 }
 
 // connectedState is the state of a running core by its proxies.
 func (h *HiddifyInstance) connectedState() CoreStates {
-	return probeConnectivity(h)
+	return keepTopConnectivity(h, probeConnectivity(h))
 }
 
 // probeConnectivity is replaced in tests, which have no outbound to ping.
@@ -129,10 +127,11 @@ func (h *HiddifyInstance) proxiesConnectivity() CoreStates {
 	if ctx == nil || box == nil || h.UrlTestHistory() == nil {
 		return CoreStates_WAITING
 	}
-	histories := monitoring.Get(ctx).OutboundsHistory("")
+	monitor := monitoring.Get(ctx)
+	histories := monitor.OutboundsHistory("")
 	lowest, ok := box.Outbound().Outbound(config.OutboundURLTestTag)
 	if !ok {
-		return decideConnectivity(0, true, selectProxyLeaves(box, histories))
+		return decideConnectivity(0, true, selectProxyLeaves(box, histories, monitor.Parked))
 	}
 	group, isGroup := lowest.(adapter.OutboundGroup)
 	if !isGroup {
@@ -140,7 +139,8 @@ func (h *HiddifyInstance) proxiesConnectivity() CoreStates {
 	}
 	var leaves []int32
 	for _, tag := range group.All() {
-		if !isProxyTag(tag) || isGroupTag(box, tag) {
+		// a proxy keep top left at rest is not tested and not used: it says nothing
+		if !isProxyTag(tag) || isGroupTag(box, tag) || monitor.Parked(tag) {
 			continue
 		}
 		leaves = append(leaves, historyDelay(histories[tag]))
@@ -150,7 +150,7 @@ func (h *HiddifyInstance) proxiesConnectivity() CoreStates {
 
 // selectProxyLeaves are delays of non-group proxy members of "select" (the one proxy when
 // "lowest" was not built).
-func selectProxyLeaves(box *sbox.Box, histories map[string]*adapter.URLTestHistory) []int32 {
+func selectProxyLeaves(box *sbox.Box, histories map[string]*adapter.URLTestHistory, rests func(string) bool) []int32 {
 	sel, ok := box.Outbound().Outbound(config.OutboundSelectTag)
 	if !ok {
 		return nil
@@ -164,7 +164,7 @@ func selectProxyLeaves(box *sbox.Box, histories map[string]*adapter.URLTestHisto
 	}
 	var leaves []int32
 	for _, tag := range group.All() {
-		if !isProxyTag(tag) || isGroupTag(box, tag) {
+		if !isProxyTag(tag) || isGroupTag(box, tag) || rests(tag) {
 			continue
 		}
 		leaves = append(leaves, historyDelay(histories[tag]))

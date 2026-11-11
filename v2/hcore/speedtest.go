@@ -305,7 +305,9 @@ func (h *HiddifyInstance) SpeedTest(d direction, in *SpeedTestRequest) (*hcommon
 	var targets []adapter.Outbound
 	if group, isGroup := outbound.(adapter.OutboundGroup); isGroup {
 		for _, tag := range group.All() {
-			if out, ok := box.Outbound().Outbound(tag); ok && isProxyTag(tag) && !isGroupTag(box, tag) {
+			// a test of the group is of the proxies it uses: one keep top left at rest is tested
+			// by its own tag
+			if out, ok := box.Outbound().Outbound(tag); ok && isProxyTag(tag) && !isGroupTag(box, tag) && !proxyRests(tag) {
 				targets = append(targets, out)
 			}
 		}

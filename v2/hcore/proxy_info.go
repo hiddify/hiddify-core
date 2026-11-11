@@ -65,11 +65,26 @@ func memberRank(history adapter.URLTestHistoryStorage, tag string) uint32 {
 	return uint32(balancer.Rank(his))
 }
 
+// memberHistory is the result of a member a group uses: none for one keep top left at rest, which
+// no group uses, whatever its last ping was.
 func memberHistory(history adapter.URLTestHistoryStorage, tag string) *adapter.URLTestHistory {
-	if history == nil {
+	if history == nil || proxyRests(tag) {
 		return nil
 	}
 	return history.LoadURLTestHistory(tag)
+}
+
+// proxyRests reports a proxy keep top left at rest (monitoring.Parked).
+func proxyRests(tag string) bool {
+	if static == nil {
+		return false
+	}
+	if ctx := static.Context(); ctx != nil {
+		if monitor := monitoring.Get(ctx); monitor != nil {
+			return monitor.Parked(tag)
+		}
+	}
+	return false
 }
 
 // spreadMember is the member a balancer that spreads connections stands for, in the app: its
@@ -166,6 +181,7 @@ func (h *HiddifyInstance) GetProxyInfo(url_test_history *adapter.URLTestHistory,
 	out.Tag = detour.Tag()
 	out.Type = adapter.DisplayType(detour) // the type and its details, and why it failed; the status is out.Status
 	out.Status = Status(detour.Status())
+	out.Resting = proxyRests(out.Tag)
 	if group, isGroup := detour.(adapter.OutboundGroup); isGroup {
 		out.IsGroup = true
 		gnow := groupNow(group)
@@ -276,9 +292,16 @@ func (h *HiddifyInstance) GetAllProxiesInfo(hismap map[string]*adapter.URLTestHi
 		}
 	}
 
+	keepTopPicking := false
+	if ctx := h.Context(); ctx != nil {
+		if monitor := monitoring.Get(ctx); monitor != nil {
+			keepTopPicking = monitor.KeepTopPicking()
+		}
+	}
 	var groups OutboundGroupList
 	for _, iGroup := range iGroups {
 		var group OutboundGroup
+		group.KeepTopPicking = keepTopPicking
 		group.Tag = iGroup.Tag()
 		group.Type = iGroup.Type()
 		_, group.Selectable = iGroup.(*G.Selector)

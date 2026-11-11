@@ -299,6 +299,16 @@ func (h *HiddifyInstance) UrlTestActive() (*hcommon.Response, error) {
 }
 
 func (h *HiddifyInstance) UrlTest(in *UrlTestRequest) (*hcommon.Response, error) {
+	if len(in.Tags) > 0 {
+		// the proxies the user looks at, in use or at rest: as many at a time as the monitoring
+		// tests, so the ones at rest are loaded a few at a time, not all at once
+		ctx := h.Context()
+		if h.Box() == nil || ctx == nil {
+			return nil, E.New("service not ready")
+		}
+		monitoring.Get(ctx).TestOutbounds(in.Tags, "asked for by the app")
+		return &hcommon.Response{Code: hcommon.ResponseCode_OK}, nil
+	}
 	if in.Tag == "" {
 		return h.UrlTestActive()
 	}

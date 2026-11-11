@@ -40,9 +40,15 @@ type HiddifyOptions struct {
 	// still to test were slower in their last ping, and every one without a ping of the last day
 	// has been tested (see hcore's pickTopEarly).
 	KeepTopQuick bool `json:"keep-top-quick,omitempty" overridable:"true"`
+	// KeepTopBatch is how many proxies keep top tests at a time, beside the best found so far: 0
+	// for the core's default (10), below 0 for all of them at once.
+	KeepTopBatch int `json:"keep-top-batch,omitempty" overridable:"true"`
 	// KeepTopCountries, when set, keeps only proxies of these countries (two-letter codes), by
 	// where their IP is, else by the flag in their name; with keep-top 0 or -1, all of them.
 	KeepTopCountries []string `json:"keep-top-countries,omitempty"`
+	// KeepTopPinned are the tags of the profile's proxies keep top always uses, whatever their
+	// ping, beside the fastest: the ones the user asked to keep loaded.
+	KeepTopPinned []string `json:"keep-top-pinned,omitempty"`
 	// KeepTags are the tags of the profile's proxies the user chose to run: while any of them is in
 	// the profile, only those run, whatever KeepTop says; none of them left, KeepTop decides again.
 	KeepTags []string `json:"keep-tags,omitempty"`
