@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"runtime"
+	"runtime/pprof"
 	"slices"
 	"sort"
 	"strings"
@@ -81,8 +82,24 @@ func writeGoroutineSnapshots(ctx context.Context, workingPath string, mode Setup
 			continue
 		}
 		os.MkdirAll(filepath.Join(workingPath, "data"), 0o755)
-		os.WriteFile(goroutineSnapshotPath(workingPath, mode), []byte(time.Now().UTC().Format(time.RFC3339)+"\n\n"+libbox.GoroutineDump()), 0o644)
+		os.WriteFile(goroutineSnapshotPath(workingPath, mode), []byte(time.Now().UTC().Format(time.RFC3339)+"\n\n"+goroutineDump()), 0o644)
 	}
+}
+
+// goroutineDump is the goroutine profile as text: each distinct stack once, with the number of
+// goroutines on it.
+//
+// It is not runtime.Stack(all) (libbox.GoroutineDump), whose output also has each goroutine's
+// state and wait time: that one prints with the runtime's crash traceback, and a goroutine it
+// cannot unwind (one between Go and C, as gomobile's are) makes it hexdump the stack around the
+// frame. With the frame outside the goroutine's stack the hexdump's length is negative and the
+// runtime throws (go1.27.3, "unsafe.Slice: len out of range" in runtime.hexdumpWords), so the
+// snapshot, taken every minute, ended the core after some hours. The profile unwinds silently
+// and stops at such a frame.
+func goroutineDump() string {
+	var dump strings.Builder
+	pprof.Lookup("goroutine").WriteTo(&dump, 1)
+	return dump.String()
 }
 
 // maxDiagnosticsReports is how many reports of each kind the zip holds, newest first.
