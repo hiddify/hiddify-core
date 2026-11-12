@@ -3,6 +3,7 @@ package hcore
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net"
 	"os"
@@ -350,9 +351,20 @@ func writeAdminBgConnectRequest(req *EnsureAdminBgServiceRequest) (string, error
 	return path, nil
 }
 
+// errNoAdminPrompt: nothing on this system can ask for the administrator password (Linux without
+// pkexec, a password dialog for sudo, or passwordless sudo). Not a refusal: the user has to install something.
+var errNoAdminPrompt = errors.New("VPN mode needs pkexec to ask for the administrator password, and it is not installed: " +
+	"install the pkexec package (polkit) and try again, or use system proxy mode")
+
+// errAdminPromptRefused: the user dismissed the administrator prompt, or the password was wrong.
+var errAdminPromptRefused = errors.New("could not install the VPN service; allow the administrator prompt and try again")
+
 func isPermissionDenied(err error) bool {
-	if err == nil {
+	if err == nil || errors.Is(err, errNoAdminPrompt) {
 		return false
+	}
+	if errors.Is(err, errAdminPromptRefused) {
+		return true
 	}
 	msg := strings.ToLower(err.Error())
 	for _, needle := range []string{
