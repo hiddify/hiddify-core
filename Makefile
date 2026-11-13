@@ -154,12 +154,12 @@ windows-amd64: prepare windows-winres
 	# HiddifyAdmin.exe: GUI subsystem, requireAdministrator manifest and the app icon; the only
 	# binary that triggers a UAC prompt (VPN service install).
 	x86_64-w64-mingw32-gcc -O2 -Wall -mwindows -municode -DHIDDIFY_LAUNCHER_GUI -o $(BINDIR)/HiddifyAdmin.exe ./cmd/launcher/main.c ./cmd/launcher/admin_windows_amd64.syso -L $(BINDIR) -l:$(LIBNAME).dll -lshell32
-	# core/Hiddify.exe: the app's core in its own process, named Hiddify with the core icon. The app
-	# installs it in a subfolder (its own Hiddify.exe sits beside the DLL), so it loads the DLL from there.
-	mkdir -p $(BINDIR)/core
-	x86_64-w64-mingw32-gcc -O2 -Wall -mwindows -municode -DHIDDIFY_LAUNCHER_GUI -DHIDDIFY_LAUNCHER_LIBRARY='"../$(LIBNAME).dll"' -o $(BINDIR)/core/Hiddify.exe ./cmd/launcher/main.c ./cmd/launcher/core_windows_amd64.syso -lshell32
-	if [ ! -f $(BINDIR)/$(LIBNAME).dll -o ! -f $(BINDIR)/$(CLINAME).exe -o ! -f $(BINDIR)/HiddifyAdmin.exe -o ! -f $(BINDIR)/core/Hiddify.exe -o ! -f $(BINDIR)/libcronet.dll ]; then \
-		echo "Error: $(LIBNAME).dll, $(CLINAME).exe, HiddifyAdmin.exe, core/Hiddify.exe or libcronet.dll missing"; \
+	# HiddifyCoreEngine.exe: the proxy engine's process, GUI subsystem (no console window), shown as
+	# Hiddify Core Engine with the core icon. It replaced core/Hiddify.exe, which shared the app's name.
+	rm -rf $(BINDIR)/core
+	x86_64-w64-mingw32-gcc -O2 -Wall -mwindows -municode -DHIDDIFY_LAUNCHER_GUI -o $(BINDIR)/HiddifyCoreEngine.exe ./cmd/launcher/main.c ./cmd/launcher/core_windows_amd64.syso -L $(BINDIR) -l:$(LIBNAME).dll -lshell32
+	if [ ! -f $(BINDIR)/$(LIBNAME).dll -o ! -f $(BINDIR)/$(CLINAME).exe -o ! -f $(BINDIR)/HiddifyAdmin.exe -o ! -f $(BINDIR)/HiddifyCoreEngine.exe -o ! -f $(BINDIR)/libcronet.dll ]; then \
+		echo "Error: $(LIBNAME).dll, $(CLINAME).exe, HiddifyAdmin.exe, HiddifyCoreEngine.exe or libcronet.dll missing"; \
 		exit 1; \
 	fi
 

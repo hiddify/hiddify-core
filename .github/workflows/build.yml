@@ -181,7 +181,7 @@ jobs:
                 -o -name "HiddifyCli" \
                 -o -name "HiddifyCli.exe" \
                 -o -name "HiddifyAdmin.exe" \
-                -o -path "./core/Hiddify.exe" \))
+                -o -name "HiddifyCoreEngine.exe" \))
           echo tar -czvf ${{ matrix.job.name }}.tar.gz  $files
           tar -czvf ${{ matrix.job.name }}.tar.gz  $files
           

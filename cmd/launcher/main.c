@@ -6,10 +6,9 @@
 //   HiddifyAdmin.exe      -DHIDDIFY_LAUNCHER_GUI: GUI subsystem, with a requireAdministrator
 //                         manifest, so the UAC dialog shows "Hiddify" and the app icon and no
 //                         console window flashes; it installs the VPN service
-//   core\Hiddify.exe      -DHIDDIFY_LAUNCHER_GUI -DHIDDIFY_LAUNCHER_LIBRARY=...: the app's core in
-//                         a process of its own (`core` command), named Hiddify with the core icon;
-//                         it sits in a subfolder, beside the app's own Hiddify.exe, so it loads
-//                         hiddify-core.dll (and libcronet.dll) from the folder above
+//   HiddifyCoreEngine.exe -DHIDDIFY_LAUNCHER_GUI: the proxy engine in a process of its own
+//                         (`core` command), shown as Hiddify Core Engine with the core icon,
+//                         beside the app
 //
 //   macOS (the app's macos/scripts/embed-core-helper.sh)
 //   Hiddify Core.app      -DHIDDIFY_LAUNCHER_LIBRARY=... -DHIDDIFY_LAUNCHER_MACOS_APP: the same core

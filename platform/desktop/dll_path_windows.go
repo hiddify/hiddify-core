@@ -17,9 +17,10 @@ var moduleAnchor byte
 // init puts the folder of hiddify-core.dll on this process's PATH when libcronet.dll sits there.
 //
 // cronet-go loads libcronet.dll lazily and looks for it only beside the executable and on PATH.
-// The core runs in core\Hiddify.exe, a subfolder of the app, while hiddify-core.dll and
-// libcronet.dll stay in the app folder, so Naive outbounds failed with "cronet: library not
-// found. Place libcronet.dll in the executable directory or PATH". The launcher's
+// The core ran in core\Hiddify.exe, a subfolder of the app, while hiddify-core.dll and
+// libcronet.dll stayed in the app folder, so Naive outbounds failed with "cronet: library not
+// found. Place libcronet.dll in the executable directory or PATH". HiddifyCoreEngine.exe and the app
+// sit beside the DLL now, which returns early below; a launcher elsewhere still needs it. The launcher's
 // SetDllDirectoryW does not help: cronet-go checks file paths itself. Prepending to PATH keeps
 // the load lazy (profiles without Naive never map the library).
 func init() {

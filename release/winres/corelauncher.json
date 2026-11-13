@@ -8,10 +8,10 @@
     "#1": {
       "0409": {
         "identity": {
-          "name": "Hiddify.Core",
+          "name": "Hiddify.CoreEngine",
           "version": "0.0.0.0"
         },
-        "description": "Hiddify",
+        "description": "Hiddify Core Engine",
         "minimum-os": "win7",
         "execution-level": "",
         "ui-access": false,
@@ -32,10 +32,10 @@
         "info": {
           "0409": {
             "CompanyName": "Hiddify",
-            "FileDescription": "Hiddify Core",
-            "InternalName": "HiddifyCore",
+            "FileDescription": "Hiddify Core Engine",
+            "InternalName": "HiddifyCoreEngine",
             "LegalCopyright": "Copyright (C) Hiddify.com. All rights reserved.",
-            "OriginalFilename": "Hiddify.exe",
+            "OriginalFilename": "HiddifyCoreEngine.exe",
             "ProductName": "Hiddify",
             "Comments": "https://github.com/hiddify/hiddify-core"
           }
