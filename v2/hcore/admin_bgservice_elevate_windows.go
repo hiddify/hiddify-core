@@ -59,6 +59,7 @@ const (
 	seeMaskNoCloseProcess = 0x00000040
 	seeMaskNoAsync        = 0x00000100
 	seeMaskFlagNoUI       = 0x00000400
+	seeMaskNoZoneChecks   = 0x00800000
 )
 
 type shellExecuteInfo struct {
@@ -85,8 +86,13 @@ func shellExecuteRunAsWait(exe, params string) (uint32, error) {
 	verb, _ := syscall.UTF16PtrFromString("runas")
 	file, _ := syscall.UTF16PtrFromString(exe)
 	parameters, _ := syscall.UTF16PtrFromString(params)
+	// NoZoneChecks: HiddifyAdmin.exe from a downloaded portable zip or a network share carries the
+	// mark of the web. ShellExecuteEx then wants to show the "Open File - Security Warning" dialog,
+	// which FlagNoUI suppresses, and returns ERROR_CANCELLED as if the UAC prompt was refused
+	// ("Administrator permission was not given"). The app beside it is already running, so the
+	// check adds nothing; the UAC prompt itself still shows.
 	info := shellExecuteInfo{
-		fMask:        seeMaskNoCloseProcess | seeMaskNoAsync | seeMaskFlagNoUI,
+		fMask:        seeMaskNoCloseProcess | seeMaskNoAsync | seeMaskFlagNoUI | seeMaskNoZoneChecks,
 		lpVerb:       verb,
 		lpFile:       file,
 		lpParameters: parameters,
