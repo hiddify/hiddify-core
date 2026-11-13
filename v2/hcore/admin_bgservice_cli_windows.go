@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"syscall"
 
 	"golang.org/x/sys/windows"
 )
@@ -21,6 +22,9 @@ import (
 // HiddifyAdmin.exe, elevates.
 func prepareCliCommand(cmd *exec.Cmd) {
 	cmd.Env = append(os.Environ(), "__COMPAT_LAYER=RunAsInvoker")
+	// HiddifyCli.exe is a console program and its parent (the GUI core process or the service)
+	// has no console, so Windows would open a console window for every call.
+	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true, CreationFlags: windows.CREATE_NO_WINDOW}
 }
 
 // explainCliError turns ERROR_ELEVATION_REQUIRED into a message that says what to change.
