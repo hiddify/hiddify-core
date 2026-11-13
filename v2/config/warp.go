@@ -2,13 +2,20 @@ package config
 
 import (
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"log/slog"
+	"net"
 	"net/netip"
 	"os"
+	"strconv"
+	"strings"
 
 	"github.com/bepass-org/warp-plus/warp"
 	C "github.com/sagernet/sing-box/constant"
+	"github.com/sagernet/sing-box/hiddify/warpscan"
+	"github.com/sagernet/sing/common/json/badoption"
+	M "github.com/sagernet/sing/common/metadata"
 	"github.com/sagernet/wireguard-go/hiddify"
 
 	// "github.com/bepass-org/wireguard-go/warp"
@@ -209,94 +216,137 @@ func patchWarp(base *option.Endpoint, configOpt *HiddifyOptions, final bool, sta
 			opts.ServerOptions.ServerPort = 0
 			opts.Profile.Detour = dialDetour(OutboundWARPConfigDetour)
 			return nil
-			is_saved_key := len(opts.UniqueIdentifier) > 1 && opts.UniqueIdentifier[0] == 'p'
-
-			if (configOpt == nil || !final) && is_saved_key {
-				return nil
-			}
-			var wireguardConfig WarpWireguardConfig
-			if is_saved_key {
-				var warpOpt *WarpOptions
-				if opts.UniqueIdentifier == "p1" {
-					warpOpt = &configOpt.Warp
-				} else if opts.UniqueIdentifier == "p2" {
-					warpOpt = &configOpt.Warp2
-				} else {
-					warpOpt = &WarpOptions{
-						Id: opts.UniqueIdentifier,
-					}
-				}
-				warpOpt.Id = opts.UniqueIdentifier
-
-				wireguardConfig = getOrGenerateWarpLocallyIfNeeded(warpOpt)
-			} else {
-				_, _, wgConfig, err := GenerateWarpInfo(opts.UniqueIdentifier, "", "")
-				if err != nil {
-					return err
-				}
-				wireguardConfig = *wgConfig
-			}
-			warpOutbound, err := GenerateWarpSingbox(wireguardConfig, opts.Server, opts.ServerPort, &opts.Noise)
-			if err != nil {
-				fmt.Printf("Error generating warp config: %v", err)
-				return err
-			}
-			base.Type = C.TypeWireGuard
-			if wopts, ok := warpOutbound.Options.(*option.WireGuardEndpointOptions); ok {
-				wopts.Detour = opts.Detour
-				base.Options = wopts
-			}
-
 		}
 	}
 
 	if final && base.Type == C.TypeWireGuard {
 		if opts, ok := base.Options.(*option.WireGuardEndpointOptions); ok {
-			host := "auto"
-			if len(opts.Peers) == 0 {
-				opts.Peers = append(opts.Peers, T.WireGuardPeer{Address: "auto"})
+			if family, auto := wireGuardAutoFamily(*base, opts); auto {
+				base.Type = C.TypeWARP
+				base.Options = wireGuardToWarpEndpoint(opts, family)
+			} else if opts.Detour != "" {
+				opts.Noise = hiddify.NoiseOptions{} // the detour carries the packets, not the network
 			}
-			if opts.Peers[0].Address != "" {
-				host = opts.Peers[0].Address
-			}
-
-			if host == "default" || host == "random" || host == "auto" || host == "auto4" || host == "auto6" || isBlockedDomain(host) {
-				// if base.WireGuardOptions.Detour != "" {
-				// 	base.WireGuardOptions.Server = "162.159.192.1"
-				// } else {
-				// rndDomain := strings.ToLower(generateRandomString(20))
-				// staticIpsDns[rndDomain] = []string{}
-				if host != "auto4" {
-					if host == "auto6" { //|| common.u.CanConnectIPv6() {
-						randomIpPort, _ := warp.RandomWarpEndpoint(false, true)
-						// staticIpsDns[rndDomain] = append(staticIpsDns[rndDomain], randomIpPort.Addr().String())
-						host = randomIpPort.Addr().String()
-					}
-				}
-				if host != "auto6" {
-					randomIpPort, _ := warp.RandomWarpEndpoint(true, false)
-					// staticIpsDns[rndDomain] = append(staticIpsDns[rndDomain], randomIpPort.Addr().String())
-					host = randomIpPort.Addr().String()
-				}
-				opts.Peers[0].Address = host
-				// }
-			}
-			if opts.Peers[0].Port == 0 {
-				port := warp.RandomWarpPort()
-				opts.Peers[0].Port = port
-			}
-
-			if opts.Detour != "" {
-				if opts.MTU < 100 {
-					opts.MTU = 1280
-				}
-				opts.Noise = hiddify.NoiseOptions{}
-
-			}
-			// if base.WireGuardOptions.Detour == "" {
-			// 	base.WireGuardOptions.GSO = runtime.GOOS != "windows"
-			// }
 		}
 	}
 	return nil
 }
+
+// wireGuardAutoFamily reports a WireGuard endpoint that leaves the WARP address to the app: its
+// peer is auto, auto4, auto6, default or random (or there is no peer), or it is a WARP peer
+// given by a domain or without a port. family is "4" for auto4, "6" for auto6, otherwise "". A
+// server of the user's own keeps its address and port, a domain included (hiddify-app#2533).
+func wireGuardAutoFamily(endpoint option.Endpoint, opts *option.WireGuardEndpointOptions) (family string, auto bool) {
+	if len(opts.Peers) == 0 {
+		return "", true
+	}
+	peer := opts.Peers[0]
+	switch strings.ToLower(peer.Address) {
+	case "", "auto", "default", "random":
+		return "", true
+	case "auto4":
+		return "4", true
+	case "auto6":
+		return "6", true
+	}
+	if isWarp(endpoint) && (!M.ParseAddr(peer.Address).IsValid() || peer.Port == 0) {
+		return "", true
+	}
+	return "", false
+}
+
+// wireGuardToWarpEndpoint makes a warp endpoint of a WireGuard endpoint to WARP whose address is
+// left to the app, so that the WARP scanner finds an address and port that answer on the network,
+// as for a warp:// link. Its key and tunnel addresses are kept as the endpoint's profile; without
+// a key, the endpoint registers a device. family "4" or "6" limits the scanner, and the address used
+// when it finds none, to IPv4 or IPv6 WARP addresses. A port of the config is the only one
+// scanned. The MTU is found by MTU discovery, from the configured MTU but at least 1280.
+func wireGuardToWarpEndpoint(opts *option.WireGuardEndpointOptions, family string) *option.WARPEndpointOptions {
+	var port uint16
+	if len(opts.Peers) > 0 {
+		port = opts.Peers[0].Port
+	}
+	scanner := &option.WARPScannerOptions{Enabled: true, SearchNoise: true}
+	if port != 0 {
+		scanner.Ports = badoption.Listable[uint16]{port}
+	}
+	if family != "" {
+		for _, prefix := range warpscan.WireGuardCIDRs {
+			if prefix.Addr().Is4() == (family == "4") {
+				scanner.CIDRs = append(scanner.CIDRs, prefix)
+			}
+		}
+	}
+	warpOpts := &option.WARPEndpointOptions{
+		System:          opts.System,
+		Name:            opts.Name,
+		ListenPort:      opts.ListenPort,
+		UDPTimeout:      opts.UDPTimeout,
+		Workers:         opts.Workers,
+		DialerOptions:   opts.DialerOptions,
+		Noise:           opts.Noise,
+		AWG:             opts.AWG,
+		Scanner:         scanner,
+		MTUDiscovery:    opts.MTUDiscovery,
+		FallbackAddress: opts.FallbackAddress,
+		WARPConfig:      warpInlineConfig(opts, family, port),
+	}
+	if opts.MTU != 0 {
+		warpOpts.MTU = max(opts.MTU, minWarpMTU)
+	}
+	if opts.Detour != "" {
+		warpOpts.Noise = hiddify.NoiseOptions{} // the detour carries the packets, not the network
+	}
+	return warpOpts
+}
+
+// minWarpMTU is the lowest MTU a WARP tunnel is configured with: IPv6's minimum. MTU discovery
+// lowers it further only when the path needs it.
+const minWarpMTU = 1280
+
+// warpInlineConfig is the WARP profile of a WireGuard endpoint's key and tunnel addresses, nil
+// without a key. Its peer is WARP's, on port, or 2408 when the config has none; the scanner
+// replaces that address and port with ones that answer.
+func warpInlineConfig(opts *option.WireGuardEndpointOptions, family string, port uint16) *C.WARPConfig {
+	if opts.PrivateKey == "" {
+		return nil
+	}
+	config := &C.WARPConfig{PrivateKey: opts.PrivateKey}
+	for _, prefix := range opts.Address {
+		address := prefix.Addr().String()
+		if prefix.Addr().Is4() && config.Interface.Addresses.V4 == "" {
+			config.Interface.Addresses.V4 = address
+		} else if prefix.Addr().Is6() && config.Interface.Addresses.V6 == "" {
+			config.Interface.Addresses.V6 = address
+		}
+	}
+	if port == 0 {
+		port = warpDefaultPort
+	}
+	publicKey := warpPublicKey
+	if len(opts.Peers) > 0 && opts.Peers[0].PublicKey != "" {
+		publicKey = opts.Peers[0].PublicKey
+	}
+	// the peers' element type is unnamed: it is made from JSON
+	if err := json.Unmarshal([]byte(`{"peers":[{}]}`), config); err != nil {
+		return nil
+	}
+	peer := &config.Peers[0]
+	peer.PublicKey = publicKey
+	peer.Endpoint.Host = net.JoinHostPort("engage.cloudflareclient.com", strconv.Itoa(int(port)))
+	if family != "6" {
+		peer.Endpoint.V4 = netip.AddrPortFrom(warpDefaultIPv4, port).String()
+	}
+	if family != "4" {
+		peer.Endpoint.V6 = netip.AddrPortFrom(warpDefaultIPv6, port).String()
+	}
+	return config
+}
+
+// WARP's well-known endpoint, used when the scanner finds none or is off (behind a detour).
+const warpDefaultPort = 2408
+
+var (
+	warpDefaultIPv4 = netip.MustParseAddr("162.159.192.1")
+	warpDefaultIPv6 = netip.MustParseAddr("2606:4700:d0::a29f:c001")
+)

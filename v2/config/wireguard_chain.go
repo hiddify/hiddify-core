@@ -135,8 +135,10 @@ func warpBehindDetour(outbounds []option.Outbound, endpoints []option.Endpoint) 
 			options.RotatePorts = &rotatePorts
 		}
 		if len(options.FallbackAddress) == 0 {
-			if ipv6, err := warp.RandomWarpEndpoint(false, true); err == nil {
-				options.FallbackAddress = badoption.Listable[netip.Addr]{ipv6.Addr()}
+			// an IPv4-only profile (auto4) falls back to another IPv4 address
+			ipv4Only := options.WARPConfig != nil && len(options.WARPConfig.Peers) > 0 && options.WARPConfig.Peers[0].Endpoint.V6 == ""
+			if fallback, err := warp.RandomWarpEndpoint(ipv4Only, !ipv4Only); err == nil {
+				options.FallbackAddress = badoption.Listable[netip.Addr]{fallback.Addr()}
 			}
 		}
 	}
