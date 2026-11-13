@@ -7,6 +7,8 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
+	"time"
 
 	"github.com/hiddify/hiddify-core/v2/hcore"
 	"github.com/hiddify/hiddify-core/v2/hcore/adminbg"
@@ -199,6 +201,19 @@ func StartAdminBgService(goArg string) (int, string) {
 	return 0, ""
 }
 
+// installWhenRemoved installs the service, retrying while the old one is still being deleted: the
+// service manager removes it only once its process has exited and every handle to it is closed.
+func installWhenRemoved(s service.Service) error {
+	deadline := time.Now().Add(15 * time.Second)
+	for {
+		err := s.Install()
+		if err == nil || !strings.Contains(err.Error(), "already exists") || time.Now().After(deadline) {
+			return err
+		}
+		time.Sleep(250 * time.Millisecond)
+	}
+}
+
 func control(s service.Service, goArg string) (int, string) {
 	dolog := false
 	var err error
@@ -225,8 +240,14 @@ func control(s service.Service, goArg string) (int, string) {
 			err = s.Start()
 		}
 	case "install":
-		s.Uninstall()
-		err = s.Install()
+		// A service left by another build (an update, or a portable copy beside an installed one)
+		// may still run. Deleting a running service only marks it for deletion, so Install then
+		// failed with "already exists" (exit code 2): stop it first and wait until it is gone.
+		if status == service.StatusRunning {
+			_ = s.Stop()
+		}
+		_ = s.Uninstall()
+		err = installWhenRemoved(s)
 		status, serr = s.Status()
 		_ = serr
 		if status != service.StatusRunning {
