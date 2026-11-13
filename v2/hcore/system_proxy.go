@@ -57,6 +57,7 @@ func (s *CoreService) SetSystemProxyEnabled(ctx context.Context, in *SetSystemPr
 	if in.IsEnabled {
 		err = EnableUserSystemProxy(in.Address, in.SupportSocks)
 	} else {
+		cleanupStoppedEngine()
 		err = DisableUserSystemProxy()
 	}
 	if err != nil {
@@ -73,6 +74,19 @@ func (s *CoreService) GetSystemProxyStatus(ctx context.Context, empty *hcommon.E
 		Available: SystemProxyDelegationSupported(),
 		Enabled:   proxy != nil && proxy.IsEnabled(),
 	}, nil
+}
+
+// cleanupStoppedEngine undoes what an engine that shares this core's working dir left in the host
+// when it stopped without undoing it: on Windows and Linux the app's own core is the library in
+// the app, and a proxy-mode connection runs in a process of its own, which a crash or a kill ends
+// before its inbound restores the system proxy. The app asks for this (a disable without an
+// address) once that process has ended. Read before the disable below rewrites the marker with
+// this core's own state; skipped while this core runs an engine, whose marker it is.
+func cleanupStoppedEngine() {
+	if static.CoreState == CoreStates_STARTED || static.CoreState == CoreStates_STARTING {
+		return
+	}
+	cleanupLeftovers()
 }
 
 // EnableUserSystemProxy points the system proxy of the user this core runs as at address.
