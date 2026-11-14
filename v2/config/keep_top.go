@@ -12,9 +12,9 @@ import (
 
 // With keep-top, a profile with many proxies uses only its fastest few. The core finds them
 // itself (sing-box's keep top, experimental.monitoring.keep_top): the config keeps every proxy,
-// the ones keep top manages as lazy outbounds, which the core creates when a connection or a test
-// goes through them and closes when nothing does, so no config changes while it picks. These
-// helpers find a profile's proxies and turn keep top on; for keep chosen they drop the others
+// the ones keep top manages as lazy outbounds and endpoints, which the core creates when a
+// connection or a test goes through them and closes when nothing does, so no config changes while
+// it picks. These helpers find a profile's proxies and turn keep top on; for keep chosen they drop the others
 // from its options before the config is built. The extra security and unblocker hops are not the
 // profile's, so they always run.
 
@@ -39,11 +39,10 @@ func UserProxyTags(input *option.Options) []string {
 	return tags
 }
 
-// lazyTypes are the proxies the core can create when they are used and close when they are not: a
-// connection through one needs nothing that takes long to set up, and nothing else in the core
-// holds it. Not the endpoints (WireGuard, WARP, ...), which the router holds as interfaces, nor
-// the outbounds that search before they work (Psiphon, Tor, the DNS tunnels): those run for the
-// whole run, and keep top leaves them alone.
+// lazyTypes are the outbounds the core can create when they are used and close when they are not:
+// a connection through one needs nothing that takes long to set up, and nothing else in the core
+// holds it. Not the outbounds that search before they work (Psiphon, Tor, the DNS tunnels): those
+// run for the whole run, and keep top leaves them alone.
 var lazyTypes = map[string]bool{
 	C.TypeVLESS: true, C.TypeVMess: true, C.TypeTrojan: true, C.TypeShadowsocks: true,
 	C.TypeSOCKS: true, C.TypeHTTP: true, C.TypeHysteria: true, C.TypeHysteria2: true,
@@ -52,8 +51,36 @@ var lazyTypes = map[string]bool{
 	C.TypeSudoku: true,
 }
 
+// lazyEndpointTypes are the endpoints the core can create the same way: the clients, whose tunnel
+// comes up when the first connection needs it (the core makes the ones that connect in the
+// background wait for it). WARP too: it registers and scans before it works, and keep top lets it
+// go on while fewer proxies answer than it keeps. Not the endpoints in server mode (a WireGuard
+// that listens, the servers, a Tailscale node, which peers reach).
+var lazyEndpointTypes = map[string]bool{
+	C.TypeWireGuard: true, C.TypeAwg: true, C.TypeOpenVPNClient: true, C.TypeOpenConnect: true,
+	C.TypeMASQUEClient: true, C.TypeWARP: true,
+}
+
+// canBeLazyEndpoint reports a client endpoint that keep top can manage: of lazyEndpointTypes, and
+// not listening for peers.
+func canBeLazyEndpoint(end *option.Endpoint) bool {
+	if !lazyEndpointTypes[end.Type] {
+		return false
+	}
+	switch options := end.Options.(type) {
+	case *option.WireGuardEndpointOptions:
+		return options.ListenPort == 0
+	case *option.AwgEndpointOptions:
+		return options.ListenPort == 0
+	case *option.WARPEndpointOptions:
+		return options.ListenPort == 0
+	}
+	return true
+}
+
 // LazyProxyTags are the proxies of the profile that keep top manages: the ones of UserProxyTags
-// that can be lazy outbounds, in the profile's order.
+// that can be lazy outbounds or lazy endpoints, in the profile's order (outbounds, then endpoints,
+// as UserProxyTags lists them).
 func LazyProxyTags(input *option.Options) []string {
 	var tags []string
 	for _, out := range input.Outbounds {
@@ -61,11 +88,16 @@ func LazyProxyTags(input *option.Options) []string {
 			tags = append(tags, out.Tag)
 		}
 	}
+	for i := range input.Endpoints {
+		if end := &input.Endpoints[i]; isUserProxy(end.Tag, end.Type) && canBeLazyEndpoint(end) {
+			tags = append(tags, end.Tag)
+		}
+	}
 	return tags
 }
 
 // ApplyKeepTop turns keep top on in a built config, when the settings ask for it: the proxies it
-// manages (candidates, LazyProxyTags) become lazy outbounds, and the monitoring gets the keep top
+// manages (candidates, LazyProxyTags) become lazy outbounds and endpoints, and the monitoring gets the keep top
 // options, by which the core finds the fastest of them and leaves the others at rest. It returns
 // how many it manages; 0 when keep top is not on, and then nothing in the config is lazy.
 //
@@ -98,11 +130,20 @@ func ApplyKeepTop(options *option.Options, hopt *HiddifyOptions, candidates []st
 			managed = append(managed, out)
 		}
 	}
-	if len(managed) == 0 {
+	var managedEndpoints []*option.Endpoint
+	for i := range options.Endpoints {
+		if end := &options.Endpoints[i]; wanted[end.Tag] && canBeLazyEndpoint(end) {
+			managedEndpoints = append(managedEndpoints, end)
+		}
+	}
+	if len(managed)+len(managedEndpoints) == 0 {
 		return 0
 	}
 	for _, out := range managed {
 		out.Lazy = true
+	}
+	for _, end := range managedEndpoints {
+		end.Lazy = true
 	}
 	options.Experimental.Monitoring.KeepTop = &option.KeepTopOptions{
 		Count:     max(count, 0),
@@ -112,7 +153,7 @@ func ApplyKeepTop(options *option.Options, hopt *HiddifyOptions, candidates []st
 		Quick:     hopt.KeepTopQuick,
 		Pinned:    hopt.KeepTopPinned,
 	}
-	return len(managed)
+	return len(managed) + len(managedEndpoints)
 }
 
 // ChosenProxies are the tags of chosen that are the profile's proxies (UserProxyTags), to keep.

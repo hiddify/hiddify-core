@@ -21,9 +21,10 @@ import (
 // goes through them a few at a time and leaves all but the fastest at rest. Nothing is reloaded
 // for it. Here is only what turns it on, and what the app is told while it looks.
 //
-// Keep top manages the proxies that can be lazy (config.LazyProxyTags). The endpoints (WireGuard,
-// WARP), the outbounds that search before they work (Psiphon, the DNS tunnels) and the extra
-// security and unblocker hops run for the whole run, as without keep top.
+// Keep top manages the proxies that can be lazy (config.LazyProxyTags): the outbounds, and the
+// client endpoints (WireGuard, OpenVPN, WARP, ...). The endpoints in server mode, the outbounds
+// that search before they work (Psiphon, the DNS tunnels) and the extra security and unblocker
+// hops run for the whole run, as without keep top.
 
 // buildRunningConfig builds the config the core runs. A core that delegates the system proxy (see
 // config.InboundOptions.DelegateSystemProxy) takes it out of the config here and keeps its address.
