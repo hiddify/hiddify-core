@@ -1,6 +1,7 @@
 package hcore
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"runtime/pprof"
@@ -58,20 +59,68 @@ func publishLog(level LogLevel, typ LogType, message string) {
 	})
 }
 
-func (s *CoreService) LogListener(req *LogRequest, stream grpc.ServerStreamingServer[LogMessage]) error {
-	logSub := static.logObserver.Subscribe(1)
-	defer static.logObserver.Unsubscribe(logSub)
+// logListenerBuffer is how many log lines wait for a listener that is busy sending. With room
+// for one, as it was, every burst lost all but its first lines: the app never saw them.
+const logListenerBuffer = 1024
 
+// logSendEvery is how long log lines wait to be sent to a listener together, and logSendCount how
+// many of them wait at most. A line sent on its own is a write of its own, a TLS record and a
+// wake-up of the app, which pays three isolate messages for each; with the debug or trace level
+// the core logs hundreds of lines a second, and the app spent more on receiving them than on
+// everything else. A warning or an error is not held back.
+const (
+	logSendEvery = 200 * time.Millisecond
+	logSendCount = 256
+)
+
+func (s *CoreService) LogListener(req *LogRequest, stream grpc.ServerStreamingServer[LogMessage]) error {
+	logSub := static.logObserver.Subscribe(logListenerBuffer)
+	defer static.logObserver.Unsubscribe(logSub)
+	return sendLogs(stream.Context(), logSub, req.GetLevel(), stream.Send)
+}
+
+// sendLogs hands the lines of logs at level or above to send, a few times a second (logSendEvery)
+// rather than one by one, until ctx is done, logs is closed, or a send fails.
+func sendLogs(ctx context.Context, logs <-chan *LogMessage, level LogLevel, send func(*LogMessage) error) error {
+	var pending []*LogMessage
+	// armed while lines wait; never running otherwise, so an idle listener wakes nothing
+	timer := time.NewTimer(logSendEvery)
+	timer.Stop()
+	defer timer.Stop()
+	flush := func() error {
+		for i, info := range pending {
+			pending[i] = nil
+			if err := send(info); err != nil {
+				return err
+			}
+		}
+		pending = pending[:0]
+		return nil
+	}
 	for {
 		select {
-		case <-stream.Context().Done():
+		case <-ctx.Done():
 			return nil
-		case info := <-logSub:
-			if info.Level < req.Level {
+		case info, ok := <-logs:
+			if !ok {
+				return flush()
+			}
+			if info == nil || info.Level < level {
 				continue
 			}
-			stream.Send(info)
-			// case <-time.After(500 * time.Millisecond):
+			pending = append(pending, info)
+			if info.Level >= LogLevel_WARNING || len(pending) >= logSendCount {
+				timer.Stop()
+				if err := flush(); err != nil {
+					return err
+				}
+			} else if len(pending) == 1 {
+				timer.Reset(logSendEvery)
+			}
+		case <-timer.C:
+			if err := flush(); err != nil {
+				return err
+			}
 		}
 	}
 }
