@@ -431,6 +431,24 @@ func setExperimental(options *option.Options, hopt *HiddifyOptions) {
 			},
 		}
 	}
+	setProcs(options)
+}
+
+// setProcs lets the core run on as few Go processors as its load needs (one, most of the time)
+// instead of one for every CPU core: with spare processors the runtime wakes a thread for each
+// packet a goroutine hands to the next, and on a tunnel that is most of the CPU the core uses.
+// A download through QUIC, WireGuard or OpenVPN takes about half the CPU with it, at the same
+// speed. See adaptive-processors in the hiddify-sing-box docs.
+func setProcs(options *option.Options) {
+	if options.Experimental == nil {
+		options.Experimental = &option.ExperimentalOptions{}
+	}
+	if options.Experimental.Debug == nil {
+		options.Experimental.Debug = &option.DebugOptions{}
+	}
+	if options.Experimental.Debug.Procs == nil {
+		options.Experimental.Debug.Procs = &option.HProcsOptions{Enabled: true}
+	}
 }
 
 func setLog(options *option.Options, opt *HiddifyOptions) {
