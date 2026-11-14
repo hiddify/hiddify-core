@@ -13,6 +13,7 @@ import (
 	"runtime/pprof"
 	"slices"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -352,16 +353,47 @@ func exportDiagnostics(workingPath, tempPath string, req *ExportDiagnosticsReque
 
 	destination := req.DestinationPath
 	if destination == "" {
-		name := "hiddify-report-" + stamp + ".zip"
-		if !encrypt {
-			name = "hiddify-report-" + stamp + "-unencrypted.zip"
-		}
-		destination = filepath.Join(tempPath, name)
+		// asked in the clear in a build that encrypts: the copy of the last report, to look inside
+		copyOfLast := req.Unencrypted && recipient != nil
+		destination = filepath.Join(tempPath, reportName(workingPath, stamp, req.Inline, copyOfLast))
 	}
 	if err := libbox.CreateZipArchive(staging, destination, false); err != nil {
 		return "", false, E.Cause(err, "zip the diagnostics")
 	}
 	return destination, encrypt, nil
+}
+
+// reportNumberFile keeps the number of the last report, in the working directory.
+const reportNumberFile = "diagnostics-number"
+
+// reportName names the zip the user saves and sends: hiddify-001.zip, numbered across reports so
+// they are told apart in Downloads and in a chat. The unencrypted copy of a report keeps that
+// report's number; a zip read back inline is never seen and takes none.
+func reportName(workingPath, stamp string, inline, copyOfLast bool) string {
+	if inline {
+		return "hiddify-" + stamp + ".zip"
+	}
+	name := fmt.Sprintf("hiddify-%03d", reportNumber(workingPath, !copyOfLast))
+	if copyOfLast {
+		name += "-unencrypted"
+	}
+	return name + ".zip"
+}
+
+// reportNumber answers the last report's number, or with next (or before any report) a new one,
+// which it keeps.
+func reportNumber(workingPath string, next bool) int {
+	path := filepath.Join(workingPath, reportNumberFile)
+	last := 0
+	if content, err := os.ReadFile(path); err == nil {
+		last, _ = strconv.Atoi(strings.TrimSpace(string(content)))
+	}
+	if !next && last > 0 {
+		return last
+	}
+	last++
+	os.WriteFile(path, []byte(strconv.Itoa(last)), 0o644)
+	return last
 }
 
 // copyNewestReports copies the newest maxDiagnosticsReports report directories of source.
