@@ -84,7 +84,7 @@ func AllowCoreRequest(method string, req any) error {
 		return nil
 	}
 	diagnostics, ok := req.(*hcore.ExportDiagnosticsRequest)
-	if !ok || !diagnostics.Inline || diagnostics.DestinationPath != "" || len(diagnostics.ExtraFiles) > 0 {
+	if !ok || !diagnostics.Inline || diagnostics.DestinationPath != "" || len(diagnostics.ExtraFiles) > 0 || len(diagnostics.GenericFiles) > 0 {
 		return status.Error(codes.PermissionDenied, "only inline diagnostics, without a path or files, on the tunnel control service")
 	}
 	return nil

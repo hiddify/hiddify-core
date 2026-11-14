@@ -7,6 +7,7 @@ go 1.27.3
 godebug multipathtcp=0
 
 require (
+	filippo.io/age v1.2.1
 	github.com/bepass-org/warp-plus v1.2.6
 	github.com/coder/websocket v1.8.14
 	github.com/google/uuid v1.6.0

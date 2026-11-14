@@ -293,13 +293,22 @@ message CrashReportList {
 
 message ExportDiagnosticsRequest {
   string destination_path = 1;         // where to write the zip; empty is a file in the temp directory
-  map<string, bytes> extra_files = 2;  // more files for the zip, by name (the app's logs, another core's dump)
+  map<string, bytes> extra_files = 2;  // more files for the zip's sensitive part, by name (the app's logs, another core's dump)
   bool inline = 3;                     // also return the zip's bytes
+  // leave the sensitive part (config, logs, crashes, extra files) in the clear: for the user to
+  // look at, or for a zip that goes inside another core's report, which encrypts it
+  bool unencrypted = 4;
+  // more files for the zip that are not sensitive, kept readable outside the encrypted part (the
+  // app's own exceptions with their stack traces)
+  map<string, bytes> generic_files = 5;
 }
 
 message ExportDiagnosticsResponse {
   string path = 1;
   bytes content = 2;
+  // the sensitive part is sensitive.encrypted.age, encrypted to the build's diagnostics key; false
+  // when it was asked unencrypted or the build has no key
+  bool encrypted = 3;
 }
 
 message LANIPResponse {
