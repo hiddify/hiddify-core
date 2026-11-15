@@ -260,11 +260,16 @@ func setChainHop(opt *HiddifyOptions, outbounds *[]option.Outbound, endpoints *[
 		OutboundMainDetour = tag
 		return nil
 	}
+	// the resolver the proxies use without the hop (route.default_domain_resolver)
+	resolver := &option.DomainResolveOptions{
+		Server:   DNSMultiDirectTag,
+		Strategy: dnsStrategy(opt.DirectDnsDomainStrategy, opt.IPv6Mode),
+	}
 	for i := range *outbounds {
-		chainDialer((*outbounds)[i].Options, (*outbounds)[i].Tag, tag)
+		chainDialer((*outbounds)[i].Options, (*outbounds)[i].Tag, tag, resolver)
 	}
 	for i := range *endpoints {
-		chainDialer((*endpoints)[i].Options, (*endpoints)[i].Tag, tag)
+		chainDialer((*endpoints)[i].Options, (*endpoints)[i].Tag, tag, resolver)
 	}
 	return nil
 }
@@ -326,7 +331,13 @@ func chainSelectableHop(status string, hop ChainHopOptions, tag, detour string, 
 
 // chainDialer makes a main outbound/endpoint dial through the unblocker hop, unless it already
 // dials through another detour (it is then not the first hop of its own chain) or is the hop itself.
-func chainDialer(options any, outboundTag, hopTag string) {
+//
+// It also resolves the proxy's server name itself, with resolver, unless the proxy names its own.
+// A dialer with a detour hands the name to the detour, and the WARP hop looks it up through the
+// DNS rules: the final one is the remote DNS, which goes through select, the very proxies waiting
+// for the name. Every proxy given by a domain (all the CDN ones) then timed out while the hop
+// answered its own test.
+func chainDialer(options any, outboundTag, hopTag string, resolver *option.DomainResolveOptions) {
 	if outboundTag == hopTag || IsChainUnblockerTag(outboundTag) { // the hops of the selectable mode too
 		return
 	}
@@ -339,6 +350,9 @@ func chainDialer(options any, outboundTag, hopTag string) {
 		return
 	}
 	dialer.Detour = hopTag
+	if dialer.DomainResolver == nil || dialer.DomainResolver.Server == "" {
+		dialer.DomainResolver = resolver
+	}
 	wrapper.ReplaceDialerOptions(dialer)
 }
 
