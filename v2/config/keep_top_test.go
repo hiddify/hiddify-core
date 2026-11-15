@@ -156,3 +156,58 @@ func TestKeepTopMakesClientEndpointsLazy(t *testing.T) {
 		t.Fatalf("sing-box rejected the config: %v", err)
 	}
 }
+
+// The extra security and unblocker hops are never lazy, also when the candidates name them: a WARP
+// hop at rest, or closed when idle, has its registration cut and everything through it fails.
+func TestKeepTopNeverMakesChainHopsLazy(t *testing.T) {
+	for _, settings := range []string{
+		`{"chain-status":"extra_security","extra-security":{"mode":"warp_auto"},"keep-top":1}`,
+		`{"chain-status":"unblocker","unblocker":{"mode":"warp_masque"},"keep-top":1}`,
+		`{"chain-status":"unblocker","unblocker":{"mode":"selectable"},"keep-top":1}`,
+	} {
+		ctx := libbox.BaseContext(nil)
+		input, err := ReadSingOptions(ctx, &ReadOptions{Content: keepTopEndpointsProfile})
+		if err != nil {
+			t.Fatal(err)
+		}
+		opts := chainTestOptions(t, settings)
+		options, err := BuildConfig(ctx, opts, &ReadOptions{Options: input})
+		if err != nil {
+			t.Fatal(err)
+		}
+		candidates := LazyProxyTags(input)
+		var hops []string
+		for _, end := range options.Endpoints {
+			if isChainHop(end.Tag) {
+				hops = append(hops, end.Tag)
+			}
+		}
+		for _, out := range options.Outbounds {
+			if isChainHop(out.Tag) {
+				hops = append(hops, out.Tag)
+			}
+		}
+		if len(hops) == 0 {
+			t.Fatalf("%s: no chain hop in the config", settings)
+		}
+		if tags := LazyProxyTags(options); slices.ContainsFunc(tags, isChainHop) {
+			t.Errorf("%s: LazyProxyTags of the built config has a hop: %v", settings, tags)
+		}
+		if managed := ApplyKeepTop(options, opts, append(candidates, hops...)); managed != len(candidates) {
+			t.Errorf("%s: managed %d, want %d", settings, managed, len(candidates))
+		}
+		for _, end := range options.Endpoints {
+			if isChainHop(end.Tag) && end.Lazy {
+				t.Errorf("%s: hop %q is lazy", settings, end.Tag)
+			}
+		}
+		for _, out := range options.Outbounds {
+			if isChainHop(out.Tag) && out.Lazy {
+				t.Errorf("%s: hop %q is lazy", settings, out.Tag)
+			}
+		}
+		if err := libbox.CheckConfigOptions(options); err != nil {
+			t.Fatalf("%s: sing-box rejected the config: %v", settings, err)
+		}
+	}
+}

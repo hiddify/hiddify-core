@@ -16,7 +16,7 @@ import (
 // connection or a test goes through them and closes when nothing does, so no config changes while
 // it picks. These helpers find a profile's proxies and turn keep top on; for keep chosen they drop the others
 // from its options before the config is built. The extra security and unblocker hops are not the
-// profile's, so they always run.
+// profile's, so they always run: they are never lazy and never rest (isChainHop).
 
 // KeepTopAnswering is the keep-top that keeps every proxy answering its first ping and stops
 // the ones that do not.
@@ -78,18 +78,26 @@ func canBeLazyEndpoint(end *option.Endpoint) bool {
 	return true
 }
 
+// isChainHop reports an extra security or unblocker hop, or one of the hops of its selectable
+// mode. A hop carries every connection, and a WARP hop registers and connects for a long time
+// before it works: put to rest, or closed when idle, its registration is cut ("context
+// canceled") and everything through it fails. Keep top never makes one lazy.
+func isChainHop(tag string) bool {
+	return IsChainExtraSecurityTag(tag) || IsChainUnblockerTag(tag)
+}
+
 // LazyProxyTags are the proxies of the profile that keep top manages: the ones of UserProxyTags
 // that can be lazy outbounds or lazy endpoints, in the profile's order (outbounds, then endpoints,
 // as UserProxyTags lists them).
 func LazyProxyTags(input *option.Options) []string {
 	var tags []string
 	for _, out := range input.Outbounds {
-		if isUserProxy(out.Tag, out.Type) && !isDNSOutbound(out) && lazyTypes[out.Type] {
+		if isUserProxy(out.Tag, out.Type) && !isDNSOutbound(out) && lazyTypes[out.Type] && !isChainHop(out.Tag) {
 			tags = append(tags, out.Tag)
 		}
 	}
 	for i := range input.Endpoints {
-		if end := &input.Endpoints[i]; isUserProxy(end.Tag, end.Type) && canBeLazyEndpoint(end) {
+		if end := &input.Endpoints[i]; isUserProxy(end.Tag, end.Type) && canBeLazyEndpoint(end) && !isChainHop(end.Tag) {
 			tags = append(tags, end.Tag)
 		}
 	}
@@ -103,7 +111,8 @@ func LazyProxyTags(input *option.Options) []string {
 //
 // The proxies are lazy whatever the count, also when the profile has no more of them than it
 // keeps (then none rests): the count is only an option of the monitoring, so changing it changes
-// no outbound, and the running core takes it without a restart or a cut connection.
+// no outbound, and the running core takes it without a restart or a cut connection. The extra
+// security and unblocker hops are never lazy (isChainHop), whatever candidates says.
 func ApplyKeepTop(options *option.Options, hopt *HiddifyOptions, candidates []string) int {
 	if options.Experimental == nil || options.Experimental.Monitoring == nil {
 		return 0 // nothing would test them
@@ -126,13 +135,13 @@ func ApplyKeepTop(options *option.Options, hopt *HiddifyOptions, candidates []st
 	}
 	var managed []*option.Outbound
 	for i := range options.Outbounds {
-		if out := &options.Outbounds[i]; wanted[out.Tag] && lazyTypes[out.Type] {
+		if out := &options.Outbounds[i]; wanted[out.Tag] && lazyTypes[out.Type] && !isChainHop(out.Tag) {
 			managed = append(managed, out)
 		}
 	}
 	var managedEndpoints []*option.Endpoint
 	for i := range options.Endpoints {
-		if end := &options.Endpoints[i]; wanted[end.Tag] && canBeLazyEndpoint(end) {
+		if end := &options.Endpoints[i]; wanted[end.Tag] && canBeLazyEndpoint(end) && !isChainHop(end.Tag) {
 			managedEndpoints = append(managedEndpoints, end)
 		}
 	}
