@@ -62,6 +62,9 @@ ifeq ($(strip $(HIDDIFY_BUILD_ID)),)
 HIDDIFY_BUILD_ID := $(shell (uuidgen 2>/dev/null || openssl rand -hex 16) | tr '[:upper:]' '[:lower:]' | tr -d '\n')
 endif
 EMBED_LDFLAGS+=-X github.com/hiddify/hiddify-core/v2/hcore/buildid.ID=$(strip $(HIDDIFY_BUILD_ID))
+# the commit, 7 characters as git abbreviates it, for the diagnostics report (constants.Commit)
+HIDDIFY_COMMIT ?= $(shell git rev-parse --short=7 HEAD 2>/dev/null)
+EMBED_LDFLAGS+=-X github.com/hiddify/hiddify-core/v2/hcommon/constants.commit=$(strip $(HIDDIFY_COMMIT))
 LDFLAGS=-w -s -checklinkname=0 -buildid= $${CODE_VERSION} $(EMBED_LDFLAGS)
 GOBUILDLIB=CGO_ENABLED=1 go build -trimpath -ldflags="$(LDFLAGS)" -buildmode=c-shared
 GOBUILDSRV=CGO_ENABLED=1 go build -ldflags="$(LDFLAGS)" -trimpath -tags $(TAGS)

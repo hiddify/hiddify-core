@@ -19,6 +19,7 @@ import (
 
 	"github.com/hiddify/hiddify-core/v2/config"
 	"github.com/hiddify/hiddify-core/v2/hcommon"
+	"github.com/hiddify/hiddify-core/v2/hcommon/constants"
 	"github.com/sagernet/sing-box/experimental/libbox"
 	E "github.com/sagernet/sing/common/exceptions"
 )
@@ -341,6 +342,8 @@ func exportDiagnostics(workingPath, tempPath string, req *ExportDiagnosticsReque
 		"mode":        sSetupMode.String(),
 		"os":          runtime.GOOS,
 		"arch":        runtime.GOARCH,
+		"coreVersion": constants.Version,
+		"coreCommit":  constants.Commit(),
 		"goVersion":   runtime.Version(),
 		"coreState":   static.CoreState.String(),
 		"reports":     listCrashReports(workingPath),
