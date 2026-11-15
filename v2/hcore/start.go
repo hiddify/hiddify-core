@@ -223,6 +223,7 @@ func startServiceLocked(ctx context.Context, in *StartRequest) (coreResponse *Co
 	}
 	watch.step("preparing the platform and the delay")
 	libbox.SetMemoryLimit(C.IsIos || !in.DisableMemoryLimit)
+	startMemoryLog()
 	routerMode := static.HiddifyOptions.RouterMode
 	if routerMode {
 		prepareRouterHost()
