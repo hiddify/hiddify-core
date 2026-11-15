@@ -4,6 +4,8 @@ BASENAME=$(PRODUCT_NAME)
 BINDIR=bin
 LIBNAME=$(PRODUCT_NAME)
 CLINAME=HiddifyCli
+# Windows' console launcher (cmd/launcher/main.c); HiddifyCli.exe in older cores
+WIN_CLINAME=HiddifyCore
 
 BRANCH=$(shell git branch --show-current)
 VERSION=$(shell git describe --tags || echo "unknown version")
@@ -161,7 +163,7 @@ windows-amd64: prepare windows-winres
 	# parseCli() in the DLL. The former Go stub (cmd/bydll, still used on Linux) was flagged by ML
 	# antivirus engines whatever its link flags; the C launcher scans clean. Each links its
 	# go-winres .syso (icon, VERSIONINFO, manifest).
-	x86_64-w64-mingw32-gcc -O2 -Wall -mconsole -o $(BINDIR)/$(CLINAME).exe ./cmd/launcher/main.c ./cmd/launcher/cli_windows_amd64.syso -L $(BINDIR) -l:$(LIBNAME).dll -lshell32
+	x86_64-w64-mingw32-gcc -O2 -Wall -mconsole -o $(BINDIR)/$(WIN_CLINAME).exe ./cmd/launcher/main.c ./cmd/launcher/cli_windows_amd64.syso -L $(BINDIR) -l:$(LIBNAME).dll -lshell32
 	# HiddifyAdmin.exe: GUI subsystem, requireAdministrator manifest and the app icon; the only
 	# binary that triggers a UAC prompt (VPN service install).
 	x86_64-w64-mingw32-gcc -O2 -Wall -mwindows -municode -DHIDDIFY_LAUNCHER_GUI -o $(BINDIR)/HiddifyAdmin.exe ./cmd/launcher/main.c ./cmd/launcher/admin_windows_amd64.syso -L $(BINDIR) -l:$(LIBNAME).dll -lshell32
@@ -169,8 +171,8 @@ windows-amd64: prepare windows-winres
 	# Hiddify Core Engine with the core icon. It replaced core/Hiddify.exe, which shared the app's name.
 	rm -rf $(BINDIR)/core
 	x86_64-w64-mingw32-gcc -O2 -Wall -mwindows -municode -DHIDDIFY_LAUNCHER_GUI -o $(BINDIR)/HiddifyCoreEngine.exe ./cmd/launcher/main.c ./cmd/launcher/core_windows_amd64.syso -L $(BINDIR) -l:$(LIBNAME).dll -lshell32
-	if [ ! -f $(BINDIR)/$(LIBNAME).dll -o ! -f $(BINDIR)/$(CLINAME).exe -o ! -f $(BINDIR)/HiddifyAdmin.exe -o ! -f $(BINDIR)/HiddifyCoreEngine.exe -o ! -f $(BINDIR)/libcronet.dll ]; then \
-		echo "Error: $(LIBNAME).dll, $(CLINAME).exe, HiddifyAdmin.exe, HiddifyCoreEngine.exe or libcronet.dll missing"; \
+	if [ ! -f $(BINDIR)/$(LIBNAME).dll -o ! -f $(BINDIR)/$(WIN_CLINAME).exe -o ! -f $(BINDIR)/HiddifyAdmin.exe -o ! -f $(BINDIR)/HiddifyCoreEngine.exe -o ! -f $(BINDIR)/libcronet.dll ]; then \
+		echo "Error: $(LIBNAME).dll, $(WIN_CLINAME).exe, HiddifyAdmin.exe, HiddifyCoreEngine.exe or libcronet.dll missing"; \
 		exit 1; \
 	fi
 

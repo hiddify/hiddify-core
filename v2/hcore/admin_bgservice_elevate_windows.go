@@ -24,7 +24,7 @@ func elevateAdminBgInstall(cliPath, owner string) error {
 	args := "admin_bgservice install " + quoteWindowsArg(owner)
 	// HiddifyAdmin.exe (GUI subsystem, requireAdministrator manifest, app icon) is the binary
 	// shown in the UAC dialog and the one the service is registered with; it forwards to the
-	// same parseCli(). Every package ships it beside HiddifyCli.exe: no fallback to HiddifyCli.exe.
+	// same parseCli(). Every package ships it beside HiddifyCore.exe: no fallback to HiddifyCore.exe.
 	exe := filepath.Join(filepath.Dir(cliPath), "HiddifyAdmin.exe")
 	if _, err := os.Stat(exe); err != nil {
 		return fmt.Errorf("HiddifyAdmin.exe could not be found in %s; reinstall Hiddify: %w", filepath.Dir(cliPath), err)

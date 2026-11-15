@@ -2,7 +2,7 @@
 // One source, built four ways:
 //
 //   Windows (windows-amd64 in the Makefile)
-//   HiddifyCli.exe        console tool, prints parseCli's result
+//   HiddifyCore.exe       console tool, prints parseCli's result
 //   HiddifyAdmin.exe      -DHIDDIFY_LAUNCHER_GUI: GUI subsystem, with a requireAdministrator
 //                         manifest, so the UAC dialog shows "Hiddify" and the app icon and no
 //                         console window flashes; it installs the VPN service

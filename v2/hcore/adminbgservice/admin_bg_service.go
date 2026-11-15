@@ -338,7 +338,8 @@ func makeTunnelConfig(in *AdminBgStartRequest) option.Options {
 								"Hiddify.exe",
 								"Hiddify",
 								"HiddifyCli",
-								"HiddifyCli.exe",
+								"HiddifyCli.exe", // Windows, older cores
+								"HiddifyCore.exe",
 							},
 						},
 						RuleAction: option.RuleAction{

@@ -158,7 +158,7 @@ func getTunnelServicePath() string {
 	binFolder := filepath.Dir(exePath)
 	switch runtime.GOOS {
 	case "windows":
-		fullPath = "HiddifyCli.exe"
+		fullPath = "HiddifyCore.exe"
 	case "darwin":
 		fallthrough
 	default:

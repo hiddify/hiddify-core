@@ -35,7 +35,7 @@ func IsAdmin() bool {
 
 var TunAllowed = IsAdmin
 
-// ExecuteCmd shows one UAC prompt and runs the already-installed HiddifyCli. It does not copy
+// ExecuteCmd shows one UAC prompt and runs the already-installed HiddifyCore.exe. It does not copy
 // binaries into ProgramData or %TEMP% (both patterns raise antivirus false positives).
 func ExecuteCmd(exe string, background bool, args ...string) (string, error) {
 	verb := "runas"

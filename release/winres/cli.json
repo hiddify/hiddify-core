@@ -8,7 +8,7 @@
     "#1": {
       "0409": {
         "identity": {
-          "name": "Hiddify.HiddifyCli",
+          "name": "Hiddify.HiddifyCore",
           "version": "0.0.0.0"
         },
         "description": "Hiddify command line interface",
@@ -33,9 +33,9 @@
           "0409": {
             "CompanyName": "Hiddify",
             "FileDescription": "Hiddify command line interface",
-            "InternalName": "HiddifyCli",
+            "InternalName": "HiddifyCore",
             "LegalCopyright": "Copyright (C) Hiddify.com. All rights reserved.",
-            "OriginalFilename": "HiddifyCli.exe",
+            "OriginalFilename": "HiddifyCore.exe",
             "ProductName": "Hiddify",
             "Comments": "https://github.com/hiddify/hiddify-core"
           }
