@@ -356,11 +356,15 @@ func writeAdminBgConnectRequest(req *EnsureAdminBgServiceRequest) (string, error
 var errNoAdminPrompt = errors.New("VPN mode needs pkexec to ask for the administrator password, and it is not installed: " +
 	"install the pkexec package (polkit) and try again, or use system proxy mode")
 
+// errNoAdminAgent: an administrator prompt is installed but cannot be shown (Linux: pkexec without a
+// polkit agent, and no desktop for sudo's). Not a refusal: the user has to start the app another way.
+var errNoAdminAgent = errors.New("could not ask for the administrator password")
+
 // errAdminPromptRefused: the user dismissed the administrator prompt, or the password was wrong.
 var errAdminPromptRefused = errors.New("could not install the VPN service; allow the administrator prompt and try again")
 
 func isPermissionDenied(err error) bool {
-	if err == nil || errors.Is(err, errNoAdminPrompt) {
+	if err == nil || errors.Is(err, errNoAdminPrompt) || errors.Is(err, errNoAdminAgent) {
 		return false
 	}
 	if errors.Is(err, errAdminPromptRefused) {
