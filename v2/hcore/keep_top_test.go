@@ -65,7 +65,8 @@ func TestKeepTopSmallProfileUsesAll(t *testing.T) {
 
 // Changing keep-top in the settings changes how many proxies the running core uses, and nothing
 // else: the core is not restarted, no outbound is replaced, and no proxy is tested again to keep
-// fewer.
+// fewer. A count of at least the proxies the profile has turns keep top off: they are no longer
+// lazy (none sleeps), so the hot reload replaces them, still without a restart.
 func TestKeepTopCountChangesInPlace(t *testing.T) {
 	if testing.Short() {
 		t.Skip("runs a core through a pick")
@@ -89,7 +90,7 @@ func TestKeepTopCountChangesInPlace(t *testing.T) {
 	require.Eventually(t, usedIs("proxy-1", "proxy-2", "proxy-3"), 60*time.Second, 20*time.Millisecond)
 	instance, atStart := static.StartedService.Instance(), profileProxies()
 	base := strings.TrimSuffix(hotReloadSettings(t, int(static.HiddifyOptions.MixedPort), "warn"), "}") + ","
-	change := func(count int) {
+	reload := func(count int) {
 		t.Helper()
 		_, err := ChangeHiddifySettings(&ChangeHiddifySettingsRequest{HiddifySettingsJson: base + settings(count) + "}"}, false)
 		require.NoError(t, err)
@@ -97,6 +98,17 @@ func TestKeepTopCountChangesInPlace(t *testing.T) {
 		require.NoError(t, err)
 		require.Equal(t, MessageType_EMPTY, response.MessageType)
 		require.Same(t, instance, static.StartedService.Instance(), "the core was not restarted")
+	}
+	lazy := func(want bool) {
+		t.Helper()
+		for tag, outbound := range profileProxies() {
+			_, isLazy := outbound.(adapter.LazyOutbound)
+			require.Equal(t, want, isLazy, "%s lazy", tag)
+		}
+	}
+	change := func(count int) {
+		t.Helper()
+		reload(count)
 		for tag, outbound := range profileProxies() {
 			require.Same(t, atStart[tag], outbound, "%s was not replaced", tag)
 		}
@@ -110,11 +122,16 @@ func TestKeepTopCountChangesInPlace(t *testing.T) {
 	used, _ := usedProxies()
 	require.Contains(t, used, "proxy-2")
 	require.Eventually(t, usedIs("proxy-1", "proxy-2", "proxy-3"), 60*time.Second, 20*time.Millisecond)
-	change(10) // more than there are: none rests
+	reload(10) // more than there are: keep top is off, none is lazy and none rests or sleeps
+	lazy(false)
 	require.True(t, usedIs("proxy-0", "proxy-1", "proxy-2", "proxy-3")())
+	reload(4) // as many as there are: still off
+	lazy(false)
 
 	// the app is told which rest, and the one the user keeps loaded is used whatever its ping
-	change(1) // from none resting: a pick again
+	reload(1) // from keep top off: lazy again, and a pick
+	lazy(true)
+	atStart = profileProxies()
 	require.Eventually(t, usedIs("proxy-2"), 60*time.Second, 20*time.Millisecond)
 	resting := func() []string {
 		var tags []string

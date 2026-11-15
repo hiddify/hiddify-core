@@ -109,10 +109,9 @@ func LazyProxyTags(input *option.Options) []string {
 // options, by which the core finds the fastest of them and leaves the others at rest. It returns
 // how many it manages; 0 when keep top is not on, and then nothing in the config is lazy.
 //
-// The proxies are lazy whatever the count, also when the profile has no more of them than it
-// keeps (then none rests): the count is only an option of the monitoring, so changing it changes
-// no outbound, and the running core takes it without a restart or a cut connection. The extra
-// security and unblocker hops are never lazy (isChainHop), whatever candidates says.
+// A profile with no more proxies than the count keeps has none to rest: keep top is off for it and
+// none of them is lazy, so none is closed when idle. The extra security and unblocker hops are
+// never lazy (isChainHop), whatever candidates says.
 func ApplyKeepTop(options *option.Options, hopt *HiddifyOptions, candidates []string) int {
 	if options.Experimental == nil || options.Experimental.Monitoring == nil {
 		return 0 // nothing would test them
@@ -147,6 +146,9 @@ func ApplyKeepTop(options *option.Options, hopt *HiddifyOptions, candidates []st
 	}
 	if len(managed)+len(managedEndpoints) == 0 {
 		return 0
+	}
+	if count > 0 && len(countries) == 0 && len(managed)+len(managedEndpoints) <= count {
+		return 0 // all of them are kept: none rests, and none sleeps
 	}
 	for _, out := range managed {
 		out.Lazy = true

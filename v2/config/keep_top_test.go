@@ -2,6 +2,7 @@ package config
 
 import (
 	"encoding/json"
+	"fmt"
 	"slices"
 	"testing"
 
@@ -208,6 +209,46 @@ func TestKeepTopNeverMakesChainHopsLazy(t *testing.T) {
 		}
 		if err := libbox.CheckConfigOptions(options); err != nil {
 			t.Fatalf("%s: sing-box rejected the config: %v", settings, err)
+		}
+	}
+}
+
+// A profile with no more proxies than keep top keeps has none to rest: nothing in it is lazy, so
+// nothing sleeps. With one more than the count, all of them are lazy again.
+func TestKeepTopOffWhenTheProfileHasNoMoreProxiesThanItKeeps(t *testing.T) {
+	for _, tc := range []struct {
+		keepTop, managed int
+	}{{5, 0}, {6, 0}, {100, 0}, {4, 5}} {
+		ctx := libbox.BaseContext(nil)
+		input, err := ReadSingOptions(ctx, &ReadOptions{Content: keepTopEndpointsProfile})
+		if err != nil {
+			t.Fatal(err)
+		}
+		candidates := LazyProxyTags(input) // 5
+		opts := chainTestOptions(t, fmt.Sprintf(`{"chain-status":"off","keep-top":%d}`, tc.keepTop))
+		options, err := BuildConfig(ctx, opts, &ReadOptions{Options: input})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if managed := ApplyKeepTop(options, opts, candidates); managed != tc.managed {
+			t.Errorf("keep-top %d: managed %d, want %d", tc.keepTop, managed, tc.managed)
+		}
+		lazy := 0
+		for _, end := range options.Endpoints {
+			if end.Lazy {
+				lazy++
+			}
+		}
+		for _, out := range options.Outbounds {
+			if out.Lazy {
+				lazy++
+			}
+		}
+		if lazy != tc.managed {
+			t.Errorf("keep-top %d: %d lazy, want %d", tc.keepTop, lazy, tc.managed)
+		}
+		if wantKeepTop := tc.managed > 0; (options.Experimental.Monitoring.KeepTop != nil) != wantKeepTop {
+			t.Errorf("keep-top %d: monitoring keep_top set = %v, want %v", tc.keepTop, !wantKeepTop, wantKeepTop)
 		}
 	}
 }
