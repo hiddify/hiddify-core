@@ -57,6 +57,14 @@ endif
 EMBED_LDFLAGS+=-X github.com/sagernet/sing-box/protocol/psiphon.embeddedHiddifyConfig=$(PSIPHON_CONFIG_ENCRYPTED)
 endif
 endif
+# DIAGNOSTICS_PUBLIC_KEY (GitHub Actions secret): the age public key (age1…) the sensitive part of
+# every diagnostics report is encrypted to (v2/hcore/diagnostics_key.go); unset, reports are in the clear.
+ifneq ($(strip $(DIAGNOSTICS_PUBLIC_KEY)),)
+ifeq ($(filter age1%,$(strip $(DIAGNOSTICS_PUBLIC_KEY))),)
+$(error DIAGNOSTICS_PUBLIC_KEY is not an age public key (age1…))
+endif
+EMBED_LDFLAGS+=-X github.com/hiddify/hiddify-core/v2/hcore.diagnosticsPublicKey=$(strip $(DIAGNOSTICS_PUBLIC_KEY))
+endif
 # Per-build UUID so the app can match its downloaded core to the tunnel service (Go only; Dart never embeds it).
 ifeq ($(strip $(HIDDIFY_BUILD_ID)),)
 HIDDIFY_BUILD_ID := $(shell (uuidgen 2>/dev/null || openssl rand -hex 16) | tr '[:upper:]' '[:lower:]' | tr -d '\n')

@@ -162,6 +162,8 @@ jobs:
           # embedded at build time; the Psiphon config only in encrypted form (empty = not embedded)
           HIDDIFY_SECRET_KEY: ${{ secrets.HIDDIFY_SECRET_KEY }}
           PSIPHON_CONFIG: ${{ secrets.PSIPHON_CONFIG }}
+          # the age public key diagnostics reports are encrypted to (empty = in the clear)
+          DIAGNOSTICS_PUBLIC_KEY: ${{ secrets.DIAGNOSTICS_PUBLIC_KEY }}
 
       - name: zip
         run: |
@@ -212,7 +214,7 @@ jobs:
     needs:
       - calculate_version
     env:
-      CODE_VERSION: "-X github.com/hiddify/hiddify-core/v2/hcommon/constants.Version=${{ needs.calculate_version.outputs.hiddify_version }} -X github.com/sagernet/sing-box/constant.Version=${{ needs.calculate_version.outputs.singbox_version }}"
+      CODE_VERSION: "-X github.com/hiddify/hiddify-core/v2/hcommon/constants.Version=${{ needs.calculate_version.outputs.hiddify_version }} -X github.com/sagernet/sing-box/constant.Version=${{ needs.calculate_version.outputs.singbox_version }} -X github.com/hiddify/hiddify-core/v2/hcore.diagnosticsPublicKey=${{ secrets.DIAGNOSTICS_PUBLIC_KEY }}"
       
     strategy:
       fail-fast: false
