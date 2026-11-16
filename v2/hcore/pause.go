@@ -12,13 +12,7 @@ func (s *CoreService) Close(ctx context.Context, closeReq *CloseRequest) (*hcomm
 	if closeReq == nil {
 		return nil, nil
 	}
-	mode := closeReq.Mode
-	if grpcServer[mode] == nil {
-		Log(LogLevel_WARNING, LogType_CORE, "grpcServer already stoped")
-		return nil, nil
-	}
-
-	CloseGrpcServer(mode)
+	CloseGrpcServer(closeReq.Mode) // it looks at grpcServer under its lock
 	return &hcommon.Empty{}, nil
 }
 
@@ -28,7 +22,10 @@ func Pause() {
 			manager.DevicePause()
 			if C.IsIos {
 				if static.endPauseTimer == nil {
-					static.endPauseTimer = time.AfterFunc(time.Minute, manager.DeviceWake)
+					// Wake, not manager.DeviceWake: the timer is made once and reset for every
+					// pause, and this manager is the first box's; after a restart it woke a
+					// closed box and left the running one paused
+					static.endPauseTimer = time.AfterFunc(time.Minute, Wake)
 				} else {
 					static.endPauseTimer.Reset(time.Minute)
 				}
