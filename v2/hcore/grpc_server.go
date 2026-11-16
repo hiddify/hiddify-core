@@ -39,6 +39,11 @@ type CoreService struct {
 	UnimplementedCoreServer
 }
 
+// goroutineSnapshotsOnce starts the snapshot loop once per process. Setup runs again after
+// CloseGrpcServer (Android sets the core up on every connect): each run started another loop
+// that never ended, and moved this process's own snapshot aside as the previous run's.
+var goroutineSnapshotsOnce sync.Once
+
 func Setup(params *SetupRequest, platformInterface libbox.PlatformInterface) error {
 	defer config.DeferPanicToError("setup", func(err error) {
 		Log(LogLevel_FATAL, LogType_CORE, err.Error())
@@ -81,8 +86,10 @@ func Setup(params *SetupRequest, platformInterface libbox.PlatformInterface) err
 	sWorkingPath = params.WorkingDir
 	sSetupMode = params.Mode
 	cleanupLeftovers()
-	keepPreviousGoroutineSnapshot(sWorkingPath, sSetupMode)
-	go writeGoroutineSnapshots(static.BaseContext, sWorkingPath, sSetupMode)
+	goroutineSnapshotsOnce.Do(func() {
+		keepPreviousGoroutineSnapshot(sWorkingPath, sSetupMode)
+		go writeGoroutineSnapshots(static.BaseContext, sWorkingPath, sSetupMode)
+	})
 	os.Chdir(sWorkingPath)
 	sTempPath = params.TempDir
 	sUserID = os.Getuid()

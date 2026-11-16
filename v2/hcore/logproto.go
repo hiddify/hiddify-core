@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"runtime/pprof"
 	"time"
 
 	"github.com/sagernet/sing-box/log"
@@ -125,12 +124,9 @@ func sendLogs(ctx context.Context, logs <-chan *LogMessage, level LogLevel, send
 	}
 }
 
+// dumpGoroutinesToFile writes goroutineDump, the goroutine profile. Not the profile's debug=2
+// form: that is runtime.Stack(all), whose printing unwinder throws on a goroutine it cannot
+// unwind (see goroutineDump), and it runs here while a stop is slow, with the TUN still up.
 func dumpGoroutinesToFile(path string) error {
-	f, err := os.Create(path)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-
-	return pprof.Lookup("goroutine").WriteTo(f, 2)
+	return os.WriteFile(path, []byte(goroutineDump()), 0o644)
 }
