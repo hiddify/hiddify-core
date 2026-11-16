@@ -220,8 +220,11 @@ func StartGrpcServerByMode(listenAddressG string, mode SetupMode) (*grpc.Server,
 		return grpcServer[mode], nil
 	}
 
+	// the server is stored only once it listens: a server stored before a failed listen made
+	// every later Setup answer "already started" with nothing listening
+	var server *grpc.Server
 	if mode == SetupMode_GRPC_BACKGROUND_INSECURE || mode == SetupMode_GRPC_NORMAL_INSECURE {
-		grpcServer[mode] = grpc.NewServer()
+		server = grpc.NewServer()
 	} else {
 		if err := loadServerCertificate(); err != nil {
 			return nil, err
@@ -244,18 +247,19 @@ func StartGrpcServerByMode(listenAddressG string, mode SetupMode) (*grpc.Server,
 
 		// Create a new gRPC server with TLS credentials
 		creds := credentials.NewTLS(tlsConfig)
-		grpcServer[mode] = grpc.NewServer(grpc.Creds(creds))
+		server = grpc.NewServer(grpc.Creds(creds))
 	}
 	// Register your gRPC service here
-	RegisterCoreServer(grpcServer[mode], &CoreService{})
-	hello.RegisterHelloServer(grpcServer[mode], &hello.HelloService{})
-	ezytel.RegisterEzytelServer(grpcServer[mode], ezytel.NewEzytelService(""))
+	RegisterCoreServer(server, &CoreService{})
+	hello.RegisterHelloServer(server, &hello.HelloService{})
+	ezytel.RegisterEzytelServer(server, ezytel.NewEzytelService(""))
 	// Listen on the provided address
 	lis, err := net.Listen("tcp", listenAddressG)
 	if err != nil {
 		Log(LogLevel_ERROR, LogType_CORE, fmt.Sprintf("failed to listen on %s: %v\n", listenAddressG, err))
 		return nil, err
 	}
+	grpcServer[mode] = server
 	Log(LogLevel_DEBUG, LogType_CORE, fmt.Sprintf("grpcServer started on %s\n", listenAddressG))
 	log.Info("Server listening on %s", listenAddressG)
 
@@ -265,13 +269,13 @@ func StartGrpcServerByMode(listenAddressG string, mode SetupMode) (*grpc.Server,
 			Log(LogLevel_FATAL, LogType_CORE, err.Error())
 			<-time.After(5 * time.Second)
 		})
-		if err := grpcServer[mode].Serve(lis); err != nil {
+		if err := server.Serve(lis); err != nil { // not grpcServer[mode]: CloseGrpcServer deletes it
 			Log(LogLevel_DEBUG, LogType_CORE, fmt.Sprintf("failed to serve: %v\n", err))
 		}
 		Log(LogLevel_DEBUG, LogType_CORE, "Server stopped")
 	}()
 
-	return grpcServer[mode], nil
+	return server, nil
 }
 
 // loadServerCertificate sets certpair, the certificate every mTLS server of this process presents.
