@@ -20,14 +20,11 @@ func InitHiddifyService() error {
 	return service_manager.StartServices()
 }
 
+// Setup sets the core up for a gRPC client. Setup itself answers an already started server (under
+// its lock), so the handler does not look at grpcServer, which it would read without that lock.
 func (s *CoreService) Setup(ctx context.Context, req *SetupRequest) (*hcommon.Response, error) {
-	if grpcServer[req.Mode] != nil {
-		return &hcommon.Response{Code: hcommon.ResponseCode_OK, Message: ""}, nil
+	if err := Setup(req, nil); err != nil {
+		return &hcommon.Response{Code: hcommon.ResponseCode_FAILED, Message: err.Error()}, err
 	}
-	err := Setup(req, nil)
-	code := hcommon.ResponseCode_OK
-	if err != nil {
-		code = hcommon.ResponseCode_FAILED
-	}
-	return &hcommon.Response{Code: code, Message: err.Error()}, err
+	return &hcommon.Response{Code: hcommon.ResponseCode_OK}, nil
 }
