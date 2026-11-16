@@ -121,6 +121,12 @@ func saveLastStartRequest(in *StartRequest) error {
 			Id:    "lastStartRequestName",
 			Value: in.ConfigName,
 		},
+		// a start without a request (Android's tile, shortcut and always-on, an iOS on-demand
+		// start) runs with the user's memory limit setting too, not with the limit always on
+		&hcommon.AppSettings{
+			Id:    "lastStartRequestDisableMemoryLimit",
+			Value: in.DisableMemoryLimit,
+		},
 	)
 }
 
@@ -142,11 +148,16 @@ func loadLastStartRequestIfNeeded(in *StartRequest) (*StartRequest, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &StartRequest{
+	request := &StartRequest{
 		ConfigPath:    lastPath.Value.(string),
 		ConfigContent: lastContent.Value.(string),
 		ConfigName:    lastName.Value.(string),
-	}, nil
+	}
+	// saved since; a request saved before has the limit on, as these starts had
+	if disable, err := settings.Get("lastStartRequestDisableMemoryLimit"); err == nil {
+		request.DisableMemoryLimit, _ = disable.Value.(bool)
+	}
+	return request, nil
 }
 
 // startServiceLocked starts the core; static.lock must be held.
