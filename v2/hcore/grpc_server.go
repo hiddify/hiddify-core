@@ -8,6 +8,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/pem"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -290,8 +291,17 @@ func loadServerCertificate() error {
 		return nil
 	}
 	table := db.GetTable[hcommon.AppSettings]()
+	// a new certificate replaces the stored one, which a client of another process (the iOS
+	// app, for its extension's core) has pinned: it is made only when there is no usable one,
+	// never because the store could not be read
 	grpcServerPrivateKey, err := table.Get("grpc_server_private_key")
+	if err != nil && !absentOrInvalid(err) {
+		return E.Cause(err, "read the gRPC server certificate")
+	}
 	grpcServerPublicKey, err2 := table.Get("grpc_server_public_key")
+	if err2 != nil && !absentOrInvalid(err2) {
+		return E.Cause(err2, "read the gRPC server certificate")
+	}
 	if err == nil && err2 == nil {
 		pub, ok1 := grpcServerPublicKey.Value.([]byte)
 		priv, ok2 := grpcServerPrivateKey.Value.([]byte)
@@ -315,6 +325,12 @@ func loadServerCertificate() error {
 		Log(LogLevel_WARNING, LogType_CORE, fmt.Sprintf("failed to store grpc server certificate: %v", err))
 	}
 	return nil
+}
+
+// absentOrInvalid reports whether a store error says the item is not there or not readable, as
+// opposed to the store itself failing.
+func absentOrInvalid(err error) bool {
+	return errors.Is(err, db.ErrNotFound) || errors.Is(err, db.ErrInvalidValue)
 }
 
 // GetGrpcServerPublicKey returns the gRPC server's certificate (PEM).

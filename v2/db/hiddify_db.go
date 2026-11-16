@@ -3,6 +3,7 @@ package db
 import (
 	"bytes"
 	"encoding/gob"
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -203,6 +204,14 @@ func (tbl *Table[T]) Delete(ids ...any) error {
 	return nil
 }
 
+// ErrNotFound is the error of Get when no item has the id, and ErrInvalidValue when the stored
+// item cannot be read back. Any other error of Get is the store's (it could not be opened or
+// read): the item may well be there.
+var (
+	ErrNotFound     = errors.New("not found")
+	ErrInvalidValue = errors.New("invalid stored value")
+)
+
 // Get retrieves a single item by its ID.
 func (tbl *Table[T]) Get(id any) (*T, error) {
 	db, err := getDB(tbl.name, true)
@@ -215,5 +224,12 @@ func (tbl *Table[T]) Get(id any) (*T, error) {
 	if err != nil {
 		return nil, err
 	}
-	return Deserialize[T](b)
+	if b == nil { // what the store answers for a missing key
+		return nil, fmt.Errorf("%s %v: %w", tbl.name, id, ErrNotFound)
+	}
+	item, err := Deserialize[T](b)
+	if err != nil {
+		return nil, fmt.Errorf("%s %v: %w: %w", tbl.name, id, ErrInvalidValue, err)
+	}
+	return item, nil
 }
