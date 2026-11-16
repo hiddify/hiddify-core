@@ -19,7 +19,9 @@ func StopAndAlert(msgType MessageType, message string) {
 	SetCoreStatus(CoreStates_STOPPED, msgType, message)
 
 	if ss := static.startedService.Swap(nil); ss != nil {
-		closeService(ss)
+		if err := closeService(ss); err == nil {
+			engineClosed()
+		}
 	}
 }
 

@@ -88,7 +88,7 @@ func hotReloadService(ctx context.Context, in *StartRequest) (*CoreInfoResponse,
 // reloadRunning applies the request's config to the running core, leaving its state as it is; on
 // failure the core keeps running unchanged. static.lock must be held.
 func reloadRunning(ctx context.Context, in *StartRequest) (MessageType, error) {
-	options, err := buildRunningConfig(ctx, in)
+	options, delegatedProxy, err := buildRunningConfig(ctx, in)
 	if err != nil {
 		return MessageType_ERROR_BUILDING_CONFIG, err
 	}
@@ -113,10 +113,13 @@ func reloadRunning(ctx context.Context, in *StartRequest) (MessageType, error) {
 	if err := contextErr(ctx); err != nil {
 		return MessageType_HOT_RELOAD_FAILED, fmt.Errorf("hot reload cancelled: %w", err)
 	}
+	engineApplying(options)
 	result, err := static.startedService.Load().HotReload(serviceContext(ctx), options)
+	engineApplied(err == nil)
 	if err != nil {
 		return MessageType_HOT_RELOAD_FAILED, err
 	}
+	recordDelegatedSystemProxy(delegatedProxy)
 	static.previousStartRequest = in
 	saveLastStartRequest(in)
 	config.SaveCurrentConfig(ctx, filepath.Join(sWorkingPath, "data/current-config.json"), *options)

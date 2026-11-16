@@ -27,14 +27,14 @@ import (
 // hops run for the whole run, as without keep top.
 
 // buildRunningConfig builds the config the core runs. A core that delegates the system proxy (see
-// config.InboundOptions.DelegateSystemProxy) takes it out of the config here and keeps its address.
-func buildRunningConfig(ctx context.Context, in *StartRequest) (*option.Options, error) {
+// config.InboundOptions.DelegateSystemProxy) takes it out of the config here and returns its
+// address, which is recorded (recordDelegatedSystemProxy) once the engine runs the config.
+func buildRunningConfig(ctx context.Context, in *StartRequest) (*option.Options, *config.SystemProxyTarget, error) {
 	options, err := buildConfigToRun(ctx, in)
-	if err == nil {
-		recordDelegatedSystemProxy(options)
-		markEngineLeftovers(options)
+	if err != nil {
+		return nil, nil, err
 	}
-	return options, err
+	return options, takeDelegatedSystemProxy(options), nil
 }
 
 func buildConfigToRun(ctx context.Context, in *StartRequest) (*option.Options, error) {

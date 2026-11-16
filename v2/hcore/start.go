@@ -177,7 +177,7 @@ func startServiceLocked(ctx context.Context, in *StartRequest) (coreResponse *Co
 	}
 
 	watch.step("loading the request")
-	options, err := buildRunningConfig(ctx, in)
+	options, delegatedProxy, err := buildRunningConfig(ctx, in)
 	if err != nil {
 		return errorWrapper(MessageType_ERROR_BUILDING_CONFIG, err)
 	}
@@ -228,6 +228,7 @@ func startServiceLocked(ctx context.Context, in *StartRequest) (coreResponse *Co
 	if routerMode {
 		prepareRouterHost()
 	}
+	engineApplying(options)
 	instance, err := NewService(serviceContext(ctx), *options, stopSignal(ctx))
 	watch.step("starting the service")
 	if err != nil && config.AutoRedirectFailed(options, err) {
@@ -238,10 +239,11 @@ func startServiceLocked(ctx context.Context, in *StartRequest) (coreResponse *Co
 			// the system lacks nftables, iptables or the nfqueue module: the TUN works without
 			// auto_redirect, as it did before, so build the config again and start it once more
 			Log(LogLevel_WARNING, LogType_CORE, "auto-redirect is not available here, starting the TUN without it: ", err.Error())
-			if options, err = buildRunningConfig(ctx, in); err == nil {
+			if options, delegatedProxy, err = buildRunningConfig(ctx, in); err == nil {
 				// a raw config comes back as it was
 				config.DropAutoRedirect(options)
 				config.SaveCurrentConfig(ctx, currentBuildConfigPath, *options)
+				engineApplying(options)
 				instance, err = NewService(serviceContext(ctx), *options, stopSignal(ctx))
 				watch.step("starting the service without auto-redirect")
 			}
@@ -251,6 +253,7 @@ func startServiceLocked(ctx context.Context, in *StartRequest) (coreResponse *Co
 		if routerMode {
 			restoreRouterHost()
 		}
+		engineClosed() // NewService closed what it started
 		watch.done("failed: " + err.Error())
 		return errorWrapper(MessageType_START_SERVICE, err)
 	}
@@ -258,11 +261,15 @@ func startServiceLocked(ctx context.Context, in *StartRequest) (coreResponse *Co
 		// cancelled while the service was starting: stop it again
 		if closeErr := closeService(instance); closeErr != nil {
 			Log(LogLevel_ERROR, LogType_CORE, "closing cancelled service: ", closeErr.Error())
+		} else {
+			engineClosed()
 		}
 		restoreRouterHost()
 		return cancelledStart(err)
 	}
 	static.startedService.Store(instance)
+	engineApplied(true)
+	recordDelegatedSystemProxy(delegatedProxy)
 	if static.debug {
 		dumpGoroutinesToFile(fmt.Sprint(sWorkingPath, "/data/goroutine-start.log"))
 	}

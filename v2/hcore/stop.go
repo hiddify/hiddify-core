@@ -64,6 +64,7 @@ func stopLocked() (*CoreInfoResponse, error) {
 		dumpGoroutinesToFile(fmt.Sprint(sWorkingPath, "/data/goroutine-stop.log"))
 		return errorWrapper(MessageType_UNEXPECTED_ERROR, err)
 	}
+	engineClosed()
 	watch.done("core is stopped")
 
 	return SetCoreStatus(CoreStates_STOPPED, MessageType_EMPTY, ""), nil

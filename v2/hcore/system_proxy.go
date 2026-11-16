@@ -25,11 +25,18 @@ var systemProxyState struct {
 	proxy settings.SystemProxy
 }
 
-func recordDelegatedSystemProxy(options *option.Options) {
-	var target *config.SystemProxyTarget
+// takeDelegatedSystemProxy takes the system proxy out of options when this core delegates it, and
+// returns where it pointed.
+func takeDelegatedSystemProxy(options *option.Options) *config.SystemProxyTarget {
 	if hopts := static.HiddifyOptions; hopts != nil && hopts.DelegateSystemProxy {
-		target = config.TakeSystemProxy(options)
+		return config.TakeSystemProxy(options)
 	}
+	return nil
+}
+
+// recordDelegatedSystemProxy records where the running config's system proxy points, once the
+// engine runs it; a refused hot reload keeps the running config's.
+func recordDelegatedSystemProxy(target *config.SystemProxyTarget) {
 	systemProxyState.access.Lock()
 	systemProxyState.delegated = target
 	systemProxyState.access.Unlock()
@@ -83,7 +90,9 @@ func (s *CoreService) GetSystemProxyStatus(ctx context.Context, empty *hcommon.E
 // address) once that process has ended. Read before the disable below rewrites the marker with
 // this core's own state; skipped while this core runs an engine, whose marker it is.
 func cleanupStoppedEngine() {
-	if static.CoreState == CoreStates_STARTED || static.CoreState == CoreStates_STARTING {
+	// only with no engine here at all: in WAITING, NO_AVAILABLE_PROXIES, HOT_RELOADING or
+	// STOPPING an engine runs as much as in STARTED
+	if static.startedService.Load() != nil || currentCoreState() != CoreStates_STOPPED {
 		return
 	}
 	cleanupLeftovers()

@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"strings"
 	"sync"
 
@@ -23,14 +24,33 @@ import (
 // marker in the core's working dir records it, and a core that starts in the same dir and finds a
 // marker undoes it. The app starts a new core as soon as its core dies, and again when it is
 // launched; systemd and Windows restart the service.
+//
+// The marker is written before an engine applies a config and cleared only once the engine is
+// closed: a core killed in between leaves it, and what it names may or may not be set, which the
+// cleanup handles. While a hot reload applies a config, the running one's changes stay marked too.
 var leftovers struct {
 	access sync.Mutex
-	// set by the running config's set_system_proxy inbound
-	engineProxy string
+	// what the running engine changed, and what the config being applied will change
+	running, applying engineLeftovers
 	// set by EnableUserSystemProxy, for a root core's engine
 	userProxy string
-	// the running config's TUNs that change the routing (Linux)
+}
+
+// engineLeftovers is what an engine's config changes in the host.
+type engineLeftovers struct {
+	// set by the config's set_system_proxy inbound
+	proxy string
+	// the config's TUNs that change the routing (Linux)
 	tuns []tunLeftover
+}
+
+func engineLeftoversOf(options *option.Options) engineLeftovers {
+	var it engineLeftovers
+	if target := config.SystemProxyOf(options); target != nil {
+		it.proxy = target.Address
+	}
+	it.tuns = routingTuns(options)
+	return it
 }
 
 // tunLeftover names what a TUN set up in the host (see tun.CleanupLeftovers).
@@ -50,18 +70,33 @@ func leftoverPath(workingDir string, name string) string {
 	return filepath.Join(workingDir, "data", name)
 }
 
-// markEngineLeftovers records what the config about to run changes in the host; nil when the
-// engine stops (its inbounds undid it).
-func markEngineLeftovers(options *option.Options) {
-	address := ""
-	if target := config.SystemProxyOf(options); target != nil {
-		address = target.Address
-	}
-	tuns := routingTuns(options)
+// engineApplying marks what options change in the host, before the engine applies them (a start,
+// or a hot reload of the running engine).
+func engineApplying(options *option.Options) {
 	leftovers.access.Lock()
 	defer leftovers.access.Unlock()
-	leftovers.engineProxy = address
-	leftovers.tuns = tuns
+	leftovers.applying = engineLeftoversOf(options)
+	writeLeftoversLocked()
+}
+
+// engineApplied ends what engineApplying began: applied, the config's changes are the running
+// engine's; not applied (a refused hot reload), the running engine keeps its own.
+func engineApplied(applied bool) {
+	leftovers.access.Lock()
+	defer leftovers.access.Unlock()
+	if applied {
+		leftovers.running = leftovers.applying
+	}
+	leftovers.applying = engineLeftovers{}
+	writeLeftoversLocked()
+}
+
+// engineClosed clears the engine's marker once the engine is closed: its inbounds undid what
+// they changed. A close that failed keeps it, for the cleanup of the next core.
+func engineClosed() {
+	leftovers.access.Lock()
+	defer leftovers.access.Unlock()
+	leftovers.running, leftovers.applying = engineLeftovers{}, engineLeftovers{}
 	writeLeftoversLocked()
 }
 
@@ -94,14 +129,20 @@ func routingTuns(options *option.Options) []tunLeftover {
 
 func writeLeftoversLocked() {
 	var addresses []string
-	for _, address := range []string{leftovers.engineProxy, leftovers.userProxy} {
-		if address != "" {
+	for _, address := range []string{leftovers.running.proxy, leftovers.applying.proxy, leftovers.userProxy} {
+		if address != "" && !slices.Contains(addresses, address) {
 			addresses = append(addresses, address)
 		}
 	}
+	var tuns []tunLeftover
+	for _, it := range append(slices.Clone(leftovers.running.tuns), leftovers.applying.tuns...) {
+		if !slices.Contains(tuns, it) {
+			tuns = append(tuns, it)
+		}
+	}
 	var tunContent []byte
-	if len(leftovers.tuns) > 0 {
-		tunContent, _ = json.Marshal(leftovers.tuns)
+	if len(tuns) > 0 {
+		tunContent, _ = json.Marshal(tuns)
 	}
 	writeMarker(leftoverPath(sWorkingPath, "system-proxy.on"), []byte(strings.Join(addresses, "\n")))
 	writeMarker(leftoverPath(sWorkingPath, "tun.on"), tunContent)
