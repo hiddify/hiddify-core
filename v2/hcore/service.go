@@ -128,8 +128,18 @@ func (h *HiddifyInstance) Box() *box.Box {
 	return ins.Box()
 }
 
+// running is the box and context of the running service, both from the same service, or nils:
+// a stop or restart between two separate reads gave one without the other.
+func (h *HiddifyInstance) running() (*box.Box, context.Context) {
+	ins := h.Instance()
+	if ins == nil || ins.Box() == nil || ins.Context() == nil {
+		return nil, nil
+	}
+	return ins.Box(), ins.Context()
+}
+
 func (h *HiddifyInstance) Instance() *daemon.Instance {
-	ss := h.StartedService
+	ss := h.startedService.Load()
 	if ss == nil {
 		return nil
 	}

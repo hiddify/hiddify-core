@@ -29,7 +29,7 @@ func (h *HiddifyInstance) readStatus(prev *SystemInfo) *SystemInfo {
 	message.Goroutines = int32(runtime.NumGoroutine())
 	// message.ConnectionsOut = int32(conntrack.Count())
 
-	if ss := h.StartedService; ss != nil {
+	if ss := h.startedService.Load(); ss != nil {
 		status := ss.ReadStatus()
 		message.DownlinkTotal = status.DownlinkTotal
 		message.UplinkTotal = status.UplinkTotal
@@ -302,8 +302,8 @@ func (h *HiddifyInstance) UrlTest(in *UrlTestRequest) (*hcommon.Response, error)
 	if len(in.Tags) > 0 {
 		// the proxies the user looks at, in use or at rest: as many at a time as the monitoring
 		// tests, so the ones at rest are loaded a few at a time, not all at once
-		ctx := h.Context()
-		if h.Box() == nil || ctx == nil {
+		_, ctx := h.running()
+		if ctx == nil {
 			return nil, E.New("service not ready")
 		}
 		monitoring.Get(ctx).TestOutbounds(in.Tags, "asked for by the app")
@@ -326,11 +326,11 @@ func (h *HiddifyInstance) UrlTest(in *UrlTestRequest) (*hcommon.Response, error)
 	// }, nil
 
 	// groupTag := in.GroupTag
-	box := h.Box()
-	if box == nil {
+	_, ctx := h.running()
+	if ctx == nil {
 		return nil, E.New("service not ready")
 	}
-	monitor := monitoring.Get(h.Context())
+	monitor := monitoring.Get(ctx)
 	monitor.TestNow(in.Tag)
 	// router := box.Outbound()
 	// abstractOutboundGroup, isLoaded := router.Outbound(groupTag)

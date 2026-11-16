@@ -88,7 +88,7 @@ func TestKeepTopCountChangesInPlace(t *testing.T) {
 		}
 	}
 	require.Eventually(t, usedIs("proxy-1", "proxy-2", "proxy-3"), 60*time.Second, 20*time.Millisecond)
-	instance, atStart := static.StartedService.Instance(), profileProxies()
+	instance, atStart := static.startedService.Load().Instance(), profileProxies()
 	base := strings.TrimSuffix(hotReloadSettings(t, int(static.HiddifyOptions.MixedPort), "warn"), "}") + ","
 	reload := func(count int) {
 		t.Helper()
@@ -97,7 +97,7 @@ func TestKeepTopCountChangesInPlace(t *testing.T) {
 		response, err := HotReload(static.BaseContext, &StartRequest{ConfigPath: path})
 		require.NoError(t, err)
 		require.Equal(t, MessageType_EMPTY, response.MessageType)
-		require.Same(t, instance, static.StartedService.Instance(), "the core was not restarted")
+		require.Same(t, instance, static.startedService.Load().Instance(), "the core was not restarted")
 	}
 	lazy := func(want bool) {
 		t.Helper()
@@ -154,7 +154,7 @@ func TestKeepTopCountChangesInPlace(t *testing.T) {
 	require.NoError(t, err)
 	_, err = HotReload(static.BaseContext, &StartRequest{ConfigPath: path})
 	require.NoError(t, err)
-	require.Same(t, instance, static.StartedService.Instance())
+	require.Same(t, instance, static.startedService.Load().Instance())
 	require.True(t, usedIs("proxy-0", "proxy-2")(), "kept loaded beside the fastest, though it does not answer")
 	require.Equal(t, []string{"proxy-1", "proxy-3"}, resting())
 }

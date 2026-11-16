@@ -251,7 +251,7 @@ func (h *HiddifyInstance) GetProxyInfo(url_test_history *adapter.URLTestHistory,
 }
 
 func (h *HiddifyInstance) GetAllProxiesInfo(hismap map[string]*adapter.URLTestHistory, onlyGroupitems bool) *OutboundGroupList {
-	ctx, box := h.Context(), h.Box()
+	box, ctx := h.running()
 	if ctx == nil || box == nil {
 		return nil
 	}

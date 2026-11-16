@@ -75,7 +75,7 @@ func hotReloadService(ctx context.Context, in *StartRequest) (*CoreInfoResponse,
 	if static.HiddifyOptions == nil {
 		return hotReloadError(MessageType_ERROR_BUILDING_CONFIG, errors.New("HiddifyOptions not initialized"))
 	}
-	if static.StartedService == nil {
+	if static.startedService.Load() == nil {
 		return hotReloadError(MessageType_HOT_RELOAD_FAILED, errors.New("no running service to hot reload"))
 	}
 	SetCoreStatus(CoreStates_HOT_RELOADING, MessageType_EMPTY, "")
@@ -102,7 +102,7 @@ func reloadRunning(ctx context.Context, in *StartRequest) (MessageType, error) {
 	if err := contextErr(ctx); err != nil {
 		return MessageType_HOT_RELOAD_FAILED, fmt.Errorf("hot reload cancelled: %w", err)
 	}
-	tunChanged, err := static.StartedService.IsTunChanged(ctx, options)
+	tunChanged, err := static.startedService.Load().IsTunChanged(ctx, options)
 	if err != nil {
 		return MessageType_HOT_RELOAD_FAILED, err
 	}
@@ -113,7 +113,7 @@ func reloadRunning(ctx context.Context, in *StartRequest) (MessageType, error) {
 	if err := contextErr(ctx); err != nil {
 		return MessageType_HOT_RELOAD_FAILED, fmt.Errorf("hot reload cancelled: %w", err)
 	}
-	result, err := static.StartedService.HotReload(serviceContext(ctx), options)
+	result, err := static.startedService.Load().HotReload(serviceContext(ctx), options)
 	if err != nil {
 		return MessageType_HOT_RELOAD_FAILED, err
 	}

@@ -262,7 +262,7 @@ func startServiceLocked(ctx context.Context, in *StartRequest) (coreResponse *Co
 		restoreRouterHost()
 		return cancelledStart(err)
 	}
-	static.StartedService = instance
+	static.startedService.Store(instance)
 	if static.debug {
 		dumpGoroutinesToFile(fmt.Sprint(sWorkingPath, "/data/goroutine-start.log"))
 	}

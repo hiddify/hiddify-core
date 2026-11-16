@@ -14,7 +14,10 @@ import (
 )
 
 type HiddifyInstance struct {
-	StartedService *daemon.StartedService
+	// startedService is the running service. Start and stop set it under lock; everything else
+	// (streams, commands, the connectivity watcher) reads it at any time, so it is atomic, and a
+	// reader takes it once (Instance) instead of reading it again for the box and the context.
+	startedService atomic.Pointer[daemon.StartedService]
 	HiddifyOptions *config.HiddifyOptions
 	// activeConfigPath string
 	CoreLogFactory            log.Factory

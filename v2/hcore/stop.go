@@ -50,7 +50,8 @@ func stopLocked() (*CoreInfoResponse, error) {
 	cacheSpeedTests()
 	// already reported when the stop was called, unless a restart runs it
 	setCoreStatusIf(stoppable, CoreStates_STOPPING, MessageType_EMPTY, "")
-	ss := static.StartedService
+	// taken out first: what reads the service (streams, commands) stops using it while it closes
+	ss := static.startedService.Swap(nil)
 	if ss == nil {
 		return SetCoreStatus(CoreStates_STOPPED, MessageType_ALREADY_STOPPED, ""), nil
 	}
@@ -60,11 +61,9 @@ func stopLocked() (*CoreInfoResponse, error) {
 	// router mode's forwarding goes back to what it was, once nothing routes through the TUN
 	restoreRouterHost()
 	if err != nil {
-		static.StartedService = nil
 		dumpGoroutinesToFile(fmt.Sprint(sWorkingPath, "/data/goroutine-stop.log"))
 		return errorWrapper(MessageType_UNEXPECTED_ERROR, err)
 	}
-	static.StartedService = nil
 	watch.done("core is stopped")
 
 	return SetCoreStatus(CoreStates_STOPPED, MessageType_EMPTY, ""), nil

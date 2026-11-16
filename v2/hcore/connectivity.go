@@ -123,7 +123,7 @@ func pingTimedOut(delay int32) bool { return delay >= maxPing }
 // so it only walks that group's members and their histories — not the user's selected outbound.
 // With a single-proxy profile there is no "lowest"; the select leaf is used instead.
 func (h *HiddifyInstance) proxiesConnectivity() CoreStates {
-	ctx, box := h.Context(), h.Box()
+	box, ctx := h.running()
 	if ctx == nil || box == nil || h.UrlTestHistory() == nil {
 		return CoreStates_WAITING
 	}

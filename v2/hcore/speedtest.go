@@ -282,7 +282,7 @@ func (s *CoreService) DownloadTest(ctx context.Context, in *SpeedTestRequest) (*
 // SpeedTest starts the test in direction d of a proxy, or of each proxy of a group, and returns at
 // once; one already testing is not tested twice.
 func (h *HiddifyInstance) SpeedTest(d direction, in *SpeedTestRequest) (*hcommon.Response, error) {
-	box, ctx := h.Box(), h.Context()
+	box, ctx := h.running()
 	if box == nil || ctx == nil {
 		err := E.New("the core is not running")
 		return &hcommon.Response{Code: hcommon.ResponseCode_FAILED, Message: err.Error()}, err

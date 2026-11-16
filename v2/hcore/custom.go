@@ -18,9 +18,8 @@ func StopAndAlert(msgType MessageType, message string) {
 	stopConnectivityWatcher()
 	SetCoreStatus(CoreStates_STOPPED, msgType, message)
 
-	if ss := static.StartedService; ss != nil {
+	if ss := static.startedService.Swap(nil); ss != nil {
 		closeService(ss)
-		static.StartedService = nil
 	}
 }
 
