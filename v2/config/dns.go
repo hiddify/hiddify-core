@@ -98,12 +98,13 @@ func setDns(options *option.Options, opt *HiddifyOptions, staticIps *map[string]
 	}
 	// Behind extra security every remote server answers through the hop. When the hop is down or
 	// still coming up, names must still resolve (for the hop itself, among others), so the group
-	// ends with DoH at Google and Cloudflare through the profile alone, past the hop. The
+	// ends with DoH at Google, RethinkDNS and Cloudflare through the profile alone, past the hop. The
 	// subscription's own resolver is not used then (the app drops it): it is reachable through
 	// the profile, not through the hop.
 	if opt.ChainStatus == ChainStatusExtraSecurity {
 		for _, fallback := range []struct{ name, address string }{
 			{"google", "https://8.8.8.8/dns-query"},
+			{"rethinkdns", "https://sky.rethinkdns.com/dns-query"},
 			{"cloudflare", "https://1.1.1.1/dns-query"},
 		} {
 			server, err := getDNSServerOptions(DNSRemoteViaProfileTag+"-"+fallback.name, fallback.address, DNSDirectTag, OutboundSelectTag)
