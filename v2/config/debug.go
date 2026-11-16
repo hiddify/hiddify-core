@@ -6,7 +6,6 @@ import (
 	"os"
 	"path/filepath"
 	"runtime/debug"
-	"time"
 
 	"github.com/sagernet/sing-box/option"
 )
@@ -25,10 +24,10 @@ func SaveCurrentConfig(ctx context.Context, path string, options option.Options)
 	return os.WriteFile(p, []byte(json), 0o644)
 }
 
+// DeferPanicToError recovers a panic and hands it to err as an error with its stack. It returns at
+// once: it used to wait 5 seconds, which in an operation held the core's lock for that long.
 func DeferPanicToError(name string, err func(error)) {
 	if r := recover(); r != nil {
-		s := fmt.Errorf("%s panic: %s\n%s", name, r, string(debug.Stack()))
-		err(s)
-		<-time.After(5 * time.Second)
+		err(fmt.Errorf("%s panic: %s\n%s", name, r, string(debug.Stack())))
 	}
 }

@@ -44,10 +44,12 @@ type CoreService struct {
 // that never ended, and moved this process's own snapshot aside as the previous run's.
 var goroutineSnapshotsOnce sync.Once
 
-func Setup(params *SetupRequest, platformInterface libbox.PlatformInterface) error {
-	defer config.DeferPanicToError("setup", func(err error) {
-		Log(LogLevel_FATAL, LogType_CORE, err.Error())
-		<-time.After(5 * time.Second)
+// Setup sets the core up; a panic in it is returned as the error, so a caller does not take the
+// core for set up.
+func Setup(params *SetupRequest, platformInterface libbox.PlatformInterface) (err error) {
+	defer config.DeferPanicToError("setup", func(recovered error) {
+		Log(LogLevel_FATAL, LogType_CORE, recovered.Error())
+		err = recovered
 	})
 	if params.Debug {
 		go func() {

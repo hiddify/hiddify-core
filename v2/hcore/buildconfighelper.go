@@ -47,10 +47,13 @@ func (s *CoreService) Parse(ctx context.Context, in *ParseRequest) (*ParseRespon
 	return Parse(libbox.FromContext(ctx, nil), in)
 }
 
-func Parse(ctx context.Context, in *ParseRequest) (*ParseResponse, error) {
-	defer config.DeferPanicToError("parse", func(err error) {
-		Log(LogLevel_FATAL, LogType_CONFIG, err.Error())
-		StopAndAlert(MessageType_UNEXPECTED_ERROR, err.Error())
+// Parse reads a profile. A panic while reading it is the profile's error: it is returned, so the
+// profile is not taken for a valid one, and it does not touch the running core.
+func Parse(ctx context.Context, in *ParseRequest) (response *ParseResponse, err error) {
+	defer config.DeferPanicToError("parse", func(recovered error) {
+		Log(LogLevel_ERROR, LogType_CONFIG, recovered.Error())
+		response = &ParseResponse{ResponseCode: hcommon.ResponseCode_FAILED, Message: recovered.Error()}
+		err = recovered
 	})
 
 	path := in.TempPath
@@ -142,10 +145,12 @@ func (s *CoreService) GenerateConfig(ctx context.Context, in *GenerateConfigRequ
 	return GenerateConfig(libbox.FromContext(ctx, nil), in)
 }
 
-func GenerateConfig(ctx context.Context, in *GenerateConfigRequest) (*GenerateConfigResponse, error) {
-	defer config.DeferPanicToError("generateConfig", func(err error) {
-		Log(LogLevel_FATAL, LogType_CONFIG, err.Error())
-		StopAndAlert(MessageType_UNEXPECTED_ERROR, err.Error())
+// GenerateConfig builds the full config of a profile; a panic while building it is returned as
+// the error, and does not touch the running core.
+func GenerateConfig(ctx context.Context, in *GenerateConfigRequest) (response *GenerateConfigResponse, err error) {
+	defer config.DeferPanicToError("generateConfig", func(recovered error) {
+		Log(LogLevel_ERROR, LogType_CONFIG, recovered.Error())
+		response, err = nil, recovered
 	})
 	if static.HiddifyOptions == nil {
 		static.HiddifyOptions = config.DefaultHiddifyOptions()
