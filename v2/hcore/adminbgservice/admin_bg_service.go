@@ -14,6 +14,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/hiddify/hiddify-core/v2/hcore/hprocess"
@@ -36,6 +37,15 @@ type hiddifyAdminBG struct {
 	// closed when the box or full core stops, to end its watchdog
 	watching chan struct{}
 	fullCore bool
+	// running is fullCore || box != nil, for Status. Status is the app's liveness probe, and it
+	// took mutex, which a start or a hot reload holds for as long as it runs: a reload of more
+	// than ten seconds made two probes time out, and the app gave up on a VPN that ran.
+	running atomic.Bool
+}
+
+// setRunning records whether an engine runs; mutex is held.
+func (s *hiddifyAdminBG) setRunning() {
+	s.running.Store(s.fullCore || s.box != nil)
 }
 
 func (s *hiddifyAdminBG) Start(ctx context.Context, in *AdminBgStartRequest) (response *AdminBgResponse, err error) {
@@ -75,6 +85,7 @@ func (s *hiddifyAdminBG) startBridge(in *AdminBgStartRequest) (*AdminBgResponse,
 	}
 	s.box = box
 	s.fullCore = false
+	s.setRunning()
 	s.watching = make(chan struct{})
 	go s.watchPort(in.ServerPort, s.watching)
 	return &AdminBgResponse{Message: "OK"}, nil
@@ -131,6 +142,7 @@ func (s *hiddifyAdminBG) startFullCore(in *AdminBgStartRequest) error {
 		return err
 	}
 	s.fullCore = true
+	s.setRunning()
 	s.watching = make(chan struct{})
 	go s.watchOwner(in.GetOwnerPid(), s.watching)
 	return nil
@@ -271,6 +283,7 @@ func (s *hiddifyAdminBG) closeRunning() error {
 		err := adminbg.StopEngine()
 		log.Printf("admin_bgservice: StopEngine took %s (err=%v)", time.Since(started), err)
 		s.fullCore = false
+		s.setRunning()
 		return err
 	}
 	if s.box == nil {
@@ -279,6 +292,7 @@ func (s *hiddifyAdminBG) closeRunning() error {
 	err := s.box.CloseService()
 	s.box.Close()
 	s.box = nil
+	s.setRunning()
 	return err
 }
 
@@ -367,10 +381,9 @@ func (s *hiddifyAdminBG) Stop(ctx context.Context, _ *hcommon.Empty) (*AdminBgRe
 	return &AdminBgResponse{Message: "OK"}, nil
 }
 
+// Status answers at once, without waiting for a start, a stop or a reload under way (see running).
 func (s *hiddifyAdminBG) Status(ctx context.Context, _ *hcommon.Empty) (*AdminBgResponse, error) {
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
-	if s.fullCore || s.box != nil {
+	if s.running.Load() {
 		response := &AdminBgResponse{Message: "started"}
 		// the app's own core points the user's system proxy at the engine (see hcore.DelegatedSystemProxy)
 		if target := hcore.DelegatedSystemProxy(); target != nil {
