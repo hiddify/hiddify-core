@@ -19,6 +19,8 @@ const (
 type HiddifyOptions struct {
 	EnableFullConfig        bool   `json:"enable-full-config,omitempty" overridable:"true"`
 	LogLevel                string `json:"log-level,omitempty"`
+	LogLevelUntil           string `json:"log-level-until,omitempty"` // RFC 3339: LogLevel ends then, back to LogLevelAfter, also with the app closed (a trace session from Report a problem)
+	LogLevelAfter           string `json:"log-level-after,omitempty"`
 	LogFile                 string `json:"log-file,omitempty"`
 	EnableClashApi          bool   `json:"enable-clash-api,omitempty"`
 	ClashApiPort            uint16 `json:"clash-api-port,omitempty"`

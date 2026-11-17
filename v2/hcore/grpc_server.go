@@ -64,6 +64,7 @@ func Setup(params *SetupRequest, platformInterface libbox.PlatformInterface) (er
 		return nil
 	}
 	static.BaseContext = libbox.BaseContext(platformInterface)
+	static.setupDebug = params.Debug
 	static.debug = params.Debug
 	static.globalPlatformInterface = platformInterface
 	tcpConn := true // runtime.GOOS == "windows" // TODO add TVOS

@@ -31,6 +31,7 @@ type HiddifyInstance struct {
 	globalPlatformInterface   libbox.PlatformInterface
 	previousStartRequest      *StartRequest
 	debug                     bool
+	setupDebug                bool // debug as the platform set the core up; debug adds a verbose log level, which can end
 	ListenPort                uint16
 	BaseContext               context.Context
 	endPauseTimer             *time.Timer // only for ios

@@ -91,23 +91,8 @@ func (s *CoreService) ChangeHiddifySettings(ctx context.Context, in *ChangeHiddi
 func ChangeHiddifySettings(in *ChangeHiddifySettingsRequest, insert bool) (*CoreInfoResponse, error) {
 	static.HiddifyOptions = config.DefaultHiddifyOptions()
 	defer func() {
-		switch static.HiddifyOptions.LogLevel {
-		case "debug":
-			static.logLevel.Store(int32(LogLevel_DEBUG))
-		case "info":
-			static.logLevel.Store(int32(LogLevel_INFO))
-		case "warn":
-			static.logLevel.Store(int32(LogLevel_WARNING))
-		case "error":
-			static.logLevel.Store(int32(LogLevel_ERROR))
-		case "fatal":
-			static.logLevel.Store(int32(LogLevel_FATAL))
-		case "trace":
-			static.logLevel.Store(int32(LogLevel_TRACE))
-		default:
-			static.logLevel.Store(int32(LogLevel_INFO))
-		}
-		static.debug = static.debug || LogLevel(static.logLevel.Load()) <= LogLevel_DEBUG
+		applyLogLevel(static.HiddifyOptions.LogLevel)
+		scheduleLogLevelEnd(static.HiddifyOptions)
 	}()
 
 	if in.HiddifySettingsJson == "" {
