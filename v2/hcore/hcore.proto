@@ -382,3 +382,51 @@ message EnsureAdminBgServiceEvent {
   string message = 2;
   uint32 service_port = 3;
 }
+
+message FetchUrlRequest {
+  // http or https
+  string url = 1;
+  // Sent as is: servers pick the format of a subscription by it.
+  string user_agent = 2;
+  // For the whole download, redirects included; 0 for the default (30 s).
+  int32 timeout_ms = 3;
+}
+
+message HttpHeader {
+  // lower case
+  string name = 1;
+  string value = 2;
+}
+
+// Why a download got no answer from the server, for the app to tell the user what to try.
+enum FetchUrlError {
+  FETCH_URL_ERROR_NONE = 0;
+  // no answer in time: the server is down, or the network drops its packets
+  FETCH_URL_ERROR_TIMEOUT = 1;
+  // the server's name was not found
+  FETCH_URL_ERROR_DNS = 2;
+  // nothing listens at the server's address and port
+  FETCH_URL_ERROR_REFUSED = 3;
+  // the connection was cut while it was set up, often by a filter
+  FETCH_URL_ERROR_RESET = 4;
+  // the device has no route to the server: it is offline
+  FETCH_URL_ERROR_UNREACHABLE = 5;
+  // the TLS handshake failed
+  FETCH_URL_ERROR_TLS = 6;
+  // the server's certificate is not valid for it
+  FETCH_URL_ERROR_CERTIFICATE = 7;
+  FETCH_URL_ERROR_OTHER = 8;
+  // the body is over the 16 MiB limit
+  FETCH_URL_ERROR_TOO_LARGE = 9;
+}
+
+message FetchUrlResponse {
+  // 0 when there is an error
+  int32 status_code = 1;
+  // One entry per value: a header sent twice comes twice.
+  repeated HttpHeader headers = 2;
+  bytes body = 3;
+  FetchUrlError error = 4;
+  // the error in technical words, without the URL (it carries the user's token)
+  string error_detail = 5;
+}

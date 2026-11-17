@@ -56,6 +56,11 @@ service Core {
   // path, and its bytes when the request asks for them (a core in another process, whose files the
   // app cannot read).
   rpc ExportDiagnostics (ExportDiagnosticsRequest) returns (ExportDiagnosticsResponse);
+  // Downloads a URL directly (not through the core's outbounds), with the TLS handshake of Chrome,
+  // so a server or a middlebox that drops other TLS clients still answers. The app tries it
+  // before its own download of a subscription. A failed download is a response with its error set,
+  // not a gRPC error.
+  rpc FetchUrl (FetchUrlRequest) returns (FetchUrlResponse);
 }
 
 

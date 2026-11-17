@@ -50,6 +50,7 @@ const (
 	Core_EnsureAdminBgService_FullMethodName  = "/hcore.Core/EnsureAdminBgService"
 	Core_ListCrashReports_FullMethodName      = "/hcore.Core/ListCrashReports"
 	Core_ExportDiagnostics_FullMethodName     = "/hcore.Core/ExportDiagnostics"
+	Core_FetchUrl_FullMethodName              = "/hcore.Core/FetchUrl"
 )
 
 // CoreClient is the client API for Core service.
@@ -105,6 +106,11 @@ type CoreClient interface {
 	// path, and its bytes when the request asks for them (a core in another process, whose files the
 	// app cannot read).
 	ExportDiagnostics(ctx context.Context, in *ExportDiagnosticsRequest, opts ...grpc.CallOption) (*ExportDiagnosticsResponse, error)
+	// Downloads a URL directly (not through the core's outbounds), with the TLS handshake of Chrome,
+	// so a server or a middlebox that drops other TLS clients still answers. The app tries it
+	// before its own download of a subscription. A failed download is a response with its error set,
+	// not a gRPC error.
+	FetchUrl(ctx context.Context, in *FetchUrlRequest, opts ...grpc.CallOption) (*FetchUrlResponse, error)
 }
 
 type coreClient struct {
@@ -469,6 +475,16 @@ func (c *coreClient) ExportDiagnostics(ctx context.Context, in *ExportDiagnostic
 	return out, nil
 }
 
+func (c *coreClient) FetchUrl(ctx context.Context, in *FetchUrlRequest, opts ...grpc.CallOption) (*FetchUrlResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(FetchUrlResponse)
+	err := c.cc.Invoke(ctx, Core_FetchUrl_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // CoreServer is the server API for Core service.
 // All implementations must embed UnimplementedCoreServer
 // for forward compatibility.
@@ -522,6 +538,11 @@ type CoreServer interface {
 	// path, and its bytes when the request asks for them (a core in another process, whose files the
 	// app cannot read).
 	ExportDiagnostics(context.Context, *ExportDiagnosticsRequest) (*ExportDiagnosticsResponse, error)
+	// Downloads a URL directly (not through the core's outbounds), with the TLS handshake of Chrome,
+	// so a server or a middlebox that drops other TLS clients still answers. The app tries it
+	// before its own download of a subscription. A failed download is a response with its error set,
+	// not a gRPC error.
+	FetchUrl(context.Context, *FetchUrlRequest) (*FetchUrlResponse, error)
 	mustEmbedUnimplementedCoreServer()
 }
 
@@ -621,6 +642,9 @@ func (UnimplementedCoreServer) ListCrashReports(context.Context, *hcommon.Empty)
 }
 func (UnimplementedCoreServer) ExportDiagnostics(context.Context, *ExportDiagnosticsRequest) (*ExportDiagnosticsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ExportDiagnostics not implemented")
+}
+func (UnimplementedCoreServer) FetchUrl(context.Context, *FetchUrlRequest) (*FetchUrlResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method FetchUrl not implemented")
 }
 func (UnimplementedCoreServer) mustEmbedUnimplementedCoreServer() {}
 func (UnimplementedCoreServer) testEmbeddedByValue()              {}
@@ -1141,6 +1165,24 @@ func _Core_ExportDiagnostics_Handler(srv interface{}, ctx context.Context, dec f
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Core_FetchUrl_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(FetchUrlRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CoreServer).FetchUrl(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Core_FetchUrl_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CoreServer).FetchUrl(ctx, req.(*FetchUrlRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Core_ServiceDesc is the grpc.ServiceDesc for Core service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -1243,6 +1285,10 @@ var Core_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ExportDiagnostics",
 			Handler:    _Core_ExportDiagnostics_Handler,
+		},
+		{
+			MethodName: "FetchUrl",
+			Handler:    _Core_FetchUrl_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{
