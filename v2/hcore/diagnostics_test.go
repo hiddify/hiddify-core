@@ -92,6 +92,10 @@ func TestExportDiagnosticsZipsSanitizedFiles(t *testing.T) {
 	require.Contains(t, files["goroutines/goroutines-grpc_background.previous.txt"], "last run")
 	require.NotContains(t, strings.Join(slices.Collect(maps.Keys(files)), " "), "goroutines-old", "not this process's goroutines")
 	require.Contains(t, files["metadata.json"], `"mode"`)
+	// the interface the core binds to is in the report whatever the log level (hiddify-app#2611)
+	var network map[string]any
+	require.NoError(t, json.Unmarshal([]byte(files["sensitive/network.json"]), &network))
+	require.Equal(t, false, network["coreRunning"])
 }
 
 // The snapshot is the goroutine profile, not runtime.Stack(all): see goroutineDump.

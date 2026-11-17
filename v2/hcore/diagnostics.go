@@ -247,6 +247,8 @@ func writeSensitiveFiles(workingPath, directory string, appFiles map[string][]by
 		copyLogTail(filepath.Join(workingPath, name), filepath.Join(directory, "logs", strings.ReplaceAll(name, "/", "-")))
 	}
 	copyLogTail(filepath.Join(workingPath, "data", "box.log"), filepath.Join(directory, "logs", "box.log"))
+	os.MkdirAll(directory, 0o755)
+	os.WriteFile(filepath.Join(directory, "network.json"), readableJSON(networkDiagnostics()), 0o644)
 	if content, err := os.ReadFile(filepath.Join(workingPath, "data", "current-config.json")); err == nil {
 		if sanitized := config.SanitizeConfigJSON(content); sanitized != nil {
 			os.MkdirAll(directory, 0o755)
@@ -283,6 +285,8 @@ func writeAppFiles(directory string, files map[string][]byte) {
 //	  sensitive.encrypted.age  an age-encrypted zip of what may say who the user is or where they
 //	                           connect:
 //	    config.json            the running config, servers and keys removed
+//	    network.json           the interface the core binds its connections to and, on Windows,
+//	                           every interface's routing state (diagnostics_network.go)
 //	    logs/                  box.log and the cores' stderr
 //	    oom_reports/ power_reports/
 //	    app/                   what the caller adds (ExtraFiles): the app's logs and crashes, the
