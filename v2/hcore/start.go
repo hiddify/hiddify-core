@@ -4,7 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"path/filepath"
+	"strings"
 	"sync/atomic"
 	"time"
 
@@ -111,7 +113,7 @@ func saveLastStartRequest(in *StartRequest) error {
 	return settings.UpdateInsert(
 		&hcommon.AppSettings{
 			Id:    "lastStartRequestPath",
-			Value: in.ConfigPath,
+			Value: workingRelative(in.ConfigPath),
 		},
 		&hcommon.AppSettings{
 			Id:    "lastStartRequestContent",
@@ -128,6 +130,42 @@ func saveLastStartRequest(in *StartRequest) error {
 			Value: in.DisableMemoryLimit,
 		},
 	)
+}
+
+// workingRelative is path relative to the working directory when it is inside it: the directory
+// can move (iOS moved it out of Library/Caches), and a start without a request (always-on, an
+// on-demand start) then found the saved absolute path gone and could not start.
+func workingRelative(path string) string {
+	if sWorkingPath == "" || !filepath.IsAbs(path) {
+		return path
+	}
+	if relative, err := filepath.Rel(sWorkingPath, path); err == nil && relative != ".." && !strings.HasPrefix(relative, ".."+string(filepath.Separator)) {
+		return relative
+	}
+	return path
+}
+
+// inWorkingDir is the saved path as a path to read: a relative one is in the working directory.
+// An absolute one saved before (see workingRelative) that is gone and was in a folder named as
+// the working directory is looked for in the working directory, where it moved.
+func inWorkingDir(path string) string {
+	if path == "" || sWorkingPath == "" {
+		return path
+	}
+	if !filepath.IsAbs(path) {
+		return filepath.Join(sWorkingPath, path)
+	}
+	if _, err := os.Stat(path); err == nil {
+		return path
+	}
+	marker := string(filepath.Separator) + filepath.Base(sWorkingPath) + string(filepath.Separator)
+	if index := strings.LastIndex(path, marker); index >= 0 {
+		moved := filepath.Join(sWorkingPath, path[index+len(marker):])
+		if _, err := os.Stat(moved); err == nil {
+			return moved
+		}
+	}
+	return path
 }
 
 func loadLastStartRequestIfNeeded(in *StartRequest) (*StartRequest, error) {
@@ -149,7 +187,7 @@ func loadLastStartRequestIfNeeded(in *StartRequest) (*StartRequest, error) {
 		return nil, err
 	}
 	request := &StartRequest{
-		ConfigPath:    lastPath.Value.(string),
+		ConfigPath:    inWorkingDir(lastPath.Value.(string)),
 		ConfigContent: lastContent.Value.(string),
 		ConfigName:    lastName.Value.(string),
 	}
