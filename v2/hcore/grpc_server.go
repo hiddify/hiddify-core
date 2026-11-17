@@ -334,7 +334,13 @@ func absentOrInvalid(err error) bool {
 }
 
 // GetGrpcServerPublicKey returns the gRPC server's certificate (PEM).
+//
+// Under mu, which Setup holds while it sets certpair: Android asks for it from other threads (the
+// app, the notification) while the service sets its core up, and read without the lock it raced
+// that write. A caller during a setup gets the certificate the setup makes.
 func GetGrpcServerPublicKey() []byte {
+	mu.Lock()
+	defer mu.Unlock()
 	if certpair == nil {
 		return nil
 	}
