@@ -24,7 +24,9 @@ func StopAndAlert(msgType MessageType, message string) *CoreInfoResponse {
 			engineClosed()
 		}
 	}
-	return SetCoreStatus(CoreStates_STOPPED, msgType, message)
+	response := SetCoreStatus(CoreStates_STOPPED, msgType, message)
+	tellCoreStopped(msgType, message)
+	return response
 }
 
 // Close stops the core and its gRPC server. The stop runs in the operation queue, which recovers

@@ -57,6 +57,24 @@ func Start(configPath string, configContent string) error {
 	return err
 }
 
+// CoreStoppedListener is told when the core stops by itself, with the reason (a start, stop or
+// reload that failed): the platform's service takes itself down, as the app does when it runs.
+type CoreStoppedListener interface {
+	OnCoreStopped(messageType int32, message string)
+}
+
+// SetCoreStoppedListener sets the listener told when the core stops by itself; nil removes it.
+// It is called on a thread of its own, never inside a call into the core.
+func SetCoreStoppedListener(listener CoreStoppedListener) {
+	if listener == nil {
+		hcore.SetCoreStoppedHandler(nil)
+		return
+	}
+	hcore.SetCoreStoppedHandler(func(msgType hcore.MessageType, message string) {
+		listener.OnCoreStopped(int32(msgType), message)
+	})
+}
+
 func Stop() error {
 	_, err := hcore.Stop()
 	return err
