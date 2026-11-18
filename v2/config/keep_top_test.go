@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"slices"
 	"testing"
+	"time"
 
 	"github.com/sagernet/sing-box/option"
+	"github.com/sagernet/sing/common/json/badoption"
 
 	"github.com/sagernet/sing-box/experimental/libbox"
 )
@@ -137,6 +139,10 @@ func TestKeepTopMakesClientEndpointsLazy(t *testing.T) {
 	}
 	if managed := ApplyKeepTop(options, opts, candidates); managed != 5 {
 		t.Fatalf("managed %d, want 5", managed)
+	}
+	// the ones at rest are looked at again every hour, not only when a kept one dies
+	if refresh := options.Experimental.Monitoring.KeepTop.Refresh; refresh != badoption.Duration(time.Hour) {
+		t.Errorf("keep_top.refresh = %v, want 1h", refresh)
 	}
 	lazy := map[string]bool{}
 	for _, end := range options.Endpoints {

@@ -5,9 +5,11 @@ import (
 	"encoding/json"
 	"slices"
 	"strings"
+	"time"
 
 	C "github.com/sagernet/sing-box/constant"
 	"github.com/sagernet/sing-box/option"
+	"github.com/sagernet/sing/common/json/badoption"
 )
 
 // With keep-top, a profile with many proxies uses only its fastest few. The core finds them
@@ -163,6 +165,10 @@ func ApplyKeepTop(options *option.Options, hopt *HiddifyOptions, candidates []st
 		Batch:     hopt.KeepTopBatch,
 		Quick:     hopt.KeepTopQuick,
 		Pinned:    hopt.KeepTopPinned,
+		// every hour the ones at rest are looked at again: a proxy that got faster, a new one, or
+		// one that failed once, takes the place of the slowest kept one; without it they rested
+		// for as long as the kept ones answered, a day for one that failed once
+		Refresh: badoption.Duration(time.Hour),
 	}
 	return len(managed) + len(managedEndpoints)
 }
