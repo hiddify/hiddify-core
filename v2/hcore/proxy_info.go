@@ -189,6 +189,12 @@ func (h *HiddifyInstance) GetProxyInfo(url_test_history *adapter.URLTestHistory,
 		out.GroupSelectedTag = &gnow
 	}
 	out.TagDisplay = TrimTagName(out.Tag)
+	// why it can be read or changed on the way, from its options (option.InsecureReason); a group
+	// has none
+	if box, _ := h.running(); box != nil {
+		out.InsecureReason = adapter.InsecureReason(box.Outbound(), out.Tag)
+	}
+	out.IsSecure = out.InsecureReason == ""
 
 	if tag := monitoring.RealTag(detour); tag != "" {
 		dtag := TrimTagName(tag)
