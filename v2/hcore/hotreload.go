@@ -120,6 +120,7 @@ func reloadRunning(ctx context.Context, in *StartRequest) (MessageType, error) {
 		return MessageType_HOT_RELOAD_FAILED, err
 	}
 	recordDelegatedSystemProxy(delegatedProxy)
+	rememberProxyDetails(options)
 	static.previousStartRequest = in
 	saveLastStartRequest(in)
 	config.SaveCurrentConfig(ctx, filepath.Join(sWorkingPath, "data/current-config.json"), *options)

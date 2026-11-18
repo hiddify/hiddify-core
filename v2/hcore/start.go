@@ -318,6 +318,7 @@ func startServiceLocked(ctx context.Context, in *StartRequest) (coreResponse *Co
 	}
 	static.startedService.Store(instance)
 	engineApplied(true)
+	rememberProxyDetails(options)
 	recordDelegatedSystemProxy(delegatedProxy)
 	if static.debug {
 		dumpGoroutinesToFile(fmt.Sprint(sWorkingPath, "/data/goroutine-start.log"))

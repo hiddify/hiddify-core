@@ -180,7 +180,7 @@ func (h *HiddifyInstance) GetProxyInfo(url_test_history *adapter.URLTestHistory,
 	// realTag := ""
 
 	out.Tag = detour.Tag()
-	out.Type = adapter.DisplayType(detour) // the type and its details, and why it failed; the status is out.Status
+	out.Type = displayTypeWithDetail(detour) // the type, its transport and security, and why it failed; the status is out.Status
 	out.Status = Status(detour.Status())
 	out.Resting = proxyRests(out.Tag)
 	if group, isGroup := detour.(adapter.OutboundGroup); isGroup {
