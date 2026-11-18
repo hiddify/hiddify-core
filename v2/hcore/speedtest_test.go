@@ -7,6 +7,11 @@ import (
 	"sync/atomic"
 	"testing"
 	"time"
+
+	"github.com/sagernet/sing-box/adapter"
+	"github.com/sagernet/sing-box/adapter/outbound"
+	C "github.com/sagernet/sing-box/constant"
+	"github.com/stretchr/testify/require"
 )
 
 func TestUploadBodySendsTheSizeFromOneBlock(t *testing.T) {
@@ -117,4 +122,47 @@ func TestSpeedResultsOutliveTheRunUntilCleared(t *testing.T) {
 	if speed, _, _ := speedInfo(download, "a"); speed != 0 {
 		t.Fatalf("a cleared speed came back after a restart: %d", speed)
 	}
+}
+
+type speedGroup struct {
+	fakeProxy
+	members []string
+}
+
+func (g *speedGroup) All() []string                     { return g.members }
+func (g *speedGroup) Selected(string) adapter.Outbound  { return nil }
+func (g *speedGroup) AttachConnection(io.Closer) func() { return func() {} }
+
+type fakeSelector struct{ speedGroup }
+
+func (s *fakeSelector) SelectOutbound(string) bool { return true }
+
+// A speed test of lowest or balance measures the proxy the group stands for, which its row shows,
+// not every member again; a test of the selector is the test of the list, of its proxies in use.
+func TestSpeedTestOfAGroupMeasuresWhatItShows(t *testing.T) {
+	p1 := &fakeProxy{outbound.NewAdapter(C.TypeVLESS, "p1", nil, nil)}
+	p2 := &fakeProxy{outbound.NewAdapter(C.TypeVLESS, "p2", nil, nil)}
+	p3 := &fakeProxy{outbound.NewAdapter(C.TypeVLESS, "p3", nil, nil)}
+	lowest := &speedGroup{fakeProxy: fakeProxy{outbound.NewAdapter(C.TypeBalancer, "lowest", nil, nil)}, members: []string{"p1", "p2", "p3"}}
+	selector := &fakeSelector{speedGroup{fakeProxy: fakeProxy{outbound.NewAdapter(C.TypeSelector, "select", nil, nil)}, members: []string{"lowest", "p1", "p2", "p3"}}}
+	all := map[string]adapter.Outbound{"p1": p1, "p2": p2, "p3": p3, "lowest": lowest, "select": selector}
+	lookup := func(tag string) (adapter.Outbound, bool) { out, ok := all[tag]; return out, ok }
+	rests := func(tag string) bool { return tag == "p3" }
+	member := func(group string) string {
+		if group == "lowest" {
+			return "p2"
+		}
+		return group
+	}
+	tags := func(outs []adapter.Outbound) (tags []string) {
+		for _, out := range outs {
+			tags = append(tags, out.Tag())
+		}
+		return tags
+	}
+	require.Equal(t, []string{"p2"}, tags(speedTestTargets(lowest, lookup, rests, member)))
+	require.Equal(t, []string{"p1", "p2"}, tags(speedTestTargets(selector, lookup, rests, member)))
+	require.Equal(t, []string{"p1"}, tags(speedTestTargets(p1, lookup, rests, member)))
+	// a group that stands for nothing yet: its proxies in use
+	require.Equal(t, []string{"p1", "p2"}, tags(speedTestTargets(lowest, lookup, rests, func(group string) string { return group })))
 }

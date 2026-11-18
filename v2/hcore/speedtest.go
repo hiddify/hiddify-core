@@ -302,18 +302,9 @@ func (h *HiddifyInstance) SpeedTest(d direction, in *SpeedTestRequest) (*hcommon
 	}
 	size = min(size, speedTestMax)
 
-	var targets []adapter.Outbound
-	if group, isGroup := outbound.(adapter.OutboundGroup); isGroup {
-		for _, tag := range group.All() {
-			// a test of the group is of the proxies it uses: one keep top left at rest is tested
-			// by its own tag
-			if out, ok := box.Outbound().Outbound(tag); ok && isProxyTag(tag) && !isGroupTag(box, tag) && !proxyRests(tag) {
-				targets = append(targets, out)
-			}
-		}
-	} else {
-		targets = []adapter.Outbound{outbound}
-	}
+	targets := speedTestTargets(outbound, box.Outbound().Outbound, proxyRests, func(group string) string {
+		return resolveActiveOutbound(box, group, h.UrlTestHistory())
+	})
 	speedTests.Lock()
 	queued := targets[:0]
 	for _, out := range targets {
@@ -353,6 +344,39 @@ func (h *HiddifyInstance) SpeedTest(d direction, in *SpeedTestRequest) (*hcommon
 		wg.Wait()
 	}()
 	return &hcommon.Response{Code: hcommon.ResponseCode_OK}, nil
+}
+
+// speedTestTargets are the proxies a speed test of outbound measures. A proxy is itself. A
+// selector (the list's "select") is its proxies in use: the test of the whole list; one keep top
+// left at rest is tested by its own tag. A group that chooses by itself (lowest, balance) is the
+// proxy it stands for, whose speeds its row shows (speedTestTagOf): testing all its members
+// measured every proxy of the list again, already tested on its own row, and once more for the
+// other group. member is the proxy a group stands for, the group's own tag when none.
+func speedTestTargets(outbound adapter.Outbound, lookup func(tag string) (adapter.Outbound, bool), rests func(tag string) bool, member func(group string) string) []adapter.Outbound {
+	group, isGroup := outbound.(adapter.OutboundGroup)
+	if !isGroup {
+		return []adapter.Outbound{outbound}
+	}
+	if _, selects := group.(interface{ SelectOutbound(tag string) bool }); !selects {
+		if tag := member(group.Tag()); tag != group.Tag() {
+			if out, ok := lookup(tag); ok {
+				if _, isGroup := out.(adapter.OutboundGroup); !isGroup {
+					return []adapter.Outbound{out}
+				}
+			}
+		}
+	}
+	var targets []adapter.Outbound
+	for _, tag := range group.All() {
+		out, ok := lookup(tag)
+		if !ok || !isProxyTag(tag) || rests(tag) {
+			continue
+		}
+		if _, isGroup := out.(adapter.OutboundGroup); !isGroup {
+			targets = append(targets, out)
+		}
+	}
+	return targets
 }
 
 // activeSpeedTestTag is the proxy the user's selection uses now, down through its groups.
