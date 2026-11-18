@@ -119,6 +119,37 @@ type ChainWarpScannerOptions struct {
 	CIDRs []string `json:"cidrs,omitempty"`
 	// NoisePresets to try, in order; all of them when empty.
 	NoisePresets []string `json:"noise-presets,omitempty"`
+	// ChainSearchOptions: how long and how hard the search goes on, on the unblocker hop.
+	ChainSearchOptions
+}
+
+// ChainSearchOptions tune the search of a scanner (WARP endpoints, Psiphon CDN edges): how long it
+// goes on before it offers a deep search, and the size of the address blocks it rates. They apply
+// to the unblocker hop only: behind a detour the hop does not search. Zero values keep the
+// scanner's defaults.
+type ChainSearchOptions struct {
+	// SearchTimeout is how long a search goes on before it offers a deep search, in seconds
+	// (180). A deep search has no limit, or a long one: -1 is a deep search from the start, a
+	// value above 180 one with that limit.
+	SearchTimeout int `json:"search-timeout,omitempty"`
+	// DeepConcurrency is the probes a deep search runs at once (twice the scanner's concurrency).
+	DeepConcurrency int `json:"deep-concurrency,omitempty"`
+	// BlockBitsIPv4 and BlockBitsIPv6 size the address blocks rated per network (24 and 48).
+	BlockBitsIPv4 int `json:"block-bits-ipv4,omitempty"`
+	BlockBitsIPv6 int `json:"block-bits-ipv6,omitempty"`
+}
+
+// edgeSearch is the scanner's search options of the hop; none behind a detour.
+func (o ChainSearchOptions) edgeSearch(chainStatus string) option.EdgeSearchOptions {
+	if chainStatus != ChainStatusUnblocker {
+		return option.EdgeSearchOptions{}
+	}
+	return option.EdgeSearchOptions{
+		SearchTimeout:   badoption.Duration(time.Duration(o.SearchTimeout) * time.Second),
+		DeepConcurrency: o.DeepConcurrency,
+		BlockBitsIPv4:   o.BlockBitsIPv4,
+		BlockBitsIPv6:   o.BlockBitsIPv6,
+	}
 }
 
 // ChainWarpMasqueOptions is the MASQUE tunnel of the masque and auto modes.
@@ -170,6 +201,32 @@ type ChainWarpAwgOptions struct {
 type ChainPsiphonOptions struct {
 	Region           string `json:"region,omitempty"`
 	ConduitPairingID string `json:"conduit-pairing-id,omitempty"`
+	// Scanner tunes the CDN edge scanner of the unblocker hop; behind a detour (extra security)
+	// Psiphon does not scan. Nil is the scanner's default.
+	Scanner *ChainPsiphonScannerOptions `json:"scanner,omitempty"`
+}
+
+// ChainPsiphonScannerOptions is the CDN edge scan of the unblocker hop, over the scanner's own
+// defaults. Zero values keep the default.
+type ChainPsiphonScannerOptions struct {
+	// Enabled turns the scanner off with false; nil keeps it on.
+	Enabled *bool `json:"enabled,omitempty"`
+	// Sets limits the built-in CDN sets (fastly, psiphon-akamai, cloudflare, ...); all when empty.
+	Sets []string `json:"sets,omitempty"`
+	// CIDRs are IPv4 edges to scan instead of the built-in sets, with ServerNames.
+	CIDRs       []string `json:"cidrs,omitempty"`
+	ServerNames []string `json:"server-names,omitempty"`
+	// Candidates is the answering edges of each CDN handed to Psiphon (2).
+	Candidates int `json:"candidates,omitempty"`
+	// Count is the most edges probed in one round (256).
+	Count int `json:"count,omitempty"`
+	// Concurrency is the probes run at once (16 on phones, 48 on desktops).
+	Concurrency int `json:"concurrency,omitempty"`
+	// Timeout is how long one probe waits, and MaxRTT the slowest accepted handshake, in
+	// milliseconds (3000, 2000).
+	Timeout int `json:"timeout,omitempty"`
+	MaxRTT  int `json:"max-rtt,omitempty"`
+	ChainSearchOptions
 }
 
 type ChainProfileOptions struct {
@@ -280,7 +337,7 @@ func addChainHop(status string, hop ChainHopOptions, mode, tag, detour string, o
 	case ChainModeWarp, ChainModeWarpAwg, ChainModeWarpMasque, ChainModeWarpAuto:
 		*endpoints = append(*endpoints, chainWarpEndpoint(tag, status, hop.Warp, detour, mode))
 	case ChainModePsiphon:
-		*outbounds = append(*outbounds, chainPsiphonOutbound(tag, hop.Psiphon, detour))
+		*outbounds = append(*outbounds, chainPsiphonOutbound(tag, status, hop.Psiphon, detour))
 	case ChainModeProfile:
 		// refuse instead of silently connecting without the requested hop
 		return fmt.Errorf("%s: profile mode is not supported yet", status)
@@ -388,7 +445,7 @@ func chainWarpEndpoint(tag, chainStatus string, warp ChainWarpOptions, detour, m
 		options.Server = strings.TrimSpace(warp.CleanIP)
 		options.ServerPort = warp.CleanPort
 	case WarpEndpointScan:
-		options.Scanner = chainWarpScanner(warp.Scanner)
+		options.Scanner = chainWarpScanner(chainStatus, warp.Scanner)
 	}
 	if warp.MTU != 0 {
 		options.MTU = warp.MTU
@@ -459,11 +516,12 @@ func chainWarpEndpointSource(chainStatus string, warp ChainWarpOptions, detour, 
 
 // chainWarpScanner finds a working Cloudflare endpoint and a noise preset that gets through, on
 // the scanner's defaults for whatever the hop leaves unset.
-func chainWarpScanner(scanner *ChainWarpScannerOptions) *option.WARPScannerOptions {
+func chainWarpScanner(chainStatus string, scanner *ChainWarpScannerOptions) *option.WARPScannerOptions {
 	options := &option.WARPScannerOptions{Enabled: true, SearchNoise: true}
 	if scanner == nil {
 		return options
 	}
+	options.EdgeSearchOptions = scanner.edgeSearch(chainStatus)
 	if scanner.SearchNoise != nil {
 		options.SearchNoise = *scanner.SearchNoise
 	}
@@ -573,7 +631,7 @@ func chainWarpNoise(warp ChainWarpOptions) hiddify.NoiseOptions {
 	return hiddify.NoiseOptions{FakePacket: fake}
 }
 
-func chainPsiphonOutbound(tag string, psiphon ChainPsiphonOptions, detour string) option.Outbound {
+func chainPsiphonOutbound(tag, chainStatus string, psiphon ChainPsiphonOptions, detour string) option.Outbound {
 	region := psiphon.Region
 	if region == psiphonRegionAuto {
 		region = ""
@@ -581,6 +639,9 @@ func chainPsiphonOutbound(tag string, psiphon ChainPsiphonOptions, detour string
 	// "hiddify": the Psiphon config embedded at build time (falls back to the defaults without it)
 	options := &option.PsiphonOutboundOptions{Config: "hiddify", EgressRegion: region}
 	options.Detour = detour
+	if chainStatus == ChainStatusUnblocker { // behind a detour the core does not scan
+		options.Scanner = chainPsiphonScanner(chainStatus, psiphon.Scanner)
+	}
 	return option.Outbound{Type: C.TypePsiphon, Tag: tag, Options: options}
 }
 
@@ -621,4 +682,29 @@ func redirectRemovedPsiphon(outbounds []option.Outbound, endpoints []option.Endp
 	for i := range endpoints {
 		redirect(endpoints[i].Options)
 	}
+}
+
+// chainPsiphonScanner is the CDN edge scanner of the unblocker hop; nil keeps the core's default
+// (on, as the hop has no detour).
+func chainPsiphonScanner(chainStatus string, scanner *ChainPsiphonScannerOptions) *option.PsiphonScannerOptions {
+	if scanner == nil {
+		return nil
+	}
+	options := &option.PsiphonScannerOptions{
+		Enabled:           scanner.Enabled,
+		Sets:              scanner.Sets,
+		ServerNames:       scanner.ServerNames,
+		Candidates:        scanner.Candidates,
+		Count:             scanner.Count,
+		Concurrency:       scanner.Concurrency,
+		Timeout:           badoption.Duration(time.Duration(scanner.Timeout) * time.Millisecond),
+		MaxRTT:            badoption.Duration(time.Duration(scanner.MaxRTT) * time.Millisecond),
+		EdgeSearchOptions: scanner.edgeSearch(chainStatus),
+	}
+	for _, cidr := range scanner.CIDRs {
+		if prefix, err := netip.ParsePrefix(strings.TrimSpace(cidr)); err == nil && prefix.Addr().Is4() {
+			options.CIDRs = append(options.CIDRs, prefix)
+		}
+	}
+	return options
 }
