@@ -144,6 +144,7 @@ message OutboundInfo {
   int32 sort_delay = 26; // what to sort by: url_test_delay, or the delay cached from the previous run, which is not shown; 0 untested
   bool resting = 27; // keep top left it at rest: not loaded, not tested and not used, until it is selected, tested by its tag or pinned
   string insecure_reason = 28; // why is_secure is false: plaintext, no_cipher, weak_cipher or tls_insecure (sing-box C.Insecure*); empty for a secure proxy or a group
+  bool deep_search_available = 29; // its search for a way through (WARP endpoint, Psiphon CDN edge) found nothing in its time; StartDeepSearch searches on, for hours maybe
 }
 
 message IpInfo {
@@ -228,6 +229,10 @@ message GenerateConfigResponse {
 message SelectOutboundRequest {
   string group_tag = 1;
   string outbound_tag = 2;
+}
+
+message DeepSearchRequest {
+  string tag = 1; // the proxy whose deep_search_available is set
 }
 
 message UrlTestRequest {

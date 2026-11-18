@@ -61,6 +61,11 @@ service Core {
   // before its own download of a subscription. A failed download is a response with its error set,
   // not a gRPC error.
   rpc FetchUrl (FetchUrlRequest) returns (FetchUrlResponse);
+  // Starts a deep search on a proxy whose search for a way through gave up after its time
+  // (OutboundInfo.deep_search_available: WARP's endpoint scanner, Psiphon as the unblocker): no
+  // time limit and more workers, for hours maybe, at the cost of battery and CPU. The app asks the
+  // user first.
+  rpc StartDeepSearch (DeepSearchRequest) returns (hcommon.Response);
 }
 
 

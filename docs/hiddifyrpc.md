@@ -31,15 +31,20 @@
     - [CoreInfoResponse](#hcore-CoreInfoResponse)
     - [CrashReport](#hcore-CrashReport)
     - [CrashReportList](#hcore-CrashReportList)
+    - [DeepSearchRequest](#hcore-DeepSearchRequest)
     - [EnsureAdminBgServiceEvent](#hcore-EnsureAdminBgServiceEvent)
     - [EnsureAdminBgServiceRequest](#hcore-EnsureAdminBgServiceRequest)
     - [EnsureAdminBgServiceRequest.ResourcesEntry](#hcore-EnsureAdminBgServiceRequest-ResourcesEntry)
     - [ExportDiagnosticsRequest](#hcore-ExportDiagnosticsRequest)
     - [ExportDiagnosticsRequest.ExtraFilesEntry](#hcore-ExportDiagnosticsRequest-ExtraFilesEntry)
+    - [ExportDiagnosticsRequest.GenericFilesEntry](#hcore-ExportDiagnosticsRequest-GenericFilesEntry)
     - [ExportDiagnosticsResponse](#hcore-ExportDiagnosticsResponse)
+    - [FetchUrlRequest](#hcore-FetchUrlRequest)
+    - [FetchUrlResponse](#hcore-FetchUrlResponse)
     - [GenerateConfigRequest](#hcore-GenerateConfigRequest)
     - [GenerateConfigResponse](#hcore-GenerateConfigResponse)
     - [GenerateWarpConfigRequest](#hcore-GenerateWarpConfigRequest)
+    - [HttpHeader](#hcore-HttpHeader)
     - [IpInfo](#hcore-IpInfo)
     - [IsAdminResponse](#hcore-IsAdminResponse)
     - [LANIPResponse](#hcore-LANIPResponse)
@@ -69,6 +74,7 @@
     - [AdminPreference](#hcore-AdminPreference)
     - [CoreStates](#hcore-CoreStates)
     - [EnsureAdminBgServiceProgress](#hcore-EnsureAdminBgServiceProgress)
+    - [FetchUrlError](#hcore-FetchUrlError)
     - [LogLevel](#hcore-LogLevel)
     - [LogType](#hcore-LogType)
     - [MessageType](#hcore-MessageType)
@@ -77,14 +83,6 @@
   
 - [v2/hcore/hcore_service.proto](#v2_hcore_hcore_service-proto)
     - [Core](#hcore-Core)
-  
-- [v2/hcore/adminbgservice/admin_bg_service.proto](#v2_hcore_adminbgservice_admin_bg_service-proto)
-    - [HiddifyAdminBG](#adminbgservice-HiddifyAdminBG)
-  
-- [v2/hcore/adminbgservice/admin_bg.proto](#v2_hcore_adminbgservice_admin_bg-proto)
-    - [AdminBgResponse](#adminbgservice-AdminBgResponse)
-    - [AdminBgStartRequest](#adminbgservice-AdminBgStartRequest)
-    - [AdminBgStartRequest.ResourcesEntry](#adminbgservice-AdminBgStartRequest-ResourcesEntry)
   
 - [v2/hiddifyoptions/hiddify_options.proto](#v2_hiddifyoptions_hiddify_options-proto)
     - [DNSOptions](#hiddifyoptions-DNSOptions)
@@ -127,6 +125,14 @@
 - [v2/hello/hello.proto](#v2_hello_hello-proto)
     - [HelloRequest](#hello-HelloRequest)
     - [HelloResponse](#hello-HelloResponse)
+  
+- [v2/hcore/adminbgservice/admin_bg_service.proto](#v2_hcore_adminbgservice_admin_bg_service-proto)
+    - [HiddifyAdminBG](#adminbgservice-HiddifyAdminBG)
+  
+- [v2/hcore/adminbgservice/admin_bg.proto](#v2_hcore_adminbgservice_admin_bg-proto)
+    - [AdminBgResponse](#adminbgservice-AdminBgResponse)
+    - [AdminBgStartRequest](#adminbgservice-AdminBgStartRequest)
+    - [AdminBgStartRequest.ResourcesEntry](#adminbgservice-AdminBgStartRequest-ResourcesEntry)
   
 - [extension/extension_service.proto](#extension_extension_service-proto)
     - [ExtensionHostService](#extension-ExtensionHostService)
@@ -543,6 +549,21 @@ translate.goog domain front so it reaches users behind GFW-style filters.
 
 
 
+<a name="hcore-DeepSearchRequest"></a>
+
+### DeepSearchRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| tag | [string](#string) |  | the proxy whose deep_search_available is set |
+
+
+
+
+
+
 <a name="hcore-EnsureAdminBgServiceEvent"></a>
 
 ### EnsureAdminBgServiceEvent
@@ -608,8 +629,10 @@ translate.goog domain front so it reaches users behind GFW-style filters.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | destination_path | [string](#string) |  | where to write the zip; empty is a file in the temp directory |
-| extra_files | [ExportDiagnosticsRequest.ExtraFilesEntry](#hcore-ExportDiagnosticsRequest-ExtraFilesEntry) | repeated | more files for the zip, by name (the app&#39;s logs, another core&#39;s dump) |
+| extra_files | [ExportDiagnosticsRequest.ExtraFilesEntry](#hcore-ExportDiagnosticsRequest-ExtraFilesEntry) | repeated | more files for the zip&#39;s sensitive part, by name (the app&#39;s logs, another core&#39;s dump) |
 | inline | [bool](#bool) |  | also return the zip&#39;s bytes |
+| unencrypted | [bool](#bool) |  | leave the sensitive part (config, logs, crashes, extra files) in the clear: for the user to look at, or for a zip that goes inside another core&#39;s report, which encrypts it |
+| generic_files | [ExportDiagnosticsRequest.GenericFilesEntry](#hcore-ExportDiagnosticsRequest-GenericFilesEntry) | repeated | more files for the zip that are not sensitive, kept readable outside the encrypted part (the app&#39;s own exceptions with their stack traces) |
 
 
 
@@ -619,6 +642,22 @@ translate.goog domain front so it reaches users behind GFW-style filters.
 <a name="hcore-ExportDiagnosticsRequest-ExtraFilesEntry"></a>
 
 ### ExportDiagnosticsRequest.ExtraFilesEntry
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| key | [string](#string) |  |  |
+| value | [bytes](#bytes) |  |  |
+
+
+
+
+
+
+<a name="hcore-ExportDiagnosticsRequest-GenericFilesEntry"></a>
+
+### ExportDiagnosticsRequest.GenericFilesEntry
 
 
 
@@ -642,6 +681,43 @@ translate.goog domain front so it reaches users behind GFW-style filters.
 | ----- | ---- | ----- | ----------- |
 | path | [string](#string) |  |  |
 | content | [bytes](#bytes) |  |  |
+| encrypted | [bool](#bool) |  | the sensitive part is sensitive.encrypted.age, encrypted to the build&#39;s diagnostics key; false when it was asked unencrypted or the build has no key |
+
+
+
+
+
+
+<a name="hcore-FetchUrlRequest"></a>
+
+### FetchUrlRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| url | [string](#string) |  | http or https |
+| user_agent | [string](#string) |  | Sent as is: servers pick the format of a subscription by it. |
+| timeout_ms | [int32](#int32) |  | For the whole download, redirects included; 0 for the default (30 s). |
+
+
+
+
+
+
+<a name="hcore-FetchUrlResponse"></a>
+
+### FetchUrlResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| status_code | [int32](#int32) |  | 0 when there is an error |
+| headers | [HttpHeader](#hcore-HttpHeader) | repeated | One entry per value: a header sent twice comes twice. |
+| body | [bytes](#bytes) |  |  |
+| error | [FetchUrlError](#hcore-FetchUrlError) |  |  |
+| error_detail | [string](#string) |  | the error in technical words, without the URL (it carries the user&#39;s token) |
 
 
 
@@ -691,6 +767,22 @@ translate.goog domain front so it reaches users behind GFW-style filters.
 | license_key | [string](#string) |  |  |
 | account_id | [string](#string) |  |  |
 | access_token | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="hcore-HttpHeader"></a>
+
+### HttpHeader
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | lower case |
+| value | [string](#string) |  |  |
 
 
 
@@ -832,6 +924,7 @@ translate.goog domain front so it reaches users behind GFW-style filters.
 | selectable | [bool](#bool) |  |  |
 | Is_expand | [bool](#bool) |  |  |
 | items | [OutboundInfo](#hcore-OutboundInfo) | repeated |  |
+| keep_top_picking | [bool](#bool) |  | keep top still goes through the proxies: which of them stay in use is not settled |
 
 
 
@@ -871,7 +964,7 @@ translate.goog domain front so it reaches users behind GFW-style filters.
 | is_group | [bool](#bool) |  |  |
 | group_selected_tag | [string](#string) | optional |  |
 | group_selected_tag_display | [string](#string) | optional |  |
-| is_secure | [bool](#bool) |  |  |
+| is_secure | [bool](#bool) |  | something encrypts its traffic and checks the server: its own encryption, verified or pinned TLS, or REALITY; a group is secure |
 | is_visible | [bool](#bool) |  |  |
 | port | [uint32](#uint32) |  |  |
 | host | [string](#string) |  |  |
@@ -888,6 +981,9 @@ translate.goog domain front so it reaches users behind GFW-style filters.
 | download_speed_cached | [bool](#bool) |  | download_speed is from an earlier run, kept until a new test |
 | error | [string](#string) |  | why it failed: the error of its last URL test, or why it is not ready (WARP, MASQUE); empty when it works or does not say |
 | sort_delay | [int32](#int32) |  | what to sort by: url_test_delay, or the delay cached from the previous run, which is not shown; 0 untested |
+| resting | [bool](#bool) |  | keep top left it at rest: not loaded, not tested and not used, until it is selected, tested by its tag or pinned |
+| insecure_reason | [string](#string) |  | why is_secure is false: plaintext, no_cipher, weak_cipher or tls_insecure (sing-box C.Insecure*); empty for a secure proxy or a group |
+| deep_search_available | [bool](#bool) |  | its search for a way through (WARP endpoint, Psiphon CDN edge) found nothing in its time; StartDeepSearch searches on, for hours maybe |
 
 
 
@@ -1082,6 +1178,7 @@ Define the message equivalent of SetupParameters
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | tag | [string](#string) |  |  |
+| tags | [string](#string) | repeated | instead of tag: these proxies, a few at a time, also the ones keep top left at rest |
 
 
 
@@ -1200,6 +1297,26 @@ monitoring moves it between WAITING, STARTED and NO_AVAILABLE_PROXIES.
 | ENSURE_ADMIN_BG_SERVICE_CONNECTED | 2 |  |
 | ENSURE_ADMIN_BG_FAILED_PERMISSION_DENIED | 3 |  |
 | ENSURE_ADMIN_BG_FAILED_OTHER | 4 |  |
+
+
+
+<a name="hcore-FetchUrlError"></a>
+
+### FetchUrlError
+Why a download got no answer from the server, for the app to tell the user what to try.
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| FETCH_URL_ERROR_NONE | 0 |  |
+| FETCH_URL_ERROR_TIMEOUT | 1 | no answer in time: the server is down, or the network drops its packets |
+| FETCH_URL_ERROR_DNS | 2 | the server&#39;s name was not found |
+| FETCH_URL_ERROR_REFUSED | 3 | nothing listens at the server&#39;s address and port |
+| FETCH_URL_ERROR_RESET | 4 | the connection was cut while it was set up, often by a filter |
+| FETCH_URL_ERROR_UNREACHABLE | 5 | the device has no route to the server: it is offline |
+| FETCH_URL_ERROR_TLS | 6 | the TLS handshake failed |
+| FETCH_URL_ERROR_CERTIFICATE | 7 | the server&#39;s certificate is not valid for it |
+| FETCH_URL_ERROR_OTHER | 8 |  |
+| FETCH_URL_ERROR_TOO_LARGE | 9 | the body is over the 16 MiB limit |
 
 
 
@@ -1346,114 +1463,8 @@ Connection state of an outbound or endpoint (mirrors adapter.Status).
 | EnsureAdminBgService | [EnsureAdminBgServiceRequest](#hcore-EnsureAdminBgServiceRequest) | [EnsureAdminBgServiceEvent](#hcore-EnsureAdminBgServiceEvent) stream | Windows/Linux: install/start admin_bgservice if needed and start the bg core until STARTED. |
 | ListCrashReports | [.hcommon.Empty](#hcommon-Empty) | [CrashReportList](#hcore-CrashReportList) | The crash reports in this core&#39;s working directory: the archived ones (crash_reports, oom_reports) and the live stderr files that hold a crash, newest last. |
 | ExportDiagnostics | [ExportDiagnosticsRequest](#hcore-ExportDiagnosticsRequest) | [ExportDiagnosticsResponse](#hcore-ExportDiagnosticsResponse) | A zip of this core&#39;s diagnostics: the crash, OOM and power reports, the stderr and core log files, the previous run&#39;s goroutines (a snapshot the core writes every minute while connected, kept aside at the next start), the running config with servers and secrets removed, and the files the request adds. Text is scrubbed of addresses, links and secrets. Returns the zip&#39;s path, and its bytes when the request asks for them (a core in another process, whose files the app cannot read). |
-
- 
-
-
-
-<a name="v2_hcore_adminbgservice_admin_bg_service-proto"></a>
-<p align="right"><a href="#top">Top</a></p>
-
-## v2/hcore/adminbgservice/admin_bg_service.proto
-
-
- 
-
- 
-
- 
-
-
-<a name="adminbgservice-HiddifyAdminBG"></a>
-
-### HiddifyAdminBG
-Elevated background core control API (Windows/Linux OS service, macOS root daemon).
-
-| Method Name | Request Type | Response Type | Description |
-| ----------- | ------------ | ------------- | ------------|
-| Start | [AdminBgStartRequest](#adminbgservice-AdminBgStartRequest) | [AdminBgResponse](#adminbgservice-AdminBgResponse) |  |
-| Reload | [AdminBgStartRequest](#adminbgservice-AdminBgStartRequest) | [AdminBgResponse](#adminbgservice-AdminBgResponse) | Applies a changed configuration to the running engine without restarting it. |
-| Restart | [AdminBgStartRequest](#adminbgservice-AdminBgStartRequest) | [AdminBgResponse](#adminbgservice-AdminBgResponse) | Stops the running engine and starts it with the request: a change a reload cannot apply. |
-| Stop | [.hcommon.Empty](#hcommon-Empty) | [AdminBgResponse](#adminbgservice-AdminBgResponse) |  |
-| Status | [.hcommon.Empty](#hcommon-Empty) | [AdminBgResponse](#adminbgservice-AdminBgResponse) |  |
-| Exit | [.hcommon.Empty](#hcommon-Empty) | [AdminBgResponse](#adminbgservice-AdminBgResponse) |  |
-
- 
-
-
-
-<a name="v2_hcore_adminbgservice_admin_bg-proto"></a>
-<p align="right"><a href="#top">Top</a></p>
-
-## v2/hcore/adminbgservice/admin_bg.proto
-
-
-
-<a name="adminbgservice-AdminBgResponse"></a>
-
-### AdminBgResponse
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| message | [string](#string) |  |  |
-| system_proxy | [string](#string) |  | Where the running engine&#39;s system proxy points (host:port), empty when it has none. The service runs as root and cannot set the user&#39;s system proxy: the app&#39;s own core sets it. |
-| system_proxy_socks | [bool](#bool) |  |  |
-
-
-
-
-
-
-<a name="adminbgservice-AdminBgStartRequest"></a>
-
-### AdminBgStartRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| ipv6 | [bool](#bool) |  |  |
-| server_port | [int32](#int32) |  |  |
-| server_username | [string](#string) |  |  |
-| server_password | [string](#string) |  |  |
-| strict_route | [bool](#bool) |  |  |
-| endpoint_independent_nat | [bool](#bool) |  |  |
-| stack | [string](#string) |  |  |
-| config_content | [string](#string) |  | Full-core start (macOS root daemon): config snapshot, settings, and local resources. |
-| config_name | [string](#string) |  |  |
-| settings_json | [string](#string) |  |  |
-| resources | [AdminBgStartRequest.ResourcesEntry](#adminbgservice-AdminBgStartRequest-ResourcesEntry) | repeated |  |
-| disable_memory_limit | [bool](#bool) |  |  |
-| owner_pid | [int32](#int32) |  | When set, the daemon stops once this process is gone (app quit or crash). |
-| proxy_only | [bool](#bool) |  | Runs the engine without its TUN (a proxy mode that needs administrator rights). |
-
-
-
-
-
-
-<a name="adminbgservice-AdminBgStartRequest-ResourcesEntry"></a>
-
-### AdminBgStartRequest.ResourcesEntry
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| key | [string](#string) |  |  |
-| value | [bytes](#bytes) |  |  |
-
-
-
-
-
- 
-
- 
-
- 
+| FetchUrl | [FetchUrlRequest](#hcore-FetchUrlRequest) | [FetchUrlResponse](#hcore-FetchUrlResponse) | Downloads a URL directly (not through the core&#39;s outbounds), with the TLS handshake of Chrome, so a server or a middlebox that drops other TLS clients still answers. The app tries it before its own download of a subscription. A failed download is a response with its error set, not a gRPC error. |
+| StartDeepSearch | [DeepSearchRequest](#hcore-DeepSearchRequest) | [.hcommon.Response](#hcommon-Response) | Starts a deep search on a proxy whose search for a way through gave up after its time (OutboundInfo.deep_search_available: WARP&#39;s endpoint scanner, Psiphon as the unblocker): no time limit and more workers, for hours maybe, at the cost of battery and CPU. The app asks the user first. |
 
  
 
@@ -2027,6 +2038,114 @@ SubscriptionInfo defines subscription-related information.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | message | [string](#string) |  |  |
+
+
+
+
+
+ 
+
+ 
+
+ 
+
+ 
+
+
+
+<a name="v2_hcore_adminbgservice_admin_bg_service-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## v2/hcore/adminbgservice/admin_bg_service.proto
+
+
+ 
+
+ 
+
+ 
+
+
+<a name="adminbgservice-HiddifyAdminBG"></a>
+
+### HiddifyAdminBG
+Elevated background core control API (Windows/Linux OS service, macOS root daemon).
+
+| Method Name | Request Type | Response Type | Description |
+| ----------- | ------------ | ------------- | ------------|
+| Start | [AdminBgStartRequest](#adminbgservice-AdminBgStartRequest) | [AdminBgResponse](#adminbgservice-AdminBgResponse) |  |
+| Reload | [AdminBgStartRequest](#adminbgservice-AdminBgStartRequest) | [AdminBgResponse](#adminbgservice-AdminBgResponse) | Applies a changed configuration to the running engine without restarting it. |
+| Restart | [AdminBgStartRequest](#adminbgservice-AdminBgStartRequest) | [AdminBgResponse](#adminbgservice-AdminBgResponse) | Stops the running engine and starts it with the request: a change a reload cannot apply. |
+| Stop | [.hcommon.Empty](#hcommon-Empty) | [AdminBgResponse](#adminbgservice-AdminBgResponse) |  |
+| Status | [.hcommon.Empty](#hcommon-Empty) | [AdminBgResponse](#adminbgservice-AdminBgResponse) |  |
+| Exit | [.hcommon.Empty](#hcommon-Empty) | [AdminBgResponse](#adminbgservice-AdminBgResponse) |  |
+
+ 
+
+
+
+<a name="v2_hcore_adminbgservice_admin_bg-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## v2/hcore/adminbgservice/admin_bg.proto
+
+
+
+<a name="adminbgservice-AdminBgResponse"></a>
+
+### AdminBgResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| message | [string](#string) |  |  |
+| system_proxy | [string](#string) |  | Where the running engine&#39;s system proxy points (host:port), empty when it has none. The service runs as root and cannot set the user&#39;s system proxy: the app&#39;s own core sets it. |
+| system_proxy_socks | [bool](#bool) |  |  |
+
+
+
+
+
+
+<a name="adminbgservice-AdminBgStartRequest"></a>
+
+### AdminBgStartRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| ipv6 | [bool](#bool) |  |  |
+| server_port | [int32](#int32) |  |  |
+| server_username | [string](#string) |  |  |
+| server_password | [string](#string) |  |  |
+| strict_route | [bool](#bool) |  |  |
+| endpoint_independent_nat | [bool](#bool) |  |  |
+| stack | [string](#string) |  |  |
+| config_content | [string](#string) |  | Full-core start (macOS root daemon): config snapshot, settings, and local resources. |
+| config_name | [string](#string) |  |  |
+| settings_json | [string](#string) |  |  |
+| resources | [AdminBgStartRequest.ResourcesEntry](#adminbgservice-AdminBgStartRequest-ResourcesEntry) | repeated |  |
+| disable_memory_limit | [bool](#bool) |  |  |
+| owner_pid | [int32](#int32) |  | When set, the daemon stops once this process is gone (app quit or crash). |
+| proxy_only | [bool](#bool) |  | Runs the engine without its TUN (a proxy mode that needs administrator rights). |
+
+
+
+
+
+
+<a name="adminbgservice-AdminBgStartRequest-ResourcesEntry"></a>
+
+### AdminBgStartRequest.ResourcesEntry
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| key | [string](#string) |  |  |
+| value | [bytes](#bytes) |  |  |
 
 
 

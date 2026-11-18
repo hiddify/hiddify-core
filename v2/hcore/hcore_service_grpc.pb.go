@@ -51,6 +51,7 @@ const (
 	Core_ListCrashReports_FullMethodName      = "/hcore.Core/ListCrashReports"
 	Core_ExportDiagnostics_FullMethodName     = "/hcore.Core/ExportDiagnostics"
 	Core_FetchUrl_FullMethodName              = "/hcore.Core/FetchUrl"
+	Core_StartDeepSearch_FullMethodName       = "/hcore.Core/StartDeepSearch"
 )
 
 // CoreClient is the client API for Core service.
@@ -66,7 +67,7 @@ type CoreClient interface {
 	Setup(ctx context.Context, in *SetupRequest, opts ...grpc.CallOption) (*hcommon.Response, error)
 	Parse(ctx context.Context, in *ParseRequest, opts ...grpc.CallOption) (*ParseResponse, error)
 	ChangeHiddifySettings(ctx context.Context, in *ChangeHiddifySettingsRequest, opts ...grpc.CallOption) (*CoreInfoResponse, error)
-	// rpc GenerateConfig (GenerateConfigRequest) returns (GenerateConfigResponse);
+	//rpc GenerateConfig (GenerateConfigRequest) returns (GenerateConfigResponse);
 	StartService(ctx context.Context, in *StartRequest, opts ...grpc.CallOption) (*CoreInfoResponse, error)
 	Stop(ctx context.Context, in *hcommon.Empty, opts ...grpc.CallOption) (*CoreInfoResponse, error)
 	Restart(ctx context.Context, in *StartRequest, opts ...grpc.CallOption) (*CoreInfoResponse, error)
@@ -111,6 +112,11 @@ type CoreClient interface {
 	// before its own download of a subscription. A failed download is a response with its error set,
 	// not a gRPC error.
 	FetchUrl(ctx context.Context, in *FetchUrlRequest, opts ...grpc.CallOption) (*FetchUrlResponse, error)
+	// Starts a deep search on a proxy whose search for a way through gave up after its time
+	// (OutboundInfo.deep_search_available: WARP's endpoint scanner, Psiphon as the unblocker): no
+	// time limit and more workers, for hours maybe, at the cost of battery and CPU. The app asks the
+	// user first.
+	StartDeepSearch(ctx context.Context, in *DeepSearchRequest, opts ...grpc.CallOption) (*hcommon.Response, error)
 }
 
 type coreClient struct {
@@ -485,6 +491,16 @@ func (c *coreClient) FetchUrl(ctx context.Context, in *FetchUrlRequest, opts ...
 	return out, nil
 }
 
+func (c *coreClient) StartDeepSearch(ctx context.Context, in *DeepSearchRequest, opts ...grpc.CallOption) (*hcommon.Response, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(hcommon.Response)
+	err := c.cc.Invoke(ctx, Core_StartDeepSearch_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // CoreServer is the server API for Core service.
 // All implementations must embed UnimplementedCoreServer
 // for forward compatibility.
@@ -498,7 +514,7 @@ type CoreServer interface {
 	Setup(context.Context, *SetupRequest) (*hcommon.Response, error)
 	Parse(context.Context, *ParseRequest) (*ParseResponse, error)
 	ChangeHiddifySettings(context.Context, *ChangeHiddifySettingsRequest) (*CoreInfoResponse, error)
-	// rpc GenerateConfig (GenerateConfigRequest) returns (GenerateConfigResponse);
+	//rpc GenerateConfig (GenerateConfigRequest) returns (GenerateConfigResponse);
 	StartService(context.Context, *StartRequest) (*CoreInfoResponse, error)
 	Stop(context.Context, *hcommon.Empty) (*CoreInfoResponse, error)
 	Restart(context.Context, *StartRequest) (*CoreInfoResponse, error)
@@ -543,6 +559,11 @@ type CoreServer interface {
 	// before its own download of a subscription. A failed download is a response with its error set,
 	// not a gRPC error.
 	FetchUrl(context.Context, *FetchUrlRequest) (*FetchUrlResponse, error)
+	// Starts a deep search on a proxy whose search for a way through gave up after its time
+	// (OutboundInfo.deep_search_available: WARP's endpoint scanner, Psiphon as the unblocker): no
+	// time limit and more workers, for hours maybe, at the cost of battery and CPU. The app asks the
+	// user first.
+	StartDeepSearch(context.Context, *DeepSearchRequest) (*hcommon.Response, error)
 	mustEmbedUnimplementedCoreServer()
 }
 
@@ -645,6 +666,9 @@ func (UnimplementedCoreServer) ExportDiagnostics(context.Context, *ExportDiagnos
 }
 func (UnimplementedCoreServer) FetchUrl(context.Context, *FetchUrlRequest) (*FetchUrlResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method FetchUrl not implemented")
+}
+func (UnimplementedCoreServer) StartDeepSearch(context.Context, *DeepSearchRequest) (*hcommon.Response, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method StartDeepSearch not implemented")
 }
 func (UnimplementedCoreServer) mustEmbedUnimplementedCoreServer() {}
 func (UnimplementedCoreServer) testEmbeddedByValue()              {}
@@ -1183,6 +1207,24 @@ func _Core_FetchUrl_Handler(srv interface{}, ctx context.Context, dec func(inter
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Core_StartDeepSearch_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeepSearchRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CoreServer).StartDeepSearch(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Core_StartDeepSearch_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CoreServer).StartDeepSearch(ctx, req.(*DeepSearchRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Core_ServiceDesc is the grpc.ServiceDesc for Core service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -1289,6 +1331,10 @@ var Core_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "FetchUrl",
 			Handler:    _Core_FetchUrl_Handler,
+		},
+		{
+			MethodName: "StartDeepSearch",
+			Handler:    _Core_StartDeepSearch_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

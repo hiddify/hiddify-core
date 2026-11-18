@@ -247,6 +247,8 @@ func (h *HiddifyInstance) GetProxyInfo(url_test_history *adapter.URLTestHistory,
 	if err := adapter.StatusError(detour); err != nil {
 		out.Error = err.Error()
 	}
+	// its search gave up: the app may ask the user for a deep search
+	out.DeepSearchAvailable = adapter.DeepSearchAvailable(detour)
 	if deps := detour.Dependencies(); len(deps) == 1 {
 		out.Detour = deps[0]
 	}
