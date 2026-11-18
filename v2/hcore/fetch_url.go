@@ -12,10 +12,12 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 
 	utls "github.com/refraction-networking/utls"
+	"golang.org/x/crypto/x509roots/fallback/bundle"
 	"golang.org/x/net/http2"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -82,8 +84,38 @@ var fetchURLTransport http.RoundTripper = chromeTransport{}
 // chromeTransport sends each request on a connection of its own: https with the ClientHello of
 // Chrome, then HTTP/2 or HTTP/1.1 as the server picks by ALPN, the way Chrome would.
 type chromeTransport struct {
-	// nil for the system's
+	// nil for the system's roots with the bundled ones
 	rootCAs *x509.CertPool
+}
+
+var (
+	trustedRootsOnce sync.Once
+	trustedRoots     *x509.CertPool
+)
+
+// systemAndBundledRoots is the roots of the system with those of Mozilla's list that ship in the
+// app: an old system lacks the root a site's certificate chains to now (Android 7.0 has no ISRG
+// Root X1, which Let's Encrypt signs with), and its own list is never updated.
+func systemAndBundledRoots() *x509.CertPool {
+	trustedRootsOnce.Do(func() {
+		pool, err := x509.SystemCertPool()
+		if err != nil || pool == nil {
+			pool = x509.NewCertPool()
+		}
+		for root := range bundle.Roots() {
+			cert, err := x509.ParseCertificate(root.Certificate)
+			if err != nil {
+				continue
+			}
+			if root.Constraint == nil {
+				pool.AddCert(cert)
+			} else {
+				pool.AddCertWithConstraint(cert, root.Constraint)
+			}
+		}
+		trustedRoots = pool
+	})
+	return trustedRoots
 }
 
 func (t chromeTransport) RoundTrip(request *http.Request) (*http.Response, error) {
@@ -108,7 +140,11 @@ func (t chromeTransport) RoundTrip(request *http.Request) (*http.Response, error
 	}
 
 	if request.URL.Scheme == "https" {
-		tlsConn := utls.UClient(conn, &utls.Config{ServerName: host, RootCAs: t.rootCAs}, utls.HelloChrome_Auto)
+		roots := t.rootCAs
+		if roots == nil {
+			roots = systemAndBundledRoots()
+		}
+		tlsConn := utls.UClient(conn, &utls.Config{ServerName: host, RootCAs: roots}, utls.HelloChrome_Auto)
 		if err := tlsConn.HandshakeContext(ctx); err != nil {
 			return fail(&tlsHandshakeError{err})
 		}
