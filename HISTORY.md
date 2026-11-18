@@ -7,6 +7,9 @@ Changelog
 
 New
 ~~~
+- The proxy list shows each VLESS, VMess and Trojan proxy's transport and
+  security after its protocol, as "VLESS · XHTTP · REALITY" or
+  "VMess · WS · TLS", also for the proxies keep top leaves at rest. [hiddify]
 - Add the MasterDNS outbound (MasterDnsVPN over public resolvers), with
   masterdns:// links, and read SlipNet slipnet:// DNS tunnel profiles
   (DNSTT, NoizDNS, VayDNS, with SSH) as dnstt outbounds. [hiddify]
@@ -24,6 +27,14 @@ New
 
 Fix
 ~~~
+- Keep top looks at the proxies at rest again every hour, and at once when a
+  subscription's update brings new ones: a proxy that got faster, a new one, or
+  one that failed once and works again takes the place of the slowest kept
+  one. A proxy at rest that answers a test faster than the slowest kept one
+  takes its place. Before, they rested for as long as the kept ones answered,
+  and one that failed once for a day. [hiddify]
+- A speed test of lowest or balance measures the proxy the group uses, which
+  its row shows, not every proxy of the list again. [hiddify]
 - Read share links again with libxray v1.261031.0, whose converter takes a
   key and returns JSON; the core did not build. [hiddify]
 - Ios build. [hiddify]
