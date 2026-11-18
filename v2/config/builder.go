@@ -417,6 +417,12 @@ func setExperimental(options *option.Options, hopt *HiddifyOptions) {
 			CacheFile: &option.CacheFileOptions{
 				Enabled: true, // WARP and MASQUE devices are stored by default
 				Path:    "data/clash.db",
+				// The apps keep the fake IPs they were given for the answer's TTL, across a
+				// restart of the core. Kept only in memory, the mappings were gone after one:
+				// every connection to an address handed out before failed with "missing fakeip
+				// record", and allocation started again from the first address, so an address
+				// an app still held could now stand for another domain.
+				StoreFakeIP: hopt.EnableFakeDNS,
 			},
 
 			Monitoring: &option.MonitoringOptions{
