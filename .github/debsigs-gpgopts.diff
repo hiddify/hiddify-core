@@ -1,0 +1,23 @@
+diff --git a/debsigs b/debsigs
+index 25b5d44fab1600239ab51bbe9832e9f7dc6347a3..879a1047a6430493bcdad31cbe76d85e9c8b9768 100644
+--- a/debsigs
++++ b/debsigs
+@@ -27,6 +27,7 @@ use Getopt::Long;
+ use List::Util qw(first);
+ use IO::File;
+ use POSIX ":sys_wait_h";
++use Text::ParseWords qw(parse_line);
+ 
+ sub cmd_sign($);
+ sub cmd_list($);
+@@ -105,6 +106,10 @@ sub cmd_sign($) {
+ 
+   my @cmdline = ("gpg", "--openpgp", "--detach-sign");
+ 
++  if ($gpgopts) {
++    push (@cmdline, parse_line('\s+', 0, $gpgopts));
++  }
++
+   if ($key) {
+     push (@cmdline, "--default-key", $key);
+   }

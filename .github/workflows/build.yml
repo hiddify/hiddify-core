@@ -473,9 +473,10 @@ jobs:
             --architecture ${{ matrix.debian }} \
             dist/hiddify-core=/usr/bin/hiddify-core
           # Older Ubuntu needs this debsigs fix; Resolute+ already has it (patch then exits 1).
-          curl -Lo '/tmp/debsigs.diff' 'https://gitlab.com/debsigs/debsigs/-/commit/160138f5de1ec110376d3c807b60a37388bc7c90.diff'
+          # The diff is upstream commit 160138f5 of gitlab.com/debsigs/debsigs, kept in the repo:
+          # GitLab sometimes answers CI runners with a 95-byte page instead of the diff.
           set +e
-          sudo patch -N -r - /usr/bin/debsigs < '/tmp/debsigs.diff'
+          sudo patch -N -r - /usr/bin/debsigs < .github/debsigs-gpgopts.diff
           patch_status=$?
           set -e
           if [ "$patch_status" -gt 1 ]; then
