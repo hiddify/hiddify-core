@@ -1,6 +1,6 @@
 FROM alpine:latest
 ENV CONFIG='https://raw.githubusercontent.com/ircfspace/warpsub/main/export/warp#WARP%20(IRCF)'
-ENV VERSION=v5.9.11
+ENV VERSION=v5.9.15
 WORKDIR /hiddify
 RUN apk add --no-cache curl tar gzip # iptables ip6tables
 

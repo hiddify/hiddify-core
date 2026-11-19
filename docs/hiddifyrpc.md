@@ -84,6 +84,14 @@
 - [v2/hcore/hcore_service.proto](#v2_hcore_hcore_service-proto)
     - [Core](#hcore-Core)
   
+- [v2/hcore/adminbgservice/admin_bg_service.proto](#v2_hcore_adminbgservice_admin_bg_service-proto)
+    - [HiddifyAdminBG](#adminbgservice-HiddifyAdminBG)
+  
+- [v2/hcore/adminbgservice/admin_bg.proto](#v2_hcore_adminbgservice_admin_bg-proto)
+    - [AdminBgResponse](#adminbgservice-AdminBgResponse)
+    - [AdminBgStartRequest](#adminbgservice-AdminBgStartRequest)
+    - [AdminBgStartRequest.ResourcesEntry](#adminbgservice-AdminBgStartRequest-ResourcesEntry)
+  
 - [v2/hiddifyoptions/hiddify_options.proto](#v2_hiddifyoptions_hiddify_options-proto)
     - [DNSOptions](#hiddifyoptions-DNSOptions)
     - [HiddifyOptions](#hiddifyoptions-HiddifyOptions)
@@ -125,14 +133,6 @@
 - [v2/hello/hello.proto](#v2_hello_hello-proto)
     - [HelloRequest](#hello-HelloRequest)
     - [HelloResponse](#hello-HelloResponse)
-  
-- [v2/hcore/adminbgservice/admin_bg_service.proto](#v2_hcore_adminbgservice_admin_bg_service-proto)
-    - [HiddifyAdminBG](#adminbgservice-HiddifyAdminBG)
-  
-- [v2/hcore/adminbgservice/admin_bg.proto](#v2_hcore_adminbgservice_admin_bg-proto)
-    - [AdminBgResponse](#adminbgservice-AdminBgResponse)
-    - [AdminBgStartRequest](#adminbgservice-AdminBgStartRequest)
-    - [AdminBgStartRequest.ResourcesEntry](#adminbgservice-AdminBgStartRequest-ResourcesEntry)
   
 - [extension/extension_service.proto](#extension_extension_service-proto)
     - [ExtensionHostService](#extension-ExtensionHostService)
@@ -1470,6 +1470,114 @@ Connection state of an outbound or endpoint (mirrors adapter.Status).
 
 
 
+<a name="v2_hcore_adminbgservice_admin_bg_service-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## v2/hcore/adminbgservice/admin_bg_service.proto
+
+
+ 
+
+ 
+
+ 
+
+
+<a name="adminbgservice-HiddifyAdminBG"></a>
+
+### HiddifyAdminBG
+Elevated background core control API (Windows/Linux OS service, macOS root daemon).
+
+| Method Name | Request Type | Response Type | Description |
+| ----------- | ------------ | ------------- | ------------|
+| Start | [AdminBgStartRequest](#adminbgservice-AdminBgStartRequest) | [AdminBgResponse](#adminbgservice-AdminBgResponse) |  |
+| Reload | [AdminBgStartRequest](#adminbgservice-AdminBgStartRequest) | [AdminBgResponse](#adminbgservice-AdminBgResponse) | Applies a changed configuration to the running engine without restarting it. |
+| Restart | [AdminBgStartRequest](#adminbgservice-AdminBgStartRequest) | [AdminBgResponse](#adminbgservice-AdminBgResponse) | Stops the running engine and starts it with the request: a change a reload cannot apply. |
+| Stop | [.hcommon.Empty](#hcommon-Empty) | [AdminBgResponse](#adminbgservice-AdminBgResponse) |  |
+| Status | [.hcommon.Empty](#hcommon-Empty) | [AdminBgResponse](#adminbgservice-AdminBgResponse) |  |
+| Exit | [.hcommon.Empty](#hcommon-Empty) | [AdminBgResponse](#adminbgservice-AdminBgResponse) |  |
+
+ 
+
+
+
+<a name="v2_hcore_adminbgservice_admin_bg-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## v2/hcore/adminbgservice/admin_bg.proto
+
+
+
+<a name="adminbgservice-AdminBgResponse"></a>
+
+### AdminBgResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| message | [string](#string) |  |  |
+| system_proxy | [string](#string) |  | Where the running engine&#39;s system proxy points (host:port), empty when it has none. The service runs as root and cannot set the user&#39;s system proxy: the app&#39;s own core sets it. |
+| system_proxy_socks | [bool](#bool) |  |  |
+
+
+
+
+
+
+<a name="adminbgservice-AdminBgStartRequest"></a>
+
+### AdminBgStartRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| ipv6 | [bool](#bool) |  |  |
+| server_port | [int32](#int32) |  |  |
+| server_username | [string](#string) |  |  |
+| server_password | [string](#string) |  |  |
+| strict_route | [bool](#bool) |  |  |
+| endpoint_independent_nat | [bool](#bool) |  |  |
+| stack | [string](#string) |  |  |
+| config_content | [string](#string) |  | Full-core start (macOS root daemon): config snapshot, settings, and local resources. |
+| config_name | [string](#string) |  |  |
+| settings_json | [string](#string) |  |  |
+| resources | [AdminBgStartRequest.ResourcesEntry](#adminbgservice-AdminBgStartRequest-ResourcesEntry) | repeated |  |
+| disable_memory_limit | [bool](#bool) |  |  |
+| owner_pid | [int32](#int32) |  | When set, the daemon stops once this process is gone (app quit or crash). |
+| proxy_only | [bool](#bool) |  | Runs the engine without its TUN (a proxy mode that needs administrator rights). |
+
+
+
+
+
+
+<a name="adminbgservice-AdminBgStartRequest-ResourcesEntry"></a>
+
+### AdminBgStartRequest.ResourcesEntry
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| key | [string](#string) |  |  |
+| value | [bytes](#bytes) |  |  |
+
+
+
+
+
+ 
+
+ 
+
+ 
+
+ 
+
+
+
 <a name="v2_hiddifyoptions_hiddify_options-proto"></a>
 <p align="right"><a href="#top">Top</a></p>
 
@@ -2038,114 +2146,6 @@ SubscriptionInfo defines subscription-related information.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | message | [string](#string) |  |  |
-
-
-
-
-
- 
-
- 
-
- 
-
- 
-
-
-
-<a name="v2_hcore_adminbgservice_admin_bg_service-proto"></a>
-<p align="right"><a href="#top">Top</a></p>
-
-## v2/hcore/adminbgservice/admin_bg_service.proto
-
-
- 
-
- 
-
- 
-
-
-<a name="adminbgservice-HiddifyAdminBG"></a>
-
-### HiddifyAdminBG
-Elevated background core control API (Windows/Linux OS service, macOS root daemon).
-
-| Method Name | Request Type | Response Type | Description |
-| ----------- | ------------ | ------------- | ------------|
-| Start | [AdminBgStartRequest](#adminbgservice-AdminBgStartRequest) | [AdminBgResponse](#adminbgservice-AdminBgResponse) |  |
-| Reload | [AdminBgStartRequest](#adminbgservice-AdminBgStartRequest) | [AdminBgResponse](#adminbgservice-AdminBgResponse) | Applies a changed configuration to the running engine without restarting it. |
-| Restart | [AdminBgStartRequest](#adminbgservice-AdminBgStartRequest) | [AdminBgResponse](#adminbgservice-AdminBgResponse) | Stops the running engine and starts it with the request: a change a reload cannot apply. |
-| Stop | [.hcommon.Empty](#hcommon-Empty) | [AdminBgResponse](#adminbgservice-AdminBgResponse) |  |
-| Status | [.hcommon.Empty](#hcommon-Empty) | [AdminBgResponse](#adminbgservice-AdminBgResponse) |  |
-| Exit | [.hcommon.Empty](#hcommon-Empty) | [AdminBgResponse](#adminbgservice-AdminBgResponse) |  |
-
- 
-
-
-
-<a name="v2_hcore_adminbgservice_admin_bg-proto"></a>
-<p align="right"><a href="#top">Top</a></p>
-
-## v2/hcore/adminbgservice/admin_bg.proto
-
-
-
-<a name="adminbgservice-AdminBgResponse"></a>
-
-### AdminBgResponse
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| message | [string](#string) |  |  |
-| system_proxy | [string](#string) |  | Where the running engine&#39;s system proxy points (host:port), empty when it has none. The service runs as root and cannot set the user&#39;s system proxy: the app&#39;s own core sets it. |
-| system_proxy_socks | [bool](#bool) |  |  |
-
-
-
-
-
-
-<a name="adminbgservice-AdminBgStartRequest"></a>
-
-### AdminBgStartRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| ipv6 | [bool](#bool) |  |  |
-| server_port | [int32](#int32) |  |  |
-| server_username | [string](#string) |  |  |
-| server_password | [string](#string) |  |  |
-| strict_route | [bool](#bool) |  |  |
-| endpoint_independent_nat | [bool](#bool) |  |  |
-| stack | [string](#string) |  |  |
-| config_content | [string](#string) |  | Full-core start (macOS root daemon): config snapshot, settings, and local resources. |
-| config_name | [string](#string) |  |  |
-| settings_json | [string](#string) |  |  |
-| resources | [AdminBgStartRequest.ResourcesEntry](#adminbgservice-AdminBgStartRequest-ResourcesEntry) | repeated |  |
-| disable_memory_limit | [bool](#bool) |  |  |
-| owner_pid | [int32](#int32) |  | When set, the daemon stops once this process is gone (app quit or crash). |
-| proxy_only | [bool](#bool) |  | Runs the engine without its TUN (a proxy mode that needs administrator rights). |
-
-
-
-
-
-
-<a name="adminbgservice-AdminBgStartRequest-ResourcesEntry"></a>
-
-### AdminBgStartRequest.ResourcesEntry
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| key | [string](#string) |  |  |
-| value | [bytes](#bytes) |  |  |
 
 
 
