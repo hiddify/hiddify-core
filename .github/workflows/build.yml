@@ -359,7 +359,7 @@ jobs:
           mkdir -p dist
           go build -v -trimpath -o dist/hiddify-core -tags "${BUILD_TAGS}" \
           -ldflags "-s -buildid= ${CODE_VERSION} -checklinkname=0" \
-          ./cmd/main/
+          ./cmd/main/ || { rc=$?; echo "go build exited $rc"; free -m; df -h . /tmp; sudo dmesg | tail -40; exit $rc; }
         env:
           CGO_ENABLED: "0"
           GOOS: ${{ matrix.os }}
@@ -383,7 +383,7 @@ jobs:
           mkdir -p dist
           go build -v -trimpath -o dist/hiddify-core -tags "${BUILD_TAGS}" \
           -ldflags "-s -buildid= ${CODE_VERSION} -checklinkname=0" \
-          ./cmd/main/
+          ./cmd/main/ || { rc=$?; echo "go build exited $rc"; free -m; df -h . /tmp; sudo dmesg | tail -40; exit $rc; }
         env:
           CGO_ENABLED: "1"
           GOOS: linux
@@ -398,7 +398,7 @@ jobs:
           mkdir -p dist
           go build -v -trimpath -o dist/hiddify-core -tags "${BUILD_TAGS}" \
           -ldflags "-s -buildid= ${CODE_VERSION} -checklinkname=0" \
-          ./cmd/main/
+          ./cmd/main/ || { rc=$?; echo "go build exited $rc"; free -m; df -h . /tmp; sudo dmesg | tail -40; exit $rc; }
         env:
           CGO_ENABLED: "1"
           GOOS: linux
@@ -413,7 +413,7 @@ jobs:
           mkdir -p dist
           go build -v -trimpath -o dist/hiddify-core -tags "${BUILD_TAGS}" \
           -ldflags "-s -buildid= ${CODE_VERSION} -checklinkname=0" \
-          ./cmd/main/
+          ./cmd/main/ || { rc=$?; echo "go build exited $rc"; free -m; df -h . /tmp; sudo dmesg | tail -40; exit $rc; }
         env:
           CGO_ENABLED: "0"
           GOOS: ${{ matrix.os }}
@@ -433,7 +433,7 @@ jobs:
           mkdir -p dist
           GOOS=$BUILD_GOOS GOARCH=$BUILD_GOARCH build go build -v -trimpath -o dist/hiddify-core -tags "${BUILD_TAGS}" \
           -ldflags "-s -buildid= ${CODE_VERSION} -checklinkname=0" \
-          ./cmd/main/
+          ./cmd/main/ || { rc=$?; echo "go build exited $rc"; free -m; df -h . /tmp; sudo dmesg | tail -40; exit $rc; }
         env:
           CGO_ENABLED: "1"
           BUILD_GOOS: ${{ matrix.os }}
