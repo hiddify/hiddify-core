@@ -117,6 +117,12 @@ type InboundOptions struct {
 	LocalProxyInVpn bool   `json:"local-proxy-in-vpn,omitempty"`
 	MTU             uint32 `json:"mtu,omitempty"`
 	StrictRoute     bool   `json:"strict-route,omitempty"`
+	// RouteExcludeAddress keeps these destinations (IPs or CIDR prefixes) out of the TUN: the system
+	// routes them as if the VPN were off. Another VPN on the device needs its server here (OpenVPN,
+	// WireGuard, a corporate VPN): a route rule to direct is not enough, as that VPN looks up the
+	// route to its server in the system table. Not overridable: a profile must not take traffic out
+	// of the VPN.
+	RouteExcludeAddress []string `json:"route-exclude-address,omitempty"`
 	// TUNStack is the TUN's TCP/IP stack: "sing15" (or empty) for sing-tun's own, the default; the
 	// legacy "system", "gvisor" and "mixed" are accepted until sing-box 1.17 (see TunStack).
 	TUNStack string `json:"tun-implementation,omitempty"`

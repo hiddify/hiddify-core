@@ -94,7 +94,9 @@ func BuildConfig(ctx context.Context, hopts *HiddifyOptions, inputOpt *ReadOptio
 	declareIPv6FromInput(&options, input)
 
 	setLog(&options, hopts)
-	setInbound(&options, hopts)
+	if err := setInbound(&options, hopts); err != nil {
+		return nil, err
+	}
 	staticIPs := make(map[string][]string)
 	// staticIPs["api.cloudflareclient.com"] = []string{"104.16.192.82", "2606:4700::6810:1854", getRandomWarpIP()}
 	// setNTP(&options)
@@ -539,7 +541,7 @@ func shouldEnableIPv6() bool {
 	return isIPv6Supported()
 }
 
-func setInbound(options *option.Options, hopt *HiddifyOptions) {
+func setInbound(options *option.Options, hopt *HiddifyOptions) error {
 	// var inboundDomainStrategy option.DomainStrategy
 	// if !opt.ResolveDestination {
 	// 	inboundDomainStrategy = option.DomainStrategy(dns.DomainStrategyAsIS)
@@ -548,7 +550,10 @@ func setInbound(options *option.Options, hopt *HiddifyOptions) {
 	// }
 	ipv6Enable := shouldEnableIPv6()
 	if hopt.EnableTun {
-
+		routeExclude, err := routeExcludePrefixes(hopt.RouteExcludeAddress)
+		if err != nil {
+			return err
+		}
 		opts := option.TunInboundOptions{
 			Stack:       TunStack(hopt.TUNStack),
 			MTU:         hopt.MTU,
@@ -559,6 +564,10 @@ func setInbound(options *option.Options, hopt *HiddifyOptions) {
 			// cannot run, and after a start it made fail (see AutoRedirectFailed). Router mode
 			// always asks for it (see router_mode.go).
 			AutoRedirect: tunAutoRedirect(hopt),
+			// Left out of the TUN's routes on every platform: sing-tun subtracts them (and with
+			// auto_redirect skips them in nftables, for a router's whole network too), and the
+			// platform tunnels (Android, Apple's Network Extension) get them as excluded routes.
+			RouteExcludeAddress: routeExclude,
 
 			// EndpointIndependentNat: true,
 			// GSO:                    runtime.GOOS != "windows",
@@ -582,13 +591,10 @@ func setInbound(options *option.Options, hopt *HiddifyOptions) {
 		// default:
 
 		// }
-		opts.Address = []netip.Prefix{
-			netip.MustParsePrefix("172.19.0.1/28"),
-			// Always on the TUN when auto-routing. Without it, sing-tun installs no ::/0
-			// and IPv6 bypasses the VPN (NE builds guard this in Swift; admin_bgservice /
-			// desktop TUN must do it here). ipv6Mode only affects DNS strategy below.
-			netip.MustParsePrefix("fdfe:dcba:9876::1/126"),
-		}
+		// The IPv6 address is always on the TUN when auto-routing. Without it, sing-tun installs no
+		// ::/0 and IPv6 bypasses the VPN (NE builds guard this in Swift; admin_bgservice / desktop
+		// TUN must do it here). ipv6Mode only affects DNS strategy below.
+		opts.Address = append([]netip.Prefix(nil), tunAddresses...)
 
 		options.Inbounds = append(options.Inbounds, tunInbound)
 
@@ -608,7 +614,7 @@ func setInbound(options *option.Options, hopt *HiddifyOptions) {
 	}
 
 	if !transparentPortsOpen(hopt) {
-		return
+		return nil
 	}
 	// the transparent ports, on the addresses they always had: every one while shared (a Linux
 	// gateway sends the network's traffic to them), this device's own otherwise
@@ -650,6 +656,7 @@ func setInbound(options *option.Options, hopt *HiddifyOptions) {
 			})
 		}
 	}
+	return nil
 }
 
 func setRoutingOptions(options *option.Options, hopt *HiddifyOptions) error {
