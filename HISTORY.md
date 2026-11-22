@@ -7,6 +7,11 @@ Changelog
 
 New
 ~~~
+- The route-exclude-address setting keeps IPs and CIDR prefixes out of the
+  VPN's TUN on every platform, so another VPN on the device (a corporate
+  OpenVPN, WireGuard) still reaches its server. The TUN's own network stays
+  in it; a /0, or a value that is not an IP or a prefix, fails the start
+  with an error naming it. [rmsff]
 - The proxy list shows each VLESS, VMess and Trojan proxy's transport and
   security after its protocol, as "VLESS · XHTTP · REALITY" or
   "VMess · WS · TLS", also for the proxies keep top leaves at rest. [hiddify]
