@@ -25,6 +25,11 @@ message Rule {
   repeated string domain_suffixes = 16 [json_name = "domain_suffix"];
   repeated string domain_keywords = 17 [json_name = "domain_keyword"];
   repeated string domain_regexes = 18 [json_name = "domain_regex"];
+  // With the proxy outbound: a regular expression (RE2, case-insensitive) on the names of the
+  // profile's proxies. The rule's traffic goes to the fastest proxy whose name matches it, e.g.
+  // "🇩🇪|germany". Empty, matching no proxy, or not a valid expression: the main proxy. The rule's
+  // domains are resolved by the remote DNS, through the main proxy, as for any proxy rule.
+  string proxy_filter = 19 [json_name = "proxy_filter"];
 }
 
 enum Outbound {

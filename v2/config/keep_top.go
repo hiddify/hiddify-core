@@ -164,7 +164,9 @@ func ApplyKeepTop(options *option.Options, hopt *HiddifyOptions, candidates []st
 		Countries: countries,
 		Batch:     hopt.KeepTopBatch,
 		Quick:     hopt.KeepTopQuick,
-		Pinned:    hopt.KeepTopPinned,
+		// a proxy filter's proxies stay in use: at rest, none of them answers, and the balancer
+		// would stay on its first, untested, member
+		Pinned: append(append([]string(nil), hopt.KeepTopPinned...), ruleProxies(options)...),
 		// every hour the ones at rest are looked at again: a proxy that got faster, a new one, or
 		// one that failed once, takes the place of the slowest kept one; without it they rested
 		// for as long as the kept ones answered, a day for one that failed once

@@ -786,10 +786,11 @@ func setRoutingOptions(options *option.Options, hopt *HiddifyOptions) error {
 	// 	},
 	// },	}
 
-	appRules := buildAppRouteRules(hopt)
+	appRules := buildAppRouteRules(hopt, options)
 	useAppRules := hopt.RouteRule != nil && hopt.RouteRule.RouteRule != nil
 	if useAppRules {
 		routeRules = append(routeRules, appRules.routeRules...)
+		options.Outbounds = append(options.Outbounds, appRules.outbounds...)
 	}
 	if !useAppRules && hopt.BypassLAN {
 		routeRules = append(

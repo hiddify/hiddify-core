@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/netip"
 	"path"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -38,25 +39,46 @@ func (r RouteRuleOptions) MarshalJSON() ([]byte, error) {
 // appRouteRules turns the app's enabled rules, in their order, into route rules, DNS rules and the
 // remote rule-sets they use. A rule-set URL may hold "{region}"; it is dropped while the region is
 // unset or "other", and a rule left without any condition is dropped too (it would match everything).
+// A proxy rule with a proxy filter gets a balancer of the proxies it picks (outbounds).
 type appRouteRules struct {
 	region   string
 	fakeDNS  bool
 	strategy option.DomainStrategy
+	proxies  []string
+	// with the extra security chain all proxied traffic must enter its hop, so no filter applies
+	chained bool
+	ipv6    bool // the apps get IPv6 (ipv6ForClients)
 
-	routeRules []option.Rule
-	dnsRules   []option.DefaultDNSRule
-	ruleSets   []option.RuleSet
-	tagByURL   map[string]string
-	usedTags   map[string]bool
+	routeRules  []option.Rule
+	dnsRules    []option.DefaultDNSRule
+	ruleSets    []option.RuleSet
+	outbounds   []option.Outbound
+	tagByURL    map[string]string
+	usedTags    map[string]bool
+	tagByFilter map[string]string
+	takenTags   map[string]bool // the config's outbound and endpoint tags
 }
 
-func buildAppRouteRules(hopt *HiddifyOptions) *appRouteRules {
+// buildAppRouteRules builds the app's rules for the config built so far (options), whose
+// selectable proxies a proxy filter picks from.
+func buildAppRouteRules(hopt *HiddifyOptions, options *option.Options) *appRouteRules {
 	b := &appRouteRules{
-		region:   hopt.Region,
-		fakeDNS:  hopt.EnableFakeDNS,
-		strategy: hopt.DirectDnsDomainStrategy,
-		tagByURL: map[string]string{},
-		usedTags: map[string]bool{},
+		region:      hopt.Region,
+		fakeDNS:     hopt.EnableFakeDNS,
+		strategy:    hopt.DirectDnsDomainStrategy,
+		proxies:     selectableProxies(options),
+		chained:     hopt.ChainStatus == ChainStatusExtraSecurity,
+		ipv6:        ipv6ForClients(hopt.IPv6Mode),
+		tagByURL:    map[string]string{},
+		usedTags:    map[string]bool{},
+		tagByFilter: map[string]string{},
+		takenTags:   map[string]bool{},
+	}
+	for _, out := range options.Outbounds {
+		b.takenTags[out.Tag] = true
+	}
+	for _, end := range options.Endpoints {
+		b.takenTags[end.Tag] = true
 	}
 	if hopt.RouteRule == nil || hopt.RouteRule.RouteRule == nil {
 		return b
@@ -158,7 +180,20 @@ func (b *appRouteRules) add(rule *Rule) {
 			RejectOptions: option.RejectActionOptions{Method: C.RuleActionRejectMethodDefault},
 		}
 	default:
-		action.RouteOptions.Outbound = OutboundMainDetour
+		action.RouteOptions.Outbound = b.proxyOutbound(rule.GetProxyFilter())
+		if group := action.RouteOptions.Outbound; b.ipv6 && group != OutboundMainDetour {
+			// the IPv6 reject before the sniff rule checks the main proxy only: an IPv6 connection
+			// the filtered proxies cannot carry is refused the same way, so the app falls back to IPv4
+			v6 := raw
+			v6.IPVersion, v6.IPv6UnavailableVia = 6, group
+			b.routeRules = append(b.routeRules, option.Rule{
+				Type: C.RuleTypeDefault,
+				DefaultOptions: option.DefaultRule{RawDefaultRule: v6, RuleAction: option.RuleAction{
+					Action:        C.RuleActionTypeReject,
+					RejectOptions: option.RejectActionOptions{Method: C.RuleActionRejectMethodDefault},
+				}},
+			})
+		}
 	}
 	b.routeRules = append(b.routeRules, option.Rule{
 		Type:           C.RuleTypeDefault,
@@ -225,6 +260,83 @@ func (b *appRouteRules) addDNSRule(rule *Rule, raw option.RawDefaultRule, dnsRul
 		}
 	}
 	b.dnsRules = append(b.dnsRules, option.DefaultDNSRule{RawDefaultDNSRule: dnsRaw, DNSRuleAction: action})
+}
+
+// selectableProxies are the profile's proxies the user can pick in the select group, without its
+// lowest and balance groups.
+func selectableProxies(options *option.Options) []string {
+	for _, out := range options.Outbounds {
+		if out.Tag != OutboundSelectTag || out.Type != C.TypeSelector {
+			continue
+		}
+		var proxies []string
+		for _, tag := range out.Options.(*option.SelectorOutboundOptions).Outbounds {
+			if tag != OutboundURLTestTag && tag != OutboundRoundRobinTag {
+				proxies = append(proxies, tag)
+			}
+		}
+		return proxies
+	}
+	return nil
+}
+
+// ruleProxiesTagPrefix starts the tags of the proxy filters' balancers.
+const ruleProxiesTagPrefix = "rule-proxies-"
+
+// ruleProxies are the members of the proxy filters' balancers in a built config.
+func ruleProxies(options *option.Options) []string {
+	var members []string
+	for _, out := range options.Outbounds {
+		if out.Type == C.TypeBalancer && strings.HasPrefix(out.Tag, ruleProxiesTagPrefix) {
+			members = append(members, out.Options.(*option.BalancerOutboundOptions).Outbounds...)
+		}
+	}
+	return members
+}
+
+// proxyOutbound is where a proxy rule sends its traffic: with a proxy filter, a balancer of the
+// profile's proxies whose name, as the proxy list shows it, matches it, which uses the fastest of
+// them (one balancer per filter); otherwise the main proxy. A filter that is not a valid
+// expression or matches no proxy leaves the main proxy too, as the rule list is built with no way
+// to fail.
+func (b *appRouteRules) proxyOutbound(filter string) string {
+	filter = strings.TrimSpace(filter)
+	if filter == "" || b.chained {
+		return OutboundMainDetour
+	}
+	if tag, ok := b.tagByFilter[filter]; ok {
+		return tag
+	}
+	tag := OutboundMainDetour
+	if re, err := regexp.Compile("(?i)" + filter); err == nil {
+		var members []string
+		for _, proxy := range b.proxies {
+			// without the numbering of repeated names (" § 2") and the markers (§default§)
+			if re.MatchString(ChainTagDisplay(proxy)) {
+				members = append(members, proxy)
+			}
+		}
+		if len(members) > 0 {
+			for n := len(b.outbounds) + 1; tag == OutboundMainDetour || b.takenTags[tag]; n++ {
+				tag = ruleProxiesTagPrefix + strconv.Itoa(n) + " §hide§"
+			}
+			b.takenTags[tag] = true
+			b.outbounds = append(b.outbounds, option.Outbound{
+				Type: C.TypeBalancer,
+				Tag:  tag,
+				Options: &option.BalancerOutboundOptions{
+					Outbounds:                 members,
+					Strategy:                  "lowest-delay",
+					DelayAcceptableRatio:      2,
+					Tolerance:                 BalancerTolerance,
+					ToleranceRatio:            BalancerToleranceRatio,
+					InterruptExistConnections: true,
+				},
+			})
+		}
+	}
+	b.tagByFilter[filter] = tag
+	return tag
 }
 
 // ruleSet returns the tag of the remote rule-set at url, adding it once. The tag is the file name
