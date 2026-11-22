@@ -7,6 +7,12 @@ Changelog
 
 New
 ~~~
+- A proxy route rule can pick its proxies by name: proxy_filter, a
+  case-insensitive regular expression ("🇩🇪|germany"), sends the rule's
+  traffic to the fastest of the profile's proxies that match it, through a
+  balancer of its own. No match, an invalid expression or the extra security
+  chain leave the main proxy. With keep top the filter's proxies stay in use,
+  and IPv6 they cannot carry is refused at once. [rmsff]
 - The proxy list shows each VLESS, VMess and Trojan proxy's transport and
   security after its protocol, as "VLESS · XHTTP · REALITY" or
   "VMess · WS · TLS", also for the proxies keep top leaves at rest. [hiddify]
