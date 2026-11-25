@@ -175,6 +175,16 @@ func isDNSOutbound(out option.Outbound) bool {
 	return ok && invalid.OriginalType == C.TypeDNS
 }
 
+// downloadTestURL is what each URL test downloads through the proxy, kilobytes long, at most a
+// megabyte (each test of each proxy moves it): the Cloudflare endpoint the speed test uses, which
+// sends as many bytes as asked. None when 0.
+func downloadTestURL(kilobytes int) string {
+	if kilobytes <= 0 {
+		return ""
+	}
+	return fmt.Sprintf("https://speed.cloudflare.com/__down?bytes=%d", int64(min(kilobytes, 1024))*1024)
+}
+
 func setOutbounds(options *option.Options, input *option.Options, opt *HiddifyOptions, staticIPs *map[string][]string) error {
 	var outbounds []option.Outbound
 	var endpoints []option.Endpoint
@@ -430,10 +440,11 @@ func setExperimental(options *option.Options, hopt *HiddifyOptions) {
 				IpInfoURL: hopt.IpInfoUrl,
 				// each proxy's IPv6 is verified once at its URL test, with the same test URL over
 				// IPv6, when the apps get IPv6 at all (see ipv6ForClients)
-				VerifyIPv6:     ipv6ForClients(hopt.IPv6Mode),
-				Interval:       badoption.Duration(hopt.URLTestInterval.Duration()),
-				DebounceWindow: badoption.Duration(time.Millisecond * 500),
-				IdleTimeout:    badoption.Duration(hopt.URLTestInterval.Duration().Nanoseconds() * 3),
+				VerifyIPv6:      ipv6ForClients(hopt.IPv6Mode),
+				DownloadTestURL: downloadTestURL(hopt.URLTestDownloadSize),
+				Interval:        badoption.Duration(hopt.URLTestInterval.Duration()),
+				DebounceWindow:  badoption.Duration(time.Millisecond * 500),
+				IdleTimeout:     badoption.Duration(hopt.URLTestInterval.Duration().Nanoseconds() * 3),
 			},
 		}
 	}

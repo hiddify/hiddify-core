@@ -7,6 +7,10 @@ Changelog
 
 New
 ~~~
+- url-test-download-size (kilobytes, 0 off) makes each URL test also download
+  that much through the proxy, so a proxy whose connections freeze after their
+  first kilobytes (a censor's ~16 KB freeze) fails its test instead of looking
+  healthy. [hiddify]
 - The proxy list shows each VLESS, VMess and Trojan proxy's transport and
   security after its protocol, as "VLESS · XHTTP · REALITY" or
   "VMess · WS · TLS", also for the proxies keep top leaves at rest. [hiddify]

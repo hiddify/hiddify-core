@@ -136,6 +136,10 @@ type URLTestOptions struct {
 	URLTestInterval    DurationInSeconds `json:"url-test-interval,omitempty" overridable:"true"`
 	// Custom IP geolocation endpoint (subscription `ipinfo-url`); ipapi.co-compatible JSON.
 	IpInfoUrl string `json:"ipinfo-url,omitempty" overridable:"true"`
+	// Kilobytes each URL test also downloads through the proxy, which fails its test unless they
+	// all arrive in time: a censor that freezes a connection after its first kilobytes lets the
+	// test's few bytes through, so such a proxy looked healthy and stayed in use. 0 is off.
+	URLTestDownloadSize int `json:"url-test-download-size,omitempty"`
 	// URLTestIdleTimeout DurationInSeconds `json:"url-test-idle-timeout"`
 }
 
